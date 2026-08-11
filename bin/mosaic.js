@@ -392,6 +392,20 @@ function runtimeExports(main) {
     return [...names];
 }
 
+/**
+ * Report a failure. The message is the line to read; the stack below it says
+ * where it came from, which is what tells a bug in the tool apart from a
+ * mistake in the sources it was given. A cause chain is followed to the end.
+ */
+function report(e) {
+  console.error(`mosaic: ${e?.message ?? e}`);
+  if (e?.stack) console.error(e.stack);
+  for (let cause = e?.cause; cause; cause = cause.cause) {
+    console.error(`caused by: ${cause.message ?? cause}`);
+    if (cause.stack) console.error(cause.stack);
+  }
+}
+
 /** The library trees, resolved into this application's build directory. */
 function librarySources(config, app) {
   return config.libraries.map((lib) => ({
@@ -425,15 +439,28 @@ async function compile(config, app, args) {
   log(`    ${written.length} modules`);
 
   log("==> bundling");
+  // `throw: false`: a thrown build carries only "Bundle failed", and the
+  // messages that say which import went unresolved are what is worth seeing.
   const result = await Bun.build({
     entrypoints: [app.entry],
     outdir: path.dirname(app.outfile),
     naming: path.basename(app.outfile),
     sourcemap: args.sourcemap ? "linked" : "none",
     target: "browser",
+    throw: false,
   });
   if (!result.success) {
-    for (const message of result.logs) console.error(String(message));
+    // The message alone says what failed but not where: an unresolved import
+    // names the specifier, and the position names the file that wrote it.
+    for (const message of result.logs) {
+      console.error(`    ${message}`);
+      const at = message?.position;
+      if (at) {
+        console.error(`      ${relative(at.file)}:${at.line}:${at.column}`);
+        if (at.lineText) console.error(`        ${at.lineText.trim()}`);
+      }
+      if (message?.stack) console.error(message.stack);
+    }
     throw new Error(`could not bundle ${app.entry}`);
   }
 
@@ -585,7 +612,7 @@ function watchSources(config, app, args) {
         } catch (e) {
             // A broken source is the normal case while editing: report it and keep
             // watching, rather than taking the server down with it.
-            console.error(`mosaic: ${e.message}`);
+            report(e);
         } finally {
             building = false;
             if (pending) {
@@ -639,7 +666,7 @@ async function main(argv) {
   try {
     await compile(config, app, args);
   } catch (e) {
-    console.error(`mosaic: ${e.message}`);
+    report(e);
     return 1;
   }
 
@@ -655,7 +682,7 @@ async function main(argv) {
     try {
         code = await check(config, app, server.port, args.page);
     } catch (e) {
-      console.error(`mosaic: ${e.message}`);
+      report(e);
       code = 1;
     }
     server.stop(true);
