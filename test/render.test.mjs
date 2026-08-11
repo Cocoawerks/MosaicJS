@@ -12,12 +12,18 @@ import "./dom-shim.mjs";
 // The runtime comes from the app's own build, not from src/: each application
 // vendors a copy, and `instanceof` only holds against the copy its modules
 // were compiled against.
+//
+// Build first, with the modules kept — a plain compile leaves only the bundle,
+// which is all a page needs, while these tests read what it was built from:
+//
+//   mosaic compile examples/Counter_component --keep-modules
+//   mosaic compile examples/Counter_main --keep-modules
 const { mount, h, refresh, Component, MosaicApplication, bindText: bindTextRef } = await import(
     "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
     );
 const {default: Main} = await import("../examples/Counter_component/build/src/main.mib.js");
-const {default: Button} = await import(
-    "../examples/Counter_component/build/ui/button/Button.js"
+const {Button} = await import(
+    "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
 );
 const {addStyles} = await import(
     "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
@@ -231,19 +237,41 @@ class AppController {
   }
 }
 
-// `base` is resolved against mosaic.js, which each app vendors into its own
-// build/node_modules/mosaic/runtime/ — so the compiled modules sit three
-// levels up, at the root of the build.
-MosaicApplication.base = "../../../src/";
+// The compiled entry registers its page at import time. Standing in for that
+// here is what lets these tests mount the way an application does — with
+// nothing named and nothing fetched.
+MosaicApplication.registerPage(Main);
 
-test("MosaicApplication loads the compiled root component and mounts it", async () => {
+test("MosaicApplication mounts the page the compiled entry registered", async () => {
   const app = new MosaicApplication({ controller: { title: "Mosaic" } });
   await app.ready;
 
-  // Found its entry on its own — `main.mib.js`, what main.mib compiles to — with
-  // no mount() call and no explicit import.
-  assert.match(app.src, /main\.mib\.js$/);
   assert.match(document.body.innerHTML, /<h1 class="title[^"]*"[^>]*>Mosaic<\/h1>/);
+  document.body.textContent = "";
+});
+
+test("mounting is synchronous — the DOM is there before ready is awaited", () => {
+  // Nothing is loaded, so there is nothing to wait for: the view exists as
+  // soon as the constructor returns.
+  const app = new MosaicApplication({controller: {title: "Now"}});
+
+  assert.match(document.body.innerHTML, /<h1[^>]*>Now<\/h1>/);
+  assert.ok(app.view instanceof Component);
+  app.unmount();
+  document.body.textContent = "";
+});
+
+test("with no registered page and no component, it says so", () => {
+  const page = MosaicApplication.page;
+  MosaicApplication.page = null;
+  try {
+    assert.throws(
+        () => new MosaicApplication({controller: {}}),
+        /no root component to mount/,
+    );
+  } finally {
+    MosaicApplication.page = page;
+  }
   document.body.textContent = "";
 });
 
@@ -259,20 +287,15 @@ test("MosaicApplication mounts into the element named by the id prop", async () 
   document.body.textContent = "";
 });
 
-test("src selects an explicit module instead of the entry search", async () => {
+test("component mounts something other than the registered page", async () => {
   const host = document.createElement("div");
   host.setAttribute("id", "app2");
   document.body.appendChild(host);
 
-  // `src` is resolved like `base`: relative to mosaic.js.
   const controller = { title: "Explicit" };
-  const app = await MosaicApplication.run({
-    id: "app2",
-    src: "../../../src/main.mib.js",
-    controller,
-  });
+  const app = await MosaicApplication.run({id: "app2", component: Main, controller});
 
-  assert.match(app.src, /main\.mib\.js$/);
+  assert.ok(app.view instanceof Component);
   assert.match(host.innerHTML, /<h1[^>]*>Explicit<\/h1>/);
   assert.ok(controller.view instanceof Component);
   document.body.textContent = "";
@@ -282,11 +305,7 @@ test("a scope belongs to a file, inline components included", async () => {
   const host = document.createElement("div");
   host.setAttribute("id", "scopes");
   document.body.appendChild(host);
-  await MosaicApplication.run({
-    id: "scopes",
-    src: "../../../src/main.mib.js",
-    controller: {title: "x"},
-  });
+  await MosaicApplication.run({id: "scopes", component: Main, controller: {title: "x"}});
 
   const page = host.childNodes[0];
   const counter = host.querySelectorAll("output")[0];
@@ -319,12 +338,8 @@ test("MosaicApplication accepts a component directly, skipping the load", async 
   document.body.textContent = "";
 });
 
-test("a missing id or unloadable entry reports a clear error", async () => {
+test("a missing id reports a clear error", () => {
   assert.throws(() => new MosaicApplication({ id: "nope" }), /no element with id "nope"/);
-  await assert.rejects(
-    new MosaicApplication({ src: "./build/does-not-exist.js" }).ready,
-    /could not load a root component/,
-  );
   document.body.textContent = "";
 });
 
@@ -381,10 +396,9 @@ test("a .mib page renders a drawn view as a child component", async () => {
   // import, resolved to wherever Counter compiled.
   const app = await MosaicApplication.run({
     id: "composed",
-    src: "../../../src/main.mib.js",
+    component: Main,
     controller: {title: "Mosaic"},
   });
-  assert.match(app.src, /main\.mib\.js$/);
 
   assert.match(host.innerHTML, /<h1 class="title[^"]*"[^>]*>Mosaic<\/h1>/);
   assert.match(host.innerHTML, /<div class="counter[^"]*"/);
@@ -409,9 +423,13 @@ test("the bundle is one self-contained module", async () => {
   const bundle = await readFile(new URL("../examples/Counter_component/build/app.js", import.meta.url), "utf8");
   assert.equal(bundle.match(/^import /gm), null, "no imports left to resolve");
 
+  // Nor anything fetched once it is running: everything the application mounts
+  // is baked in, so the bundle is the whole of what ships.
+  assert.equal(bundle.match(/\bimport\s*\(/g), null, "nothing loaded at run time");
+
   const app = await MosaicApplication.run({
     id: "bundled",
-    src: "../../../src/main.mib.js",
+    component: Main,
     controller: {title: "Bundled"},
   });
 

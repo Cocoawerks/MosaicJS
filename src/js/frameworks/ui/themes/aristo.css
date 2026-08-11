@@ -34,7 +34,6 @@
     /* Purple Series */
 
 
-
     /* Chrome greys — where Pop's browns are warm, Aristo's are dead neutral:
        these are the window frame and title-bar values off the sheet. */
 
@@ -194,9 +193,8 @@
     /* Dialog — an Aristo window: light grey title bar, bold centred title, a
        hairline frame and a soft drop shadow. */
     --dialog-border: #c8c8c8;
-    --dialog-shadow:
-        0 14px 32px -10px rgba(0, 0, 0, 0.35),
-        0 2px 6px -2px rgba(0, 0, 0, 0.22);
+    --dialog-shadow: 0 14px 32px -10px rgba(0, 0, 0, 0.35),
+    0 2px 6px -2px rgba(0, 0, 0, 0.22);
     --dialog-backdrop: rgba(0, 0, 0, 0.40);
     --dialog-header-background: #e6e6e6;
     --dialog-header-foreground: var(--text-color);

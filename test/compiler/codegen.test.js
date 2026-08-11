@@ -1,8 +1,8 @@
 import {expect, test} from "bun:test";
 
-import {generate} from "../../src/js/compiler/codegen.js";
-import {takeLineMarkers} from "../../src/js/compiler/js.js";
-import {parse} from "../../src/js/compiler/parser.js";
+import {generate} from "../../src/js/core/compiler/codegen.js";
+import {takeLineMarkers} from "../../src/js/core/compiler/js.js";
+import {parse} from "../../src/js/core/compiler/parser.js";
 
 function compile(src) {
   return generate(parse(src), {

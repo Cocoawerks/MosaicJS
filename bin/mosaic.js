@@ -24,21 +24,61 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import {fileURLToPath} from "node:url";
 
-import {compileAll} from "../src/js/compiler/build.js";
-import {componentName} from "../src/js/compiler/compile.js";
+import {compileAll} from "../src/js/core/compiler/build.js";
+import {componentName} from "../src/js/core/compiler/compile.js";
+import {scope as scopeCss} from "../src/js/core/compiler/css.js";
 
 const CONFIG = "info.json";
+
+/**
+ * Where mosaic itself lives: the tree holding the runtime and the frameworks.
+ *
+ * They ship with the tool, not with the applications built by it — an
+ * application says what it is, and mosaic knows where its own parts are. That
+ * is why nothing above an application needs an `info.json` of its own.
+ *
+ * Found in the order a run can be sure of:
+ *
+ *   1. `MOSAIC_HOME`, for pointing an installed mosaic at a checkout.
+ *   2. What `make install` baked in, which is where it put those trees. A
+ *      standalone executable holds only its own code — the runtime is data it
+ *      copies into a build, and lives beside the binary rather than inside it.
+ *   3. This file's own checkout, which is the case when running from source.
+ */
+function mosaicHome() {
+    if (process.env.MOSAIC_HOME) return path.resolve(process.env.MOSAIC_HOME);
+
+    // Replaced at build time by `make install`; absent when running from source.
+    const installed = typeof MOSAIC_INSTALLED_HOME === "string" ? MOSAIC_INSTALLED_HOME : null;
+    if (installed) return installed;
+
+    return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+}
+
+const HOME = mosaicHome();
+
+/** How `HOME` was arrived at, for an error message that can be acted on. */
+function homeSource() {
+    if (process.env.MOSAIC_HOME) return "where MOSAIC_HOME points";
+    if (typeof MOSAIC_INSTALLED_HOME === "string") return "where this mosaic was installed";
+    return "this mosaic's own directory";
+}
 const ENTRY = "main.js";
 /** Where an application's own modules live, relative to its directory. */
 const SRC = "src";
+/** Where frameworks land inside the vendored runtime package, and their subpath. */
+const FRAMEWORKS = "frameworks";
+/** Where a framework keeps its themes, one stylesheet each. */
+const THEMES = "themes";
 
 const DEFAULTS = {
-  runtime: "src/js/runtime/mosaic.js",
+    runtime: path.join(HOME, "src/js/core/runtime/mosaic.js"),
   // The tree the runtime lives in, copied into each app's build so the
   // application directory is genuinely self-contained: a compiled module can
   // reach the runtime without climbing out of the app it belongs to.
-  runtimeRoot: "src/js",
+    runtimeRoot: path.join(HOME, "src/js/core"),
   // What compiled code imports the runtime as. A bare specifier, resolved
   // through the copy `mosaic` vendors into the build.
   runtimeSpecifier: "mosaic",
@@ -46,9 +86,25 @@ const DEFAULTS = {
   // build. Each app gets its own copy: only the bundle is served, so the cost
   // is build output, and the app directory stays self-contained.
   libraries: [],
+    // Component libraries that ship as part of the runtime package, imported by
+    // name: `import {Button} from "mosaic/frameworks/ui"`. Each is
+    // `{name, input}` — a source tree compiled into the vendored package under
+    // `frameworks/<name>/`, where the subpath export points at the index the
+    // build generates for it.
+    frameworks: [{name: "ui", input: path.join(HOME, "src/js/frameworks/ui")}],
+    // Which of a framework's `themes/` its components are built against — the
+    // stylesheet of custom properties they read. One name for the whole build:
+    // the theme is the application's, not a component's.
+    theme: "aristo",
+    // What this application is and who wrote it. Both are carried into the
+    // package the build vendors, so what was built says so itself.
+    version: "0.0.0",
+    author: "",
     // Both relative to the application directory, not the project root.
     main_file: `${SRC}/${ENTRY}`,
   outdir: "build",
+    // The page `check` opens. Mosaic's own, unless an application names one.
+    check: path.join(HOME, "test/browser-check.html"),
 };
 
 const USAGE = `usage: mosaic <command> [dir] [options]
@@ -67,22 +123,29 @@ the directory to create.
 
 options:
   --port <n>         port for \`dev\` (default 3000)
-  --page <path>      page for \`check\`, relative to the project root
+  --page <path>      page for \`check\`, relative to the current directory
   --no-open          don't launch a browser
   --no-watch         don't rebuild when sources change
   --no-sourcemap     skip source maps
   --quiet            only report failures
+  --keep-modules     leave the compiled modules the bundle was built from
+  --minify           minify the bundle
   -h, --help         this text
 
 Configuration is ${CONFIG}, merged from the project root down to the app.`;
 
 /** Config keys naming a path, resolved against the file that declared them. */
-const PATH_KEYS = ["runtime", "runtimeRoot"];
+const PATH_KEYS = ["runtime", "runtimeRoot", "check"];
 
 /**
- * Load `info.json`, merging every one from the project root down to the
- * application. A nearer file wins key by key, so an application declares its
- * own name and inherits where the runtime lives from the project around it.
+ * Load an application's `info.json`, merging any further out that cover it. A
+ * nearer file wins key by key, so a project holding several applications can
+ * state once what they share — a theme, a version — and each one declares only
+ * what is its own.
+ *
+ * Nothing above an application is required to have one: what the tool needs to
+ * know about itself is in `DEFAULTS`, resolved against `HOME`. An `info.json`
+ * describes an application, and never mosaic.
  *
  * Paths are resolved against the file that declared them, so each config means
  * the same thing wherever it is read from.
@@ -114,17 +177,13 @@ function loadConfig(from) {
   for (const { dir, data } of chain) {
     for (const [key, value] of Object.entries(data)) {
       if (PATH_KEYS.includes(key)) config[key] = path.resolve(dir, value);
-      else if (key === "libraries") {
-        config.libraries = value.map((lib) => ({
-          ...lib,
-          input: path.resolve(dir, lib.input),
+      else if (key === "libraries" || key === "frameworks") {
+          config[key] = value.map((entry) => ({
+              ...entry,
+              input: path.resolve(dir, entry.input),
         }));
       } else config[key] = value;
     }
-  }
-  // Defaults are relative to the outermost config, which is the project root.
-  for (const key of PATH_KEYS) {
-    if (!path.isAbsolute(config[key])) config[key] = path.resolve(config.root, config[key]);
   }
   return config;
 }
@@ -137,7 +196,11 @@ function scaffold(name) {
       // The application's configuration. Every key a project-level info.json
       // declares is inherited; what is set here overrides it.
       "info.json":
-          JSON.stringify({app_name: name, main_file: `${SRC}/${ENTRY}`}, null, 2) + "\n",
+          JSON.stringify(
+              {app_name: name, version: "0.1.0", author: "", main_file: `${SRC}/${ENTRY}`},
+              null,
+              2,
+          ) + "\n",
 
       [`${SRC}/main.mib`]: `<!-- ${name} — the page.
 
@@ -278,6 +341,14 @@ function parseArgs(argv) {
       watch: true,
     sourcemap: true,
     quiet: false,
+      // The compiled modules the bundle was built from. They are intermediate:
+      // the page loads the bundle and nothing else. `check` keeps them because
+      // its page loads them unbundled, which is how the runtime is tested
+      // against a real build with no bundler in the way.
+      keepModules: false,
+      // Off by default: a build is read while it is being worked on, and the
+      // bundle is the thing you open when something looks wrong.
+      minify: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -292,6 +363,8 @@ function parseArgs(argv) {
     else if (a === "--no-watch") args.watch = false;
     else if (a === "--no-sourcemap") args.sourcemap = false;
     else if (a === "--quiet") args.quiet = true;
+    else if (a === "--keep-modules") args.keepModules = true;
+    else if (a === "--minify") args.minify = true;
     else if (a === "-h" || a === "--help") {
       console.log(USAGE);
       process.exit(0);
@@ -337,7 +410,9 @@ function layout(config, source) {
 
 /**
  * Copy the runtime tree into the app's build as a package, so compiled code can
- * import it by name: `import { MosaicApplication } from "mosaic"`.
+ * import it by name: `import { MosaicApplication } from "mosaic"`, and each
+ * framework compiled into it as a subpath of the same package:
+ * `import { Button } from "mosaic/frameworks/ui"`.
  *
  * It lands in `build/node_modules/mosaic/`, which is the one layout every
  * resolver already understands — Bun's bundler and node find it with no
@@ -352,20 +427,163 @@ function vendorRuntime(config, app) {
     throw new Error(`runtime ${runtime} is not inside runtimeRoot ${root}`);
   }
 
+    // The runtime is read from disk, so an installed mosaic that cannot find the
+    // tree it was installed with can say so in those terms — rather than failing
+    // on a path nobody wrote, somewhere inside the executable.
+    if (!fs.existsSync(root)) {
+        throw new Error(
+            `mosaic cannot find its runtime at ${root}.\n` +
+            `    It looked in ${HOME}, which is ${homeSource()}.\n` +
+            `    Reinstall with \`make install\`, or set MOSAIC_HOME to a mosaic checkout.`,
+        );
+    }
+
   const name = config.runtimeSpecifier;
   const dest = path.join(app.outdir, "node_modules", name);
   const main = "./" + path.relative(root, runtime).split(path.sep).join("/");
 
   // The compiler is not part of the runtime and has no business being served.
+    // Framework sources are left out too: they are compiled into this package
+    // rather than copied, so the only copy of a component is the compiled one.
+    const skipped = new Set([
+        path.resolve(root, "compiler"),
+        ...config.frameworks.map((f) => f.input),
+    ]);
   fs.cpSync(root, dest, {
     recursive: true,
-    filter: (src) => path.basename(src) !== "compiler",
+      filter: (src) => !skipped.has(path.resolve(src)),
   });
+
+    // A framework is reached as `mosaic/frameworks/<name>`, through the index the
+    // build writes for it. Declaring the subpaths one by one — rather than a
+    // `./frameworks/*` pattern — keeps the package honest about what it has.
+    const exports = {".": main};
+    for (const framework of config.frameworks) {
+        exports[`./${FRAMEWORKS}/${framework.name}`] = `./${FRAMEWORKS}/${framework.name}/index.js`;
+    }
+
   fs.writeFileSync(
     path.join(dest, "package.json"),
-    JSON.stringify({ name, type: "module", main, exports: { ".": main } }, null, 2) + "\n",
+      JSON.stringify(
+          {
+              name,
+              version: config.version,
+              ...(config.author ? {author: config.author} : {}),
+              type: "module",
+              main,
+              exports,
+          },
+          null,
+          2,
+      ) + "\n",
   );
-  return { specifier: name, main: path.join(dest, main) };
+    return {specifier: name, main: path.join(dest, main), dest};
+}
+
+/**
+ * The frameworks, resolved into this application's build: each one a source
+ * tree compiled into the vendored package, and the specifier its components
+ * are imported by.
+ */
+function frameworkSources(config, app) {
+    const root = path.join(app.outdir, "node_modules", config.runtimeSpecifier, FRAMEWORKS);
+
+    return config.frameworks.map((framework) => ({
+        name: framework.name,
+        input: framework.input,
+        outdir: path.join(root, framework.name),
+        specifier: `${config.runtimeSpecifier}/${FRAMEWORKS}/${framework.name}`,
+        themes: path.join(framework.input, THEMES),
+    }));
+}
+
+/** The themes a framework offers: every stylesheet in its `themes/`. */
+function themeNames(framework) {
+    if (!fs.existsSync(framework.themes)) return [];
+    return fs
+        .readdirSync(framework.themes)
+        .filter((file) => path.extname(file) === ".css")
+        .map((file) => path.basename(file, ".css"))
+        .sort();
+}
+
+/**
+ * Write the module that carries a framework's theme, and return its specifier.
+ *
+ * A theme is a stylesheet of custom properties the components read — which one
+ * is the application's choice, so no component names it. `theme` in info.json
+ * picks it, this inlines it, and the framework's index imports it: reaching the
+ * framework at all brings its theme along, and there is nothing to link in a
+ * page.
+ *
+ * The stylesheet is global by nature — `:global(:root)` is where the variables
+ * are declared — so it is emitted with no scope suffix, which unwraps the
+ * `:global(...)` the compiler would have.
+ */
+function writeFrameworkTheme(config, framework) {
+    const available = themeNames(framework);
+    if (available.length === 0) return null;
+
+    const chosen = config.theme;
+    if (!chosen) return null;
+
+    const file = path.join(framework.themes, `${chosen}.css`);
+    if (!fs.existsSync(file)) {
+        throw new Error(
+            `${CONFIG} names theme "${chosen}", which ${framework.name} does not have — ` +
+            `it offers ${available.join(", ")}`,
+        );
+    }
+
+    const styles = scopeCss(fs.readFileSync(file, "utf8"), "").trimEnd();
+    const module = path.join(framework.outdir, "theme.js");
+
+    fs.mkdirSync(path.dirname(module), {recursive: true});
+    fs.writeFileSync(
+        module,
+        `// ${framework.name} — generated by mosaic: the "${chosen}" theme, chosen by ${CONFIG}.\n` +
+        `import {addStyles} from ${JSON.stringify(config.runtimeSpecifier)};\n\n` +
+        `addStyles(${JSON.stringify(chosen)}, ${JSON.stringify(styles)});\n`,
+    );
+    return {name: chosen, module};
+}
+
+/**
+ * Write a framework's index: the module its subpath export names, re-exporting
+ * every component compiled into it.
+ *
+ * A component module's default export is the component, named for its file, so
+ * `button/Button.js` is what `import {Button} from "mosaic/frameworks/ui"`
+ * gets. Whatever else a module exports by name comes along with it — `Intent`
+ * and `ButtonState` are as much part of the framework as `Button` is.
+ */
+function writeFrameworkIndex(framework, modules, theme) {
+    const lines = [
+        `// ${framework.name} — generated by mosaic. What "${framework.specifier}" exports.`,
+        "",
+    ];
+
+    // First, so the variables a component's own stylesheet reads are declared by
+    // the time it is: importing the framework is what installs its theme.
+    if (theme) {
+        lines.push(`// The "${theme.name}" theme, which ${CONFIG} chose.`);
+        lines.push(`import "./theme.js";`, "");
+    }
+
+    for (const module of [...modules].sort()) {
+        const specifier = "./" + path.relative(framework.outdir, module).split(path.sep).join("/");
+        const name = componentName(path.basename(module, path.extname(module)));
+        const source = fs.readFileSync(module, "utf8");
+
+        if (/^\s*export\s+default\b/m.test(source)) {
+            lines.push(`export {default as ${name}} from ${JSON.stringify(specifier)};`);
+        }
+        lines.push(`export * from ${JSON.stringify(specifier)};`);
+    }
+
+    const index = path.join(framework.outdir, "index.js");
+    fs.writeFileSync(index, lines.join("\n") + "\n");
+    return index;
 }
 
 /**
@@ -414,12 +632,17 @@ function librarySources(config, app) {
   }));
 }
 
-/** Compile the libraries and the application, then bundle from the entry. */
+/** Compile the frameworks, the libraries and the application, then bundle. */
 async function compile(config, app, args) {
   const log = args.quiet ? () => {} : (...a) => console.log(...a);
   const relative = (p) => path.relative(config.root, p) || ".";
 
+    const frameworks = frameworkSources(config, app);
   const sources = [
+      // A framework compiles into the vendored package, and its components are
+      // imported by the name that package exports them under rather than by a
+      // path — `mosaic/frameworks/ui`, wherever the importing module sits.
+      ...frameworks.map((f) => ({input: f.input, outdir: f.outdir, specifier: f.specifier})),
     ...librarySources(config, app),
     { input: relative(app.source), outdir: app.outdir },
   ];
@@ -438,6 +661,18 @@ async function compile(config, app, args) {
   });
   log(`    ${written.length} modules`);
 
+    // Each framework's index is written from what actually compiled into it, so
+    // adding a component to the tree is all it takes to export one.
+    for (const framework of frameworks) {
+        const modules = written.filter(
+            (dest) => path.resolve(dest).startsWith(path.resolve(framework.outdir) + path.sep),
+        );
+        const theme = writeFrameworkTheme(config, framework);
+        const index = writeFrameworkIndex(framework, modules, theme);
+        const themed = theme ? `, ${theme.name} theme` : "";
+        log(`    ${framework.specifier} -> ${index}  (${modules.length} components${themed})`);
+    }
+
   log("==> bundling");
   // `throw: false`: a thrown build carries only "Bundle failed", and the
   // messages that say which import went unresolved are what is worth seeing.
@@ -447,6 +682,10 @@ async function compile(config, app, args) {
     naming: path.basename(app.outfile),
     sourcemap: args.sourcemap ? "linked" : "none",
     target: "browser",
+      // What is served is the bundle, so this is the one place minifying
+      // belongs: the compiled modules stay readable, and a source map still
+      // leads back to the `.mib` a name came from.
+      minify: args.minify,
     throw: false,
   });
   if (!result.success) {
@@ -465,7 +704,43 @@ async function compile(config, app, args) {
   }
 
   const bytes = fs.statSync(app.outfile).size;
-  log(`    ${app.outfile}  ${(bytes / 1024).toFixed(1)} KB`);
+    log(`    ${app.outfile}  ${(bytes / 1024).toFixed(1)} KB${args.minify ? ", minified" : ""}`);
+
+    if (!(args.keepModules || args.command === "check")) {
+        const removed = pruneModules(app);
+        if (removed > 0) log(`    ${removed} intermediate modules removed`);
+    }
+}
+
+/**
+ * Delete everything in the build but the bundle and its map.
+ *
+ * The compiled modules are what the bundle was built *from*: every one of them
+ * is inside it, and the page loads it alone. Leaving them would ship a second
+ * copy of the application beside the one being served — and, in `dev`, one a
+ * page could reach behind the bundle's back.
+ *
+ * The map is unaffected: Bun writes the sources into it, so the bundle stays
+ * debuggable with nothing beside it.
+ */
+function pruneModules(app) {
+    const keep = new Set([app.outfile, `${app.outfile}.map`].map((p) => path.resolve(p)));
+
+    let removed = 0;
+    const walk = (dir) => {
+        for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+            const full = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                walk(full);
+                if (fs.readdirSync(full).length === 0) fs.rmdirSync(full);
+            } else if (!keep.has(path.resolve(full))) {
+                fs.rmSync(full);
+                removed++;
+            }
+        }
+    };
+    walk(app.outdir);
+    return removed;
 }
 
 const CONTENT_TYPES = {
@@ -527,16 +802,14 @@ function open(url) {
  * application, so it lives with the other tests and is served from the project
  * root — reaching across into whichever app's build it exercises.
  */
-async function check(config, app, port, override) {
-    const page = path.resolve(config.root, override ?? config.check ?? "test/browser-check.html");
-  if (!fs.existsSync(page)) throw new Error(`no check page at ${page}`);
+async function check(page, root, port) {
 
   const browser = ["chromium", "chromium-browser", "google-chrome", "brave"].find((b) =>
     Bun.which(b),
   );
   if (!browser) throw new Error("no chromium-like browser found");
 
-    const url = `http://127.0.0.1:${port}/${path.relative(config.root, page)}`;
+    const url = `http://127.0.0.1:${port}/${path.relative(root, page).split(path.sep).join("/")}`;
   const proc = Bun.spawn(
     [browser, "--headless", "--no-sandbox", "--disable-gpu", "--virtual-time-budget=5000",
       "--dump-dom", url],
@@ -570,8 +843,8 @@ async function check(config, app, port, override) {
 /**
  * Rebuild whenever a source changes.
  *
- * Everything the build reads is watched — the application, the libraries it
- * compiles against and the runtime it is vendored from — because a change in
+ * Everything the build reads is watched — the application, the frameworks and
+ * libraries it compiles against and the runtime it is vendored from — a change in
  * any of them makes what is being served stale. The build directory is not:
  * writing to it is what a rebuild *does*, and watching it would never settle.
  *
@@ -579,7 +852,12 @@ async function check(config, app, port, override) {
  * a finished rebuild is live at the next reload with nothing to restart.
  */
 function watchSources(config, app, args) {
-    const roots = [app.source, config.runtimeRoot, ...config.libraries.map((lib) => lib.input)];
+    const roots = [
+        app.source,
+        config.runtimeRoot,
+        ...config.frameworks.map((f) => f.input),
+        ...config.libraries.map((lib) => lib.input),
+    ];
 
     // A tree already covered by an ancestor is watched twice otherwise.
     const covered = (dir) =>
@@ -645,7 +923,9 @@ async function main(argv) {
     if (args.command === "init") return init(args.entry);
       const source = resolveApp(args.entry);
       config = loadConfig(source);
-    // Paths in the config are relative to the project root.
+      // Paths in the config are relative to the config that declared them, and
+      // are absolute by now; the application's directory is where the rest of a
+      // run is anchored.
     process.chdir(config.root);
       app = layout(config, source);
   } catch (e) {
@@ -673,14 +953,45 @@ async function main(argv) {
   if (args.command === "compile") return 0;
 
     // `dev` serves the application directory, so a page can only reach what
-    // ships with the app. `check` is a test of the project, and serves that.
+    // ships with the app. A check page is a test *of* an application, and reads
+    // the build it produced, so it is served from far enough up to see both.
+    let checkPage = null;
+    let checkRoot = null;
+    try {
+        if (args.command === "check") {
+            checkPage = args.page ? path.resolve(args.page) : config.check;
+            if (!fs.existsSync(checkPage)) throw new Error(`no check page at ${checkPage}`);
+            const inApp = !path.relative(app.source, checkPage).startsWith("..");
+            const bothInHome =
+                !path.relative(HOME, checkPage).startsWith("..") &&
+                !path.relative(HOME, app.source).startsWith("..");
+
+            // The root is served for the length of the run, so it has to be a place
+            // that holds both by design: the application itself, or the checkout when
+            // this is mosaic testing one of its own examples. Anything else — most
+            // often mosaic's built-in page against an application installed elsewhere
+            // — would mean serving whatever directory happens to contain them both.
+            if (!inApp && !bothInHome) {
+                throw new Error(
+                    `check page ${checkPage} is not part of ${app.source}.\n` +
+                    `    Name a page inside the application with \`--page\`, or with ` +
+                    `"check" in its ${CONFIG}.`,
+                );
+            }
+            checkRoot = inApp ? app.source : HOME;
+        }
+    } catch (e) {
+        report(e);
+        return 1;
+    }
+
     const server =
-        args.command === "check" ? serve(config.root, 0) : serve(app.source, args.port);
+        args.command === "check" ? serve(checkRoot, 0) : serve(app.source, args.port);
 
   if (args.command === "check") {
     let code;
     try {
-        code = await check(config, app, server.port, args.page);
+        code = await check(checkPage, checkRoot, server.port);
     } catch (e) {
       report(e);
       code = 1;

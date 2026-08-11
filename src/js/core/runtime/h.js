@@ -1,5 +1,5 @@
 // Creating a vnode — what compiled markup calls for every element.
-import { flatten } from "./private/flatten.js";
+import {flatten} from "./private/flatten.js";
 
 /**
  * Create a vnode. `type` is a tag name, `Fragment`, or a component function.

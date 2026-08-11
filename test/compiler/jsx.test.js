@@ -3,8 +3,8 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
-import {lineMarker, takeLineMarkers} from "../../src/js/compiler/js.js";
-import {ensureRuntimeNames, inlineCssImports, transform} from "../../src/js/compiler/jsx.js";
+import {lineMarker, takeLineMarkers} from "../../src/js/core/compiler/js.js";
+import {ensureRuntimeNames, inlineCssImports, transform} from "../../src/js/core/compiler/jsx.js";
 
 /** A scratch directory of its own, so tests never race over one shared path. */
 const dirs = [];

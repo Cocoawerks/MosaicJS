@@ -1,5 +1,5 @@
 // Drawing a component's tree, and recognising a component class.
-import {Component} from "../../ui/components/Component.js";
+import {Component} from "../Component.js";
 import {render} from "../render.js";
 import {observe, recordReads, stateKeys} from "./observe.js";
 

@@ -3,8 +3,8 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
-import {compileFile, componentName, destination, hash, relativeSpecifier,} from "../../src/js/compiler/compile.js";
-import {forModule, vlq} from "../../src/js/compiler/sourcemap.js";
+import {compileFile, componentName, destination, hash, relativeSpecifier,} from "../../src/js/core/compiler/compile.js";
+import {forModule, vlq} from "../../src/js/core/compiler/sourcemap.js";
 
 const dirs = [];
 function tempDir() {

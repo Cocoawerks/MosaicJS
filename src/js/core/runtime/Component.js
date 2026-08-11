@@ -4,9 +4,9 @@
 // point (`needsDisplay`), automatic event binding, and the attached/detached
 // lifecycle. The drawing and patching machinery itself lives in the runtime,
 // which this module and the components below it share.
-import {clearBindings} from "../../runtime/clearBindings.js";
-import {redraw} from "../../runtime/redraw.js";
-import {refresh} from "../../runtime/refresh.js";
+import {clearBindings} from "./clearBindings.js";
+import {redraw} from "./redraw.js";
+import {refresh} from "./refresh.js";
 
 /**
  * Every DOM event a component can handle, mapped to the method name that

@@ -1,5 +1,5 @@
 // Putting a component into the document.
-import {Component} from "../ui/components/Component.js";
+import {Component} from "./Component.js";
 import {drawInto, isComponentClass} from "./private/draw.js";
 import {attachTree, discard, disposeTree} from "./private/lifecycle.js";
 import {render} from "./render.js";

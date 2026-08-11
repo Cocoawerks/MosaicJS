@@ -1,11 +1,17 @@
 // The Button component, ported from GWT Mosaic.
-// Build first: `mosaic compile examples/Counter_component/main.js`.
+// Build first: `mosaic compile examples/Counter_component --keep-modules` — these
+// tests import the compiled modules themselves, which a plain compile prunes
+// once they are in the bundle.
 import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
 const {mount} = await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
-const {default: Button, Intent, ButtonState} = await import("../examples/Counter_component/build/ui/button/Button.js");
+const {
+  Button,
+  Intent,
+  ButtonState
+} = await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /** Mount a button and hand back its view, root element and host. */
 function open(props = {}) {

@@ -5,11 +5,11 @@
 // Bundling is Bun's job: compile to `--outdir`, then point `bun build` at the
 // entry module. See dev.sh.
 
-import {compileAll} from "../src/js/compiler/build.js";
+import {compileAll} from "../src/js/core/compiler/build.js";
 
 const USAGE = `usage: ibc --outdir dir <input.mib|input.js|input.jsx|dir>...
            [--outdir dir2 <more inputs>...]
-           [-o out.js] [--runtime src/js/runtime/mosaic.js]
+           [-o out.js] [--runtime src/js/core/runtime/mosaic.js]
            [--name Component] [--no-sourcemap] [--quiet]
 
 \`--outdir\` applies to the inputs that follow it, so one run can compile a
@@ -22,7 +22,7 @@ function parseArgs(argv) {
     // was named.
     inputs: [],
     out: null,
-    runtime: "src/js/runtime/mosaic.js",
+    runtime: "src/js/core/runtime/mosaic.js",
     name: null,
     sourcemap: true,
     quiet: false,

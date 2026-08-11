@@ -1,6 +1,6 @@
 import {expect, test} from "bun:test";
 
-import {scope} from "../../src/js/compiler/css.js";
+import {scope} from "../../src/js/core/compiler/css.js";
 
 test("scopes last compound", () => {
     expect(scope(".box span{color:red}", ".x1y2z3q")).toBe(

@@ -10,8 +10,9 @@ import * as path from "node:path";
 import {collectSources, compileFile, componentName, destination} from "./compile.js";
 
 /**
- * Expand `sources` — `[{ input, outdir }]`, where `input` is a file or a
- * directory — into one job per compilable file.
+ * Expand `sources` — `[{ input, outdir, specifier }]`, where `input` is a file
+ * or a directory and `specifier` is what the tree is imported as, if it is
+ * published under a name — into one job per compilable file.
  *
  * A tree's own output directory is skipped: an application's build lands
  * inside it, and compiling the previous run's output would be nonsense.
@@ -24,14 +25,14 @@ export function planJobs(sources) {
   };
 
   const jobs = [];
-  for (const { input, outdir } of sources) {
+  for (const {input, outdir, specifier} of sources) {
     if (!fs.existsSync(input)) throw new Error(`no such input: ${input}`);
     if (fs.statSync(input).isDirectory()) {
       for (const file of collectSources(input)) {
-        if (!isOutput(file)) jobs.push({ file, root: input, outdir });
+        if (!isOutput(file)) jobs.push({file, root: input, outdir, specifier});
       }
     } else {
-      jobs.push({ file: input, root: path.dirname(input), outdir });
+      jobs.push({file: input, root: path.dirname(input), outdir, specifier});
     }
   }
   return jobs;
@@ -66,7 +67,15 @@ export function compileAll(sources, opts = {}) {
   for (const job of jobs) {
     const name = opts.name ?? componentName(path.basename(job.file, path.extname(job.file)));
     if (!byName.has(name)) byName.set(name, []);
-    byName.get(name).push({ dest: destination(job.file, options(job)), outdir: job.outdir });
+    byName.get(name).push({
+      dest: destination(job.file, options(job)),
+      outdir: job.outdir,
+      // A tree that is published under a name — a framework — is imported by
+      // that name. Its modules move with the package they ship in, so a path
+      // from wherever the importer happens to sit would be the wrong thing to
+      // write down.
+      specifier: job.specifier,
+    });
   }
 
   /**
@@ -78,7 +87,13 @@ export function compileAll(sources, opts = {}) {
     const map = new Map();
     for (const [name, candidates] of byName) {
       const own = candidates.find((c) => c.outdir === job.outdir);
-      map.set(name, (own ?? candidates[0]).dest);
+      const chosen = own ?? candidates[0];
+      // Inside the tree it ships in, a framework component is just a module
+      // beside its neighbours: the package cannot import itself by name.
+      map.set(name, {
+        dest: chosen.dest,
+        specifier: chosen.outdir === job.outdir ? null : chosen.specifier ?? null,
+      });
     }
     return map;
   };

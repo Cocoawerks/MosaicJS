@@ -23,8 +23,9 @@ const ENTRY_STEM = "main";
  * beneath `root`. Returns the destination path.
  *
  * @param opts { root, outdir, runtime, name, sourcemap, components }
- *             `components` maps a component name to its compiled path, so a
- *             `<Button/>` tag imports wherever Button actually landed.
+ *             `components` maps a component name to `{dest, specifier}` — where
+ *             Button actually landed, and the name its package publishes it
+ *             under if it has one — so a `<Button/>` tag imports the right one.
  */
 export function compileFile(file, opts) {
   const src = fs.readFileSync(file, "utf8");
@@ -78,7 +79,12 @@ function compileIb(src, runtime, stem, dest, opts) {
           `<${name}/> has no compiled module — nothing under the inputs compiles to ${name}`,
         );
       }
-      return relativeSpecifier(target, path.dirname(dest));
+      // A component from a tree that is published under a name is imported by
+      // it: `mosaic/frameworks/ui` says where Button comes from in a way that
+      // survives the importing module moving, and reaches the same one copy
+      // whichever application is being built.
+      if (target.specifier) return {specifier: target.specifier, named: true};
+      return relativeSpecifier(target.dest, path.dirname(dest));
     },
   });
 }
@@ -163,8 +169,8 @@ export function isBare(specifier) {
 
 /**
  * The specifier a file in `from` should use to import `target`, e.g.
- * `../../src/js/runtime/mosaic.js`. Both are resolved against the working
- * directory, so `--runtime src/js/runtime/mosaic.js` is correct for every
+ * `../../src/js/core/runtime/mosaic.js`. Both are resolved against the working
+ * directory, so `--runtime src/js/core/runtime/mosaic.js` is correct for every
  * output file no matter how deeply it is nested.
  */
 export function relativeSpecifier(target, from) {

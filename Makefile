@@ -1,6 +1,7 @@
 # Installer for the mosaic CLI.
 #
 #   make install          install a standalone `mosaic` (no bun needed to run it)
+#                         plus its runtime and frameworks, into $(LIBDIR)
 #   make install-link     install a wrapper pointing at this checkout, for development
 #   make uninstall        remove whichever one is installed
 #   make where            show where it would go, and why
@@ -54,15 +55,36 @@ BINDIR ?= $(shell \
 
 TARGET := $(DESTDIR)$(BINDIR)/$(NAME)
 
+# Where mosaic's own trees go — the runtime and the frameworks it copies into
+# every build. They are data, not code: the executable cannot hold them, so
+# they are installed beside it and the binary is told where they are.
+#
+# `$(BINDIR)/../lib/mosaic`, which is the conventional place for both layouts
+# it lands in: ~/.local/bin -> ~/.local/lib/mosaic, /usr/local/bin ->
+# /usr/local/lib/mosaic. DESTDIR stages it; the path baked in is the one it
+# will be read from.
+LIBDIR  ?= $(abspath $(BINDIR)/../lib/$(NAME))
+LIBROOT := $(DESTDIR)$(LIBDIR)
+# What is copied there: the runtime and compiler, the frameworks, and the page
+# `check` opens when an application does not name one of its own.
+LIBTREES := src/js/core src/js/frameworks test/browser-check.html
+
 .PHONY: install install-link uninstall where check-bun
 
-## Build a self-contained executable and install it. Bun is needed to build,
-## not to run: the result embeds its own runtime, so it works anywhere.
+## Build a standalone executable and install it, with mosaic's own runtime and
+## frameworks beside it in $(LIBDIR). Bun is needed to build, not to run.
 install: check-bun
 	@mkdir -p "$(DESTDIR)$(BINDIR)"
-	@bun build --compile $(ENTRY) --outfile "$(TARGET)" >/dev/null
+	@bun build --compile $(ENTRY) --outfile "$(TARGET)" \
+		--define MOSAIC_INSTALLED_HOME='"$(LIBDIR)"' >/dev/null
 	@chmod 755 "$(TARGET)"
+	@rm -rf "$(LIBROOT)"
+	@for tree in $(LIBTREES); do \
+		mkdir -p "$(LIBROOT)/$$(dirname $$tree)"; \
+		cp -R "$(ROOT)/$$tree" "$(LIBROOT)/$$tree"; \
+	done
 	@echo "installed $(NAME) -> $(TARGET)"
+	@echo "           runtime -> $(LIBROOT)"
 	@$(MAKE) --no-print-directory path-note
 
 ## Install a wrapper that runs this checkout, so edits take effect immediately.
@@ -78,10 +100,12 @@ install-link: check-bun
 uninstall:
 	@if [ -e "$(TARGET)" ]; then rm -f "$(TARGET)"; echo "removed $(TARGET)"; \
 	else echo "nothing installed at $(TARGET)"; fi
+	@if [ -d "$(LIBROOT)" ]; then rm -rf "$(LIBROOT)"; echo "removed $(LIBROOT)"; fi
 
 ## Explain the choice without touching anything.
 where:
 	@echo "would install to: $(TARGET)"
+	@echo "         runtime: $(LIBROOT)"
 	@if [ -d "$(BINDIR)" ] && [ -w "$(BINDIR)" ]; then echo "  writable:  yes"; \
 	elif [ -d "$(BINDIR)" ]; then echo "  writable:  NO — needs sudo, or set BINDIR"; \
 	else echo "  writable:  directory does not exist yet, will be created"; fi

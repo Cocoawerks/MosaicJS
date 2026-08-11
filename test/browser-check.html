@@ -18,14 +18,17 @@
      `mosaic` resolves to. A bundled page never needs this: `bun build` has
      already resolved it. -->
 <script type="importmap">
-  { "imports": { "mosaic": "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js" } }
+    { "imports": {
+        "mosaic": "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js",
+        "mosaic/frameworks/ui": "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
+      } }
 </script>
 <script type="module">
-  import {addStyles, Component, h, mount} from "mosaic";
-  import Main from "../examples/Counter_component/build/src/main.mib.js";
-  import Button from "../examples/Counter_component/build/ui/button/Button.js";
+    import {addStyles, Component, h, mount} from "mosaic";
+    import Main from "../examples/Counter_component/build/src/main.mib.js";
+    import {Button} from "mosaic/frameworks/ui";
 
-  // A drawn view for the checks below: the shape the compiler emits for a
+    // A drawn view for the checks below: the shape the compiler emits for a
   // `draw()` full of JSX, written out by hand. It belongs to this page rather
   // than to an example app, so rewriting an example cannot take it with it.
   const SCOPE = "ctr1abc";

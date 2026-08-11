@@ -1,13 +1,13 @@
 // Re-running draw() and patching the result into place. The patcher lives here
 // because nothing else uses it: a redraw is the only thing that reconciles two
 // drawings.
-import { Fragment } from "./Fragment.js";
-import { render } from "./render.js";
-import { BINDINGS, attrValue, display, readPath, track } from "./private/bindings.js";
-import { drawInto, isComponentClass } from "./private/draw.js";
-import { flatten } from "./private/flatten.js";
-import { attachTree, discard } from "./private/lifecycle.js";
-import { setAttribute } from "./private/props.js";
+import {Fragment} from "./Fragment.js";
+import {render} from "./render.js";
+import {attrValue, BINDINGS, display, readPath, track} from "./private/bindings.js";
+import {drawInto, isComponentClass} from "./private/draw.js";
+import {flatten} from "./private/flatten.js";
+import {attachTree, discard} from "./private/lifecycle.js";
+import {setAttribute} from "./private/props.js";
 
 export function redraw(view) {
   const anchor = view.nodes[0];

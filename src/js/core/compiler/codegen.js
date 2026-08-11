@@ -8,7 +8,9 @@ import {ACTION_ATTR, jsKey, jsString, lineMarker, scopeClass, STYLE_NAME_ATTR, V
  * @param comp  the parsed component
  * @param opts  { runtime, name, hash, resolve } — runtime import specifier,
  *              exported component name, the scope hash derived from the
- *              source, and a `name -> specifier` lookup for component tags.
+ *              source, and a lookup for component tags: `name -> specifier`
+ *              for a module imported by path, or `{specifier, named: true}`
+ *              for one a package exports under its own name.
  */
 export function generate(comp, opts) {
   const scope = scopeClass(opts.hash);
@@ -42,7 +44,13 @@ export function generate(comp, opts) {
   const tags = componentTags(comp.markup).filter((name) => !inScope.has(name));
   const resolve = opts.resolve ?? ((name) => `./${name}.js`);
   for (const name of tags) {
-    out += `import ${name} from ${jsString(resolve(name))};\n`;
+    // A module is imported for its default export; a package that publishes
+    // its components under one specifier exports them by name instead.
+    const target = resolve(name);
+    out +=
+        typeof target === "object" && target.named
+            ? `import { ${name} } from ${jsString(target.specifier)};\n`
+            : `import ${name} from ${jsString(target)};\n`;
   }
   if (tags.length > 0) out += "\n";
 

@@ -35,7 +35,7 @@
 .v-Button span {
     flex: 1;
     pointer-events: none;
-    margin-bottom:1px;
+    margin-bottom: 1px;
 }
 
 .v-Button.is-disabled {
@@ -75,7 +75,7 @@
 }
 
 .v-Button.iconOnly {
-    padding: 2px ;
+    padding: 2px;
 }
 
 .v-Button.iconOnly .icon {

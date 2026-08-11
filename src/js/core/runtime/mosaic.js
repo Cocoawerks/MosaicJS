@@ -8,11 +8,11 @@
  * loaded twice.
  *
  *   import Main from "./build/main.js";
- *   import { mount } from "./src/js/runtime/mosaic.js";
+ *   import { mount } from "./src/js/core/runtime/mosaic.js";
  *   mount(Main, document.body, {}, controller);
  */
 
-export { Component, BROWSER_EVENTS } from "../ui/components/Component.js";
+export {Component, BROWSER_EVENTS} from "./Component.js";
 
 export { Fragment } from "./Fragment.js";
 export { h } from "./h.js";

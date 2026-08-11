@@ -10,26 +10,15 @@ import {mount} from "./mount.js";
  *
  * The page is found for you. A `main.js` beside a `main.mib` is the application
  * entry, so the compiler registers the compiled page as `MosaicApplication.page`
- * — nothing has to name it. Pass `component` to mount something else, or `src`
- * to load a module by path.
+ * — nothing has to name it. Pass `component` to mount something else.
  *
- * Loading a module is asynchronous, so `await app.ready` (or
- * `MosaicApplication.run(...)`) when you need the mounted view. A registered
- * page is already in hand, and mounts synchronously.
+ * Everything it mounts is something the entry already imported, so the whole
+ * application is in the bundle and nothing is fetched at run time: the page is
+ * in hand before the first line of application code runs, and mounting is
+ * synchronous. `ready` and `run()` remain, so code that awaits them still
+ * reads the same — there is simply nothing left to wait for.
  */
 export class MosaicApplication {
-  /**
-   * Where compiled components live, resolved against this module's URL —
-   * mosaic.js sits in src/js/runtime/, so build/ is three levels up. Override
-   * it if your output lands elsewhere.
-   */
-  static base = "../../../build/";
-  /**
-   * Tried in order when no `src` or `component` is given. A bundle is not on
-   * the list: it is built from a bootstrap that mounts on load, so it exports
-   * no root component to find.
-   */
-  static entryNames = ["main.mib.js", "Main.js", "main.js"];
   /**
    * The application's page, registered by the compiled entry. Set at import
    * time, before any application code runs, so `new MosaicApplication()` has
@@ -55,7 +44,7 @@ export class MosaicApplication {
   }
 
   constructor(props = {}) {
-    const {id, target, src, component, controller, ...rest} = props;
+    const {id, target, component, controller, ...rest} = props;
 
     this.controller = controller ?? defaultController();
     this.props = rest;
@@ -63,7 +52,7 @@ export class MosaicApplication {
     this.view = null;
     this.unmount = () => {};
 
-    this.ready = this.#start({ src, component });
+    this.ready = Promise.resolve(this.#start(component));
   }
 
   /** Construct and await in one step: `const app = await MosaicApplication.run()`. */
@@ -72,39 +61,20 @@ export class MosaicApplication {
     return app.ready.then(() => app);
   }
 
-  async #start({ src, component }) {
-    // An explicit component wins; then the page the compiled entry registered;
-    // then, only if neither is there, a module is fetched by path.
-    const registered = src ? null : MosaicApplication.page;
-    const Component = component ?? registered ?? (await this.#loadComponent(src));
+  #start(component) {
+    // An explicit component wins; otherwise it is the page the compiled entry
+    // registered when it was imported.
+    const Component = component ?? MosaicApplication.page;
+    if (typeof Component !== "function") {
+      throw new Error(
+          "MosaicApplication has no root component to mount. A `main.js` beside a " +
+          "`main.mib` registers one when it is compiled — otherwise pass { component }.",
+      );
+    }
+
     this.unmount = mount(Component, this.target, this.props, this.controller);
     this.view = this.controller.view;
     return this;
-  }
-
-  async #loadComponent(src) {
-    const candidates = src
-      ? [src]
-      : MosaicApplication.entryNames.map((n) => MosaicApplication.base + n);
-
-    const failures = [];
-    for (const path of candidates) {
-      try {
-        const module = await import(path);
-        const Component = module.default;
-        if (typeof Component !== "function") {
-          throw new Error(`${path} has no default-exported component`);
-        }
-        this.src = path;
-        return Component;
-      } catch (error) {
-        failures.push(`${path}: ${error.message}`);
-      }
-    }
-    throw new Error(
-      `MosaicApplication could not load a root component. Tried:\n  ${failures.join("\n  ")}\n` +
-        "Compile main.mib into build/, or pass { src } or { component }.",
-    );
   }
 }
 

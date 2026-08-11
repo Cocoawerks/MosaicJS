@@ -15,11 +15,14 @@
 <pre id="results"></pre>
 <!-- Loaded unbundled, so the browser is told what `mosaic` resolves to. -->
 <script type="importmap">
-    { "imports": { "mosaic": "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js" } }
+    { "imports": {
+      "mosaic": "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js",
+      "mosaic/frameworks/ui": "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
+    } }
 </script>
 <script type="module">
     import {mount} from "mosaic";
-    import Button, {Intent} from "../examples/Counter_component/build/ui/button/Button.js";
+    import {Button, Intent} from "mosaic/frameworks/ui";
 
     const log = [];
   let failed = 0;
