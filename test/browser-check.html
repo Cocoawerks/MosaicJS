@@ -1,0 +1,187 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>ibcompile browser check</title>
+<!--
+  A browser smoke test for the real DOM (the node tests use a shim).
+
+    mosaic check examples/Counter_component
+
+  It loads that application's compiled modules unbundled, so it exercises the
+  compiler's output and the runtime together. Build the app first; `mosaic
+  check` does that for you.
+
+  Each assertion prints a line; the page title ends in PASS or FAIL.
+-->
+<div id="stage"></div>
+<pre id="results"></pre>
+<!-- These modules are loaded unbundled, so the browser needs to be told what
+     `mosaic` resolves to. A bundled page never needs this: `bun build` has
+     already resolved it. -->
+<script type="importmap">
+  { "imports": { "mosaic": "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js" } }
+</script>
+<script type="module">
+  import { mount, h, Component, addStyles } from "mosaic";
+  import Main from "../examples/Counter_component/build/src/main.ib.js";
+  import Button from "../examples/Counter_component/build/ui/button/Button.js";
+
+  // A drawn view for the checks below: the shape the compiler emits for a
+  // `draw()` full of JSX, written out by hand. It belongs to this page rather
+  // than to an example app, so rewriting an example cannot take it with it.
+  const SCOPE = "data-mosaic-counter";
+  addStyles("counter", `.counter[${SCOPE}]{display:flex;gap:.5rem}`);
+
+  class Counter extends Component {
+    constructor() { super(); this.count = 0; }
+    get limit() { return Number(this.props.limit ?? 3); }
+    get status() { return this.count >= this.limit ? "high" : ""; }
+    increment() { this.count += 1; }
+    decrement() { this.count -= 1; }
+    draw() {
+      return h("div", { class: "counter", [SCOPE]: "" },
+        h(Button, { text: "-", action: (...a) => this.decrement(...a) }),
+        h("output", { class: `value ${this.status}`.trim(), [SCOPE]: "" }, String(this.count)),
+        h(Button, { text: "+", intent: "primary", action: (...a) => this.increment(...a) }),
+      );
+    }
+  }
+
+  const log = [];
+  let failed = 0;
+  const check = (name, cond) => {
+    log.push(`${cond ? "PASS" : "FAIL"}  ${name}`);
+    if (!cond) failed++;
+  };
+
+  // Report a thrown error instead of silently leaving the page half-rendered.
+  window.addEventListener("error", (e) => {
+    document.querySelector("#results").textContent += `\nERROR  ${e.message}`;
+    document.title = "verdict FAIL (threw)";
+  });
+
+  const stage = document.querySelector("#stage");
+  const click = (el) => el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  const scopeOf = (el) => [...el.attributes].map((a) => a.name).find((n) => n.startsWith("data-mosaic-"));
+
+  // --- a drawn view, patched on redraw ------------------------------------
+  const host = document.createElement("div");
+  stage.appendChild(host);
+  const counter = mount(Counter, host, { limit: "2" }).view;
+
+  check("drawn view rendered from draw()", host.querySelector(".counter") !== null);
+  check("JSX styleName became class", host.querySelector("output").className === "value");
+  check("directives are absent from the DOM", !host.innerHTML.includes("ib:"));
+
+  const root = host.firstElementChild;
+  const output = host.querySelector("output");
+  const [minus, plus] = host.querySelectorAll("button");
+
+  click(plus);
+  check("ib:action called the method", counter.count === 1);
+  check("redraw updated the text", output.textContent === "1");
+  check("redraw reused the root node", host.firstElementChild === root);
+  check("redraw reused the output node", host.querySelector("output") === output);
+
+  click(plus);
+  check("JSX conditional applied on redraw", output.className === "value high");
+  click(minus);
+  check("attribute reverted on redraw", output.className === "value");
+  check("handlers were not stacked", counter.count === 1);
+
+  // Focus survives a patch but not a rebuild — the point of diffing.
+  plus.focus();
+  click(plus);
+  check("focus survived the redraw", document.activeElement === plus);
+
+  // --- scoped styles ------------------------------------------------------
+  const scope = scopeOf(root);
+  check("drawn view elements carry a scope", !!scope);
+  check("its own elements share that scope", output.getAttribute(scope) === "");
+  check("scoped CSS applied (display:flex)", getComputedStyle(root).display === "flex");
+  check("scoped CSS reaches its own children (text-align)",
+    getComputedStyle(output).textAlign === "center");
+
+  // <Button/> is a separate module: its own scope, its own stylesheet.
+  const buttonScope = scopeOf(plus);
+  check("child component has its own scope", !!buttonScope && buttonScope !== scope);
+  check("child component's CSS applies", getComputedStyle(plus).cursor === "pointer");
+
+  // A stylesheet scoped to this module must not leak to an unrelated element.
+  const stray = document.createElement("div");
+  stray.className = "counter";
+  stage.appendChild(stray);
+  check("styles do not leak outside the view", getComputedStyle(stray).display !== "flex");
+
+  // --- main.ib composing the drawn view -----------------------------------
+  const pageHost = document.createElement("div");
+  stage.appendChild(pageHost);
+  const page = { title: "Mosaic" };
+  mount(Main, pageHost, {}, page);
+
+  check(".ib page bound {title}", pageHost.querySelector("h1").textContent === "Mosaic");
+  check(".ib page rendered the drawn child", pageHost.querySelector(".counter") !== null);
+  // A scope belongs to a file. The counter is declared in this page's
+  // <script>, so it shares the page's scope; a Button, compiled from its own
+  // module, keeps its own.
+  check("page and inline child share a scope",
+    scopeOf(pageHost.firstElementChild) === scopeOf(pageHost.querySelector(".counter")));
+  check("a component from another module has its own scope",
+    scopeOf(pageHost.querySelector("button")) !== scopeOf(pageHost.firstElementChild));
+
+  page.title = "Updated";
+  page.view.needsDisplay();
+  check("{title} refreshed", pageHost.querySelector("h1").textContent === "Updated");
+
+  click(pageHost.querySelectorAll(".counter button")[1]);
+  check("drawn child redrew inside the page",
+    pageHost.querySelector("output").textContent === "1");
+  check("page around the child was untouched",
+    pageHost.querySelector("h1").textContent === "Updated");
+
+  // --- lifecycle ----------------------------------------------------------
+  // attached() runs with the node in the document, so it can measure.
+  const seen = [];
+  class Probe extends Component {
+    attached() {
+      seen.push(["attached", this.node.isConnected, this.node.getBoundingClientRect().width]);
+    }
+    detached() {
+      seen.push(["detached"]);
+    }
+    draw() {
+      return h("p", { style: { width: "40px" } }, "probe");
+    }
+  }
+
+  const probeHost = document.createElement("div");
+  stage.appendChild(probeHost);
+  const probe = mount(Probe, probeHost, {});
+
+  check("attached() ran with the node in the document", seen[0]?.[1] === true);
+  check("attached() could measure the node", seen[0]?.[2] === 40);
+  probe();
+  check("detached() ran on unmount", seen[1]?.[0] === "detached");
+
+  // --- cleanup ------------------------------------------------------------
+  // A removed component must not keep listening; the browser is the only place
+  // this can be proven against real event dispatch.
+  let orphanClicks = 0;
+  const orphanHost = document.createElement("div");
+  stage.appendChild(orphanHost);
+  const orphan = mount(Counter, orphanHost, {});
+  const orphanButton = orphanHost.querySelectorAll("button")[1];
+
+  click(orphanButton);
+  const countedWhileMounted = orphanHost.querySelector("output").textContent === "1";
+  check("mounted component responds", countedWhileMounted);
+
+  orphan();
+  orphanButton.addEventListener("click", () => (orphanClicks += 1));
+  click(orphanButton);
+  check("unmounted component stops listening",
+    orphanClicks === 1 && orphanHost.innerHTML === "");
+
+  document.querySelector("#results").textContent = log.join("\n");
+  // Built at runtime so the verdict cannot be found in the page source itself.
+  document.title = ["verdict", failed ? "FAIL" : "PASS", `(${log.length} checks)`].join(" ");
+</script>

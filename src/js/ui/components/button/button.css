@@ -1,0 +1,221 @@
+/*
+ * Ported from GWT Mosaic: client/components/resources/button/style.css.
+ * Scoped to this module by the compiler, so .v-Button and friends cannot
+ * collide with an application's own class names.
+ */
+.v-Button {
+    box-sizing: border-box;
+    white-space: nowrap;
+    border: 1px solid var(--default-border-color);
+    user-select: none;
+    cursor: pointer;
+    min-height: 32px;
+    background-color: var(--default-background-color);
+    position: relative;
+    line-height: 100%;
+    transition: background-color 0.1s, color 0.1s, opacity 0.1s;
+    border-radius: 4px;
+    font-size: 13pt;
+    font-family: inherit;
+    padding: 1px 19px 1px 10px;
+    color: var(--default-foreground-color);
+    fill: var(--default-foreground-color);
+}
+
+.v-Button > div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 0;
+}
+
+.v-Button span {
+    flex: 1;
+    pointer-events: none;
+    margin-bottom:1px;
+}
+
+.v-Button.is-disabled {
+    cursor: not-allowed !important;
+    opacity: var(--opacity-disable);
+}
+
+.v-Button.is-disabled .icon,
+.v-Button.is-disabled span,
+.v-Button.is-disabled label {
+    opacity: var(--opacity-disable);
+}
+
+
+.v-Button .icon {
+    margin-right: 5px;
+    aspect-ratio: 1 / 1;
+    font-size: 24px;
+    max-height: 100%;
+}
+
+.v-Button .icon svg {
+    max-width: 100%;
+}
+
+.iconOnly > div {
+    justify-content: center;
+}
+
+.v-Button:focus {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 1px;
+}
+
+.v-Button.noIcon {
+    padding: 1px 20px;
+}
+
+.v-Button.iconOnly {
+    padding: 2px ;
+}
+
+.v-Button.iconOnly .icon {
+    margin: 0;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+}
+
+.v-Button.iconOnly .label {
+    display: none;
+}
+
+.v-Button.loading .icon {
+    margin-right: 0;
+    width: 0;
+
+}
+
+.v-Button.loading.is-loading .icon {
+    margin-right: 6px;
+    width: 12px;
+}
+
+.button-loader {
+    visibility: hidden;
+    padding: 3px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: currentColor;
+    --_m: conic-gradient(#0000 10%, #000), linear-gradient(#000 0 0) content-box;
+    -webkit-mask: var(--_m);
+    mask: var(--_m);
+    -webkit-mask-composite: source-out;
+    mask-composite: subtract;
+    animation: l3 1s infinite linear;
+    width: 12px;
+    height: 12px;
+}
+
+@keyframes l3 {
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+.v-Button.is-active {
+    background-color: var(--default-background-color-active);
+}
+
+.v-Button:not(.is-active):not(.is-disabled):hover {
+    background-color: var(--default-background-color-hover);
+}
+
+.v-Button.primary {
+    background-color: var(--primary-background-color);
+    border-color: var(--primary-border-color);
+    color: var(--primary-foreground-color);
+    fill: var(--primary-foreground-color);
+}
+
+.v-Button.primary:not(.is-active):not(.is-disabled):hover {
+    background-color: var(--primary-background-color-hover);
+}
+
+.v-Button.primary.is-active {
+    background-color: var(--primary-background-color-active);
+}
+
+.v-Button.danger {
+    background-color: var(--danger-background-color);
+    border-color: var(--danger-border-color);
+    color: var(--danger-foreground-color);
+    fill: var(--danger-foreground-color);
+}
+
+.v-Button.danger:not(.is-active):not(.is-disabled):hover {
+    background-color: var(--danger-background-color-hover);
+}
+
+.v-Button.danger.is-active {
+    background-color: var(--danger-background-color-active);
+}
+
+.v-Button.success {
+    background-color: var(--success-background-color);
+    border-color: var(--success-border-color);
+    color: var(--success-foreground-color);
+    fill: var(--success-foreground-color);
+}
+
+.v-Button.success:not(.is-active):not(.is-disabled):hover {
+    background-color: var(--success-background-color-hover);
+}
+
+.v-Button.success.is-active {
+    background-color: var(--success-background-color-active);
+}
+
+.v-Button.info {
+    background-color: var(--info-background-color);
+    border-color: var(--info-border-color);
+    color: var(--info-foreground-color);
+    fill: var(--info-foreground-color);
+}
+
+.v-Button.info:not(.is-active):not(.is-disabled):hover {
+    background-color: var(--info-background-color-hover);
+}
+
+.v-Button.info.is-active {
+    background-color: var(--info-background-color-active);
+}
+
+.v-Button.warning {
+    background-color: var(--warning-background-color);
+    border-color: var(--warning-border-color);
+    color: var(--warning-foreground-color);
+    fill: var(--warning-foreground-color);
+}
+
+.v-Button.warning:not(.is-active):not(.is-disabled):hover {
+    background-color: var(--warning-background-color-hover);
+}
+
+.v-Button.warning.is-active {
+    background-color: var(--warning-background-color-active);
+}
+
+.v-Button.inverse {
+    background-color: var(--inverse-background-color);
+    border-color: var(--inverse-border-color);
+    color: var(--inverse-foreground-color);
+    fill: var(--inverse-foreground-color);
+}
+
+.v-Button.inverse:not(.is-active):not(.is-disabled):hover {
+    background-color: var(--inverse-background-color-hover);
+}
+
+.v-Button.inverse.is-active {
+    background-color: var(--inverse-background-color-active);
+}

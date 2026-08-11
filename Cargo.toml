@@ -1,0 +1,8 @@
+[package]
+name = "ibcompile"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ibcompile"
+path = "src/main.rs"

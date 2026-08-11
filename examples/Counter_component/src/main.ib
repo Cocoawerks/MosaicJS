@@ -1,0 +1,27 @@
+<!-- Counter_component: the page hosts a <Counter/> and knows nothing about how
+     it works. `Counter` is examples/Counter.js, a drawn component that owns its
+     own count; the compiler emits the import for it. The page's controller only
+     supplies {title}. -->
+<div styleName="app">
+  <h1 styleName="title">{title}</h1>
+
+  <Counter limit="3" />
+
+  <p styleName="hint">The counter is its own component; this page just hosts it.</p>
+</div>
+
+<style>
+.app {
+  font-family: system-ui, sans-serif;
+  padding: 1rem;
+}
+.title {
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem;
+}
+.hint {
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 0.75rem;
+}
+</style>

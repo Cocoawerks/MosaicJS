@@ -1,0 +1,90 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Button check</title>
+<!--
+  Browser checks for the ported Button. Serve the repo root and open
+  /examples/button-check.html, or headless:
+    chromium --headless --dump-dom http://localhost:8000/examples/button-check.html
+-->
+<div id="stage"></div>
+<pre id="results"></pre>
+<script type="module">
+  import { mount } from "../src/js/runtime/mosaic.js";
+  import Button, { Intent } from "Counter_component/build/ui/button/Button.js";
+
+  const log = [];
+  let failed = 0;
+  const check = (name, cond) => {
+    log.push(`${cond ? "PASS" : "FAIL"}  ${name}`);
+    if (!cond) failed++;
+  };
+  window.addEventListener("error", (e) => {
+    document.querySelector("#results").textContent += `\nERROR  ${e.message}`;
+    document.title = "verdict FAIL (threw)";
+  });
+
+  const stage = document.querySelector("#stage");
+  const open = (props) => {
+    const host = document.createElement("div");
+    stage.appendChild(host);
+    const view = mount(Button, host, props).view;
+    return { view, el: host.firstElementChild };
+  };
+
+  // --- markup and styling -------------------------------------------------
+  let fired = 0;
+  const { el, view } = open({ text: "Save", intent: Intent.PRIMARY, action: () => (fired += 1) });
+
+  check("renders a <button>", el.tagName === "BUTTON");
+  check("carries its intent class", el.classList.contains("primary"));
+  check("label text drawn", el.querySelector(".label").textContent === "Save");
+
+  const styles = getComputedStyle(el);
+  check("scoped CSS applied (cursor)", styles.cursor === "pointer");
+  check("theme variable resolved (border)", styles.borderTopWidth === "1px");
+  check("primary intent is painted", styles.backgroundColor !== "rgba(0, 0, 0, 0)");
+  check("layout row is flex", getComputedStyle(el.querySelector("div")).display === "flex");
+
+  // Scoped: an unrelated .v-Button must not pick up the component's styles.
+  const stray = document.createElement("button");
+  stray.className = "v-Button";
+  stage.appendChild(stray);
+  check("styles do not leak", getComputedStyle(stray).cursor !== "pointer");
+
+  // --- real events --------------------------------------------------------
+  el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0 }));
+  check("pointerdown activates", el.classList.contains("is-active"));
+  el.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+  check("pointerup deactivates", !el.classList.contains("is-active"));
+  el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  check("click fired the action", fired === 1);
+
+  el.focus();
+  el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  check("Enter activates", el.classList.contains("is-active"));
+  check("focus survives the redraw", document.activeElement === el);
+  el.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", bubbles: true }));
+  check("keyup deactivates", !el.classList.contains("is-active"));
+
+  // --- toggle -------------------------------------------------------------
+  const toggle = open({ text: "Bold", toggle: true });
+  toggle.el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0 }));
+  toggle.el.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+  check("toggle latches on", toggle.el.classList.contains("is-active"));
+  check("toggle reports aria-pressed", toggle.el.getAttribute("aria-pressed") === "true");
+
+  // --- disabled -----------------------------------------------------------
+  let disabledFired = 0;
+  const off = open({ text: "Nope", enabled: false, action: () => (disabledFired += 1) });
+  off.el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  check("disabled does not fire", disabledFired === 0);
+  check("disabled is dimmed", Number(getComputedStyle(off.el).opacity) < 1);
+
+  // --- setters patch in place --------------------------------------------
+  view.text = "Saved";
+  check("setter updated the label", el.querySelector(".label").textContent === "Saved");
+  check("setter reused the node", view.node === el);
+
+  document.querySelector("#results").textContent = log.join("\n");
+  document.title = ["verdict", failed ? "FAIL" : "PASS", `(${log.length} checks)`].join(" ");
+</script>

@@ -1,0 +1,14 @@
+{
+  "app_name": "ibcompile",
+  "runtime": "src/js/runtime/mosaic.js",
+  "runtimeRoot": "src/js",
+  "runtimeSpecifier": "mosaic",
+  "libraries": [
+    {
+      "input": "src/js/ui/components",
+      "outdir": "ui"
+    }
+  ],
+  "outdir": "build",
+  "check": "browser-check.html"
+}

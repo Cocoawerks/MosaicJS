@@ -1,0 +1,89 @@
+<script>
+
+  import { Component } from "mosaic";
+  import Button from "../ui/button/Button.js";
+
+ class Counter extends Component {
+    constructor() {
+      super();
+      this.count = 0;
+    }
+
+    // `props` arrive from the markup that rendered this view.
+    get limit() {
+      return Number(this.props.limit ?? 3);
+    }
+
+    // Derived state belongs in a getter, so draw() stays declarative.
+    get status() {
+      return this.count >= this.limit ? "high" : "";
+    }
+
+    increment() {
+      this.count += 1;
+    }
+
+    decrement() {
+      this.count -= 1;
+    }
+
+    draw() {
+      return (
+              <div styleName="counter">
+                <Button text="-" action="decrement" />
+                <output styleName={`value ${this.status}`}>{this.count}</output>
+                <Button text="+" intent="primary" action="increment" />
+              </div>
+      );
+    }
+  }
+
+
+</script>
+
+
+
+<div styleName="app">
+  <h1 styleName="title">{title}</h1>
+
+  <Counter limit="3" />
+
+  <p styleName="hint">The counter is its own component; this page just hosts it.</p>
+
+
+</div>
+
+<style>
+.app {
+  font-family: system-ui, sans-serif;
+  padding: 1rem;
+}
+.title {
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem;
+}
+.hint {
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 0.75rem;
+}
+
+.counter {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.value {
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+  text-align: center;
+}
+.value.high {
+  color: #b00;
+  font-weight: bold;
+}
+
+
+</style>
+
+
