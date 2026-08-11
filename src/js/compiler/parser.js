@@ -3,13 +3,13 @@
 // A file is markup, optionally containing one top-level `<style>` block.
 //
 // The only template syntax is `{path}`, which binds to a property on the
-// controller (`{count}` reads `this.count`). There is no expression language:
-// no conditionals, no loops, no JavaScript and no `<script>`. Behaviour is
-// declared with `ib:outlet="name"` and `ib:action="event:method"`, and carried
-// out by a controller at runtime.
+// controller (`{count}` reads `this.count`). There is no expression language in
+// the markup: no conditionals, no loops, no JavaScript. Behaviour is declared
+// with `outlet="name"` and `action="event:method"`, and carried out by a
+// controller — which a `<script>` block may define right here in the file.
 //
 // The AST it produces:
-//   { style, markup: Node[] }
+//   { style, script, scriptLine, markup: Node[] }
 //   Node = { kind: "text", text }
 //        | { kind: "bind", path, line }
 //        | { kind: "element", line, name, attrs, outlet, actions, children }
@@ -19,7 +19,7 @@
 //   StrPart = { kind: "text", text } | { kind: "bind", path }
 //   Action  = { event, method }   // event is null for a bare method name
 
-import { ACTION_ATTR, DEFAULT_EVENT, OUTLET_ATTR, STYLE_NAME_ATTR, isIdent, isPath } from "./js.js";
+import {ACTION_ATTR, DEFAULT_EVENT, isIdent, isPath, OUTLET_ATTR, STYLE_NAME_ATTR} from "./js.js";
 
 const VOID_ELEMENTS = new Set([
   "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
@@ -30,7 +30,7 @@ export class ParseError extends Error {}
 
 export function parse(src) {
   const p = new Parser(src);
-  const comp = { style: "", markup: [] };
+  const comp = {style: "", script: "", scriptLine: 1, markup: []};
   comp.markup = trimEdges(p.parseNodes(null, comp));
   checkNames(comp.markup);
   return comp;
@@ -146,13 +146,17 @@ class Parser {
       if (this.peek() === "<") {
         flush();
         if (this.startsWithTag("script")) {
-          throw this.err(
-            "<script> is not supported — put behaviour in a controller and " +
-              "reach the DOM with ib:outlet",
-          );
+          const line = this.line();
+          const body = this.parseRawBlock("script");
+          if (comp.script.trim() !== "") throw this.err("duplicate <script> block");
+          comp.script = body;
+          // Where the block opened, so a source map can point back into the
+          // .mib file rather than into the script on its own.
+          comp.scriptLine = line;
+          continue;
         }
         if (this.startsWithTag("style")) {
-          const body = this.parseStyleBlock();
+          const body = this.parseRawBlock("style");
           if (comp.style.trim() !== "") throw this.err("duplicate <style> block");
           comp.style = body;
           continue;
@@ -181,15 +185,19 @@ class Parser {
     return after === ">" || after === "/" || /\s/.test(after);
   }
 
-  /** Consume `<style ...> ... </style>` verbatim, returning the body. */
-  parseStyleBlock() {
+  /**
+   * Consume `<tag ...> ... </tag>` verbatim, returning the body. Neither CSS
+   * nor JavaScript is markup, so neither is parsed as any.
+   */
+  parseRawBlock(tag) {
     const gt = this.src.indexOf(">", this.pos);
-    if (gt === -1) throw this.err("unterminated <style> tag");
+    if (gt === -1) throw this.err(`unterminated <${tag}> tag`);
     this.pos = gt + 1;
-    const end = this.src.indexOf("</style>", this.pos);
-    if (end === -1) throw this.err("missing </style>");
+    const close = `</${tag}>`;
+    const end = this.src.indexOf(close, this.pos);
+    if (end === -1) throw this.err(`missing ${close}`);
     const body = this.src.slice(this.pos, end);
-    this.pos = end + "</style>".length;
+    this.pos = end + close.length;
     return body;
   }
 
@@ -338,7 +346,7 @@ class Parser {
   }
 
   /**
-   * `ib:outlet` names a property on the controller, so it must be a plain
+   * `outlet` names a property on the controller, so it must be a plain
    * identifier.
    */
   outletName(attr) {
@@ -349,7 +357,7 @@ class Parser {
   }
 
   /**
-   * `ib:action="increment"`, `ib:action="input:onInput"`, or several
+   * `action="increment"`, `action="input:onInput"`, or several
    * whitespace-separated pairs.
    */
   parseActions(attr) {

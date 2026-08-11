@@ -3,18 +3,75 @@
 // Uses a tiny DOM shim so the test runs on plain node, no browser needed.
 import assert from "node:assert/strict";
 import test from "node:test";
+import {readFile} from "node:fs/promises";
 import "./dom-shim.mjs";
 
 // Every module is imported up front: a later top-level `await import` would
 // yield, letting queued tests run before its bindings exist.
+//
+// The runtime comes from the app's own build, not from src/: each application
+// vendors a copy, and `instanceof` only holds against the copy its modules
+// were compiled against.
 const { mount, h, refresh, Component, MosaicApplication, bindText: bindTextRef } = await import(
-  "../src/js/runtime/mosaic.js"
+    "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
+    );
+const {default: Main} = await import("../examples/Counter_component/build/src/main.mib.js");
+const {default: Button} = await import(
+    "../examples/Counter_component/build/ui/button/Button.js"
 );
-const { default: Main } = await import("../build/main.js");
-const { default: CounterView } = await import("../build/Counter.js");
+const {addStyles} = await import(
+    "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
+    );
+
+// A drawn view for the tests below to exercise: the shape the compiler emits
+// for a `draw()` full of JSX, written out by hand.
+//
+// It belongs to the tests rather than to an example app. What these tests are
+// about is the runtime — mounting, redrawing, patching — and an example is
+// free to be rewritten without taking them with it. That the compiler produces
+// this shape is the compiler tests' business.
+const COUNTER_SCOPE = "ctr1abc";
+addStyles("counter", `.counter.${COUNTER_SCOPE}{display:flex}`);
+
+class CounterView extends Component {
+  constructor() {
+    super();
+    this.count = 0;
+  }
+
+  get limit() {
+    return Number(this.props.limit ?? 3);
+  }
+
+  get status() {
+    return this.count >= this.limit ? "high" : "";
+  }
+
+  increment() {
+    this.count += 1;
+  }
+
+  decrement() {
+    this.count -= 1;
+  }
+
+  draw() {
+    return h(
+        "div",
+        {class: `counter ${COUNTER_SCOPE}`},
+        h(Button, {text: "-", action: (...a) => this.decrement(...a)}),
+        h(
+            "output",
+            {class: `value ${this.status} ${COUNTER_SCOPE}`.replace(/\s+/g, " ")},
+            String(this.count),
+        ),
+        h(Button, {text: "+", intent: "primary", action: (...a) => this.increment(...a)}),
+    );
+  }
+}
 
 // A plain class — the view is handed to it as `this.view` by mount().
-// The page controller for main.ib: `{title}` reads this.
+// The page controller for main.mib: `{title}` reads this.
 class PageController {
   constructor(title = "Mosaic") {
     this.title = title;
@@ -25,15 +82,15 @@ test("renders markup with scope attributes and injected styles", () => {
   const root = document.createElement("div");
   mount(Main, root, {}, new PageController());
 
-  assert.match(root.innerHTML, /^<div class="app" data-mosaic-[a-z0-9]+="">/);
-  assert.match(root.innerHTML, /<h1 class="title"[^>]*>Mosaic<\/h1>/);
+  assert.match(root.innerHTML, /^<div class="app [a-z][a-z0-9]*">/);
+  assert.match(root.innerHTML, /<h1 class="title[^"]*"[^>]*>Mosaic<\/h1>/);
   // Directives never reach the DOM.
-  assert.equal(root.innerHTML.includes("ib:outlet"), false);
-  assert.equal(root.innerHTML.includes("ib:action"), false);
+  assert.equal(root.innerHTML.includes("outlet"), false);
+  assert.equal(root.innerHTML.includes("action"), false);
   assert.equal(root.innerHTML.includes("styleName"), false);
 
   const css = document.head.childNodes.map((n) => n.textContent).join("");
-  assert.match(css, /\.app\[data-mosaic-[a-z0-9]+\]/);
+  assert.match(css, /\.app\.[a-z][a-z0-9]*/);
 });
 
 test("{path} renders the controller value at mount", () => {
@@ -42,15 +99,25 @@ test("{path} renders the controller value at mount", () => {
   assert.match(root.innerHTML, /<h1[^>]*>Groceries<\/h1>/);
 });
 
-test("view.needsDisplay() pushes changed bindings back to the DOM", () => {
+test("view.needsDisplay() pushes what observation cannot see", () => {
+  // Observation wraps the property, so replacing `user` is noticed. Mutating
+  // the object it holds is not — nothing was assigned on the controller. That
+  // is what needsDisplay() remains for.
+  const controller = {user: {name: "ada"}};
+  const Probe = function () {
+    return h("p", null, bindTextRef(this, "user.name"));
+  };
   const root = document.createElement("div");
-  const controller = new PageController("One");
-  mount(Main, root, {}, controller);
+  mount(Probe, root, {}, controller);
 
-  controller.title = "Two";
-  assert.match(root.innerHTML, />One</, "no update before needsDisplay");
+  controller.user.name = "grace";
+  assert.match(root.innerHTML, />ada</, "an in-place mutation is invisible");
   controller.view.needsDisplay();
-  assert.match(root.innerHTML, />Two</);
+  assert.match(root.innerHTML, />grace</);
+
+  // Replacing it outright is an assignment, and needs nothing further.
+  controller.user = {name: "hopper"};
+  assert.match(root.innerHTML, />hopper</);
 });
 
 test("a missing or nullish path renders as empty text", () => {
@@ -73,8 +140,7 @@ test("dotted paths read through nested objects", () => {
   assert.match(root.innerHTML, />grace</);
 });
 
-test("ib:action calls the named controller method", () => {
-  // Counter.js declares ib:action="increment" / "decrement".
+test("an action prop calls the named method on the view that drew it", () => {
   const root = document.createElement("div");
   const view = mount(CounterView, root, {}).view;
 
@@ -165,14 +231,19 @@ class AppController {
   }
 }
 
+// `base` is resolved against mosaic.js, which each app vendors into its own
+// build/node_modules/mosaic/runtime/ — so the compiled modules sit three
+// levels up, at the root of the build.
+MosaicApplication.base = "../../../src/";
+
 test("MosaicApplication loads the compiled root component and mounts it", async () => {
   const app = new MosaicApplication({ controller: { title: "Mosaic" } });
   await app.ready;
 
-  // Found its entry on its own — the bundle if one was built, else main.js —
-  // with no mount() call and no explicit import.
-  assert.match(app.src, /(app|main)\.js$/);
-  assert.match(document.body.innerHTML, /<h1 class="title"[^>]*>Mosaic<\/h1>/);
+  // Found its entry on its own — `main.mib.js`, what main.mib compiles to — with
+  // no mount() call and no explicit import.
+  assert.match(app.src, /main\.mib\.js$/);
+  assert.match(document.body.innerHTML, /<h1 class="title[^"]*"[^>]*>Mosaic<\/h1>/);
   document.body.textContent = "";
 });
 
@@ -183,7 +254,7 @@ test("MosaicApplication mounts into the element named by the id prop", async () 
 
   const app = await MosaicApplication.run({ id: "app", controller: { title: "x" } });
   assert.equal(app.target, host);
-  assert.match(host.innerHTML, /^<div class="app"/);
+  assert.match(host.innerHTML, /^<div class="app[^"]*"/);
   assert.equal(document.body.childNodes.length, 1);
   document.body.textContent = "";
 });
@@ -197,31 +268,41 @@ test("src selects an explicit module instead of the entry search", async () => {
   const controller = { title: "Explicit" };
   const app = await MosaicApplication.run({
     id: "app2",
-    src: "../../../build/main.js",
+    src: "../../../src/main.mib.js",
     controller,
   });
 
-  assert.match(app.src, /main\.js$/);
+  assert.match(app.src, /main\.mib\.js$/);
   assert.match(host.innerHTML, /<h1[^>]*>Explicit<\/h1>/);
   assert.ok(controller.view instanceof Component);
   document.body.textContent = "";
 });
 
-test("each module gets its own style scope", async () => {
+test("a scope belongs to a file, inline components included", async () => {
   const host = document.createElement("div");
   host.setAttribute("id", "scopes");
   document.body.appendChild(host);
-  await MosaicApplication.run({ id: "scopes", controller: { title: "x" } });
+  await MosaicApplication.run({
+    id: "scopes",
+    src: "../../../src/main.mib.js",
+    controller: {title: "x"},
+  });
 
   const page = host.childNodes[0];
   const counter = host.querySelectorAll("output")[0];
-  const scopeOf = (el) =>
-    [...el.attributes.keys()].find((a) => a.startsWith("data-mosaic-"));
+  // The compiler appends the scope class last, which is how a test picks it
+  // out now that it is a bare hash with nothing to recognise it by.
+  const scopeOf = (el) => (el.getAttribute("class") ?? "").trim().split(/\s+/).pop() || undefined;
 
-  // The page and the drawn view it renders are styled independently.
+  // A scope belongs to a file. The counter is declared in this page's
+  // <script>, so it is styled by this page's <style> — same file, same scope.
   assert.ok(scopeOf(page), "page element is scoped");
-  assert.ok(scopeOf(counter), "drawn view element is scoped");
-  assert.notEqual(scopeOf(page), scopeOf(counter), "different modules, different scopes");
+  assert.ok(scopeOf(counter), "the inline component's markup is scoped");
+  assert.equal(scopeOf(page), scopeOf(counter), "one file, one scope");
+
+  // A component compiled from its own module keeps its own.
+  const button = host.querySelectorAll("button")[0];
+  assert.notEqual(scopeOf(button), scopeOf(page), "another module, another scope");
   document.body.textContent = "";
 });
 
@@ -247,15 +328,15 @@ test("a missing id or unloadable entry reports a clear error", async () => {
   document.body.textContent = "";
 });
 
-// --- drawn components (a Component subclass with draw(), not a .ib file) ---
+// --- drawn components (a Component subclass with draw(), not a .mib file) ---
 
 
 test("a Component subclass draws itself through mount()", () => {
   const root = document.createElement("div");
   const unmount = mount(CounterView, root, {});
 
-  assert.match(root.innerHTML, /^<div class="counter"/);
-  assert.match(root.innerHTML, /<output class="value"[^>]*>0<\/output>/);
+  assert.match(root.innerHTML, /^<div class="counter[^"]*"/);
+  assert.match(root.innerHTML, /<output class="value[^"]*"[^>]*>0<\/output>/);
   assert.ok(unmount.view instanceof Component);
 });
 
@@ -267,15 +348,15 @@ test("needsDisplay() re-runs draw() and updates the drawing", () => {
   const [minus, plus] = root.querySelectorAll("button");
   plus.dispatchEvent({ type: "click" });
   assert.equal(view.count, 1);
-  assert.match(root.innerHTML, /<output class="value"[^>]*>1<\/output>/);
+  assert.match(root.innerHTML, /<output class="value[^"]*"[^>]*>1<\/output>/);
 
   // The class flips through a JS conditional in draw(), not a binding.
   plus.dispatchEvent({ type: "click" });
   plus.dispatchEvent({ type: "click" });
-  assert.match(root.innerHTML, /<output class="value high"[^>]*>3<\/output>/);
+  assert.match(root.innerHTML, /<output class="value high[^"]*"[^>]*>3<\/output>/);
 
   minus.dispatchEvent({ type: "click" });
-  assert.match(root.innerHTML, /<output class="value"[^>]*>2<\/output>/);
+  assert.match(root.innerHTML, /<output class="value[^"]*"[^>]*>2<\/output>/);
 
   // Patched in place: the root node is the same one, not a replacement.
   assert.equal(root.childNodes[0], first);
@@ -288,48 +369,60 @@ test("a drawn view reads props from the markup that rendered it", () => {
   assert.equal(view.limit, 1);
 
   root.querySelectorAll("button")[1].dispatchEvent({ type: "click" });
-  assert.match(root.innerHTML, /class="value high"/);
+  assert.match(root.innerHTML, /class="value high[^"]*"/);
 });
 
-test("a .ib page renders a drawn view as a child component", async () => {
+test("a .mib page renders a drawn view as a child component", async () => {
   const host = document.createElement("div");
   host.setAttribute("id", "composed");
   document.body.appendChild(host);
 
-  // main.ib contains <Counter limit="3"/>; the compiler emitted its import.
-  const app = await MosaicApplication.run({ id: "composed", controller: { title: "Mosaic" } });
-  assert.match(app.src, /(app|main)\.js$/);
+  // counter/main.mib contains <Counter limit="3"/>; the compiler emitted its
+  // import, resolved to wherever Counter compiled.
+  const app = await MosaicApplication.run({
+    id: "composed",
+    src: "../../../src/main.mib.js",
+    controller: {title: "Mosaic"},
+  });
+  assert.match(app.src, /main\.mib\.js$/);
 
-  assert.match(host.innerHTML, /<h1 class="title"[^>]*>Mosaic<\/h1>/);
-  assert.match(host.innerHTML, /<div class="counter"/);
-  assert.match(host.innerHTML, /<output class="value"[^>]*>0<\/output>/);
+  assert.match(host.innerHTML, /<h1 class="title[^"]*"[^>]*>Mosaic<\/h1>/);
+  assert.match(host.innerHTML, /<div class="counter[^"]*"/);
+  assert.match(host.innerHTML, /<output class="value[^"]*"[^>]*>0<\/output>/);
 
   // The drawn child redraws itself without touching the page around it.
   host.querySelectorAll("button")[1].dispatchEvent({ type: "click" });
-  assert.match(host.innerHTML, /<output class="value"[^>]*>1<\/output>/);
-  assert.match(host.innerHTML, /<h1 class="title"[^>]*>Mosaic<\/h1>/);
+  assert.match(host.innerHTML, /<output class="value[^"]*"[^>]*>1<\/output>/);
+  assert.match(host.innerHTML, /<h1 class="title[^"]*"[^>]*>Mosaic<\/h1>/);
   document.body.textContent = "";
 });
 
 // --- the bundle ------------------------------------------------------------
 
-test("the bundle is one module exporting the entry component", async () => {
+test("the bundle is one self-contained module", async () => {
   const host = document.createElement("div");
   host.setAttribute("id", "bundled");
   document.body.appendChild(host);
 
-  // MosaicApplication prefers build/app.js, the bundled payload.
-  const app = await MosaicApplication.run({ id: "bundled", controller: { title: "Bundled" } });
-  assert.match(app.src, /app\.js$/);
+  // build/app.js is Bun's bundle of the bootstrap — it mounts on import and
+  // reaches nothing outside itself.
+  const bundle = await readFile(new URL("../examples/Counter_component/build/app.js", import.meta.url), "utf8");
+  assert.equal(bundle.match(/^import /gm), null, "no imports left to resolve");
+
+  const app = await MosaicApplication.run({
+    id: "bundled",
+    src: "../../../src/main.mib.js",
+    controller: {title: "Bundled"},
+  });
 
   // Everything came from one file: the page and the drawn child it renders.
-  assert.match(host.innerHTML, /<h1 class="title"[^>]*>Bundled<\/h1>/);
-  assert.match(host.innerHTML, /<div class="counter"/);
+  assert.match(host.innerHTML, /<h1 class="title[^"]*"[^>]*>Bundled<\/h1>/);
+  assert.match(host.innerHTML, /<div class="counter[^"]*"/);
 
   // The shim understands simple selectors only; the page's buttons are the
   // drawn counter's.
   host.querySelectorAll("button")[1].dispatchEvent({ type: "click" });
-  assert.match(host.innerHTML, /<output class="value"[^>]*>1<\/output>/);
+  assert.match(host.innerHTML, /<output class="value[^"]*"[^>]*>1<\/output>/);
   document.body.textContent = "";
 });
 
@@ -357,13 +450,13 @@ test("a patched element updates only the attributes that changed", () => {
   const root = document.createElement("div");
   mount(CounterView, root, { limit: "2" });
   const output = root.querySelectorAll("output")[0];
-  assert.equal(output.getAttribute("class"), "value");
+  assert.equal(output.getAttribute("class"), `value ${COUNTER_SCOPE}`);
 
   const plus = root.querySelectorAll("button")[1];
   plus.dispatchEvent({ type: "click" });
   plus.dispatchEvent({ type: "click" });
 
-  assert.equal(output.getAttribute("class"), "value high");
+  assert.equal(output.getAttribute("class"), `value high ${COUNTER_SCOPE}`);
   assert.equal(root.querySelectorAll("output")[0], output, "still the same node");
 });
 
@@ -384,8 +477,9 @@ test("a component's scope covers its own elements, not a child component's", () 
   const root = document.createElement("div");
   mount(CounterView, root, {});
 
-  const scopeOf = (el) =>
-    [...el.attributes.keys()].find((a) => a.startsWith("data-mosaic-"));
+  // The compiler appends the scope class last, which is how a test picks it
+  // out now that it is a bare hash with nothing to recognise it by.
+  const scopeOf = (el) => (el.getAttribute("class") ?? "").trim().split(/\s+/).pop() || undefined;
 
   const own = scopeOf(root.childNodes[0]);
   assert.ok(own, "root carries a scope attribute");
@@ -487,8 +581,8 @@ test("a handler can be replaced after mounting", () => {
   assert.equal(which, "replacement");
 });
 
-test("ib:action still works for actions that are not event names", () => {
-  // Counter.js binds ib:action="increment" — a method name of its own choosing.
+test("action still works for actions that are not event names", () => {
+  // Counter.js binds action="increment" — a method name of its own choosing.
   const root = document.createElement("div");
   const view = mount(CounterView, root, {}).view;
   root.querySelectorAll("button")[1].dispatchEvent({ type: "click" });
@@ -743,4 +837,142 @@ test("isAttached tracks the component's state", () => {
 
   unmount();
   assert.equal(unmount.view.isAttached, false);
+});
+
+// --- the same page, drawn by one component ---------------------------------
+
+// Counter_main: the page and the controller that drives every part of it.
+// (`AppController` above is a local stand-in used by the mount tests.)
+const {default: ExampleController} = await import("../examples/Counter_main/build/src/AppController.js");
+const {default: AppPage} = await import("../examples/Counter_main/build/src/main.mib.js");
+
+test("AppController drives the page without a Counter component", () => {
+  const root = document.createElement("div");
+  const controller = new ExampleController({title: "Counter App"});
+  mount(AppPage, root, {}, controller);
+
+  assert.match(root.innerHTML, /^<div class="app[^"]*"/);
+  assert.match(root.innerHTML, /<h1 class="title[^"]*"[^>]*>Counter App<\/h1>/);
+  assert.match(root.innerHTML, /<output class="value[^"]*"[^>]*>0<\/output>/);
+  // Two Buttons, and no counter component between them and the page.
+  assert.equal(root.querySelectorAll("button").length, 2);
+
+  const [minus, plus] = root.querySelectorAll("button");
+  plus.dispatchEvent({type: "click"});
+  assert.equal(controller.count, 1, "the Button's action ran a method on the controller");
+  assert.match(root.innerHTML, /<output class="value[^"]*"[^>]*>1<\/output>/);
+
+  minus.dispatchEvent({type: "click"});
+  assert.equal(controller.count, 0);
+});
+
+test("its buttons are scoped to Button, its own markup to itself", () => {
+  const root = document.createElement("div");
+  mount(AppPage, root, {}, new ExampleController());
+
+  // The compiler appends the scope class last, which is how a test picks it
+  // out now that it is a bare hash with nothing to recognise it by.
+  const scopeOf = (el) => (el.getAttribute("class") ?? "").trim().split(/\s+/).pop() || undefined;
+  const page = scopeOf(root.childNodes[0]);
+  const button = scopeOf(root.querySelectorAll("button")[0]);
+
+  assert.ok(page && button);
+  assert.notEqual(page, button, "Button styles its own markup");
+  assert.equal(scopeOf(root.querySelectorAll("output")[0]), page);
+});
+
+test("the controller and a bare object render the same markup", () => {
+  const a = document.createElement("div");
+  mount(AppPage, a, {}, new ExampleController({title: "Mosaic"}));
+
+  const b = document.createElement("div");
+  mount(AppPage, b, {}, {title: "Mosaic", count: 0, status: ""});
+
+  // Both mount the same page, so the scope is identical either way — the
+  // comparison is of what the two controllers made of it.
+  const shape = (html) => html.replace(/<p class="hint[^"]*">.*?<\/p>/, "");
+  assert.equal(shape(a.innerHTML), shape(b.innerHTML));
+});
+
+// --- implicit observability ------------------------------------------------
+//
+// Binding to a property in markup is what makes it observable: assigning to it
+// updates the DOM, with nothing in the controller saying so.
+
+test("assigning to a bound property updates the DOM", () => {
+  const root = document.createElement("div");
+  const controller = new PageController("Mosaic");
+  mount(Main, root, {}, controller);
+
+  controller.title = "Changed";
+  assert.match(root.innerHTML, /<h1[^>]*>Changed<\/h1>/);
+});
+
+test("the update is synchronous, like needsDisplay()", () => {
+  const root = document.createElement("div");
+  const controller = new PageController("a");
+  mount(Main, root, {}, controller);
+
+  // Assign and read the DOM on the next line, with nothing awaited.
+  controller.title = "b";
+  assert.match(root.innerHTML, /<h1[^>]*>b<\/h1>/);
+  controller.title = "c";
+  assert.match(root.innerHTML, /<h1[^>]*>c<\/h1>/);
+});
+
+test("a property nobody binds to stays an ordinary one", () => {
+  const root = document.createElement("div");
+  const controller = new PageController("Mosaic");
+  mount(Main, root, {}, controller);
+
+  controller.untouched = 1;
+  const descriptor = Object.getOwnPropertyDescriptor(controller, "untouched");
+  assert.ok("value" in descriptor, "no accessor was installed");
+
+  // A bound one is wrapped, and still reads back as what was assigned.
+  const bound = Object.getOwnPropertyDescriptor(controller, "title");
+  assert.equal(typeof bound.get, "function");
+  controller.title = "read back";
+  assert.equal(controller.title, "read back");
+});
+
+// --- drawn views observe what they read ------------------------------------
+
+test("a drawn view redraws when a property it read changes", () => {
+  const root = document.createElement("div");
+  const view = mount(CounterView, root, {}).view;
+  const out = () => root.querySelectorAll("output")[0];
+
+  assert.equal(out().textContent, "0");
+  view.count = 4;                       // no needsDisplay
+  assert.equal(out().textContent, "4");
+});
+
+test("a property read through a getter is observed too", () => {
+  // `status` derives from `count`; recording the reads draw() makes catches
+  // the `count` inside it, so the class follows.
+  const root = document.createElement("div");
+  const view = mount(CounterView, root, {limit: "2"}).view;
+
+  view.count = 2;
+  assert.match(root.querySelectorAll("output")[0].getAttribute("class"), /high/);
+});
+
+test("a property draw() never read is not observed", () => {
+  const root = document.createElement("div");
+  const view = mount(CounterView, root, {}).view;
+
+  view.unused = 1;
+  const descriptor = Object.getOwnPropertyDescriptor(view, "unused");
+  assert.ok("value" in descriptor, "no accessor was installed");
+});
+
+test("a method is not mistaken for state", () => {
+  // draw() calls `this.status`, and a handler names `this.increment` — one is
+  // state, the other is not.
+  const root = document.createElement("div");
+  const view = mount(CounterView, root, {}).view;
+
+  const increment = Object.getOwnPropertyDescriptor(view, "increment");
+  assert.equal(increment, undefined, "methods stay on the prototype");
 });

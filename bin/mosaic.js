@@ -1,15 +1,16 @@
 #!/usr/bin/env bun
-// mosaic — the project's build tool.
+// mosaic — the MosaicJS build tool.
 //
-//   mosaic init <name>                    create a new application
-//   mosaic compile [main.js]              compile the app and bundle it
-//   mosaic dev [main.js] [--port 3000]    the same, then serve it
-//   mosaic check [main.js]                the same, then run the browser test
-//   mosaic clean [main.js]                delete the app's build directory
+//   mosaic init <name>                  create a new application
+//   mosaic compile [dir]                compile the app and bundle it
+//   mosaic dev [dir] [--port 3000]      the same, then serve it, rebuilding
+//                                       whenever a source changes
+//   mosaic check [dir]                  the same, then run the browser test
+//   mosaic clean [dir]                  delete the app's build directory
 //
-// The argument is the application's bootstrap — the `main.js` that imports the
-// compiled page and mounts it. It defaults to `./main.js`, so running mosaic
-// inside an app directory needs no argument at all.
+// An application is a directory with an `info.json` in it. That is the only
+// thing a command takes — the current directory by default — and `main_file`
+// in the config says which module is the bootstrap.
 //
 // Everything beside that file is the application, and everything the build
 // produces lands in a `build/` inside it. That makes the app directory the
@@ -24,11 +25,13 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { compileAll } from "../src/js/compiler/build.js";
-import { componentName } from "../src/js/compiler/compile.js";
+import {compileAll} from "../src/js/compiler/build.js";
+import {componentName} from "../src/js/compiler/compile.js";
 
 const CONFIG = "info.json";
 const ENTRY = "main.js";
+/** Where an application's own modules live, relative to its directory. */
+const SRC = "src";
 
 const DEFAULTS = {
   runtime: "src/js/runtime/mosaic.js",
@@ -43,25 +46,30 @@ const DEFAULTS = {
   // build. Each app gets its own copy: only the bundle is served, so the cost
   // is build output, and the app directory stays self-contained.
   libraries: [],
-  // Relative to the application directory, not the project root.
+    // Both relative to the application directory, not the project root.
+    main_file: `${SRC}/${ENTRY}`,
   outdir: "build",
 };
 
-const USAGE = `usage: mosaic <command> [${ENTRY}] [options]
+const USAGE = `usage: mosaic <command> [dir] [options]
 
 commands:
   init <name>        create a new application in ./<name>
   compile            compile the application and bundle it
-  dev                compile, then serve the application directory
+  dev                compile, then serve it, rebuilding on every edit
   check              compile, then run the headless browser test
   clean              delete the application's build directory
 
-The argument is the application's bootstrap, defaulting to ./${ENTRY}.
-For \`init\` it is the application's name, and the directory to create.
+The argument is the application's directory — one with an ${CONFIG} in it —
+and defaults to the current one. \`main_file\` in that config names the
+bootstrap. For \`init\` the argument is the application's name instead, and
+the directory to create.
 
 options:
   --port <n>         port for \`dev\` (default 3000)
+  --page <path>      page for \`check\`, relative to the project root
   --no-open          don't launch a browser
+  --no-watch         don't rebuild when sources change
   --no-sourcemap     skip source maps
   --quiet            only report failures
   -h, --help         this text
@@ -126,13 +134,16 @@ function scaffold(name) {
   const component = componentName(name);
 
   return {
-    // Environment configuration, read at run time. Only the name for now.
-    "info.json": JSON.stringify({ app_name: name }, null, 2) + "\n",
+      // The application's configuration. Every key a project-level info.json
+      // declares is inherited; what is set here overrides it.
+      "info.json":
+          JSON.stringify({app_name: name, main_file: `${SRC}/${ENTRY}`}, null, 2) + "\n",
 
-    "main.ib": `<!-- ${name} — the page.
+      [`${SRC}/main.mib`]: `<!-- ${name} — the page.
 
-     Markup only: no logic, no <script>. Everything dynamic is a binding to the
-     controller beside this file.
+     The markup itself has no logic: everything dynamic is a binding to the
+     controller, which is AppController.js beside this file — or a <script>
+     block here, if you would rather keep the page in one piece.
 
        <div styleName="box">        a class comes from styleName, never class
        <View styleName="box">       the same thing, spelled as a component
@@ -140,45 +151,64 @@ function scaffold(name) {
        styleName="row {status}"     a binding inside an attribute value
        action="increment"           a click calls controller.increment()
        action="input:onInput"       any event, naming the method to call
-       ib:outlet="field"            hands the DOM node to controller.field
+       outlet="field"            hands the DOM node to controller.field
        <Card limit="3" />           another component; its import is emitted
 
-     A <style> block at the end is scoped to this file: its selectors only ever
-     match this markup. Use :global(...) to opt one out.
+     A <script> block holds this file's JavaScript — most often the controller
+     the bindings above read. Its default export becomes that controller, and
+     the page is wired to it with nothing else to write. It may declare a
+     component too, JSX and all. It is a module: what it uses, it imports.
+
+     One <style> block, anywhere in the file — it is hoisted out of the markup
+     and scoped to this file, so its selectors only ever match this page. Use
+     :global(...) to opt one out. Convention is to put it last.
 
      Nothing renders until there is markup here. -->
 `,
 
-    "AppController.js": `// The controller behind main.ib: the page's state, the values its {bindings}
+      [`${SRC}/AppController.js`]: `// The controller behind main.mib: the page's state, the values its {bindings}
 // read, and the methods its actions fire.
 //
 // A controller is a plain object — it extends nothing and the runtime asks
-// nothing of it. Properties are read by name, \`action=\` calls methods, and
-// \`mount()\` wires the rendered view onto \`this.view\`, so a state change is
-// pushed to the DOM with \`this.view.needsDisplay()\`.
+// nothing of it. Properties are read by name and \`action=\` calls methods.
+// Binding to a property in the markup is what makes it observable, so assigning
+// to it is all it takes to update the DOM.
 export default class AppController {
   constructor() {}
 }
 `,
 
-    "main.js": `// ${name} — the application bootstrap, and the entry mosaic bundles.
+      [`${SRC}/${ENTRY}`]: `// ${name} — the application bootstrap, and the entry mosaic bundles.
 //
-// \`main.ib\` is this module's page: it sits beside this file, so the compiler
-// compiles it and puts \`Main\` in scope here — there is nothing to import. The
-// runtime is vendored into the build as a package, so it is imported by name.
+// \`main.mib\` is this module's page: it sits beside this file, so the compiler
+// compiles it and registers it as the application's page — there is nothing to
+// import and nothing to name. The runtime is vendored into the build as a
+// package, so it is imported by name.
 import { MosaicApplication } from "mosaic";
 
 import AppController from "./AppController.js";
 
-new MosaicApplication({ id: "app", component: Main, controller: new AppController() });
+new MosaicApplication({ id: "app", controller: new AppController() });
 `,
 
     "index.html": `<!doctype html>
-<meta charset="utf-8" />
-<title>${name}</title>
-<!-- One request: app.js carries the runtime, the components and the bootstrap. -->
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>${name}</title>
+</head>
+
+<body>
+
 <div id="app"></div>
+
+<!-- One request: app.js carries the runtime, the components and the bootstrap. -->
 <script type="module" src="build/app.js"></script>
+</body>
+
+</html>
 `,
   };
 }
@@ -198,9 +228,10 @@ function init(name) {
     throw new Error(`${dir} already has ${existing.join(", ")}`);
   }
 
-  fs.mkdirSync(dir, { recursive: true });
   for (const [file, content] of Object.entries(files)) {
-    fs.writeFileSync(path.join(dir, file), content);
+      const target = path.join(dir, file);
+      fs.mkdirSync(path.dirname(target), {recursive: true});
+      fs.writeFileSync(target, content);
   }
 
   console.log(`created ${dir}`);
@@ -211,25 +242,30 @@ function init(name) {
 }
 
 /**
- * Resolve the bootstrap. A directory argument means the `main.js` inside it;
- * no argument means the one in the current directory. Either way it has to
- * exist — there is nothing to compile without an entry point.
+ * Resolve the application a command was pointed at.
+ *
+ * An application is a directory with an `info.json`, and that is all a command
+ * accepts: the current directory, or one named on the command line. Naming a
+ * module instead would leave the config ambiguous — which is the thing that
+ * says what the application is made of.
  */
-function resolveEntry(arg) {
-  let file = path.resolve(arg ?? ENTRY);
-  if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, ENTRY);
+function resolveApp(arg) {
+    const dir = path.resolve(arg ?? ".");
 
-  if (!fs.existsSync(file)) {
-    const where = arg ? file : path.resolve(ENTRY);
+    if (!fs.existsSync(dir)) throw new Error(`no such directory: ${dir}`);
+    if (!fs.statSync(dir).isDirectory()) {
+        throw new Error(
+            `${dir} is a file — a command takes the application's directory, ` +
+            `and \`main_file\` in its ${CONFIG} names the bootstrap`,
+        );
+    }
+    if (!fs.existsSync(path.join(dir, CONFIG))) {
     throw new Error(
-      `no ${ENTRY} at ${where} — ` +
-        `pass the path to your application's bootstrap, or run mosaic beside one`,
+        `${dir} has no ${CONFIG} — run mosaic in an application directory, ` +
+        `or name one`,
     );
   }
-  if (path.basename(file) !== ENTRY) {
-    throw new Error(`the entry must be a ${ENTRY}, not ${path.basename(file)}`);
-  }
-  return file;
+    return dir;
 }
 
 function parseArgs(argv) {
@@ -237,7 +273,9 @@ function parseArgs(argv) {
     command: null,
     entry: null,
     port: 3000,
+      page: null,
     open: true,
+      watch: true,
     sourcemap: true,
     quiet: false,
   };
@@ -247,7 +285,11 @@ function parseArgs(argv) {
     if (a === "--port") {
       args.port = Number(argv[++i]);
       if (!Number.isInteger(args.port)) throw new Error("`--port` needs a number");
+    } else if (a === "--page") {
+        args.page = argv[++i];
+        if (!args.page) throw new Error("`--page` needs a path");
     } else if (a === "--no-open") args.open = false;
+    else if (a === "--no-watch") args.watch = false;
     else if (a === "--no-sourcemap") args.sourcemap = false;
     else if (a === "--quiet") args.quiet = true;
     else if (a === "-h" || a === "--help") {
@@ -273,14 +315,22 @@ function parseArgs(argv) {
  * is self-contained — its directory holds its sources, its output and the page
  * that loads them, with nothing above it needed.
  */
-function layout(config, entry) {
-  const source = path.dirname(entry);
+function layout(config, source) {
   const outdir = path.join(source, config.outdir);
+    const main = path.join(source, config.main_file);
+
+    if (!fs.existsSync(main)) {
+        throw new Error(`${CONFIG} names main_file "${config.main_file}", which is not in ${source}`);
+    }
+
   return {
     source,
     name: path.basename(source),
     outdir,
-    entry: path.join(outdir, ENTRY),
+      // The bootstrap keeps its place in the tree, so `src/main.js` compiles to
+      // `build/src/main.js`. The bundle sits at the top of the build either way:
+      // it is what the page loads, and has no source position to keep.
+      entry: path.join(outdir, path.relative(source, main)),
     outfile: path.join(outdir, "app.js"),
   };
 }
@@ -318,6 +368,30 @@ function vendorRuntime(config, app) {
   return { specifier: name, main: path.join(dest, main) };
 }
 
+/**
+ * What the runtime exports, read from the module that exports it. A `<script>`
+ * naming one of these gets it imported; the list is the runtime's own, so it
+ * cannot drift from what is actually there.
+ */
+function runtimeExports(main) {
+    const source = fs.readFileSync(main, "utf8");
+    const names = new Set();
+
+    for (const line of source.split("\n")) {
+        const braced = line.match(/^\s*export\s*\{([^}]*)\}/);
+        if (braced) {
+            for (const part of braced[1].split(",")) {
+                const name = part.trim().split(/\s+as\s+/).pop()?.trim();
+                if (name) names.add(name);
+            }
+            continue;
+        }
+        const declared = line.match(/^\s*export\s+(?:default\s+)?(?:class|function|const|let|var)\s+([\p{L}_$][\p{L}\p{N}_$]*)/u);
+        if (declared) names.add(declared[1]);
+    }
+    return [...names];
+}
+
 /** The library trees, resolved into this application's build directory. */
 function librarySources(config, app) {
   return config.libraries.map((lib) => ({
@@ -339,11 +413,12 @@ async function compile(config, app, args) {
   // The whole build is this run's to rewrite, so a renamed or deleted source
   // cannot leave a stale module behind.
   fs.rmSync(app.outdir, { recursive: true, force: true });
-  const runtime = vendorRuntime(config, app).specifier;
+    const vendored = vendorRuntime(config, app);
 
   log(`==> compiling ${relative(app.source)}`);
   const written = compileAll(sources, {
-    runtime,
+      runtime: vendored.specifier,
+      runtimeExports: runtimeExports(vendored.main),
     sourcemap: args.sourcemap,
     onFile: args.quiet ? undefined : (src, dest) => log(`    ${src} -> ${dest}`),
   });
@@ -373,7 +448,7 @@ const CONTENT_TYPES = {
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".map": "application/json; charset=utf-8",
-  ".ib": "text/plain; charset=utf-8",
+    ".mib": "text/plain; charset=utf-8",
   ".svg": "image/svg+xml",
 };
 
@@ -417,12 +492,16 @@ function open(url) {
 }
 
 /**
- * Load the app's check page in headless Chromium and read the verdict from its
+ * Load the check page in headless Chromium and read the verdict from its
  * title. The page reports `verdict PASS` or `verdict FAIL` once its assertions
  * have run.
+ *
+ * It is a test of the compiler and runtime rather than a page of the
+ * application, so it lives with the other tests and is served from the project
+ * root — reaching across into whichever app's build it exercises.
  */
-async function check(config, app, port) {
-  const page = path.join(app.source, config.check ?? "browser-check.html");
+async function check(config, app, port, override) {
+    const page = path.resolve(config.root, override ?? config.check ?? "test/browser-check.html");
   if (!fs.existsSync(page)) throw new Error(`no check page at ${page}`);
 
   const browser = ["chromium", "chromium-browser", "google-chrome", "brave"].find((b) =>
@@ -430,7 +509,7 @@ async function check(config, app, port) {
   );
   if (!browser) throw new Error("no chromium-like browser found");
 
-  const url = `http://127.0.0.1:${port}/${path.relative(app.source, page)}`;
+    const url = `http://127.0.0.1:${port}/${path.relative(config.root, page)}`;
   const proc = Bun.spawn(
     [browser, "--headless", "--no-sandbox", "--disable-gpu", "--virtual-time-budget=5000",
       "--dump-dom", url],
@@ -460,20 +539,88 @@ async function check(config, app, port) {
   return 1;
 }
 
+
+/**
+ * Rebuild whenever a source changes.
+ *
+ * Everything the build reads is watched — the application, the libraries it
+ * compiles against and the runtime it is vendored from — because a change in
+ * any of them makes what is being served stale. The build directory is not:
+ * writing to it is what a rebuild *does*, and watching it would never settle.
+ *
+ * The server keeps running throughout. It reads from disk on every request, so
+ * a finished rebuild is live at the next reload with nothing to restart.
+ */
+function watchSources(config, app, args) {
+    const roots = [app.source, config.runtimeRoot, ...config.libraries.map((lib) => lib.input)];
+
+    // A tree already covered by an ancestor is watched twice otherwise.
+    const covered = (dir) =>
+        roots.some((other) => other !== dir && dir.startsWith(other + path.sep));
+    const watched = [...new Set(roots)].filter((dir) => fs.existsSync(dir) && !covered(dir));
+
+    const outdir = path.resolve(app.outdir);
+    const ignored = (root, file) => {
+        if (!file) return true;
+        const full = path.resolve(root, file);
+        // Editors write backups and swap files beside the real one.
+        if (path.basename(file).startsWith(".") || file.endsWith("~")) return true;
+        return full === outdir || full.startsWith(outdir + path.sep);
+    };
+
+    let timer = null;
+    let building = false;
+    let pending = false;
+
+    const rebuild = async () => {
+        if (building) {
+            pending = true;
+            return;
+        }
+        building = true;
+        const started = Date.now();
+        try {
+            await compile(config, app, {...args, quiet: true});
+            console.log(`    rebuilt in ${Date.now() - started}ms — reload to see it`);
+        } catch (e) {
+            // A broken source is the normal case while editing: report it and keep
+            // watching, rather than taking the server down with it.
+            console.error(`mosaic: ${e.message}`);
+        } finally {
+            building = false;
+            if (pending) {
+                pending = false;
+                rebuild();
+            }
+        }
+    };
+
+    for (const root of watched) {
+        fs.watch(root, {recursive: true}, (event, file) => {
+            if (ignored(root, file)) return;
+            // One edit can arrive as several events; wait for the flurry to stop.
+            clearTimeout(timer);
+            timer = setTimeout(rebuild, 60);
+        });
+    }
+
+    return watched;
+}
+
 async function main(argv) {
   let args;
   let config;
   let app;
   try {
     args = parseArgs(argv);
-    // `init` creates the entry the other commands need, so it runs before any
-    // of them is resolved.
+      // `init` creates the application the other commands need, so it runs
+      // before any of them is resolved.
     if (args.command === "init") return init(args.entry);
-    const entry = resolveEntry(args.entry);
-    config = loadConfig(path.dirname(entry));
+      const source = resolveApp(args.entry);
+      config = loadConfig(source);
     // Paths in the config are relative to the project root.
     process.chdir(config.root);
-    app = layout(config, entry);
+      app = layout(config, source);
   } catch (e) {
     console.error(`mosaic: ${e.message}\n\n${USAGE}`);
     return 1;
@@ -498,14 +645,15 @@ async function main(argv) {
 
   if (args.command === "compile") return 0;
 
-  // The application directory is the server's root, so a page can only reach
-  // what ships with the app — never up into the project around it.
-  const server = serve(app.source, args.command === "check" ? 0 : args.port);
+    // `dev` serves the application directory, so a page can only reach what
+    // ships with the app. `check` is a test of the project, and serves that.
+    const server =
+        args.command === "check" ? serve(config.root, 0) : serve(app.source, args.port);
 
   if (args.command === "check") {
     let code;
     try {
-      code = await check(config, app, server.port);
+        code = await check(config, app, server.port, args.page);
     } catch (e) {
       console.error(`mosaic: ${e.message}`);
       code = 1;
@@ -516,6 +664,10 @@ async function main(argv) {
 
   const url = `http://localhost:${server.port}/`;
   console.log(`==> serving ${url}`);
+    if (args.watch) {
+        const watched = watchSources(config, app, args);
+        console.log(`    watching ${watched.map((d) => path.relative(config.root, d) || ".").join(", ")}`);
+    }
   console.log("    Ctrl-C to stop");
   if (args.open) open(url);
 

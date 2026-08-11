@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8" />
-<title>ibcompile browser check</title>
+<title>MosaicJS browser check</title>
 <!--
   A browser smoke test for the real DOM (the node tests use a shim).
 
@@ -21,15 +21,20 @@
   { "imports": { "mosaic": "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js" } }
 </script>
 <script type="module">
-  import { mount, h, Component, addStyles } from "mosaic";
-  import Main from "../examples/Counter_component/build/src/main.ib.js";
+  import {addStyles, Component, h, mount} from "mosaic";
+  import Main from "../examples/Counter_component/build/src/main.mib.js";
   import Button from "../examples/Counter_component/build/ui/button/Button.js";
 
   // A drawn view for the checks below: the shape the compiler emits for a
   // `draw()` full of JSX, written out by hand. It belongs to this page rather
   // than to an example app, so rewriting an example cannot take it with it.
-  const SCOPE = "data-mosaic-counter";
-  addStyles("counter", `.counter[${SCOPE}]{display:flex;gap:.5rem}`);
+  const SCOPE = "ctr1abc";
+  // Scoped the way the compiler scopes a `<style>` block: the attribute goes
+  // on the last compound, so a rule still reaches this view's own children.
+  addStyles(
+          "counter",
+          `.counter.${SCOPE}{display:flex;gap:.5rem}` + `.counter .value.${SCOPE}{text-align:center}`,
+  );
 
   class Counter extends Component {
     constructor() { super(); this.count = 0; }
@@ -38,9 +43,9 @@
     increment() { this.count += 1; }
     decrement() { this.count -= 1; }
     draw() {
-      return h("div", { class: "counter", [SCOPE]: "" },
+      return h("div", {class: `counter ${SCOPE}`},
         h(Button, { text: "-", action: (...a) => this.decrement(...a) }),
-        h("output", { class: `value ${this.status}`.trim(), [SCOPE]: "" }, String(this.count)),
+              h("output", {class: `value ${this.status} ${SCOPE}`.replace(/\s+/g, " ")}, String(this.count)),
         h(Button, { text: "+", intent: "primary", action: (...a) => this.increment(...a) }),
       );
     }
@@ -61,7 +66,9 @@
 
   const stage = document.querySelector("#stage");
   const click = (el) => el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-  const scopeOf = (el) => [...el.attributes].map((a) => a.name).find((n) => n.startsWith("data-mosaic-"));
+  // A scope is a class, and a bare hash — the compiler appends it last, which
+  // is how it is picked out.
+  const scopeOf = (el) => [...el.classList].at(-1);
 
   // --- a drawn view, patched on redraw ------------------------------------
   const host = document.createElement("div");
@@ -69,23 +76,28 @@
   const counter = mount(Counter, host, { limit: "2" }).view;
 
   check("drawn view rendered from draw()", host.querySelector(".counter") !== null);
-  check("JSX styleName became class", host.querySelector("output").className === "value");
-  check("directives are absent from the DOM", !host.innerHTML.includes("ib:"));
+  // The scope class rides along with whatever the markup asked for.
+  const classesOf = (el) => [...el.classList].slice(0, -1);
+  check("JSX styleName became class", classesOf(host.querySelector("output")).join(" ") === "value");
+  // `outlet` and `action` are compiled away — a ref and a listener, not
+  // attributes left on the element.
+  check("directives are absent from the DOM",
+          !/\s(outlet|action)=/.test(host.innerHTML));
 
   const root = host.firstElementChild;
   const output = host.querySelector("output");
   const [minus, plus] = host.querySelectorAll("button");
 
   click(plus);
-  check("ib:action called the method", counter.count === 1);
+  check("action called the method", counter.count === 1);
   check("redraw updated the text", output.textContent === "1");
   check("redraw reused the root node", host.firstElementChild === root);
   check("redraw reused the output node", host.querySelector("output") === output);
 
   click(plus);
-  check("JSX conditional applied on redraw", output.className === "value high");
+  check("JSX conditional applied on redraw", classesOf(output).join(" ") === "value high");
   click(minus);
-  check("attribute reverted on redraw", output.className === "value");
+  check("attribute reverted on redraw", classesOf(output).join(" ") === "value");
   check("handlers were not stacked", counter.count === 1);
 
   // Focus survives a patch but not a rebuild — the point of diffing.
@@ -96,7 +108,7 @@
   // --- scoped styles ------------------------------------------------------
   const scope = scopeOf(root);
   check("drawn view elements carry a scope", !!scope);
-  check("its own elements share that scope", output.getAttribute(scope) === "");
+  check("its own elements share that scope", output.classList.contains(scope));
   check("scoped CSS applied (display:flex)", getComputedStyle(root).display === "flex");
   check("scoped CSS reaches its own children (text-align)",
     getComputedStyle(output).textAlign === "center");
@@ -112,14 +124,14 @@
   stage.appendChild(stray);
   check("styles do not leak outside the view", getComputedStyle(stray).display !== "flex");
 
-  // --- main.ib composing the drawn view -----------------------------------
+  // --- main.mib composing the drawn view -----------------------------------
   const pageHost = document.createElement("div");
   stage.appendChild(pageHost);
   const page = { title: "Mosaic" };
   mount(Main, pageHost, {}, page);
 
-  check(".ib page bound {title}", pageHost.querySelector("h1").textContent === "Mosaic");
-  check(".ib page rendered the drawn child", pageHost.querySelector(".counter") !== null);
+  check(".mib page bound {title}", pageHost.querySelector("h1").textContent === "Mosaic");
+  check(".mib page rendered the drawn child", pageHost.querySelector(".counter") !== null);
   // A scope belongs to a file. The counter is declared in this page's
   // <script>, so it shares the page's scope; a Button, compiled from its own
   // module, keeps its own.

@@ -4,9 +4,9 @@
 // typically inside a `Component` subclass's `draw()` method. Only the JSX is
 // rewritten, into `h()` calls; every other byte is copied through untouched.
 //
-// Unlike `.ib` markup, JSX here sits inside real JavaScript, so `{...}` holds
+// Unlike `.mib` markup, JSX here sits inside real JavaScript, so `{...}` holds
 // an arbitrary expression rather than a property path. `styleName`,
-// `ib:outlet` and `action` mean the same thing in both.
+// `outlet` and `action` mean the same thing in both.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -14,23 +14,23 @@ import * as path from "node:path";
 import * as css from "./css.js";
 import {
   ACTION_ATTR,
-  OUTLET_ATTR,
-  STYLE_NAME_ATTR,
-  VIEW_TAG,
   isIdent,
   jsKey,
   jsString,
   lineMarker,
+  OUTLET_ATTR,
   splitInclusive,
+  STYLE_NAME_ATTR,
   takeLineMarkers,
+  VIEW_TAG,
 } from "./js.js";
 
 export class JsxError extends Error {}
 
 /**
- * Transform JSX to `h()` calls. `scope` is the component's scope attribute
- * (`data-mosaic-<hash>`), stamped on every DOM element so the module's scoped
- * CSS matches it — the same contract as `.ib` markup.
+ * Transform JSX to `h()` calls. `scope` is the component's scope class — its
+ * hash — carried by every DOM element so the module's scoped CSS matches it,
+ * the same contract as `.mib` markup.
  */
 export function transform(src, scope = null) {
   return new Jsx(src, scope).program();
@@ -223,6 +223,9 @@ class Jsx {
 
     const props = [];
     const spreads = [];
+    // Held aside so the scope can join it: the scope is a class, not a prop of
+    // its own, and `class` may be written once at most.
+    let classValue = null;
     let selfClosing = false;
     const isComponent =
       name !== "" && (isUpper(name[0]) || name.includes(".")) && name !== VIEW_TAG;
@@ -246,15 +249,25 @@ class Jsx {
         continue;
       }
       for (const [key, value] of this.attribute(isComponent)) {
-        props.push(`${key}: ${value}`);
+        if (key === "class") classValue = value;
+        else props.push(`${key}: ${value}`);
       }
     }
 
-    // A DOM element carries the module's scope attribute; components style
-    // their own markup, and a fragment is not an element at all.
-    if (!isComponent && name !== "" && this.scope) {
-      props.push(`${jsString(this.scope)}: ""`);
+    // A DOM element carries the module's scope class; components style their
+    // own markup, and a fragment is not an element at all.
+    const scope = !isComponent && name !== "" && this.scope ? this.scope : null;
+    if (scope !== null) {
+      // A literal joins the string; anything else is a list the runtime
+      // flattens, which is what `class` already accepts.
+      classValue =
+          classValue === null
+              ? jsString(scope)
+              : classValue.startsWith('"')
+                  ? jsString(`${JSON.parse(classValue)} ${scope}`.trim())
+                  : `[${classValue}, ${jsString(scope)}]`;
     }
+    if (classValue !== null) props.unshift(`class: ${classValue}`);
 
     const children = selfClosing ? [] : this.children(name);
 
@@ -437,7 +450,7 @@ function attrKey(name, isComponent) {
 /**
  * Replace side-effect CSS imports with a runtime `addStyles` call, so
  * `import "./counter.css";` works in a browser with no bundler. The stylesheet
- * is inlined and scoped to this module at compile time, exactly as a `.ib`
+ * is inlined and scoped to this module at compile time, exactly as a `.mib`
  * file's `<style>` block is; `:global(...)` opts out.
  *
  * @returns `[code, foundAny]`
@@ -473,7 +486,7 @@ export function inlineCssImports(code, dir, scope = null) {
     } catch (e) {
       throw new JsxError(`${file}: ${e.message}`);
     }
-    if (scope) text = css.scope(text, scope);
+    if (scope) text = css.scope(text, `.${scope}`);
 
     const key = path.basename(file, path.extname(file));
 

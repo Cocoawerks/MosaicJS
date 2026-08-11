@@ -1,11 +1,11 @@
 // The Button component, ported from GWT Mosaic.
-// Run `cargo run -- src/js/ui/components --outdir build/ui --runtime ../../src/js/runtime/mosaic.js` first.
+// Build first: `mosaic compile examples/Counter_component/main.js`.
 import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const { mount } = await import("../src/js/runtime/mosaic.js");
-const { default: Button, Intent, ButtonState } = await import("../build/ui/button/Button.js");
+const {mount} = await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
+const {default: Button, Intent, ButtonState} = await import("../examples/Counter_component/build/ui/button/Button.js");
 
 /** Mount a button and hand back its view, root element and host. */
 function open(props = {}) {
@@ -14,7 +14,10 @@ function open(props = {}) {
   return { host, view, el: host.childNodes[0] };
 }
 
-const classesOf = (el) => el.getAttribute("class").split(" ");
+// The scope class is left out: it says which module styled the element, not
+// what the component put there. The compiler appends it last, which is how it
+// is picked out now that it is a bare hash.
+const classesOf = (el) => el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
 const press = (el, event = {}) => el.dispatchEvent({ type: "pointerdown", button: 0, ...event });
 const release = (el) => el.dispatchEvent({ type: "pointerup" });
 const click = (el) => el.dispatchEvent({ type: "click" });
@@ -29,7 +32,7 @@ test("draws the ported markup: button > div > span.label", () => {
   const layout = el.childNodes[0];
   assert.equal(layout.tagName, "div");
   assert.equal(layout.childNodes[0].tagName, "span");
-  assert.equal(layout.childNodes[0].getAttribute("class"), "label");
+  assert.deepEqual(classesOf(layout.childNodes[0]), ["label"]);
   assert.equal(layout.childNodes[0].textContent, "Save");
 });
 
@@ -137,8 +140,8 @@ test("an icon replaces noIcon, and iconOnly drops the label", () => {
   assert.equal(classesOf(el).includes("noIcon"), false);
 
   const icon = el.childNodes[0].childNodes[0];
-  assert.equal(icon.getAttribute("class"), "icon fa-save");
-  assert.equal(el.childNodes[0].childNodes[1].getAttribute("class"), "label");
+  assert.deepEqual(classesOf(icon), ["icon", "fa-save"]);
+  assert.deepEqual(classesOf(el.childNodes[0].childNodes[1]), ["label"]);
 
   view.iconOnly = true;
   assert.ok(classesOf(el).includes("iconOnly"));

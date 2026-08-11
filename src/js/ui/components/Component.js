@@ -4,9 +4,9 @@
 // point (`needsDisplay`), automatic event binding, and the attached/detached
 // lifecycle. The drawing and patching machinery itself lives in the runtime,
 // which this module and the components below it share.
-import { clearBindings } from "../../runtime/clearBindings.js";
-import { redraw } from "../../runtime/redraw.js";
-import { refresh } from "../../runtime/refresh.js";
+import {clearBindings} from "../../runtime/clearBindings.js";
+import {redraw} from "../../runtime/redraw.js";
+import {refresh} from "../../runtime/refresh.js";
 
 /**
  * Every DOM event a component can handle, mapped to the method name that
@@ -90,13 +90,13 @@ export const BROWSER_EVENTS = Object.freeze({
 });
 
 /**
- * A mounted component: the markup it drew, plus the bindings beneath it. `mount` creates one and hands it to the controller as
- * `this.view`, so a controller stays a plain class:
+ * A mounted component: the markup it drew, plus the bindings beneath it.
+ * `mount` creates one and hands it to the controller as `this.view`, so a
+ * controller stays a plain class:
  *
  *   class Counter {
  *     increment() {
- *       this.count += 1;
- *       this.view.needsDisplay();
+ *       this.count += 1;      // the DOM follows; see needsDisplay() below
  *     }
  *   }
  */
@@ -192,7 +192,7 @@ export class Component {
 
   /**
    * Subclasses may implement `draw(props)` and return a tree — JSX compiled to
-   * `h()` calls — instead of writing a `.ib` file:
+   * `h()` calls — instead of writing a `.mib` file:
    *
    *   class Counter extends Component {
    *     draw() {
@@ -200,7 +200,7 @@ export class Component {
    *     }
    *   }
    *
-   * `draw` is optional: a view backed by a `.ib` component leaves it undefined.
+   * `draw` is optional: a view backed by a `.mib` component leaves it undefined.
    */
 
   /**
@@ -232,8 +232,13 @@ export class Component {
 
   /**
    * Update the DOM to match current state. A drawn view re-runs `draw()` and
-   * replaces its nodes; a `.ib`-backed view re-reads its `{path}` bindings.
+   * replaces its nodes; a `.mib`-backed view re-reads its `{path}` bindings.
    * Either way it applies immediately.
+   *
+   * Rarely needed: a property a `{path}` binds to, or that `draw()` reads, is
+   * observed, so assigning to it already does this. What observation cannot
+   * see is a change that assigns nothing — mutating an object or an array in
+   * place, `this.items.push(x)` — and that is what this is for.
    */
   needsDisplay() {
     if (typeof this.draw === "function") {

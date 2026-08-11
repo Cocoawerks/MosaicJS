@@ -1,14 +1,38 @@
 // Emitting JavaScript source text: quoting, object keys, and the line markers
 // that carry source positions through codegen into the source map.
 
+/**
+ * The markup extension: a Mosaic Interface Builder file.
+ *
+ * It compiles to `<name>.mib.js` — the whole name plus `.js` — which is what
+ * leaves `<name>.js` free to be the module beside it.
+ */
+export const MARKUP_EXT = ".mib";
+
 /** The built-in view element. */
 export const VIEW_TAG = "View";
 /** How markup names the CSS class, on every element — never `class`. */
 export const STYLE_NAME_ATTR = "styleName";
 /** Binds a method: a listener on a DOM element, an action on a component. */
 export const ACTION_ATTR = "action";
-/** `ib:outlet="name"` binds the rendered node to `this.name`. */
-export const OUTLET_ATTR = "ib:outlet";
+
+/**
+ * A module's scope, as a class name. Every element the module renders carries
+ * it, and every selector in its stylesheet requires it.
+ *
+ * A class rather than an attribute: it costs a selector one point of
+ * specificity instead of ten, so a scoped rule still loses to an id and beats
+ * a bare tag by the usual amount — the cascade goes on meaning what it meant.
+ *
+ * The hash stands on its own, with nothing prefixed. It is generated to begin
+ * with a letter, so it is a valid class name wherever it appears.
+ */
+export function scopeClass(hash) {
+  return hash;
+}
+
+/** `outlet="name"` binds the rendered node to `this.name`. */
+export const OUTLET_ATTR = "outlet";
 /** Event assumed when an action names only a method. */
 export const DEFAULT_EVENT = "click";
 

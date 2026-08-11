@@ -1,16 +1,16 @@
 #!/usr/bin/env bun
-// ibcompile — compiles Mosaic components into imperative JavaScript that
-// builds the DOM through a `h()` runtime.
+// ibc — the MosaicJS compiler. Turns components into imperative JavaScript
+// that builds the DOM through a `h()` runtime.
 //
 // Bundling is Bun's job: compile to `--outdir`, then point `bun build` at the
 // entry module. See dev.sh.
 
-import { compileAll } from "../src/js/compiler/build.js";
+import {compileAll} from "../src/js/compiler/build.js";
 
-const USAGE = `usage: ibcompile --outdir dir <input.ib|input.js|input.jsx|dir>...
-                 [--outdir dir2 <more inputs>...]
-                 [-o out.js] [--runtime src/js/runtime/mosaic.js]
-                 [--name Component] [--no-sourcemap] [--quiet]
+const USAGE = `usage: ibc --outdir dir <input.mib|input.js|input.jsx|dir>...
+           [--outdir dir2 <more inputs>...]
+           [-o out.js] [--runtime src/js/runtime/mosaic.js]
+           [--name Component] [--no-sourcemap] [--quiet]
 
 \`--outdir\` applies to the inputs that follow it, so one run can compile a
 component library and an application into separate trees — and still resolve
@@ -62,7 +62,7 @@ function main(argv) {
   try {
     args = parseArgs(argv);
   } catch (e) {
-    console.error(`ibcompile: ${e.message}\n\n${USAGE}`);
+    console.error(`ibc: ${e.message}\n\n${USAGE}`);
     return 1;
   }
 
@@ -78,7 +78,7 @@ function main(argv) {
       },
     );
   } catch (e) {
-    console.error(`ibcompile: ${e.message}`);
+    console.error(`ibc: ${e.message}`);
     return 1;
   }
   return 0;

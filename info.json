@@ -1,5 +1,5 @@
 {
-  "app_name": "ibcompile",
+  "app_name": "MosaicJS",
   "runtime": "src/js/runtime/mosaic.js",
   "runtimeRoot": "src/js",
   "runtimeSpecifier": "mosaic",
@@ -10,5 +10,5 @@
     }
   ],
   "outdir": "build",
-  "check": "browser-check.html"
+  "check": "test/browser-check.html"
 }

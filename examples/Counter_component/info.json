@@ -1,3 +1,4 @@
 {
-  "app_name": "Counter_component"
+  "app_name": "Counter_component",
+  "main_file": "src/main.js"
 }

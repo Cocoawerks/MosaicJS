@@ -2,7 +2,7 @@
 //
 // Mapping is line-level: each generated line points at the markup or JS line it
 // came from, which is all `h()` output needs — devtools then show the original
-// `.ib` rather than the generated calls.
+// `.mib` rather than the generated calls.
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 

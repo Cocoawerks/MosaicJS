@@ -1,8 +1,11 @@
 // Minimal CSS transformer: rewrites selectors so every rule is constrained to
-// elements carrying the component's scope attribute (`[data-mosaic-<hash>]`).
+// elements carrying the component's scope class — its hash, `.x1y2z3q`.
 //
-// `.box span` becomes `.box span[data-mosaic-x1y2]`. Pseudo-elements stay last:
-// `.box::before` becomes `.box[data-mosaic-x1y2]::before`. `:global(sel)` opts out.
+// `.box span` becomes `.box span.x1y2z3q`. Pseudo-elements stay last:
+// `.box::before` becomes `.box.x1y2z3q::before`. `:global(sel)` opts out.
+//
+// The suffix is whatever the caller passes, so what a scope is called is not
+// this file's business.
 
 /** Nested at-rules whose bodies contain further style rules. */
 const NESTED_AT_RULES = ["@media", "@supports", "@container", "@layer", "@scope"];
@@ -10,13 +13,14 @@ const NESTED_AT_RULES = ["@media", "@supports", "@container", "@layer", "@scope"
 const WS = new Set([" ", "\t", "\n", "\r", "\f", "\v"]);
 const COMBINATORS = new Set([" ", "\t", "\n", ">", "+", "~"]);
 
-export function scope(css, scopeAttr) {
+/** `scopeSuffix` is appended to the last compound of every selector. */
+export function scope(css, scopeSuffix) {
   const out = [];
-  transformBlock(css, scopeAttr, out);
+  transformBlock(css, scopeSuffix, out);
   return out.join("");
 }
 
-function transformBlock(css, scopeAttr, out) {
+function transformBlock(css, scopeSuffix, out) {
   let i = 0;
   while (i < css.length) {
     // Emit leading whitespace and comments verbatim — a comment is not a
@@ -70,14 +74,14 @@ function transformBlock(css, scopeAttr, out) {
       const name = trimmed.split(/[\s(]/)[0];
       out.push(trimmed, "{");
       if (NESTED_AT_RULES.includes(name)) {
-        transformBlock(body, scopeAttr, out);
+        transformBlock(body, scopeSuffix, out);
       } else {
         // @keyframes / @font-face bodies hold declarations, not selectors.
         out.push(body);
       }
       out.push("}");
     } else {
-      out.push(scopeSelectorList(trimmed, scopeAttr), "{", body.trim(), "}");
+      out.push(scopeSelectorList(trimmed, scopeSuffix), "{", body.trim(), "}");
     }
 
     i = bodyEnd + 1;
@@ -103,9 +107,9 @@ function matchingBrace(css, open) {
   return -1;
 }
 
-function scopeSelectorList(list, scopeAttr) {
+function scopeSelectorList(list, scopeSuffix) {
   return splitTopLevel(list, ",")
-    .map((s) => scopeSelector(s.trim(), scopeAttr))
+      .map((s) => scopeSelector(s.trim(), scopeSuffix))
     .join(", ");
 }
 
@@ -113,10 +117,10 @@ function scopeSelectorList(list, scopeAttr) {
  * Scope the last compound that is not marked `:global(...)`.
  *
  * `:global()` may wrap the whole selector or just one compound, so
- * `.todo :global(.item)` becomes `.todo[data-mosaic-x] .item` — the container is
+ * `.todo :global(.item)` becomes `.todo.x1y2z3q .item` — the container is
  * scoped, the descendant is left open for nodes a controller builds.
  */
-function scopeSelector(sel, scopeAttr) {
+function scopeSelector(sel, scopeSuffix) {
   const parts = splitCompounds(sel);
 
   // Unwrap `:global(...)`, remembering which pieces opted out of scoping.
@@ -129,7 +133,7 @@ function scopeSelector(sel, scopeAttr) {
     }
   });
 
-  // The last scopable compound carries the attribute. Combinator pieces
+  // The last scopable compound carries the scope. Combinator pieces
   // ("` > `") are not compounds and never take it.
   let target = -1;
   for (let i = parts.length - 1; i >= 0; i--) {
@@ -141,7 +145,7 @@ function scopeSelector(sel, scopeAttr) {
 
   // Every compound was `:global(...)` — emit it unscoped.
   if (target === -1) return parts.join("");
-  return parts.map((p, i) => (i === target ? scopeCompound(p, scopeAttr) : p)).join("");
+  return parts.map((p, i) => (i === target ? scopeCompound(p, scopeSuffix) : p)).join("");
 }
 
 function isCombinator(part) {
@@ -154,10 +158,10 @@ function stripGlobal(sel) {
 }
 
 /**
- * Insert the scope attribute after the element/class/id part of a compound
- * selector but before any pseudo-element or pseudo-class.
+ * Insert the scope after the element/class/id part of a compound selector but
+ * before any pseudo-element or pseudo-class.
  */
-function scopeCompound(compound, scopeAttr) {
+function scopeCompound(compound, scopeSuffix) {
   const trimmed = compound.trimEnd();
   const trailingWs = compound.slice(trimmed.length);
   if (trimmed === "") return compound;
@@ -173,7 +177,7 @@ function scopeCompound(compound, scopeAttr) {
       break;
     }
   }
-  return `${trimmed.slice(0, cut)}[${scopeAttr}]${trimmed.slice(cut)}${trailingWs}`;
+  return `${trimmed.slice(0, cut)}${scopeSuffix}${trimmed.slice(cut)}${trailingWs}`;
 }
 
 /**

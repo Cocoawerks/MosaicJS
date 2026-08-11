@@ -1,8 +1,8 @@
 // Putting a component into the document.
-import { Component } from "../ui/components/Component.js";
-import { drawInto, isComponentClass } from "./private/draw.js";
-import { attachTree, discard, disposeTree } from "./private/lifecycle.js";
-import { render } from "./render.js";
+import {Component} from "../ui/components/Component.js";
+import {drawInto, isComponentClass} from "./private/draw.js";
+import {attachTree, discard, disposeTree} from "./private/lifecycle.js";
+import {render} from "./render.js";
 
 export function mount(component, target, props = {}, controller = {}) {
   // A Component subclass draws itself; it is its own controller.
@@ -33,7 +33,7 @@ export function mount(component, target, props = {}, controller = {}) {
     return unmount;
   }
 
-  // Otherwise: a compiled `.ib` component. The controller reaches its view as
+  // Otherwise: a compiled `.mib` component. The controller reaches its view as
   // `this.view`; it does not inherit from it.
   const view = new Component(controller);
   view.controller = controller;

@@ -1,15 +1,15 @@
-import { afterAll, expect, test } from "bun:test";
+import {afterAll, expect, test} from "bun:test";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
-import { takeLineMarkers, lineMarker } from "../../src/js/compiler/js.js";
-import { ensureRuntimeNames, inlineCssImports, transform } from "../../src/js/compiler/jsx.js";
+import {lineMarker, takeLineMarkers} from "../../src/js/compiler/js.js";
+import {ensureRuntimeNames, inlineCssImports, transform} from "../../src/js/compiler/jsx.js";
 
 /** A scratch directory of its own, so tests never race over one shared path. */
 const dirs = [];
 function tempDir(files) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ibcompile-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mosaic-"));
   dirs.push(dir);
   for (const [name, content] of Object.entries(files ?? {})) {
     fs.writeFileSync(path.join(dir, name), content);
@@ -23,7 +23,7 @@ afterAll(() => {
 /** Tests read the code without the source-map markers. */
 const clean = (src) => takeLineMarkers(transform(src, null))[0];
 /** With a scope, elements are stamped and stylesheets are constrained. */
-const scoped = (src) => takeLineMarkers(transform(src, "data-mosaic-x"))[0];
+const scoped = (src) => takeLineMarkers(transform(src, "scopex"))[0];
 
 test("runtime import is merged into an existing one", () => {
   const code = 'import { Component } from "../mosaic.js";\nclass A extends Component {}';
@@ -88,29 +88,29 @@ test("imported css is scoped to the module", () => {
   const dir = tempDir({
     "a.css": ".counter .step { width: 2rem; }\n:global(body) { margin: 0; }",
   });
-  const [out] = inlineCssImports('import "./a.css";\n', dir, "data-mosaic-x");
-  expect(out).toContain(".counter .step[data-mosaic-x]{width: 2rem;}");
+  const [out] = inlineCssImports('import "./a.css";\n', dir, "scopex");
+  expect(out).toContain(".counter .step.scopex{width: 2rem;}");
   expect(out).toContain("body{margin: 0;}");
 });
 
 test("dom elements carry the scope attribute", () => {
   const out = scoped('return <div styleName="a"><span>x</span></div>;');
-  expect(out).toContain('h("div", { class: "a", "data-mosaic-x": "" }');
-  expect(out).toContain('h("span", { "data-mosaic-x": "" }');
+  expect(out).toContain('h("div", { class: "a scopex" }');
+  expect(out).toContain('h("span", { class: "scopex" }');
 });
 
 test("the view element is scoped too", () => {
   expect(scoped('return <View styleName="app"/>;')).toBe(
-    'return h("div", { class: "app", "data-mosaic-x": "" });',
+      'return h("div", { class: "app scopex" });',
   );
 });
 
 test("components and fragments are not scoped", () => {
   // A component styles its own markup; a fragment is not an element.
-  expect(scoped('return <Card title="x"/>;')).not.toContain("data-mosaic-x");
+  expect(scoped('return <Card title="x"/>;')).not.toContain("scopex");
   const frag = scoped("return <><p>a</p></>;");
   expect(frag).toContain("h(Fragment, null");
-  expect(frag).not.toContain('h(Fragment, { "data-mosaic-x"');
+  expect(frag).not.toContain('h(Fragment, { class');
 });
 
 test("element becomes h call", () => {
@@ -161,7 +161,7 @@ test("an action on a component becomes its action prop", () => {
 });
 
 test("directives work in jsx", () => {
-  const out = clean('return <button action="go" ib:outlet="b"/>;');
+  const out = clean('return <button action="go" outlet="b"/>;');
   expect(out).toContain("onclick: (...__a) => this.go(...__a)");
   expect(out).toContain("ref: (__el) => { this.b = __el; }");
 });

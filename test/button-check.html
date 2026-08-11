@@ -2,17 +2,26 @@
 <meta charset="utf-8" />
 <title>Button check</title>
 <!--
-  Browser checks for the ported Button. Serve the repo root and open
-  /examples/button-check.html, or headless:
-    chromium --headless --dump-dom http://localhost:8000/examples/button-check.html
+  Browser checks for the ported Button, in a real engine.
+
+  It loads Counter_component's build, so compile that first:
+
+    mosaic compile examples/Counter_component
+    mosaic check examples/Counter_component --page test/button-check.html
+
+  Each assertion prints a line; the page title ends in PASS or FAIL.
 -->
 <div id="stage"></div>
 <pre id="results"></pre>
+<!-- Loaded unbundled, so the browser is told what `mosaic` resolves to. -->
+<script type="importmap">
+    { "imports": { "mosaic": "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js" } }
+</script>
 <script type="module">
-  import { mount } from "../src/js/runtime/mosaic.js";
-  import Button, { Intent } from "Counter_component/build/ui/button/Button.js";
+    import {mount} from "mosaic";
+    import Button, {Intent} from "../examples/Counter_component/build/ui/button/Button.js";
 
-  const log = [];
+    const log = [];
   let failed = 0;
   const check = (name, cond) => {
     log.push(`${cond ? "PASS" : "FAIL"}  ${name}`);

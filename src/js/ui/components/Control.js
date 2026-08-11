@@ -4,7 +4,7 @@
 //
 // Java mutates the element through setters; here the state lives on the
 // component and `controlProps()` / `controlClasses()` feed it into `draw()`.
-import { Component } from "../../runtime/mosaic.js";
+import {Component} from "../../runtime/mosaic.js";
 
 export default class Control extends Component {
   // `get()` and `set()` come from Component.
@@ -76,7 +76,7 @@ export default class Control extends Component {
   /**
    * Fire the control's action. The owner binds a method to it in markup:
    *
-   *   <Button text="Save" ib:action="save" />
+   *   <Button text="Save" action="save" />
    *
    * which the compiler passes down as the `action` prop.
    */

@@ -1,9 +1,9 @@
 // Turning a vnode tree into DOM.
-import { Fragment } from "./Fragment.js";
-import { attrValue, display, readPath, track } from "./private/bindings.js";
-import { drawInto, isComponentClass } from "./private/draw.js";
-import { flatten } from "./private/flatten.js";
-import { setAttribute } from "./private/props.js";
+import {Fragment} from "./Fragment.js";
+import {attrValue, display, readPath, track} from "./private/bindings.js";
+import {drawInto, isComponentClass} from "./private/draw.js";
+import {flatten} from "./private/flatten.js";
+import {setAttribute} from "./private/props.js";
 
 export function render(vnode, controller = {}) {
   if (vnode === null || vnode === undefined || typeof vnode === "boolean") {
@@ -48,7 +48,7 @@ export function render(vnode, controller = {}) {
 
   if (typeof type === "function") {
     // Components receive their children as `props.children`, and are invoked
-    // with the controller as `this` so `ib:outlet` and `ib:action` bind to it.
+    // with the controller as `this` so `outlet` and `action` bind to it.
     return render(type.call(controller, { ...props, children }), controller);
   }
 

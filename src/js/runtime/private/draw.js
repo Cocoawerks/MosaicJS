@@ -1,10 +1,20 @@
 // Drawing a component's tree, and recognising a component class.
-import { Component } from "../../ui/components/Component.js";
-import { render } from "../render.js";
+import {Component} from "../../ui/components/Component.js";
+import {render} from "../render.js";
+import {observe, recordReads, stateKeys} from "./observe.js";
 
 export function drawInto(view, props) {
   view.props = props ?? view.props;
-  const vnode = view.draw(view.props);
+
+  // A drawn view declares no bindings — `draw()` simply reads what it needs.
+  // Recording those reads is the equivalent of a `{path}` in markup: every
+  // property the drawing depended on becomes one that redraws it when it
+  // changes, so `needsDisplay()` is only for what this cannot see.
+  const {result: vnode, reads} = recordReads(view, (self) => view.draw.call(self, view.props));
+  for (const key of stateKeys(view, reads)) {
+    observe(view, key, () => view.needsDisplay());
+  }
+
   const dom = render(vnode, view);
   const nodes = dom instanceof DocumentFragment ? [...dom.childNodes] : [dom];
   view.nodes = nodes;

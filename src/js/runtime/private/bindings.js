@@ -1,5 +1,8 @@
-// The registry behind `{path}` bindings: where they are recorded, and how a
-// path is read off a controller.
+// The registry behind `{path}` bindings: where they are recorded, how a path is
+// read off a controller, and how assigning to one gets back to the DOM.
+
+import {refresh} from "../refresh.js";
+import {observe} from "./observe.js";
 
 /**
  * Where a controller's live bindings are recorded (non-enumerable).
@@ -32,4 +35,12 @@ export function track(controller, entry) {
     Object.defineProperty(controller, BINDINGS, { value: [], enumerable: false });
   }
   controller[BINDINGS].push(entry);
+
+  // Binding to `{count}` is what makes `count` worth watching, so this is where
+  // it becomes observable — nothing has to declare it, and a property nobody
+  // binds to stays an ordinary one.
+  const paths = entry.kind === "text" ? [entry.path] : entry.parts.map((p) => p.path);
+  for (const path of paths) {
+    if (path) observe(controller, path.split(".")[0], () => refresh(controller));
+  }
 }

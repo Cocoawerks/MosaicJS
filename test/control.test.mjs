@@ -1,11 +1,11 @@
 // Control, the focusable/enable-able superclass ported from GWT Mosaic.
-// Build first: cargo run -- src/js/ui/components --outdir build/ui --runtime ../../src/js/runtime/mosaic.js
+// Build first: `mosaic compile examples/Counter_component/main.js`.
 import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const { mount, h } = await import("../src/js/runtime/mosaic.js");
-const { default: Control } = await import("../build/ui/Control.js");
+const {mount, h} = await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
+const {default: Control} = await import("../examples/Counter_component/build/ui/Control.js");
 
 /** A minimal control: everything below comes from the base class. */
 class Widget extends Control {
