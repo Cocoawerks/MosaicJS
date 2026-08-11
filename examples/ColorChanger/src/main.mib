@@ -1,10 +1,9 @@
 <style>
     h1 {
-        color:red;
+        color: red;
     }
 
 </style>
-
 
 
 <h1 style="color: {color}">Hello World</h1>

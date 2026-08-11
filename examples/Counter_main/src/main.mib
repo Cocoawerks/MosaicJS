@@ -5,43 +5,48 @@
      Compare examples/Counter_component/src/main.mib, where a <Counter/> owns all of this itself. -->
 <!--suppress ALL -->
 <div styleName="app">
-  <h1 styleName="title">{title}</h1>
+    <h1 styleName="title">{title}</h1>
 
-  <div styleName="counter">
-    <Button text="-" action="decrement" />
-    <output styleName="value {status}">{count}</output>
-    <Button text="+" intent="primary" action="increment" />
-  </div>
+    <div styleName="counter">
+        <Button text="-" action="decrement"/>
+        <output styleName="value {status}">{count}</output>
+        <Button text="+" intent="primary" action="increment"/>
+    </div>
 
-  <p styleName="hint">The page owns the counter; there is no Counter component.</p>
+    <p styleName="hint">The page owns the counter; there is no Counter component.</p>
 </div>
 
 <style>
-.app {
-  font-family: system-ui, sans-serif;
-  padding: 1rem;
-}
-.title {
-  font-size: 1.25rem;
-  margin: 0 0 0.75rem;
-}
-.counter {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-.value {
-  font-variant-numeric: tabular-nums;
-  min-width: 2ch;
-  text-align: center;
-}
-.value.high {
-  color: #b00;
-  font-weight: bold;
-}
-.hint {
-  color: #666;
-  font-size: 0.8rem;
-  margin-top: 0.75rem;
-}
+    .app {
+        font-family: system-ui, sans-serif;
+        padding: 1rem;
+    }
+
+    .title {
+        font-size: 1.25rem;
+        margin: 0 0 0.75rem;
+    }
+
+    .counter {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .value {
+        font-variant-numeric: tabular-nums;
+        min-width: 2ch;
+        text-align: center;
+    }
+
+    .value.high {
+        color: #b00;
+        font-weight: bold;
+    }
+
+    .hint {
+        color: #666;
+        font-size: 0.8rem;
+        margin-top: 0.75rem;
+    }
 </style>
