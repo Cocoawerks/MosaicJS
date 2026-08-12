@@ -204,9 +204,8 @@ function scaffold(name) {
 
       [`${SRC}/main.mib`]: `<!-- ${name} — the page.
 
-     The markup itself has no logic: everything dynamic is a binding to the
-     controller, which is AppController.js beside this file — or a <script>
-     block here, if you would rather keep the page in one piece.
+     The markup itself has no logic and no JavaScript: everything dynamic is a
+     binding to the controller, which is AppController.js beside this file.
 
        <div styleName="box">        a class comes from styleName, never class
        <View styleName="box">       the same thing, spelled as a component
@@ -217,10 +216,9 @@ function scaffold(name) {
        outlet="field"            hands the DOM node to controller.field
        <Card limit="3" />           another component; its import is emitted
 
-     A <script> block holds this file's JavaScript — most often the controller
-     the bindings above read. Its default export becomes that controller, and
-     the page is wired to it with nothing else to write. It may declare a
-     component too, JSX and all. It is a module: what it uses, it imports.
+     A component this page draws is a module of its own — Card.jsx beside this
+     file — and naming it in the markup is all it takes: the compiler emits the
+     import. There is one place a component is written, and one way to find it.
 
      One <style> block, anywhere in the file — it is hoisted out of the markup
      and scoped to this file, so its selectors only ever match this page. Use
@@ -587,30 +585,6 @@ function writeFrameworkIndex(framework, modules, theme) {
 }
 
 /**
- * What the runtime exports, read from the module that exports it. A `<script>`
- * naming one of these gets it imported; the list is the runtime's own, so it
- * cannot drift from what is actually there.
- */
-function runtimeExports(main) {
-    const source = fs.readFileSync(main, "utf8");
-    const names = new Set();
-
-    for (const line of source.split("\n")) {
-        const braced = line.match(/^\s*export\s*\{([^}]*)\}/);
-        if (braced) {
-            for (const part of braced[1].split(",")) {
-                const name = part.trim().split(/\s+as\s+/).pop()?.trim();
-                if (name) names.add(name);
-            }
-            continue;
-        }
-        const declared = line.match(/^\s*export\s+(?:default\s+)?(?:class|function|const|let|var)\s+([\p{L}_$][\p{L}\p{N}_$]*)/u);
-        if (declared) names.add(declared[1]);
-    }
-    return [...names];
-}
-
-/**
  * Report a failure. The message is the line to read; the stack below it says
  * where it came from, which is what tells a bug in the tool apart from a
  * mistake in the sources it was given. A cause chain is followed to the end.
@@ -655,7 +629,6 @@ async function compile(config, app, args) {
   log(`==> compiling ${relative(app.source)}`);
   const written = compileAll(sources, {
       runtime: vendored.specifier,
-      runtimeExports: runtimeExports(vendored.main),
     sourcemap: args.sourcemap,
     onFile: args.quiet ? undefined : (src, dest) => log(`    ${src} -> ${dest}`),
   });

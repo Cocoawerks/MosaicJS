@@ -242,140 +242,26 @@ test("bindings must be property paths not expressions", () => {
 });
 
 test("logic in the markup is still rejected", () => {
-    // Markup has no expression language. JavaScript goes in <script>.
+    // Markup has no expression language, and no JavaScript of any kind.
   rejects("{#if a}<p>x</p>{/if}");
   rejects("{#each xs as x}<p>x</p>{/each}");
 });
 
-test("a script block is hoisted to module scope", () => {
-    const js = compile("<script>const n = 1;</script><p>{title}</p>");
-    expect(js).toContain("const n = 1;");
-    // Above the component, so the markup can reach what it declares.
-    expect(js.indexOf("const n = 1;")).toBeLessThan(js.indexOf("export default function App"));
-    // It is JavaScript, not markup: nothing is rendered from it.
-    expect(js).not.toContain('h("script"');
-});
-
-test("a script may declare the page's controller", () => {
-    const js = compile("<script>export default class C { m() {} }</script><p>{title}</p>");
-    // The module already default-exports its component, so the script's default
-    // becomes the controller.
-    expect(js).toContain("class C { m() {} }");
-    expect(js).toContain("export { C as Controller };");
-    expect(js.match(/export default/g)).toHaveLength(1);
-});
-
-test("an anonymous controller is given a name to be referred to by", () => {
-    const js = compile("<script>export default { count: 0 };</script><p>{count}</p>");
-    expect(js).toContain("const __Controller = { count: 0 };");
-    expect(js).toContain("export { __Controller as Controller };");
-});
-
-test("only the application's page registers its controller", () => {
-    const script = "<script>export default class C {}</script><p>x</p>";
-    const entry = generate(parse(script), {runtime: "mosaic", name: "Main", hash: "h", entry: true});
-    expect(entry).toContain("MosaicApplication.registerController(C);");
-
-    // Any other .mib exports one without claiming to be the application's.
-    const other = generate(parse(script), {runtime: "mosaic", name: "Card", hash: "h"});
-    expect(other).toContain("export { C as Controller };");
-    expect(other).not.toContain("registerController");
-    expect(other).not.toContain("MosaicApplication");
-});
-
-test("a component the script declares is not imported", () => {
-    // It is this file's own — importing it would look for a module that was
-    // never meant to exist.
-    const js = compile("<script>class Counter { draw() {} }</script><div><Counter/></div>");
-    expect(js).not.toContain('import Counter from');
-    expect(js).toContain("h(Counter, null)");
-});
-
-test("a component the script imports is not imported twice", () => {
-    const js = compile(
-        '<script>import Card from "./elsewhere/Card.js";</script><div><Card/></div>',
+test("a <script> block is rejected", () => {
+    // A .mib file is markup. JavaScript lives in a module beside it: a
+    // controller is that module's default export, and a component is its own
+    // file — which is also the only place either can be found.
+    expect(() => compile("<script>const n = 1;</script><p>{title}</p>")).toThrow(
+        /holds markup, not JavaScript/,
     );
-    expect(js.match(/Card from/g)).toHaveLength(1);
-    expect(js).toContain('import Card from "./elsewhere/Card.js";');
-});
-
-test("a runtime name is still not imported for a script that declares it", () => {
-    // Shadowing the runtime's name is the script's business.
-    const js = compile("<script>class Component {}\nclass C extends Component {}</script><p>x</p>");
-    expect(js).toContain("class Component {}");
-});
-
-test("a component the script does not name is still imported", () => {
-    const js = compile("<script>const n = 1;</script><div><Badge/></div>");
-    expect(js).toContain('import Badge from "./Badge.js";');
-});
-
-test("indentation does not decide what is module scope", () => {
-    // A block's contents sit inside a tag, so how far they are indented is
-    // formatting. Uneven indentation must not hide a declaration either.
-    const draw = "class C { draw() { return <Card/>; } }";
-    for (const script of [
-        `import Card from "./a.js";\n${draw}`,
-        `  import Card from "./a.js";\n  ${draw}`,
-        `  import Card from "./a.js";\n ${draw}`,      // uneven
-        `\timport Card from "./a.js";\n\t${draw}`,
-    ]) {
-        const js = compile(`<script>\n${script}\n</script><p>x</p>`);
-        expect(js).toContain('import Card from "./a.js";');
-        expect(js).not.toContain('"./Card.js"');
-    }
-});
-
-test("a brace in a string or comment is text, not structure", () => {
-    const draw = "class C { draw() { return <Card/>; } }";
-    const js = compile(
-        `<script>\nconst s = "{";\n// {\nimport Card from "./a.js";\n${draw}\n</script><p>x</p>`,
+    expect(() => compile("<p>x</p>\n<script>\n  export default class C {}\n</script>")).toThrow(
+        /move the <script> into a module beside it/,
     );
-    expect(js).toContain('import Card from "./a.js";');
-    expect(js).not.toContain('"./Card.js"');
 });
 
-test("a declaration inside a function is not module scope", () => {
-    // `Card` is local to `make`, and naming a tag after it would not reach it.
-    const js = compile("<script>function make() {\n  class Card {}\n}</script><div><Card/></div>");
-    expect(js).toContain('import Card from "./Card.js";');
-});
-
-test("a component the script draws must be imported by the script", () => {
-    // A <script> is JavaScript, and says what it depends on the way any module
-    // does. Failing here beats an "X is not defined" when the page is opened.
-    expect(() => compile("<script>class C { draw() { return <Card/>; } }</script><p>x</p>")).toThrow(
-        /<Card\/> is drawn in the <script> but nothing imports it/,
-    );
-
-    // Its own import satisfies it, and is not duplicated.
-    const own = compile(
-        '<script>import Card from "./Card.js";\nclass C { draw() { return <Card/>; } }</script><p>x</p>',
-    );
-    expect(own.match(/Card from/g)).toHaveLength(1);
-
-    // So does the markup's, since that import is in the same module scope.
-    const shared = compile("<script>class C { draw() { return <Card/>; } }</script><Card/>");
-    expect(shared).toContain('import Card from "./Card.js";');
-});
-
-test("a runtime name the script uses is the script's to import", () => {
-    // `Component` is not added on the script's behalf.
-    const js = compile("<script>class C extends Component {}</script><p>x</p>");
-    // The runtime import carries what the markup needs, and nothing more.
-    expect(js.split("\n")[0]).toBe('import { h, Fragment } from "../src/js/runtime/mosaic.js";');
-});
-
-test("jsx in a script is transformed and scoped like the markup", () => {
-    const js = compile(
-        "<style>.a{color:red}</style>" +
-        "<script>class C { draw() { return <View styleName=\"a\"/>; } }</script><p>x</p>",
-    );
-    expect(js).toContain('h("div", { class: "a test123" })');
-});
-
-test("one script block per file", () => {
-    rejects("<script>a</script><p>x</p><script>b</script>");
+test("a script tag is rejected wherever it appears", () => {
+    rejects("<div><script>a</script></div>");
+    rejects("<script src=\"x.js\"></script><p>x</p>");
 });
 
 test("unclosed tag is an error", () => {

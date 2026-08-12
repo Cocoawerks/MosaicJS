@@ -26,27 +26,15 @@ export class MosaicApplication {
    */
   static page = null;
 
-  /**
-   * The application's controller, registered by a `<script>` block in the
-   * page. Held as declared — a class is constructed when the app starts, an
-   * object is used as it is.
-   */
-  static controller = null;
-
   /** Called by compiled code: `main.mib` is the page of the app it belongs to. */
   static registerPage(component) {
     MosaicApplication.page = component;
   }
 
-  /** Called by compiled code: the page declared its own controller. */
-  static registerController(controller) {
-    MosaicApplication.controller = controller;
-  }
-
   constructor(props = {}) {
     const {id, target, component, controller, ...rest} = props;
 
-    this.controller = controller ?? defaultController();
+    this.controller = controller ?? {};
     this.props = rest;
     this.target = resolveTarget(id, target);
     this.view = null;
@@ -76,16 +64,6 @@ export class MosaicApplication {
     this.view = this.controller.view;
     return this;
   }
-}
-
-/**
- * The controller to use when none was passed: the one the page registered, or
- * a bare object. A class is constructed; anything else is used as it stands.
- */
-function defaultController() {
-  const registered = MosaicApplication.controller;
-  if (!registered) return {};
-  return typeof registered === "function" ? new registered() : registered;
 }
 
 /** `id` names an element; `target` accepts an element or a selector. */

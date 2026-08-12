@@ -6,10 +6,14 @@
 // controller (`{count}` reads `this.count`). There is no expression language in
 // the markup: no conditionals, no loops, no JavaScript. Behaviour is declared
 // with `outlet="name"` and `action="event:method"`, and carried out by a
-// controller — which a `<script>` block may define right here in the file.
+// controller, which is a module of its own.
+//
+// A `.mib` file holds no JavaScript at all — a `<script>` block is an error,
+// not a place to put code. What a page needs is imported by the module beside
+// it, so there is one place a component is declared and one way to find it.
 //
 // The AST it produces:
-//   { style, script, scriptLine, markup: Node[] }
+//   { style, markup: Node[] }
 //   Node = { kind: "text", text }
 //        | { kind: "bind", path, line }
 //        | { kind: "element", line, name, attrs, outlet, actions, children }
@@ -30,7 +34,7 @@ export class ParseError extends Error {}
 
 export function parse(src) {
   const p = new Parser(src);
-  const comp = {style: "", script: "", scriptLine: 1, markup: []};
+  const comp = {style: "", markup: []};
   comp.markup = trimEdges(p.parseNodes(null, comp));
   checkNames(comp.markup);
   return comp;
@@ -146,14 +150,11 @@ class Parser {
       if (this.peek() === "<") {
         flush();
         if (this.startsWithTag("script")) {
-          const line = this.line();
-          const body = this.parseRawBlock("script");
-          if (comp.script.trim() !== "") throw this.err("duplicate <script> block");
-          comp.script = body;
-          // Where the block opened, so a source map can point back into the
-          // .mib file rather than into the script on its own.
-          comp.scriptLine = line;
-          continue;
+          throw this.err(
+            "a .mib file holds markup, not JavaScript — move the <script> into a " +
+              "module beside it (a controller is its default export, a component " +
+              "is its own file) and the markup will find it",
+          );
         }
         if (this.startsWithTag("style")) {
           const body = this.parseRawBlock("style");

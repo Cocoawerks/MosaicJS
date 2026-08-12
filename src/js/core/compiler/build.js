@@ -41,7 +41,7 @@ export function planJobs(sources) {
 /**
  * Compile every source in `sources`.
  *
- * @param opts { runtime, runtimeExports, name, sourcemap, out, onFile }
+ * @param opts { runtime, name, sourcemap, out, onFile }
  * @returns the destination path of each compiled file
  */
 export function compileAll(sources, opts = {}) {
@@ -53,7 +53,6 @@ export function compileAll(sources, opts = {}) {
     outdir: job.outdir,
     out: jobs.length === 1 ? (opts.out ?? null) : null,
     runtime: opts.runtime,
-    runtimeExports: opts.runtimeExports,
     name: opts.name ?? null,
     sourcemap: opts.sourcemap,
   });

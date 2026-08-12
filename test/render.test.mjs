@@ -301,7 +301,7 @@ test("component mounts something other than the registered page", async () => {
   document.body.textContent = "";
 });
 
-test("a scope belongs to a file, inline components included", async () => {
+test("a scope belongs to a file", async () => {
   const host = document.createElement("div");
   host.setAttribute("id", "scopes");
   document.body.appendChild(host);
@@ -313,15 +313,17 @@ test("a scope belongs to a file, inline components included", async () => {
   // out now that it is a bare hash with nothing to recognise it by.
   const scopeOf = (el) => (el.getAttribute("class") ?? "").trim().split(/\s+/).pop() || undefined;
 
-  // A scope belongs to a file. The counter is declared in this page's
-  // <script>, so it is styled by this page's <style> — same file, same scope.
+  // A scope belongs to a file, and every component is one: the page, the
+  // counter it hosts and the buttons the counter draws are three modules, so
+  // no two of them share a scope. What styles an element is the file it was
+  // written in — there is no other rule to know.
   assert.ok(scopeOf(page), "page element is scoped");
-  assert.ok(scopeOf(counter), "the inline component's markup is scoped");
-  assert.equal(scopeOf(page), scopeOf(counter), "one file, one scope");
+  assert.ok(scopeOf(counter), "the counter's markup is scoped");
+  assert.notEqual(scopeOf(counter), scopeOf(page), "another module, another scope");
 
-  // A component compiled from its own module keeps its own.
   const button = host.querySelectorAll("button")[0];
-  assert.notEqual(scopeOf(button), scopeOf(page), "another module, another scope");
+  assert.notEqual(scopeOf(button), scopeOf(page), "and another");
+  assert.notEqual(scopeOf(button), scopeOf(counter), "and another");
   document.body.textContent = "";
 });
 

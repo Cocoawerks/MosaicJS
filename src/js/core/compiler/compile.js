@@ -68,10 +68,6 @@ function compileIb(src, runtime, stem, dest, opts) {
     runtime,
     name: opts.name ?? componentName(stem),
     hash: hash(src),
-    // `main.mib` is the application's page, so a controller it declares is the
-    // application's controller. Any other `.mib` just exports one.
-    entry: stem === ENTRY_STEM,
-    runtimeExports: opts.runtimeExports,
     resolve: (name) => {
       const target = components.get(name);
       if (!target) {
