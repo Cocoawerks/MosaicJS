@@ -45,6 +45,9 @@ export default class AppController {
         this.quantity = "3";
         /** @type {string} The chosen size. */
         this.size = "medium";
+
+        /** Which row of the OutlineView is selected. */
+        this.place = "inbox";
         /** @type {string} What the name field holds. */
         this.name = "";
         /** @type {string} What the search field holds. */
@@ -202,6 +205,28 @@ export default class AppController {
     colourChanged(combo, value) {
         this.colour = value;
         this.note(`colour: ${value}`);
+    }
+
+    // --- the outline ---------------------------------------------------------
+
+    /**
+     * @param {object} view The OutlineView.
+     * @param {string} value The value of the row that was selected.
+     */
+    placeChosen(view, value) {
+        this.place = value;
+        this.note(`place: ${value}`);
+    }
+
+    /** Open every row that has one, and shut them again. */
+    expandPlaces() {
+        this.placesTree.expandAll();
+        this.note("expanded every row");
+    }
+
+    collapsePlaces() {
+        this.placesTree.collapseAll();
+        this.note("collapsed every row");
     }
 
     // --- the text fields -----------------------------------------------------

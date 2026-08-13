@@ -52,24 +52,6 @@
     --link-color-hover: #34828c;
     --link-color-active: #266f79;
 
-    /* Blue / Teal Series — anchored on the Pop accent */
-
-    /* Green Series — built around Pop sage #82BF8C */
-
-    /* Yellow Series — Pop yellow #FEDB40 */
-
-    /* Orange Series — Pop orange #FFAD00 */
-
-    /* Red Series — Pop coral #E56A54 */
-
-    /* Purple Series — Pop muted purple */
-
-    /* Brown / Warm Grey Series — Pop warm greys (toolbar/headerbar family) */
-
-    /* Light Series — warm-tinted neutrals to harmonize with brown toolbar */
-
-    /* Dark Series — Pop dark_ui (warm-tinted) */
-
     /* Textarea/TextView placeholder — the body text lightened a touch, darker
          than the light theme's mix so it still reads clearly on Pop's own
          (already darker) text colour. */

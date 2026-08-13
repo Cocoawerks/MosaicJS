@@ -31,28 +31,6 @@
     --link-color-hover: #a9c6ee;
     --link-color-active: #749bd0;
 
-    /* Blue Series — unchanged in hue, read from light (0) to dark (6) as in the
-         light theme; the dark sheet mostly draws from the middle. */
-
-    /* Green Series */
-
-    /* Yellow Series */
-
-    /* Orange Series */
-
-    /* Red Series */
-
-    /* Purple Series */
-
-    /* Chrome greys — the window frame and title-bar family, running dark to
-         light so a "0" is still the lightest of them, as in the light theme. */
-
-    /* Light Series — the *surface* ramp. Inverted: "1" is still the paper a
-         dialog is drawn on, but here that paper is dark. */
-
-    /* Dark Series — the *ink* ramp, inverted to match: "1" is the strongest
-         text, "5" the faintest. */
-
     /* The band behind highlighted text. */
     --text-selection-background: #476288;
 
@@ -331,7 +309,7 @@
     --outline-foreground: #c4c4c4;
     --outline-hover-background: #38383c;
     --outline-selected-foreground: #2b2b2e;
-    --outline-selected-icon: #313134;
+    --outline-selected-icon: #c4c4c4;
     --progressbar-track: #414146;
     --radio-indicator-background: #313134;
     --radio-mark-color: #313134;
@@ -797,14 +775,25 @@ textarea,
     background-color: var(--primary-background-color);
 }
 
-/* The knob: a dark chip on the pale track, rather than the light theme's white
-   one, with its hover and press steps kept relative to it. Its rim comes from
-   --slider-knob-border, which is *lighter* than the chip here — the one place
-   in the theme where that is so. A rim is only a rim where it parts the knob
-   from what is behind it, and where the pale track crosses, a dark rim has the
-   track on one side and a chip the same value on the other: it merges into the
-   knob and that stretch of the edge reads as bare. Lighter than the chip and
-   darker than the track, it parts them both. */
+
+.v-OutlineItem > .content > .toggle svg {
+    fill: var(--outline-foreground);
+}
+
+/* Selection */
+.v-OutlineItem.selected > .content {
+    background-color: var(--primary-background-color);
+}
+
+
+.v-OutlineItem.selected > .content > .accessory,
+.v-OutlineItem.selected > .content > .toggle,
+.v-OutlineItem.selected > .content > .toggle svg {
+    filter: unset;
+    fill: var(--outline-selected-foreground);
+}
+
+
 .v-Slider.v-Slider .handle {
     background: #4c4c50;
 }

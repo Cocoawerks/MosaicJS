@@ -679,6 +679,104 @@
         "indeterminateAnimation",
     );
 
+    // --- OutlineView ------------------------------------------------------------
+    const outlineBox = section("OutlineView");
+    const outline = outlineBox.querySelector(".v-OutlineView");
+    const outlineRows = () => [...outline.querySelectorAll("li")];
+    const rowNamed = (text) =>
+        outlineRows().find((li) => li.querySelector(".label").textContent === text);
+    // A row is on screen only when nothing above it is shut. A shut row's rows
+    // still have a height of their own — they are clipped, not removed — so
+    // what settles it is the `.collapse` above them, which the sheet gives no
+    // height to at all.
+    const onScreen = (li) => {
+        for (let n = li.parentElement; n && n !== outline; n = n.parentElement) {
+            if (n.classList.contains("collapse") && n.offsetHeight === 0) return false;
+        }
+        return true;
+    };
+    const readable = () =>
+        outlineRows().filter(onScreen).map((li) => li.querySelector(".label").textContent);
+    const outlineButton = (text) =>
+        [...outlineBox.querySelectorAll(".v-Button")].find(
+            (b) => b.textContent.trim() === text,
+        );
+
+    check("the tree drew, with a row per OutlineItem", outlineRows().length === 7);
+    check("it is the tab stop, not the rows in it",
+        outline.getAttribute("tabindex") === "0" &&
+        outlineRows().every((li) => li.getAttribute("tabindex") === null));
+    check("and says what it is", outline.getAttribute("role") === "tree" &&
+        rowNamed("Mail").getAttribute("role") === "treeitem");
+
+    check("the markup said which row starts open",
+        readable().join() === "Mail,Inbox,Sent,Files,Trash");
+    check("and which starts selected",
+        rowNamed("Inbox").className.includes("selected"));
+
+    check("only a row with something under it is expandable",
+        rowNamed("Mail").className.includes("expandable") &&
+        !rowNamed("Trash").className.includes("expandable"));
+
+    // The chevron opens a row. It is the theme that turns it, so this is what
+    // the reader actually sees rather than what the class list says.
+    const chevronOf = (li) => li.querySelector(".toggle");
+    check("a shut row's chevron points along the row",
+        getComputedStyle(chevronOf(rowNamed("Files"))).transform === "none");
+    check("and an open one's is turned to point down",
+        getComputedStyle(chevronOf(rowNamed("Mail"))).transform !== "none");
+
+    chevronOf(rowNamed("Files")).dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("clicking a chevron opens its row", readable().includes("Work"));
+    check("without selecting it", app.textContent.includes("place=inbox"));
+
+    chevronOf(rowNamed("Files")).dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("and clicking it again shuts it", !readable().includes("Work"));
+
+    rowNamed("Sent").dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("clicking a row selects it", last().includes("place: sent"));
+    check("which the summary line shows", app.textContent.includes("place=sent"));
+    check("and only it wears the selection",
+        rowNamed("Sent").className.includes("selected") &&
+        !rowNamed("Inbox").className.includes("selected"));
+    check("the theme paints the selected row",
+        getComputedStyle(rowNamed("Sent").querySelector(".content")).backgroundColor !==
+        getComputedStyle(rowNamed("Inbox").querySelector(".content")).backgroundColor);
+
+    // The keyboard: the tree has focus, and the arrows move through what can be
+    // seen — Sent is shut, so below it is Files and not "This year".
+    outline.focus();
+    const type = (key) =>
+        outline.dispatchEvent(new KeyboardEvent("keydown", {key, bubbles: true}));
+
+    type("ArrowDown");
+    check("the down arrow moves to the next row on screen",
+        app.textContent.includes("place=files"));
+    type("ArrowUp");
+    check("and the up arrow moves back", app.textContent.includes("place=sent"));
+
+    type(" ");
+    check("the space bar opens the selected row", readable().includes("This year"));
+    type("ArrowDown");
+    check("which the arrows then step into", app.textContent.includes("place=year"));
+    type("ArrowUp");
+    type(" ");
+    check("and the space bar shuts it again", !readable().includes("This year"));
+
+    outlineButton("Expand all").dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("expandAll opens every row that has one",
+        readable().join() === "Mail,Inbox,Sent,This year,Files,Work,Trash");
+    outlineButton("Collapse all").dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("collapseAll shuts them all",
+        readable().join() === "Mail,Files,Trash");
+
+    // A row sits inside its parent row, so a click on one must not be a click
+    // on everything above it.
+    outlineButton("Expand all").dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    rowNamed("This year").dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("a click on a nested row is not a click on the rows above it",
+        app.textContent.includes("place=year"));
+
     // --- switching themes ---------------------------------------------------
     // The theme is a stylesheet swap: nothing is redrawn, so what proves it
     // worked is the colours changing under controls that never moved.

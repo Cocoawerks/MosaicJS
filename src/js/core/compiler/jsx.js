@@ -527,7 +527,13 @@ export function inlineCssImports(code, dir, scope = null, options = {}) {
         }
         if (scope) text = css.scope(text, `.${scope}`, null, {minify: options.minify});
 
-        const key = path.basename(file, path.extname(file));
+        // Keyed by the scope it was just given, not by the file it came from.
+        // `addStyles` injects a key once per page, and one sheet imported by two
+        // modules is two sheets by then — the same rules scoped to each — so
+        // keying by the file would inject whichever module ran first and drop
+        // the other module's copy, leaving its elements unstyled. This is how a
+        // component and the container that draws around it can share a sheet.
+        const key = scope ?? path.basename(file, path.extname(file));
 
         // Keep any leading marker so the statement still maps to its source line.
         const markerEnd = line.lastIndexOf("*/");

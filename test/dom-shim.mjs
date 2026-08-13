@@ -131,14 +131,24 @@ class Element extends N {
     const i = fns.indexOf(fn);
     if (i >= 0) fns.splice(i, 1);
   }
+  /** Whether `node` is this element or sits somewhere inside it. */
+  contains(node) {
+    for (let n = node; n; n = n.parentNode) if (n === this) return true;
+    return false;
+  }
   dispatchEvent(ev) {
     // Events bubble, as they do in a browser: a control listens on the element
     // it drew, and what the user works may be a node inside it. `bubbles:
     // false` opts out, for the handful of events that do not.
     if (ev.target === undefined) ev.target = this;
+    // And a handler can stop them going further, which is how a component
+    // nested in another keeps a click to itself. A test may pass its own
+    // stopPropagation to see that one was called; this only fills one in.
+    let stopped = false;
+    if (ev.stopPropagation === undefined) ev.stopPropagation = () => (stopped = true);
     for (let node = this; node; node = node.parentNode) {
       for (const fn of node.listeners?.get(ev.type) ?? []) fn(ev);
-      if (ev.bubbles === false) break;
+      if (ev.bubbles === false || stopped) break;
     }
   }
   focus() {

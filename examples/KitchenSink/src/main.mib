@@ -210,6 +210,35 @@
         <p styleName="values">colour={colour}</p>
     </section>
 
+    <section styleName="section">
+        <h2 styleName="heading">OutlineView</h2>
+        <p styleName="note">
+            A tree of rows, one of which is selected. The chevron opens a row without
+            selecting it; the arrows move through what can be seen and the space bar
+            opens or shuts the selected row.
+        </p>
+
+        <div styleName="row">
+            <Button text="Expand all" action="expandPlaces"/>
+            <Button text="Collapse all" action="collapsePlaces"/>
+        </div>
+
+        <OutlineView outlet="placesTree" action="placeChosen" value="inbox">
+            <OutlineItem text="Mail" value="mail" expanded="true">
+                <OutlineItem text="Inbox" value="inbox"/>
+                <OutlineItem text="Sent" value="sent">
+                    <OutlineItem text="This year" value="year"/>
+                </OutlineItem>
+            </OutlineItem>
+            <OutlineItem text="Files" value="files">
+                <OutlineItem text="Work" value="work"/>
+            </OutlineItem>
+            <OutlineItem text="Trash" value="trash"/>
+        </OutlineView>
+
+        <p styleName="values">place={place}</p>
+    </section>
+
     <p styleName="last">Last action: {lastAction}</p>
 </div>
 

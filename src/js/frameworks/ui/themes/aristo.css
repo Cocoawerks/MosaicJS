@@ -30,26 +30,6 @@
     --link-color-hover: #5f83b9;
     --link-color-active: #3d5a87;
 
-    /* Blue Series — the sky blue of Aristo's controls (0-4), stepping into the
-         indigo of its selection (5) and the dark control edge (6). */
-
-    /* Green Series — desaturated so it sits beside the greys. */
-
-    /* Yellow Series */
-
-    /* Orange Series */
-
-    /* Red Series */
-
-    /* Purple Series */
-
-    /* Chrome greys — where Pop's browns are warm, Aristo's are dead neutral:
-         these are the window frame and title-bar values off the sheet. */
-
-    /* Light Series — the button and window greys. */
-
-    /* Dark Series */
-
     /* Zebra striping: the tint every other row of a list takes. */
     --alternate-row-color: #f6f9fc;
 
