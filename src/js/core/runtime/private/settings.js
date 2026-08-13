@@ -101,7 +101,7 @@ export function prepareSettings(type) {
         if (RESERVED.has(name)) {
             throw new Error(
                 `${type.name}: \`${name}\` cannot be a setting — the name belongs to ` +
-                    `a component's own methods, and a setting would take its place.`,
+                `a component's own methods, and a setting would take its place.`,
             );
         }
 
@@ -115,7 +115,7 @@ export function prepareSettings(type) {
         if (written && !written.get && !written.set) {
             throw new Error(
                 `${type.name}: \`${name}\` is declared as a setting but is also a ` +
-                    `field. One of the two has to go — a field shadows the accessor.`,
+                `field. One of the two has to go — a field shadows the accessor.`,
             );
         }
 

@@ -5,145 +5,145 @@
  */
 /* Loading Indicator Component */
 .v-LoadingIndicator {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 /* Spinner element */
 .v-LoadingIndicator-spinner {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 4px solid var(--spinner-track);
-  border-top-color: var(--loading-indicator-background, var(--accent-color));
-  animation: v-loading-spin 1s linear infinite;
-  box-sizing: border-box;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 4px solid var(--spinner-track);
+    border-top-color: var(--loading-indicator-background, var(--accent-color));
+    animation: v-loading-spin 1s linear infinite;
+    box-sizing: border-box;
 }
 
 /* Message label */
 .v-LoadingIndicator-message {
-  font-size: 17px;
-  color: var(--text-color);
-  text-align: center;
-  flex: 1;
+    font-size: 17px;
+    color: var(--text-color);
+    text-align: center;
+    flex: 1;
 }
 
 .v-LoadingIndicator-message.is-error {
-  color: var(--error-color);
+    color: var(--error-color);
 }
 
 /* Size variants */
 .v-LoadingIndicator.small .v-LoadingIndicator-spinner {
-  width: 24px;
-  height: 24px;
-  border-width: 3px;
+    width: 24px;
+    height: 24px;
+    border-width: 3px;
 }
 
 .v-LoadingIndicator.small .v-LoadingIndicator-message {
-  font-size: 14px;
+    font-size: 14px;
 }
 
 .v-LoadingIndicator.medium .v-LoadingIndicator-spinner {
-  width: 32px;
-  height: 32px;
-  border-width: 4px;
+    width: 32px;
+    height: 32px;
+    border-width: 4px;
 }
 
 .v-LoadingIndicator.medium .v-LoadingIndicator-message {
-  font-size: 17px;
+    font-size: 17px;
 }
 
 .v-LoadingIndicator.large .v-LoadingIndicator-spinner {
-  width: 48px;
-  height: 48px;
-  border-width: 6px;
+    width: 48px;
+    height: 48px;
+    border-width: 6px;
 }
 
 .v-LoadingIndicator.large .v-LoadingIndicator-message {
-  font-size: 19px;
+    font-size: 19px;
 }
 
 .v-LoadingIndicator.extra-large .v-LoadingIndicator-spinner {
-  width: 64px;
-  height: 64px;
-  border-width: 8px;
+    width: 64px;
+    height: 64px;
+    border-width: 8px;
 }
 
 .v-LoadingIndicator.extra-large .v-LoadingIndicator-message {
-  font-size: 20px;
+    font-size: 20px;
 }
 
 /* Complete state */
 .v-LoadingIndicator-spinner.is-complete {
-  border-color: var(--success-color);
-  border-top-color: var(--success-color);
-  animation: none;
-  background: var(--success-color);
-  position: relative;
+    border-color: var(--success-color);
+    border-top-color: var(--success-color);
+    animation: none;
+    background: var(--success-color);
+    position: relative;
 }
 
 .v-LoadingIndicator-spinner.is-complete::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 45%;
-  width: 25%;
-  height: 50%;
-  border: solid var(--spinner-mask);
-  border-width: 0 3px 3px 0;
-  transform: translate(-50%, -50%) rotate(45deg);
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 45%;
+    width: 25%;
+    height: 50%;
+    border: solid var(--spinner-mask);
+    border-width: 0 3px 3px 0;
+    transform: translate(-50%, -50%) rotate(45deg);
 }
 
 .v-LoadingIndicator.large .v-LoadingIndicator-spinner.is-complete::after {
-  border-width: 0 4px 4px 0;
+    border-width: 0 4px 4px 0;
 }
 
 .v-LoadingIndicator.extra-large .v-LoadingIndicator-spinner.is-complete::after {
-  border-width: 0 5px 5px 0;
+    border-width: 0 5px 5px 0;
 }
 
 /* Failed state */
 .v-LoadingIndicator-spinner.is-failed {
-  border-color: var(--error-color);
-  border-top-color: var(--error-color);
-  animation: none;
-  background: var(--error-color);
-  position: relative;
+    border-color: var(--error-color);
+    border-top-color: var(--error-color);
+    animation: none;
+    background: var(--error-color);
+    position: relative;
 }
 
 .v-LoadingIndicator-spinner.is-failed::before,
 .v-LoadingIndicator-spinner.is-failed::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 3px;
-  height: 50%;
-  background: var(--spinner-mask);
-  transform: translate(-50%, -50%) rotate(45deg);
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 3px;
+    height: 50%;
+    background: var(--spinner-mask);
+    transform: translate(-50%, -50%) rotate(45deg);
 }
 
 .v-LoadingIndicator-spinner.is-failed::after {
-  transform: translate(-50%, -50%) rotate(-45deg);
+    transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 .v-LoadingIndicator.large .v-LoadingIndicator-spinner.is-failed::before,
 .v-LoadingIndicator.large .v-LoadingIndicator-spinner.is-failed::after {
-  width: 5px;
+    width: 5px;
 }
 
 .v-LoadingIndicator.extra-large .v-LoadingIndicator-spinner.is-failed::before,
 .v-LoadingIndicator.extra-large .v-LoadingIndicator-spinner.is-failed::after {
-  width: 6px;
+    width: 6px;
 }
 
 /* Spin animation */
 @keyframes v-loading-spin {
-  to {
-    transform: rotate(360deg);
-  }
+    to {
+        transform: rotate(360deg);
+    }
 }

@@ -16,14 +16,14 @@ import Control from "./Control.js";
 let nextId = 0;
 
 export default class ToggleControl extends Control {
-  static props = {
-    /** The label beside the indicator. */
-    text: { type: String, default: "" },
-  };
+    static props = {
+        /** The label beside the indicator. */
+        text: {type: String, default: ""},
+    };
 
-  constructor() {
-    super();
-    this.labelId = `mosaic-toggle-${++nextId}`;
-  }
+    constructor() {
+        super();
+        this.labelId = `mosaic-toggle-${++nextId}`;
+    }
 
 }

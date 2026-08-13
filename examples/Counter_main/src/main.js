@@ -2,8 +2,8 @@
 //
 // `main.mib` is this module's page: it sits beside this file, so the compiler
 // compiles it and puts `Main` in scope here. Nothing imports it by hand.
-import { MosaicApplication } from "mosaic";
+import {MosaicApplication} from "mosaic";
 
 import AppController from "./AppController.js";
 
-new MosaicApplication({ id: "app", controller: new AppController() });
+new MosaicApplication({id: "app", controller: new AppController()});

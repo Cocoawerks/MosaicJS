@@ -9,15 +9,10 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { generate } from "./codegen.js";
-import {
-  ensureRuntimeNames,
-  inlineCssImports,
-  inlineSvgImports,
-  transform,
-} from "./jsx.js";
-import { MARKUP_EXT, scopeClass, takeLineMarkers } from "./js.js";
-import { parse } from "./parser.js";
+import {generate} from "./codegen.js";
+import {ensureRuntimeNames, inlineCssImports, inlineSvgImports, transform,} from "./jsx.js";
+import {MARKUP_EXT, scopeClass, takeLineMarkers} from "./js.js";
+import {parse} from "./parser.js";
 import * as sourcemap from "./sourcemap.js";
 
 /** The stem of an application's bootstrap: `main.js` beside `main.mib`. */
@@ -35,88 +30,91 @@ const ENTRY_STEM = "main";
  *             under if it has one — so a `<Button/>` tag imports the right one.
  */
 export function compileFile(file, opts) {
-  const src = fs.readFileSync(file, "utf8");
-  const stem = path.basename(file, path.extname(file));
+    const src = fs.readFileSync(file, "utf8");
+    const stem = path.basename(file, path.extname(file));
 
-  // Where this module will land, so its imports can be written relative to it.
-  // A bare specifier like `mosaic` names a package rather than a path, and is
-  // emitted as written — the resolver finds it, not the file system layout.
-  const dest = destination(file, opts);
-  const runtime = isBare(opts.runtime)
-    ? opts.runtime
-    : relativeSpecifier(opts.runtime, path.dirname(dest));
+    // Where this module will land, so its imports can be written relative to it.
+    // A bare specifier like `mosaic` names a package rather than a path, and is
+    // emitted as written — the resolver finds it, not the file system layout.
+    const dest = destination(file, opts);
+    const runtime = isBare(opts.runtime)
+        ? opts.runtime
+        : relativeSpecifier(opts.runtime, path.dirname(dest));
 
-  const js =
-    path.extname(file) === MARKUP_EXT
-      ? compileIb(src, runtime, stem, dest, opts)
-      : compileJs(src, file, stem, runtime, opts);
+    const js =
+        path.extname(file) === MARKUP_EXT
+            ? compileIb(src, runtime, stem, dest, opts)
+            : compileJs(src, file, stem, runtime, opts);
 
-  // Line markers travel with the generated code and come out here, becoming
-  // the source map's line table.
-  const [code, mappings] = takeLineMarkers(js);
+    // Line markers travel with the generated code and come out here, becoming
+    // the source map's line table.
+    const [code, mappings] = takeLineMarkers(js);
 
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  if (opts.sourcemap === false) {
-    fs.writeFileSync(dest, code);
-  } else {
-    const mapName = path.basename(dest) + ".map";
-    fs.writeFileSync(dest, `${code}//# sourceMappingURL=${mapName}\n`);
-    fs.writeFileSync(
-      path.join(path.dirname(dest), mapName),
-      sourcemap.forModule(
-        relativeSpecifier(file, path.dirname(dest)),
-        src,
-        mappings,
-      ),
-    );
-  }
-  return dest;
+    fs.mkdirSync(path.dirname(dest), {recursive: true});
+    if (opts.sourcemap === false) {
+        fs.writeFileSync(dest, code);
+    } else {
+        const mapName = path.basename(dest) + ".map";
+        fs.writeFileSync(dest, `${code}//# sourceMappingURL=${mapName}\n`);
+        fs.writeFileSync(
+            path.join(path.dirname(dest), mapName),
+            sourcemap.forModule(
+                relativeSpecifier(file, path.dirname(dest)),
+                src,
+                mappings,
+            ),
+        );
+    }
+    return dest;
 }
 
 function compileIb(src, runtime, stem, dest, opts) {
-  const components = opts.components ?? new Map();
-  return generate(parse(src), {
-    minify: opts.minify,
-    runtime,
-    name: opts.name ?? componentName(stem),
-    hash: hash(src),
-    resolve: (name) => {
-      const target = components.get(name);
-      if (!target) {
-        throw new Error(
-          `<${name}/> has no compiled module — nothing under the inputs compiles to ${name}`,
-        );
-      }
-      // A component from a tree that is published under a name is imported by
-      // it: `mosaic/frameworks/ui` says where Button comes from in a way that
-      // survives the importing module moving, and reaches the same one copy
-      // whichever application is being built.
-      if (target.specifier) return { specifier: target.specifier, named: true };
-      return relativeSpecifier(target.dest, path.dirname(dest));
-    },
-  });
+    const components = opts.components ?? new Map();
+    return generate(parse(src), {
+        minify: opts.minify,
+        runtime,
+        name: opts.name ?? componentName(stem),
+        hash: hash(src),
+        resolve: (name) => {
+            const target = components.get(name);
+            if (!target) {
+                throw new Error(
+                    `<${name}/> has no compiled module — nothing under the inputs compiles to ${name}`,
+                );
+            }
+            // A component from a tree that is published under a name is imported
+            // by that name and its own path within it —
+            // `mosaic/frameworks/ui/controls/button/Button.js`. That survives the
+            // importing module moving and reaches the same one copy whichever
+            // application is being built, and it brings in Button alone: the
+            // framework's index names every component the framework has, so
+            // importing through it would carry the lot of them.
+            if (target.specifier) return target.specifier;
+            return relativeSpecifier(target.dest, path.dirname(dest));
+        },
+    });
 }
 
 function compileJs(src, file, stem, runtime, opts = {}) {
-  // Drawn views are scoped like .mib components: one class per module, carried
-  // by its elements and required by its stylesheet's selectors.
-  const scope = scopeClass(hash(src));
-  let code = transform(src, scope);
-  const [withCss, hasCss] = inlineCssImports(code, path.dirname(file), scope, {
-    minify: opts.minify,
-  });
-  // An icon is markup, and becomes the component that draws it — so `h` is
-  // needed for an icon just as it is for anything else drawn here.
-  const [inlined] = inlineSvgImports(withCss, opts.icons ?? [], scope);
+    // Drawn views are scoped like .mib components: one class per module, carried
+    // by its elements and required by its stylesheet's selectors.
+    const scope = scopeClass(hash(src));
+    let code = transform(src, scope);
+    const [withCss, hasCss] = inlineCssImports(code, path.dirname(file), scope, {
+        minify: opts.minify,
+    });
+    // An icon is markup, and becomes the component that draws it — so `h` is
+    // needed for an icon just as it is for anything else drawn here.
+    const [inlined] = inlineSvgImports(withCss, opts.icons ?? [], scope);
 
-  const needed = ["h", "Fragment"];
-  if (hasCss) needed.push("addStyles");
-  return ensurePage(
-    ensureRuntimeNames(inlined, runtime, needed),
-    file,
-    stem,
-    runtime,
-  );
+    const needed = ["h", "Fragment"];
+    if (hasCss) needed.push("addStyles");
+    return ensurePage(
+        ensureRuntimeNames(inlined, runtime, needed),
+        file,
+        stem,
+        runtime,
+    );
 }
 
 /**
@@ -130,29 +128,29 @@ function compileJs(src, file, stem, runtime, opts = {}) {
  * explicitly is never wrong.
  */
 function ensurePage(code, file, stem, runtime) {
-  const markup = path.join(path.dirname(file), `${stem}${MARKUP_EXT}`);
-  if (!fs.existsSync(markup)) return code;
+    const markup = path.join(path.dirname(file), `${stem}${MARKUP_EXT}`);
+    if (!fs.existsSync(markup)) return code;
 
-  const name = componentName(stem);
-  const specifier = `./${stem}${MARKUP_EXT}.js`;
+    const name = componentName(stem);
+    const specifier = `./${stem}${MARKUP_EXT}.js`;
 
-  const header = [];
-  if (!code.includes(specifier)) {
-    header.push(`import ${name} from ${JSON.stringify(specifier)};`);
-  }
+    const header = [];
+    if (!code.includes(specifier)) {
+        header.push(`import ${name} from ${JSON.stringify(specifier)};`);
+    }
 
-  // `main.js` beside `main.mib` is the application entry, so its page is the
-  // application's. Registering it here is what lets `new MosaicApplication()`
-  // find it with nothing named and nothing fetched — and it has to run before
-  // the module's own code does, which is why it goes at the top. Any other
-  // pair is just a component and its markup.
-  const isEntry = stem === ENTRY_STEM;
-  if (isEntry) header.push(`MosaicApplication.registerPage(${name});`);
+    // `main.js` beside `main.mib` is the application entry, so its page is the
+    // application's. Registering it here is what lets `new MosaicApplication()`
+    // find it with nothing named and nothing fetched — and it has to run before
+    // the module's own code does, which is why it goes at the top. Any other
+    // pair is just a component and its markup.
+    const isEntry = stem === ENTRY_STEM;
+    if (isEntry) header.push(`MosaicApplication.registerPage(${name});`);
 
-  const out = header.length > 0 ? `${header.join("\n")}\n${code}` : code;
-  return isEntry
-    ? ensureRuntimeNames(out, runtime, ["MosaicApplication"])
-    : out;
+    const out = header.length > 0 ? `${header.join("\n")}\n${code}` : code;
+    return isEntry
+        ? ensureRuntimeNames(out, runtime, ["MosaicApplication"])
+        : out;
 }
 
 /**
@@ -164,28 +162,28 @@ function ensurePage(code, file, stem, runtime) {
  * it. A `.js`/`.jsx` source keeps its own name; it is already a module.
  */
 export function destination(file, opts) {
-  if (opts.out) return opts.out;
-  const stem = path.basename(file, path.extname(file));
-  const name = path.extname(file) === MARKUP_EXT ? path.basename(file) : stem;
-  const relative = path.relative(opts.root, path.dirname(file));
-  const inside = relative.startsWith("..") ? "" : relative;
-  return path.join(opts.outdir, inside, `${name}.js`);
+    if (opts.out) return opts.out;
+    const stem = path.basename(file, path.extname(file));
+    const name = path.extname(file) === MARKUP_EXT ? path.basename(file) : stem;
+    const relative = path.relative(opts.root, path.dirname(file));
+    const inside = relative.startsWith("..") ? "" : relative;
+    return path.join(opts.outdir, inside, `${name}.js`);
 }
 
 /** Every compilable source under `dir`, including subdirectories. */
 export function collectSources(dir, out = []) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) collectSources(full, out);
-    else if ([MARKUP_EXT, ".jsx", ".js"].includes(path.extname(full)))
-      out.push(full);
-  }
-  return out.sort();
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) collectSources(full, out);
+        else if ([MARKUP_EXT, ".jsx", ".js"].includes(path.extname(full)))
+            out.push(full);
+    }
+    return out.sort();
 }
 
 /** A specifier that names a package rather than a path. */
 export function isBare(specifier) {
-  return !specifier.startsWith(".") && !specifier.startsWith("/");
+    return !specifier.startsWith(".") && !specifier.startsWith("/");
 }
 
 /**
@@ -195,28 +193,28 @@ export function isBare(specifier) {
  * output file no matter how deeply it is nested.
  */
 export function relativeSpecifier(target, from) {
-  let spec = path
-    .relative(path.resolve(from), path.resolve(target))
-    .split(path.sep)
-    .join("/");
-  if (!spec.startsWith(".")) spec = `./${spec}`;
-  return spec;
+    let spec = path
+        .relative(path.resolve(from), path.resolve(target))
+        .split(path.sep)
+        .join("/");
+    if (!spec.startsWith(".")) spec = `./${spec}`;
+    return spec;
 }
 
 /** `my-widget` / `my_widget` -> `MyWidget`, so the output is a valid identifier. */
 export function componentName(stem) {
-  let out = "";
-  let upper = true;
-  for (const c of stem) {
-    if (c === "-" || c === "_" || c === " " || c === ".") upper = true;
-    else if (upper) {
-      out += c.toUpperCase();
-      upper = false;
-    } else out += c;
-  }
-  out = [...out].filter((c) => /[\p{L}\p{N}_$]/u.test(c)).join("");
-  if (out === "" || /^\d/.test(out)) out = "_" + out;
-  return out;
+    let out = "";
+    let upper = true;
+    for (const c of stem) {
+        if (c === "-" || c === "_" || c === " " || c === ".") upper = true;
+        else if (upper) {
+            out += c.toUpperCase();
+            upper = false;
+        } else out += c;
+    }
+    out = [...out].filter((c) => /[\p{L}\p{N}_$]/u.test(c)).join("");
+    if (out === "" || /^\d/.test(out)) out = "_" + out;
+    return out;
 }
 
 /**
@@ -228,20 +226,20 @@ export function componentName(stem) {
  * stylesheet readable and the rule valid.
  */
 export function hash(src) {
-  let h = 0xcbf29ce484222325n;
-  const bytes = new TextEncoder().encode(src);
-  for (const b of bytes) {
-    h ^= BigInt(b);
-    h = (h * 0x100000001b3n) & 0xffffffffffffffffn;
-  }
+    let h = 0xcbf29ce484222325n;
+    const bytes = new TextEncoder().encode(src);
+    for (const b of bytes) {
+        h ^= BigInt(b);
+        h = (h * 0x100000001b3n) & 0xffffffffffffffffn;
+    }
 
-  const digits = "0123456789abcdefghijklmnopqrstuvwxyz";
-  const letters = "abcdefghijklmnopqrstuvwxyz";
-  let out = "";
-  let n = h;
-  while (out.length < 6) {
-    out = digits[Number(n % 36n)] + out;
-    n /= 36n;
-  }
-  return letters[Number(n % 26n)] + out;
+    const digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+    const letters = "abcdefghijklmnopqrstuvwxyz";
+    let out = "";
+    let n = h;
+    while (out.length < 6) {
+        out = digits[Number(n % 36n)] + out;
+        n /= 36n;
+    }
+    return letters[Number(n % 26n)] + out;
 }

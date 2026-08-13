@@ -9,11 +9,11 @@
 
 /** Nested at-rules whose bodies contain further style rules. */
 const NESTED_AT_RULES = [
-  "@media",
-  "@supports",
-  "@container",
-  "@layer",
-  "@scope",
+    "@media",
+    "@supports",
+    "@container",
+    "@layer",
+    "@scope",
 ];
 
 const WS = new Set([" ", "\t", "\n", "\r", "\f", "\v"]);
@@ -33,57 +33,59 @@ const COMBINATORS = new Set([" ", "\t", "\n", ">", "+", "~"]);
  * `:root { --vars }` stays what it was.
  */
 export function scope(css, scopeSuffix, prefix = null, options = {}) {
-  const source = options.minify ? stripComments(css) : css;
-  const out = [];
-  transformBlock(source, scopeSuffix, out, prefix);
-  const text = out.join("");
-  return options.minify ? dropBlankLines(text) : text;
+    const source = options.minify ? stripComments(css) : css;
+    const out = [];
+    transformBlock(source, scopeSuffix, out, prefix);
+    const text = out.join("");
+    return options.minify ? oneLine(text) : text;
 }
 
 /**
- * Every line that holds nothing taken out.
+ * The whole sheet on one line.
  *
- * The sheets are written with a blank line between rules, and taking the
- * comments out leaves the lines they stood on behind as well — so a minified
- * bundle would carry a blank line for every rule and every note removed.
+ * A stylesheet is carried into the bundle as a string, and a string's newlines
+ * are the one kind of whitespace the bundler cannot take out for us: they ship
+ * as `\n` in the source and as line breaks in the served file. The sheets are
+ * written a declaration to a line with a blank line between rules, so that is
+ * most of what is left once the comments are gone.
  *
- * Lines are dropped rather than all the whitespace collapsed, because a
- * newline between two compounds is a descendant combinator: `.a\n.b` matches
- * what `.a .b` matches, and running them together would mean something else
- * entirely. Removing a line that holds nothing moves no token next to another.
- * A string is passed over whole, newlines and all.
+ * Every run of whitespace becomes a single space rather than nothing at all,
+ * because whitespace between two compounds is a descendant combinator: `.a\n.b`
+ * matches what `.a .b` matches, and running them together would mean something
+ * else entirely. A space is what that newline already was, so nothing changes
+ * meaning — and a run of one is no run at all. Strings are passed over whole:
+ * a newline inside `content:` is content.
  */
-function dropBlankLines(css) {
-  let out = "";
-  let line = "";
-  let quote = null;
+function oneLine(css) {
+    let out = "";
+    let quote = null;
+    let space = false;
 
-  for (let i = 0; i < css.length; i++) {
-    const c = css[i];
+    for (let i = 0; i < css.length; i++) {
+        const c = css[i];
 
-    if (quote) {
-      line += c;
-      if (c === "\\") line += css[++i] ?? "";
-      else if (c === quote) quote = null;
-      continue;
+        if (quote) {
+            out += c;
+            if (c === "\\") out += css[++i] ?? "";
+            else if (c === quote) quote = null;
+            continue;
+        }
+
+        if (WS.has(c)) {
+            space = true;
+            continue;
+        }
+
+        // Held back until something follows it, so a sheet neither starts nor
+        // ends with one.
+        if (space && out !== "") out += " ";
+        space = false;
+
+        if (c === '"' || c === "'") quote = c;
+        out += c;
     }
 
-    if (c === '"' || c === "'") {
-      quote = c;
-      line += c;
-      continue;
-    }
-
-    if (c === "\n") {
-      if (line.trim() !== "") out += `${line.trimEnd()}\n`;
-      line = "";
-      continue;
-    }
-
-    line += c;
-  }
-
-  return line.trim() === "" ? out : out + line.trimEnd();
+    return out;
 }
 
 /**
@@ -98,157 +100,157 @@ function dropBlankLines(css) {
  * Strings are stepped over — a `content: "/*"` is content, not a comment.
  */
 function stripComments(css) {
-  let out = "";
-  let i = 0;
+    let out = "";
+    let i = 0;
 
-  while (i < css.length) {
-    if (css.startsWith("/*", i)) {
-      i = skipComment(css, i);
-      continue;
+    while (i < css.length) {
+        if (css.startsWith("/*", i)) {
+            i = skipComment(css, i);
+            continue;
+        }
+
+        const c = css[i];
+        if (c === '"' || c === "'") {
+            let j = i + 1;
+            while (j < css.length && css[j] !== c) j += css[j] === "\\" ? 2 : 1;
+            out += css.slice(i, Math.min(j + 1, css.length));
+            i = j + 1;
+            continue;
+        }
+
+        out += c;
+        i++;
     }
-
-    const c = css[i];
-    if (c === '"' || c === "'") {
-      let j = i + 1;
-      while (j < css.length && css[j] !== c) j += css[j] === "\\" ? 2 : 1;
-      out += css.slice(i, Math.min(j + 1, css.length));
-      i = j + 1;
-      continue;
-    }
-
-    out += c;
-    i++;
-  }
-  return out;
+    return out;
 }
 
 function transformBlock(css, scopeSuffix, out, prefix = null) {
-  let i = 0;
-  while (i < css.length) {
-    // Emit leading whitespace and comments verbatim — a comment is not a
-    // selector and must never be scoped.
-    const wsStart = i;
-    while (i < css.length && WS.has(css[i])) i++;
-    if (css.startsWith("/*", i)) {
-      const found = css.indexOf("*/", i);
-      const end = found === -1 ? css.length : found + 2;
-      out.push(css.slice(wsStart, end));
-      i = end;
-      continue;
-    }
-    i = wsStart;
-
-    // Collect the prelude up to `{` (or `;` for statements like @import).
-    const start = i;
-    let depthParen = 0;
+    let i = 0;
     while (i < css.length) {
-      const c = css[i];
-      // As in matchingBrace: a comment inside a prelude is prose, and neither
-      // its punctuation nor its apostrophes are CSS.
-      if (css.startsWith("/*", i)) {
-        i = skipComment(css, i);
-        continue;
-      }
-      if (c === "(") depthParen++;
-      else if (c === ")") depthParen--;
-      else if ((c === "{" || c === ";") && depthParen === 0) break;
-      i++;
-    }
-    if (i >= css.length) {
-      out.push(css.slice(start));
-      return;
-    }
-    const prelude = css.slice(start, i);
+        // Emit leading whitespace and comments verbatim — a comment is not a
+        // selector and must never be scoped.
+        const wsStart = i;
+        while (i < css.length && WS.has(css[i])) i++;
+        if (css.startsWith("/*", i)) {
+            const found = css.indexOf("*/", i);
+            const end = found === -1 ? css.length : found + 2;
+            out.push(css.slice(wsStart, end));
+            i = end;
+            continue;
+        }
+        i = wsStart;
 
-    if (css[i] === ";") {
-      // Statement at-rule (@import, @charset) — pass through.
-      out.push(prelude, ";");
-      i++;
-      continue;
+        // Collect the prelude up to `{` (or `;` for statements like @import).
+        const start = i;
+        let depthParen = 0;
+        while (i < css.length) {
+            const c = css[i];
+            // As in matchingBrace: a comment inside a prelude is prose, and neither
+            // its punctuation nor its apostrophes are CSS.
+            if (css.startsWith("/*", i)) {
+                i = skipComment(css, i);
+                continue;
+            }
+            if (c === "(") depthParen++;
+            else if (c === ")") depthParen--;
+            else if ((c === "{" || c === ";") && depthParen === 0) break;
+            i++;
+        }
+        if (i >= css.length) {
+            out.push(css.slice(start));
+            return;
+        }
+        const prelude = css.slice(start, i);
+
+        if (css[i] === ";") {
+            // Statement at-rule (@import, @charset) — pass through.
+            out.push(prelude, ";");
+            i++;
+            continue;
+        }
+
+        const bodyStart = i + 1;
+        const bodyEnd = matchingBrace(css, i);
+        if (bodyEnd === -1) {
+            out.push(css.slice(start));
+            return;
+        }
+        const body = css.slice(bodyStart, bodyEnd);
+
+        const trimmed = prelude.trim();
+        out.push(prelude.slice(0, prelude.length - prelude.trimStart().length));
+
+        if (trimmed.startsWith("@")) {
+            const name = trimmed.split(/[\s(]/)[0];
+            out.push(trimmed, "{");
+            if (NESTED_AT_RULES.includes(name)) {
+                transformBlock(body, scopeSuffix, out, prefix);
+            } else {
+                // @keyframes / @font-face bodies hold declarations, not selectors.
+                out.push(body);
+            }
+            out.push("}");
+        } else {
+            out.push(
+                scopeSelectorList(trimmed, scopeSuffix, prefix),
+                "{",
+                body.trim(),
+                "}",
+            );
+        }
+
+        i = bodyEnd + 1;
     }
-
-    const bodyStart = i + 1;
-    const bodyEnd = matchingBrace(css, i);
-    if (bodyEnd === -1) {
-      out.push(css.slice(start));
-      return;
-    }
-    const body = css.slice(bodyStart, bodyEnd);
-
-    const trimmed = prelude.trim();
-    out.push(prelude.slice(0, prelude.length - prelude.trimStart().length));
-
-    if (trimmed.startsWith("@")) {
-      const name = trimmed.split(/[\s(]/)[0];
-      out.push(trimmed, "{");
-      if (NESTED_AT_RULES.includes(name)) {
-        transformBlock(body, scopeSuffix, out, prefix);
-      } else {
-        // @keyframes / @font-face bodies hold declarations, not selectors.
-        out.push(body);
-      }
-      out.push("}");
-    } else {
-      out.push(
-        scopeSelectorList(trimmed, scopeSuffix, prefix),
-        "{",
-        body.trim(),
-        "}",
-      );
-    }
-
-    i = bodyEnd + 1;
-  }
 }
 
 /** The index just past the comment starting at `at`, or the end of the sheet. */
 function skipComment(css, at) {
-  const end = css.indexOf("*/", at + 2);
-  return end === -1 ? css.length : end + 2;
+    const end = css.indexOf("*/", at + 2);
+    return end === -1 ? css.length : end + 2;
 }
 
 function matchingBrace(css, open) {
-  let depth = 0;
-  let i = open;
-  while (i < css.length) {
-    const c = css[i];
-    // A comment is skipped whole. Prose is not CSS: an apostrophe in one —
-    // "the push button's face" — would otherwise open a string that runs to
-    // the next apostrophe in the file, swallowing this rule's closing brace
-    // and everything after it.
-    if (css.startsWith("/*", i)) {
-      i = skipComment(css, i);
-      continue;
+    let depth = 0;
+    let i = open;
+    while (i < css.length) {
+        const c = css[i];
+        // A comment is skipped whole. Prose is not CSS: an apostrophe in one —
+        // "the push button's face" — would otherwise open a string that runs to
+        // the next apostrophe in the file, swallowing this rule's closing brace
+        // and everything after it.
+        if (css.startsWith("/*", i)) {
+            i = skipComment(css, i);
+            continue;
+        }
+        if (c === "{") {
+            depth++;
+        } else if (c === "}") {
+            depth--;
+            if (depth === 0) return i;
+        } else if (c === '"' || c === "'") {
+            i++;
+            while (i < css.length && css[i] !== c) i += css[i] === "\\" ? 2 : 1;
+        }
+        i++;
     }
-    if (c === "{") {
-      depth++;
-    } else if (c === "}") {
-      depth--;
-      if (depth === 0) return i;
-    } else if (c === '"' || c === "'") {
-      i++;
-      while (i < css.length && css[i] !== c) i += css[i] === "\\" ? 2 : 1;
-    }
-    i++;
-  }
-  return -1;
+    return -1;
 }
 
 function scopeSelectorList(list, scopeSuffix, prefix = null) {
-  return splitTopLevel(list, ",")
-    .map((s) => withPrefix(scopeSelector(s.trim(), scopeSuffix), prefix))
-    .join(", ");
+    return splitTopLevel(list, ",")
+        .map((s) => withPrefix(scopeSelector(s.trim(), scopeSuffix), prefix))
+        .join(", ");
 }
 
 /** `.v-Button` -> `:root .v-Button`, leaving one that already starts there. */
 function withPrefix(selector, prefix) {
-  if (!prefix) return selector;
-  const trimmed = selector.trim();
-  if (trimmed === "" || trimmed === prefix || trimmed.startsWith(`${prefix} `))
-    return selector;
-  // `:root:root` rather than `:root :root`: the root is not inside itself.
-  if (trimmed.startsWith(prefix)) return selector;
-  return `${prefix} ${trimmed}`;
+    if (!prefix) return selector;
+    const trimmed = selector.trim();
+    if (trimmed === "" || trimmed === prefix || trimmed.startsWith(`${prefix} `))
+        return selector;
+    // `:root:root` rather than `:root :root`: the root is not inside itself.
+    if (trimmed.startsWith(prefix)) return selector;
+    return `${prefix} ${trimmed}`;
 }
 
 /**
@@ -259,42 +261,42 @@ function withPrefix(selector, prefix) {
  * scoped, the descendant is left open for nodes a controller builds.
  */
 function scopeSelector(sel, scopeSuffix) {
-  const parts = splitCompounds(sel);
+    const parts = splitCompounds(sel);
 
-  // Unwrap `:global(...)`, remembering which pieces opted out of scoping.
-  const isGlobal = parts.map(() => false);
-  parts.forEach((part, i) => {
-    const inner = stripGlobal(part.trim());
-    if (inner !== null) {
-      parts[i] = inner + part.slice(part.trimEnd().length);
-      isGlobal[i] = true;
+    // Unwrap `:global(...)`, remembering which pieces opted out of scoping.
+    const isGlobal = parts.map(() => false);
+    parts.forEach((part, i) => {
+        const inner = stripGlobal(part.trim());
+        if (inner !== null) {
+            parts[i] = inner + part.slice(part.trimEnd().length);
+            isGlobal[i] = true;
+        }
+    });
+
+    // The last scopable compound carries the scope. Combinator pieces
+    // ("` > `") are not compounds and never take it.
+    let target = -1;
+    for (let i = parts.length - 1; i >= 0; i--) {
+        if (!isGlobal[i] && !isCombinator(parts[i])) {
+            target = i;
+            break;
+        }
     }
-  });
 
-  // The last scopable compound carries the scope. Combinator pieces
-  // ("` > `") are not compounds and never take it.
-  let target = -1;
-  for (let i = parts.length - 1; i >= 0; i--) {
-    if (!isGlobal[i] && !isCombinator(parts[i])) {
-      target = i;
-      break;
-    }
-  }
-
-  // Every compound was `:global(...)` — emit it unscoped.
-  if (target === -1) return parts.join("");
-  return parts
-    .map((p, i) => (i === target ? scopeCompound(p, scopeSuffix) : p))
-    .join("");
+    // Every compound was `:global(...)` — emit it unscoped.
+    if (target === -1) return parts.join("");
+    return parts
+        .map((p, i) => (i === target ? scopeCompound(p, scopeSuffix) : p))
+        .join("");
 }
 
 function isCombinator(part) {
-  return part.length > 0 && [...part].every((c) => COMBINATORS.has(c));
+    return part.length > 0 && [...part].every((c) => COMBINATORS.has(c));
 }
 
 function stripGlobal(sel) {
-  if (!sel.startsWith(":global(") || !sel.endsWith(")")) return null;
-  return sel.slice(":global(".length, -1).trim();
+    if (!sel.startsWith(":global(") || !sel.endsWith(")")) return null;
+    return sel.slice(":global(".length, -1).trim();
 }
 
 /**
@@ -302,22 +304,22 @@ function stripGlobal(sel) {
  * before any pseudo-element or pseudo-class.
  */
 function scopeCompound(compound, scopeSuffix) {
-  const trimmed = compound.trimEnd();
-  const trailingWs = compound.slice(trimmed.length);
-  if (trimmed === "") return compound;
+    const trimmed = compound.trimEnd();
+    const trailingWs = compound.slice(trimmed.length);
+    if (trimmed === "") return compound;
 
-  let cut = trimmed.length;
-  let depth = 0;
-  for (let i = 0; i < trimmed.length; i++) {
-    const c = trimmed[i];
-    if (c === "(") depth++;
-    else if (c === ")") depth--;
-    else if (c === ":" && depth === 0) {
-      cut = i;
-      break;
+    let cut = trimmed.length;
+    let depth = 0;
+    for (let i = 0; i < trimmed.length; i++) {
+        const c = trimmed[i];
+        if (c === "(") depth++;
+        else if (c === ")") depth--;
+        else if (c === ":" && depth === 0) {
+            cut = i;
+            break;
+        }
     }
-  }
-  return `${trimmed.slice(0, cut)}${scopeSuffix}${trimmed.slice(cut)}${trailingWs}`;
+    return `${trimmed.slice(0, cut)}${scopeSuffix}${trimmed.slice(cut)}${trailingWs}`;
 }
 
 /**
@@ -325,56 +327,56 @@ function scopeCompound(compound, scopeSuffix) {
  * piece that precedes the following compound (e.g. `["a ", "> ", "b"]`).
  */
 function splitCompounds(sel) {
-  const parts = [];
-  let cur = "";
-  let depth = 0;
-  let inCombinator = false;
+    const parts = [];
+    let cur = "";
+    let depth = 0;
+    let inCombinator = false;
 
-  for (let i = 0; i < sel.length; i++) {
-    const c = sel[i];
-    if (c === "(" || c === "[") {
-      depth++;
-      inCombinator = false;
-      cur += c;
-    } else if (c === ")" || c === "]") {
-      depth--;
-      cur += c;
-    } else if (COMBINATORS.has(c) && depth === 0) {
-      if (!inCombinator && cur !== "") {
-        parts.push(cur);
-        cur = "";
-      }
-      inCombinator = true;
-      cur += c;
-      // Absorb the whole combinator run into this piece.
-      while (i + 1 < sel.length && COMBINATORS.has(sel[i + 1])) {
-        cur += sel[++i];
-      }
-      parts.push(cur);
-      cur = "";
-    } else {
-      inCombinator = false;
-      cur += c;
+    for (let i = 0; i < sel.length; i++) {
+        const c = sel[i];
+        if (c === "(" || c === "[") {
+            depth++;
+            inCombinator = false;
+            cur += c;
+        } else if (c === ")" || c === "]") {
+            depth--;
+            cur += c;
+        } else if (COMBINATORS.has(c) && depth === 0) {
+            if (!inCombinator && cur !== "") {
+                parts.push(cur);
+                cur = "";
+            }
+            inCombinator = true;
+            cur += c;
+            // Absorb the whole combinator run into this piece.
+            while (i + 1 < sel.length && COMBINATORS.has(sel[i + 1])) {
+                cur += sel[++i];
+            }
+            parts.push(cur);
+            cur = "";
+        } else {
+            inCombinator = false;
+            cur += c;
+        }
     }
-  }
-  if (cur !== "") parts.push(cur);
-  return parts;
+    if (cur !== "") parts.push(cur);
+    return parts;
 }
 
 function splitTopLevel(s, sep) {
-  const out = [];
-  let cur = "";
-  let depth = 0;
-  for (const c of s) {
-    if (c === "(" || c === "[") depth++;
-    else if (c === ")" || c === "]") depth--;
-    if (c === sep && depth === 0) {
-      out.push(cur);
-      cur = "";
-    } else {
-      cur += c;
+    const out = [];
+    let cur = "";
+    let depth = 0;
+    for (const c of s) {
+        if (c === "(" || c === "[") depth++;
+        else if (c === ")" || c === "]") depth--;
+        if (c === sep && depth === 0) {
+            out.push(cur);
+            cur = "";
+        } else {
+            cur += c;
+        }
     }
-  }
-  out.push(cur);
-  return out;
+    out.push(cur);
+    return out;
 }

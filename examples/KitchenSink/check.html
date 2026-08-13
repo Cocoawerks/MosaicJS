@@ -6,964 +6,964 @@
      checked is the shipped application and not a reconstruction of it. -->
 
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
+<head>
+    <meta charset="utf-8"/>
     <title>KitchenSink browser check</title>
-  </head>
+</head>
 
-  <body>
-    <div id="app"></div>
-    <pre id="results"></pre>
+<body>
+<div id="app"></div>
+<pre id="results"></pre>
 
-    <script type="module" src="build/app.js"></script>
+<script type="module" src="build/app.js"></script>
 
-    <script type="module">
-      const log = [];
-      let failed = 0;
-      const check = (name, cond) => {
+<script type="module">
+    const log = [];
+    let failed = 0;
+    const check = (name, cond) => {
         log.push(`${cond ? "PASS" : "FAIL"}  ${name}`);
         if (!cond) failed++;
         // Written as they go: a page that stops halfway still says how far it got.
         document.querySelector("#results").textContent = log.join("\n");
-      };
+    };
 
-      // A module's failure arrives as a rejection, not as an error event, and a
-      // page that dies quietly reads as a page that never finished.
-      window.addEventListener("unhandledrejection", (e) => {
+    // A module's failure arrives as a rejection, not as an error event, and a
+    // page that dies quietly reads as a page that never finished.
+    window.addEventListener("unhandledrejection", (e) => {
         document.querySelector("#results").textContent =
-          log.join("\n") + `\nERROR  ${e.reason?.message ?? e.reason}`;
+            log.join("\n") + `\nERROR  ${e.reason?.message ?? e.reason}`;
         document.title = "verdict FAIL (threw)";
-      });
+    });
 
-      window.addEventListener("error", (e) => {
+    window.addEventListener("error", (e) => {
         // Whatever ran before the throw is worth seeing: it says how far it got.
         document.querySelector("#results").textContent = log.join("\n");
         document.querySelector("#results").textContent +=
-          `\nERROR  ${e.message}`;
+            `\nERROR  ${e.message}`;
         document.title = "verdict FAIL (threw)";
-      });
+    });
 
-      const app = document.querySelector("#app");
-      const guard = (where, fn) => {
+    const app = document.querySelector("#app");
+    const guard = (where, fn) => {
         try {
-          return fn();
+            return fn();
         } catch (e) {
-          log.push(`ERROR  at ${where}: ${e.message}`);
-          failed++;
-          return null;
+            log.push(`ERROR  at ${where}: ${e.message}`);
+            failed++;
+            return null;
         }
-      };
+    };
 
-      // The bundle is a separate request, and on a cold cache it can still be in
-      // flight when this module runs. Wait for the application to be there rather
-      // than assuming it: a page that checks an app it loads has to.
-      let waited = 0;
-      for (; app.childElementCount === 0 && waited < 10000; waited += 25) {
+    // The bundle is a separate request, and on a cold cache it can still be in
+    // flight when this module runs. Wait for the application to be there rather
+    // than assuming it: a page that checks an app it loads has to.
+    let waited = 0;
+    for (; app.childElementCount === 0 && waited < 10000; waited += 25) {
         await new Promise((r) => setTimeout(r, 25));
-      }
-      check("the application loaded", app.childElementCount > 0);
-      const click = (el) =>
-        el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      const buttons = () => [...app.querySelectorAll("button")];
-      // A Switch carries role="checkbox" too — it is the same control worn
-      // differently — so the checkboxes are picked out by their own class.
-      const boxes = () => [...app.querySelectorAll(".v-CheckBox")];
-      // styleName classes stay literal; the scope hash rides along beside them.
-      const last = () => app.querySelector("p.last").textContent;
-      const labelled = (text) =>
+    }
+    check("the application loaded", app.childElementCount > 0);
+    const click = (el) =>
+        el.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    const buttons = () => [...app.querySelectorAll("button")];
+    // A Switch carries role="checkbox" too — it is the same control worn
+    // differently — so the checkboxes are picked out by their own class.
+    const boxes = () => [...app.querySelectorAll(".v-CheckBox")];
+    // styleName classes stay literal; the scope hash rides along beside them.
+    const last = () => app.querySelector("p.last").textContent;
+    const labelled = (text) =>
         buttons().find((b) => b.textContent.trim() === text);
 
-      // --- it drew ------------------------------------------------------------
-      check("the page mounted", app.querySelector("h1") !== null);
-      // The section a control belongs to, found by its heading: the page has grown
-      // enough that "every button" no longer means one thing.
-      const section = (heading) =>
+    // --- it drew ------------------------------------------------------------
+    check("the page mounted", app.querySelector("h1") !== null);
+    // The section a control belongs to, found by its heading: the page has grown
+    // enough that "every button" no longer means one thing.
+    const section = (heading) =>
         [...app.querySelectorAll("section")].find(
-          (s) => s.querySelector("h2").textContent === heading,
+            (s) => s.querySelector("h2").textContent === heading,
         );
-      const intentButtons = () => [
+    const intentButtons = () => [
         ...section("Button").querySelectorAll(".v-Button"),
-      ];
+    ];
 
-      check(
+    check(
         "every intent drew a button, and the two stateful ones",
         intentButtons().length === 9,
-      );
-      check("both checkboxes drew", boxes().length === 2);
-      check(
+    );
+    check("both checkboxes drew", boxes().length === 2);
+    check(
         "the theme reached the controls",
         getComputedStyle(buttons()[1]).backgroundColor !== "rgba(0, 0, 0, 0)",
-      );
+    );
 
-      // --- a control reports what it did --------------------------------------
-      click(labelled("primary"));
-      check(
+    // --- a control reports what it did --------------------------------------
+    click(labelled("primary"));
+    check(
         "clicking a button is reported",
         last().includes("clicked the primary button"),
-      );
+    );
 
-      // --- CheckBox -----------------------------------------------------------
-      const remember = boxes()[0];
-      check(
+    // --- CheckBox -----------------------------------------------------------
+    const remember = boxes()[0];
+    check(
         "a checkbox starts unchecked",
         remember.getAttribute("aria-checked") === "false",
-      );
+    );
 
-      click(remember);
-      check(
+    click(remember);
+    check(
         "clicking it checked it",
         remember.getAttribute("aria-checked") === "true",
-      );
-      check(
+    );
+    check(
         "and the controller heard the new value",
         last().includes("remember me: true"),
-      );
-      check(
+    );
+    check(
         "which the summary line shows too",
         app.textContent.includes("remember=true"),
-      );
+    );
 
-      // --- TextField and SearchField ------------------------------------------
-      const nameField = guard("name field", () =>
+    // --- TextField and SearchField ------------------------------------------
+    const nameField = guard("name field", () =>
         app.querySelector(".v-Text:not(.v-Search) input"),
-      );
-      const searchBox = guard("search box", () =>
+    );
+    const searchBox = guard("search box", () =>
         app.querySelector(".v-Search"),
-      );
-      const searchInput = searchBox.querySelector("input");
-      const clearButton = searchBox.querySelector(".Search-reset");
-      const typeInto = (input, text) => {
+    );
+    const searchInput = searchBox.querySelector("input");
+    const clearButton = searchBox.querySelector(".Search-reset");
+    const typeInto = (input, text) => {
         input.value = text;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-      };
+        input.dispatchEvent(new Event("input", {bubbles: true}));
+    };
 
-      check("the field drew its input", nameField instanceof HTMLInputElement);
-      check(
+    check("the field drew its input", nameField instanceof HTMLInputElement);
+    check(
         "with the placeholder it was given",
         nameField.placeholder === "Your name",
-      );
-      const fieldBox = getComputedStyle(nameField.closest(".v-Text"));
-      check(
+    );
+    const fieldBox = getComputedStyle(nameField.closest(".v-Text"));
+    check(
         `and its box is drawn by the stylesheet (border ${fieldBox.borderTopWidth} ${fieldBox.borderTopStyle}, radius ${fieldBox.borderRadius}, bg ${fieldBox.backgroundColor})`,
         fieldBox.borderRadius === "3px",
-      );
+    );
 
-      check(
+    check(
         "the text sits off the field's left edge",
         parseFloat(getComputedStyle(nameField).paddingLeft) >= 8,
-      );
-      check(
+    );
+    check(
         "and the search field is left out of that — its magnifier already does it",
         parseFloat(getComputedStyle(searchInput).paddingLeft) < 8,
-      );
+    );
 
-      // The GWT template always emits the two icon slots, and `.v-Text .icon`
-      // is what gives them their margin. They are drawn by TextBase so that
-      // rule — which belongs to TextBase's stylesheet — can reach them.
-      const prefixSlot = nameField
+    // The GWT template always emits the two icon slots, and `.v-Text .icon`
+    // is what gives them their margin. They are drawn by TextBase so that
+    // rule — which belongs to TextBase's stylesheet — can reach them.
+    const prefixSlot = nameField
         .closest(".v-Text")
         .querySelector("i.icon.prefix");
-      const suffixSlot = nameField
+    const suffixSlot = nameField
         .closest(".v-Text")
         .querySelector("i.icon.suffix");
-      check(
+    check(
         "the field drew the icon slots the GWT template emits",
         prefixSlot !== null && suffixSlot !== null,
-      );
-      check(
+    );
+    check(
         `and the sheet reaches them (margin ${prefixSlot && getComputedStyle(prefixSlot).margin}, font-size ${prefixSlot && getComputedStyle(prefixSlot).fontSize})`,
         prefixSlot &&
-          getComputedStyle(prefixSlot).margin === "2px" &&
-          getComputedStyle(prefixSlot).fontSize === "18px",
-      );
-      check(
+        getComputedStyle(prefixSlot).margin === "2px" &&
+        getComputedStyle(prefixSlot).fontSize === "18px",
+    );
+    check(
         "the input takes the rest of the row",
         getComputedStyle(nameField).flexGrow === "1",
-      );
+    );
 
-      typeInto(nameField, "Mosaic");
-      check(
+    typeInto(nameField, "Mosaic");
+    check(
         "typing reaches the controller",
         app.textContent.includes("name=Mosaic"),
-      );
+    );
 
-      nameField.dispatchEvent(
-        new KeyboardEvent("keypress", { key: "Enter", bubbles: true }),
-      );
-      check("Enter is the action", last().includes("name submitted: Mosaic"));
+    nameField.dispatchEvent(
+        new KeyboardEvent("keypress", {key: "Enter", bubbles: true}),
+    );
+    check("Enter is the action", last().includes("name submitted: Mosaic"));
 
-      check(
+    check(
         "the search field drew its magnifier",
         searchBox.querySelector(".search svg") instanceof SVGElement,
-      );
-      check(
+    );
+    check(
         "and its clear button is out of the way while it is empty",
         getComputedStyle(clearButton).display === "none",
-      );
+    );
 
-      typeInto(searchInput, "combo");
-      check(
+    typeInto(searchInput, "combo");
+    check(
         "searching reaches the controller",
         app.textContent.includes("search=combo"),
-      );
-      check(
+    );
+    check(
         "and the clear button appears",
         getComputedStyle(clearButton).display === "block",
-      );
+    );
 
-      click(clearButton);
-      check("clearing empties the field", searchInput.value === "");
-      check("and says so", last().includes("search cleared"));
+    click(clearButton);
+    check("clearing empties the field", searchInput.value === "");
+    check("and says so", last().includes("search cleared"));
 
-      // --- MaskedTextField ------------------------------------------------------
-      const phoneBox = section("MaskedTextField").querySelector(".v-Text");
-      const phoneInput = phoneBox.querySelector("input");
-      const phoneView = () => phoneInput.value;
+    // --- MaskedTextField ------------------------------------------------------
+    const phoneBox = section("MaskedTextField").querySelector(".v-Text");
+    const phoneInput = phoneBox.querySelector("input");
+    const phoneView = () => phoneInput.value;
 
-      phoneInput.focus();
-      check(
+    phoneInput.focus();
+    check(
         "focusing a masked field lays the mask out",
         phoneView() === "(___) ___-____",
-      );
+    );
 
-      // Typing is the input event the field listens for; the buffer decides
-      // what actually lands, so the letters are refused and the digits are
-      // placed around the mask's own punctuation.
-      typeInto(phoneInput, "(2a16) 555x0134");
-      check(
+    // Typing is the input event the field listens for; the buffer decides
+    // what actually lands, so the letters are refused and the digits are
+    // placed around the mask's own punctuation.
+    typeInto(phoneInput, "(2a16) 555x0134");
+    check(
         `digits fill the slots and letters are refused (${phoneView()})`,
         phoneView() === "(216) 555-0134",
-      );
-      // The change is reported once the keystroke has been dealt with, as the
-      // Java version's scheduleDeferred does, so it is not there yet.
-      await Promise.resolve();
-      check(
+    );
+    // The change is reported once the keystroke has been dealt with, as the
+    // Java version's scheduleDeferred does, so it is not there yet.
+    await Promise.resolve();
+    check(
         "the controller is told the digits without the mask",
         app.textContent.includes("digits=2165550134"),
-      );
+    );
 
-      // Backspace closes the gap rather than leaving a hole in the middle.
-      phoneInput.setSelectionRange(14, 14);
-      phoneInput.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Backspace", bubbles: true }),
-      );
-      check(
+    // Backspace closes the gap rather than leaving a hole in the middle.
+    phoneInput.setSelectionRange(14, 14);
+    phoneInput.dispatchEvent(
+        new KeyboardEvent("keydown", {key: "Backspace", bubbles: true}),
+    );
+    check(
         `backspace takes the last digit back (${phoneView()})`,
         phoneView() === "(216) 555-013_",
-      );
+    );
 
-      // A mask is not content: a field holding only its own punctuation is blank.
-      const phoneControl = phoneBox.__ibView ?? null;
-      typeInto(phoneInput, "");
-      phoneInput.blur();
-      check(
+    // A mask is not content: a field holding only its own punctuation is blank.
+    const phoneControl = phoneBox.__ibView ?? null;
+    typeInto(phoneInput, "");
+    phoneInput.blur();
+    check(
         "and a field with nothing typed into it is emptied on leaving",
         phoneView() === "",
-      );
+    );
 
-      // --- LoadingButton and LoadingIndicator ---------------------------------
-      const saveButton = labelled("Save");
-      const loadingIndicator = app.querySelector(".v-LoadingIndicator");
-      const spinner = () =>
+    // --- LoadingButton and LoadingIndicator ---------------------------------
+    const saveButton = labelled("Save");
+    const loadingIndicator = app.querySelector(".v-LoadingIndicator");
+    const spinner = () =>
         loadingIndicator.querySelector(".v-LoadingIndicator-spinner");
 
-      check(
+    check(
         "the loading button keeps the icon slot for its loader",
         saveButton.querySelector(".button-loader") !== null &&
-          !saveButton.classList.contains("noIcon"),
-      );
-      check(
+        !saveButton.classList.contains("noIcon"),
+    );
+    check(
         "which is not shown before there is anything to wait for",
         getComputedStyle(saveButton.querySelector(".button-loader"))
-          .visibility === "hidden",
-      );
-      check(
+            .visibility === "hidden",
+    );
+    check(
         "the indicator spins",
         getComputedStyle(spinner()).animationName === "v-loading-spin",
-      );
+    );
 
-      // Pressing it is what starts the work: the controller is told to save and
-      // says when it is done, but it never puts the button into loading itself.
-      click(saveButton);
-      check(
+    // Pressing it is what starts the work: the controller is told to save and
+    // says when it is done, but it never puts the button into loading itself.
+    click(saveButton);
+    check(
         "saving disables the button",
         saveButton.getAttribute("aria-disabled") === "true",
-      );
-      check(
+    );
+    check(
         "and says it is busy",
         saveButton.getAttribute("aria-busy") === "true",
-      );
-      check(
+    );
+    check(
         "the indicator says what is happening",
         loadingIndicator.textContent.includes("Saving"),
-      );
+    );
 
-      await new Promise((r) => setTimeout(r, 600));
-      check(
+    await new Promise((r) => setTimeout(r, 600));
+    check(
         "a wait that runs on shows the spinner",
         getComputedStyle(saveButton.querySelector(".button-loader"))
-          .visibility === "visible",
-      );
-      const loaderRect = saveButton
+            .visibility === "visible",
+    );
+    const loaderRect = saveButton
         .querySelector(".button-loader")
         .getBoundingClientRect();
-      const labelEl = saveButton.querySelector(".label");
-      check(
+    const labelEl = saveButton.querySelector(".label");
+    check(
         `and it is drawn to the left of the label (${loaderRect.width}px wide)`,
         loaderRect.width > 0 &&
-          loaderRect.left < labelEl.getBoundingClientRect().left,
-      );
+        loaderRect.left < labelEl.getBoundingClientRect().left,
+    );
 
-      await new Promise((r) => setTimeout(r, 800));
-      check(
+    await new Promise((r) => setTimeout(r, 800));
+    check(
         "the button comes back when the work is done",
         saveButton.getAttribute("aria-disabled") === null,
-      );
-      check("the indicator ticks", spinner().classList.contains("is-complete"));
-      check(
+    );
+    check("the indicator ticks", spinner().classList.contains("is-complete"));
+    check(
         "and stops spinning",
         getComputedStyle(spinner()).animationName === "none",
-      );
-      check("and says so", loadingIndicator.textContent.includes("Saved"));
+    );
+    check("and says so", loadingIndicator.textContent.includes("Saved"));
 
-      // --- Switch -------------------------------------------------------------
-      const switches = () => [...app.querySelectorAll(".v-Switch")];
-      const wifi = switches()[0];
+    // --- Switch -------------------------------------------------------------
+    const switches = () => [...app.querySelectorAll(".v-Switch")];
+    const wifi = switches()[0];
 
-      check("both switches drew", switches().length === 2);
-      check(
+    check("both switches drew", switches().length === 2);
+    check(
         "the one told to be on is on",
         wifi.getAttribute("aria-checked") === "true",
-      );
-      check(
+    );
+    check(
         "its state is on the root, which is what slides the knob",
         wifi.classList.contains("checked"),
-      );
-      check(
+    );
+    check(
         "the track is drawn by its stylesheet",
         getComputedStyle(wifi.querySelector(".indicator")).borderRadius ===
-          "28px",
-      );
+        "28px",
+    );
 
-      click(wifi);
-      check(
+    click(wifi);
+    check(
         "clicking flipped it",
         switches()[0].getAttribute("aria-checked") === "false",
-      );
-      check("and the controller heard it", last().includes("wi-fi: false"));
-      check(
+    );
+    check("and the controller heard it", last().includes("wi-fi: false"));
+    check(
         "which the summary line shows",
         app.textContent.includes("wifi=false"),
-      );
+    );
 
-      // --- RadioGroup ---------------------------------------------------------
-      const group = app.querySelector('[role="radiogroup"]');
-      const radios = () => [...group.querySelectorAll('[role="radio"]')];
-      const chosenRadio = () =>
+    // --- RadioGroup ---------------------------------------------------------
+    const group = app.querySelector('[role="radiogroup"]');
+    const radios = () => [...group.querySelectorAll('[role="radio"]')];
+    const chosenRadio = () =>
         radios().findIndex((r) => r.getAttribute("aria-checked") === "true");
 
-      check("the group drew an option per Radio", radios().length === 4);
-      check("and starts on the one it was given", chosenRadio() === 1);
-      check(
+    check("the group drew an option per Radio", radios().length === 4);
+    check("and starts on the one it was given", chosenRadio() === 1);
+    check(
         "a group is one tab stop",
         radios().filter((r) => r.getAttribute("tabindex") === "0").length === 1,
-      );
-      check(
+    );
+    check(
         "the chosen option's dot is drawn by the stylesheet",
         getComputedStyle(radios()[1].querySelector(".indicator"))
-          .borderRadius === "50%",
-      );
+            .borderRadius === "50%",
+    );
 
-      click(radios()[2]);
-      check("clicking an option chooses it", chosenRadio() === 2);
-      check(
+    click(radios()[2]);
+    check("clicking an option chooses it", chosenRadio() === 2);
+    check(
         "and only one stays chosen",
         radios().filter((r) => r.getAttribute("aria-checked") === "true")
-          .length === 1,
-      );
-      check("the controller heard which", last().includes("size: large"));
+            .length === 1,
+    );
+    check("the controller heard which", last().includes("size: large"));
 
-      group.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }),
-      );
-      check("the arrow keys move the choice", chosenRadio() === 1);
-      group.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
-      );
-      group.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
-      );
-      check(
+    group.dispatchEvent(
+        new KeyboardEvent("keydown", {key: "ArrowUp", bubbles: true}),
+    );
+    check("the arrow keys move the choice", chosenRadio() === 1);
+    group.dispatchEvent(
+        new KeyboardEvent("keydown", {key: "ArrowDown", bubbles: true}),
+    );
+    group.dispatchEvent(
+        new KeyboardEvent("keydown", {key: "ArrowDown", bubbles: true}),
+    );
+    check(
         "and skip a disabled option rather than landing on it",
         chosenRadio() === 2,
-      );
+    );
 
-      // --- ComboBox -----------------------------------------------------------
-      // By id: the toolbar's theme combo is a listbox too, and comes first.
-      const select = app.querySelector("#colour-combo");
-      const combo = select.parentElement;
+    // --- ComboBox -----------------------------------------------------------
+    // By id: the toolbar's theme combo is a listbox too, and comes first.
+    const select = app.querySelector("#colour-combo");
+    const combo = select.parentElement;
 
-      check("the combo drew a native select", select !== null);
-      check("with an entry per Option", select.options.length === 4);
-      check("a disabled entry says so", select.options[3].disabled === true);
-      check(
+    check("the combo drew a native select", select !== null);
+    check("with an entry per Option", select.options.length === 4);
+    check("a disabled entry says so", select.options[3].disabled === true);
+    check(
         "and it drew its own chevron",
         combo.querySelector(".chevron svg") !== null,
-      );
-      check(
+    );
+    check(
         "the frame is drawn by the theme",
         getComputedStyle(combo).borderTopWidth === "1px",
-      );
+    );
 
-      select.value = "blue";
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-      check(
+    select.value = "blue";
+    select.dispatchEvent(new Event("change", {bubbles: true}));
+    check(
         "choosing an entry reaches the controller",
         last().includes("colour: blue"),
-      );
-      check(
+    );
+    check(
         "which the summary line shows",
         app.textContent.includes("colour=blue"),
-      );
+    );
 
-      // --- Slider ---------------------------------------------------------------
-      const sliderBox = section("Slider and RangeSlider");
-      const slider = sliderBox.querySelector(".v-Slider");
-      const sliderHandle = slider.querySelector(".handle");
-      const range = slider.querySelector(".range");
-      const press = (el, key) =>
-        el.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    // --- Slider ---------------------------------------------------------------
+    const sliderBox = section("Slider and RangeSlider");
+    const slider = sliderBox.querySelector(".v-Slider");
+    const sliderHandle = slider.querySelector(".handle");
+    const range = slider.querySelector(".range");
+    const press = (el, key) =>
+        el.dispatchEvent(new KeyboardEvent("keydown", {key, bubbles: true}));
 
-      check(
+    check(
         "the slider drew a track, a filled range and a knob",
         slider !== null && range !== null && sliderHandle !== null,
-      );
-      check(
+    );
+    check(
         "the knob is placed along the track for its value",
         parseFloat(sliderHandle.style.left) > 0,
-      );
-      check(
+    );
+    check(
         "and the filled range reaches it",
         parseFloat(range.style.width) > 0,
-      );
-      check(
+    );
+    check(
         "the knob says what it is worth",
         sliderHandle.getAttribute("aria-valuenow") === "40" &&
-          sliderHandle.getAttribute("aria-valuemax") === "100",
-      );
+        sliderHandle.getAttribute("aria-valuemax") === "100",
+    );
 
-      const wasAt = parseFloat(sliderHandle.style.left);
-      press(sliderHandle, "ArrowRight");
-      check(
+    const wasAt = parseFloat(sliderHandle.style.left);
+    press(sliderHandle, "ArrowRight");
+    check(
         "an arrow key moves it a step, and the controller hears",
         sliderHandle.getAttribute("aria-valuenow") === "45" &&
-          app.textContent.includes("volume=45"),
-      );
-      check("and the knob moved with it", parseFloat(sliderHandle.style.left) > wasAt);
-      check(
+        app.textContent.includes("volume=45"),
+    );
+    check("and the knob moved with it", parseFloat(sliderHandle.style.left) > wasAt);
+    check(
         "the bar below follows the slider",
         section("ProgressBar").querySelector(".v-ProgressBar > div").style.width ===
-          "45%",
-      );
+        "45%",
+    );
 
-      // The knob is a focusable div, so the browser rings it in black unless the
-      // sheet says otherwise. What should show is the theme's ring, and only
-      // once it is focused — which is a class the slider puts on, as
-      // SliderHandle.onFocus does in Java.
-      check(
+    // The knob is a focusable div, so the browser rings it in black unless the
+    // sheet says otherwise. What should show is the theme's ring, and only
+    // once it is focused — which is a class the slider puts on, as
+    // SliderHandle.onFocus does in Java.
+    check(
         "the knob wears no ring until it is focused",
         !sliderHandle.classList.contains("is-focused") &&
-          getComputedStyle(sliderHandle).outlineStyle === "none",
-      );
+        getComputedStyle(sliderHandle).outlineStyle === "none",
+    );
 
-      sliderHandle.focus();
-      const focusedKnob = slider.querySelector(".handle");
-      const ring = getComputedStyle(focusedKnob);
-      check(
+    sliderHandle.focus();
+    const focusedKnob = slider.querySelector(".handle");
+    const ring = getComputedStyle(focusedKnob);
+    check(
         `focusing it draws the theme's ring, not the browser's black one (${ring.outlineColor} ${ring.outlineStyle} ${ring.outlineWidth})`,
         focusedKnob.classList.contains("is-focused") &&
-          ring.outlineStyle === "solid" &&
-          ring.outlineWidth === "3px" &&
-          ring.outlineColor !== "rgb(0, 0, 0)",
-      );
+        ring.outlineStyle === "solid" &&
+        ring.outlineWidth === "3px" &&
+        ring.outlineColor !== "rgb(0, 0, 0)",
+    );
 
-      focusedKnob.blur();
-      check(
+    focusedKnob.blur();
+    check(
         "and it goes again when focus leaves",
         !slider.querySelector(".handle").classList.contains("is-focused"),
-      );
+    );
 
-      // Dragging a knob is not a reason to ring it. A press must not hand it
-      // focus at all — tabbing is what does that.
-      const knobNow = () => slider.querySelector(".handle");
-      knobNow().dispatchEvent(
-        new PointerEvent("pointerdown", { bubbles: true, button: 0, clientX: 40 }),
-      );
-      check(
+    // Dragging a knob is not a reason to ring it. A press must not hand it
+    // focus at all — tabbing is what does that.
+    const knobNow = () => slider.querySelector(".handle");
+    knobNow().dispatchEvent(
+        new PointerEvent("pointerdown", {bubbles: true, button: 0, clientX: 40}),
+    );
+    check(
         "a press does not hand the knob focus",
         document.activeElement !== knobNow(),
-      );
-      check(
+    );
+    check(
         "and leaves it unringed",
         !knobNow().classList.contains("is-focused") &&
-          getComputedStyle(knobNow()).outlineStyle === "none",
-      );
-      knobNow().dispatchEvent(
-        new PointerEvent("pointerup", { bubbles: true, button: 0 }),
-      );
+        getComputedStyle(knobNow()).outlineStyle === "none",
+    );
+    knobNow().dispatchEvent(
+        new PointerEvent("pointerup", {bubbles: true, button: 0}),
+    );
 
-      // --- RangeSlider ------------------------------------------------------------
-      const rangeSlider = sliderBox.querySelectorAll(".v-Slider")[1];
-      const knobs = [...rangeSlider.querySelectorAll(".handle")];
-      check("a range slider drew two knobs", knobs.length === 2);
-      check(
+    // --- RangeSlider ------------------------------------------------------------
+    const rangeSlider = sliderBox.querySelectorAll(".v-Slider")[1];
+    const knobs = [...rangeSlider.querySelectorAll(".handle")];
+    check("a range slider drew two knobs", knobs.length === 2);
+    check(
         "each holding one end of the span",
         knobs[0].getAttribute("aria-valuenow") === "20" &&
-          knobs[1].getAttribute("aria-valuenow") === "80",
-      );
-      check(
+        knobs[1].getAttribute("aria-valuenow") === "80",
+    );
+    check(
         "and each is bounded by the other, not by the track",
         knobs[0].getAttribute("aria-valuemax") === "80" &&
-          knobs[1].getAttribute("aria-valuemin") === "20",
-      );
+        knobs[1].getAttribute("aria-valuemin") === "20",
+    );
 
-      // The near knob is walked up against the far one; it must stop there.
-      for (let i = 0; i < 70; i++) press(knobs[0], "ArrowRight");
-      check(
+    // The near knob is walked up against the far one; it must stop there.
+    for (let i = 0; i < 70; i++) press(knobs[0], "ArrowRight");
+    check(
         `the two cannot cross (${knobs[0].getAttribute("aria-valuenow")} vs ${knobs[1].getAttribute("aria-valuenow")})`,
         Number(knobs[0].getAttribute("aria-valuenow")) === 80,
-      );
-      check("which the controller was told", app.textContent.includes("price=80–80"));
+    );
+    check("which the controller was told", app.textContent.includes("price=80–80"));
 
-      // --- SpinButton -------------------------------------------------------------
-      const spin = section("SpinButton").querySelector(".v-SpinButton");
-      const spinField = spin.querySelector("input");
-      const spinButtons = [...spin.querySelectorAll(".v-Button")];
-      const spinValue = () => spin.getAttribute("aria-valuenow");
+    // --- SpinButton -------------------------------------------------------------
+    const spin = section("SpinButton").querySelector(".v-SpinButton");
+    const spinField = spin.querySelector("input");
+    const spinButtons = [...spin.querySelectorAll(".v-Button")];
+    const spinValue = () => spin.getAttribute("aria-valuenow");
 
-      check("a spin button drew a field and two steps", spinButtons.length === 2);
-      check("reading the value it was given", spinField.value === "3");
-      check(
+    check("a spin button drew a field and two steps", spinButtons.length === 2);
+    check("reading the value it was given", spinField.value === "3");
+    check(
         "the steps carry the theme's icons",
         spinButtons.every((b) => b.querySelector(".icon svg") !== null),
-      );
+    );
 
-      const pressFully = (el) => {
-        el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0, pointerId: 1 }));
-        el.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, button: 0, pointerId: 1 }));
-        el.dispatchEvent(new MouseEvent("click", { bubbles: true, button: 0 }));
-      };
-      // dispatchEvent ignores layout; a real click has to hit the element. Ask
-      // the document what is actually at the middle of each step button.
-      // dispatchEvent ignores layout, so a step button could be covered or of no
-      // size and every check here would still pass while a real click missed
-      // it. Ask the document what is actually at the middle of each one.
-      spin.scrollIntoView({ block: "center" });
-      check(
+    const pressFully = (el) => {
+        el.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true, button: 0, pointerId: 1}));
+        el.dispatchEvent(new PointerEvent("pointerup", {bubbles: true, button: 0, pointerId: 1}));
+        el.dispatchEvent(new MouseEvent("click", {bubbles: true, button: 0}));
+    };
+    // dispatchEvent ignores layout; a real click has to hit the element. Ask
+    // the document what is actually at the middle of each step button.
+    // dispatchEvent ignores layout, so a step button could be covered or of no
+    // size and every check here would still pass while a real click missed
+    // it. Ask the document what is actually at the middle of each one.
+    spin.scrollIntoView({block: "center"});
+    check(
         "a real click would land on each step button",
         spinButtons.every((b) => {
-          const r = b.getBoundingClientRect();
-          if (r.width === 0 || r.height === 0) return false;
-          const at = document.elementFromPoint(
-            r.left + r.width / 2,
-            r.top + r.height / 2,
-          );
-          return at !== null && b.contains(at);
+            const r = b.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) return false;
+            const at = document.elementFromPoint(
+                r.left + r.width / 2,
+                r.top + r.height / 2,
+            );
+            return at !== null && b.contains(at);
         }),
-      );
+    );
 
-      // The click a real press becomes is only delivered if what was pressed is
-      // still there at release. A redraw that rebuilds the icon under the
-      // pointer — which is what a press on a Button sets off — takes the click
-      // with it, and the button does nothing. Clicking its corner still worked,
-      // which is how this was found.
-      const stepIcon = spinButtons[1].querySelector("svg");
-      spinButtons[1].dispatchEvent(
-        new PointerEvent("pointerdown", { bubbles: true, button: 0, pointerId: 1 }),
-      );
-      check(
+    // The click a real press becomes is only delivered if what was pressed is
+    // still there at release. A redraw that rebuilds the icon under the
+    // pointer — which is what a press on a Button sets off — takes the click
+    // with it, and the button does nothing. Clicking its corner still worked,
+    // which is how this was found.
+    const stepIcon = spinButtons[1].querySelector("svg");
+    spinButtons[1].dispatchEvent(
+        new PointerEvent("pointerdown", {bubbles: true, button: 0, pointerId: 1}),
+    );
+    check(
         "a press does not rebuild the icon under the pointer",
         spinButtons[1].querySelector("svg") === stepIcon &&
-          document.contains(stepIcon),
-      );
-      spinButtons[1].dispatchEvent(
-        new PointerEvent("pointerup", { bubbles: true, button: 0, pointerId: 1 }),
-      );
+        document.contains(stepIcon),
+    );
+    spinButtons[1].dispatchEvent(
+        new PointerEvent("pointerup", {bubbles: true, button: 0, pointerId: 1}),
+    );
 
-      // And the full sequence a real press sends, not just a bare click.
-      const pressed = [spinValue()];
-      for (let i = 0; i < 2; i++) {
+    // And the full sequence a real press sends, not just a bare click.
+    const pressed = [spinValue()];
+    for (let i = 0; i < 2; i++) {
         pressFully(spin.querySelectorAll(".v-Button")[1]);
         pressed.push(spinValue() + "/" + spin.querySelector("input").value);
-      }
-      check(
+    }
+    check(
         `pointerdown, pointerup and click step it and the field follows (${pressed.join(" ")})`,
         spinValue() === "5" && spin.querySelector("input").value === "5",
-      );
-      while (Number(spinValue()) > 3) click(spin.querySelectorAll(".v-Button")[0]);
+    );
+    while (Number(spinValue()) > 3) click(spin.querySelectorAll(".v-Button")[0]);
 
-      click(spinButtons[1]);
-      check(
+    click(spinButtons[1]);
+    check(
         "stepping up raises it and reports",
         spinValue() === "4" && app.textContent.includes("quantity=4"),
-      );
-      click(spinButtons[0]);
-      check("stepping down lowers it again", spinValue() === "3");
+    );
+    click(spinButtons[0]);
+    check("stepping down lowers it again", spinValue() === "3");
 
-      press(spinField, "ArrowUp");
-      check("and the arrow keys step it too", spinValue() === "4");
+    press(spinField, "ArrowUp");
+    check("and the arrow keys step it too", spinValue() === "4");
 
-      // The step buttons switch themselves off at the end they cannot pass.
-      for (let i = 0; i < 10; i++) click(spinButtons[1]);
-      check(`it stops at its maximum (${spinValue()})`, spinValue() === "10");
-      check(
+    // The step buttons switch themselves off at the end they cannot pass.
+    for (let i = 0; i < 10; i++) click(spinButtons[1]);
+    check(`it stops at its maximum (${spinValue()})`, spinValue() === "10");
+    check(
         "and the step it cannot take is disabled",
         spinButtons[1].getAttribute("aria-disabled") === "true" &&
-          spinButtons[0].getAttribute("aria-disabled") === null,
-      );
-      for (let i = 0; i < 12; i++) click(spinButtons[0]);
-      check(`down to its minimum (${spinValue()})`, spinValue() === "0");
-      check(
+        spinButtons[0].getAttribute("aria-disabled") === null,
+    );
+    for (let i = 0; i < 12; i++) click(spinButtons[0]);
+    check(`down to its minimum (${spinValue()})`, spinValue() === "0");
+    check(
         "where the other one switches off instead",
         spinButtons[0].getAttribute("aria-disabled") === "true" &&
-          spinButtons[1].getAttribute("aria-disabled") === null,
-      );
+        spinButtons[1].getAttribute("aria-disabled") === null,
+    );
 
-      // --- ProgressBar ------------------------------------------------------------
-      const bars = [...section("ProgressBar").querySelectorAll(".v-ProgressBar")];
-      check("both bars drew", bars.length === 2);
-      check(
+    // --- ProgressBar ------------------------------------------------------------
+    const bars = [...section("ProgressBar").querySelectorAll(".v-ProgressBar")];
+    check("both bars drew", bars.length === 2);
+    check(
         "a bar under way says so, and how far",
         bars[0].classList.contains("progress") &&
-          bars[0].getAttribute("aria-valuenow") === "45",
-      );
-      // Pop fills with its accent, not the green primary: the theme sets no
-      // --switch-checked-background, so the bar fell back to
-      // --primary-background-color and was the only filled thing on the page
-      // wearing the green while the slider beside it was teal.
-      const setTheme = (name) => {
+        bars[0].getAttribute("aria-valuenow") === "45",
+    );
+    // Pop fills with its accent, not the green primary: the theme sets no
+    // --switch-checked-background, so the bar fell back to
+    // --primary-background-color and was the only filled thing on the page
+    // wearing the green while the slider beside it was teal.
+    const setTheme = (name) => {
         const sel = app.querySelector("#theme-combo");
         sel.value = name;
-        sel.dispatchEvent(new Event("change", { bubbles: true }));
-      };
-      const fillIn = (name) => {
+        sel.dispatchEvent(new Event("change", {bubbles: true}));
+    };
+    const fillIn = (name) => {
         setTheme(name);
         const style = getComputedStyle(document.documentElement);
         return {
-          bar: getComputedStyle(bars[0].querySelector("div")).backgroundColor,
-          range: getComputedStyle(slider.querySelector(".range")).backgroundColor,
-          accent: style.getPropertyValue("--accent-color").trim(),
-          primary: style.getPropertyValue("--primary-background-color").trim(),
+            bar: getComputedStyle(bars[0].querySelector("div")).backgroundColor,
+            range: getComputedStyle(slider.querySelector(".range")).backgroundColor,
+            accent: style.getPropertyValue("--accent-color").trim(),
+            primary: style.getPropertyValue("--primary-background-color").trim(),
         };
-      };
+    };
 
-      const popFill = fillIn("pop");
-      check(
+    const popFill = fillIn("pop");
+    check(
         `pop fills the bar with its accent, not its green primary (${popFill.bar})`,
         popFill.bar === "rgb(95, 168, 182)" && popFill.bar === popFill.range,
-      );
+    );
 
-      // The other two are untouched: each already set the variable itself.
-      const aristoFill = fillIn("aristo");
-      check(
+    // The other two are untouched: each already set the variable itself.
+    const aristoFill = fillIn("aristo");
+    check(
         `aristo's bar is unchanged by that (${aristoFill.bar})`,
         aristoFill.bar === "rgb(103, 155, 182)",
-      );
-      setTheme("aristo");
+    );
+    setTheme("aristo");
 
-      check(
+    check(
         "an indeterminate one sweeps instead, and claims no value",
         bars[1].classList.contains("indeterminate") &&
-          bars[1].getAttribute("aria-valuenow") === null &&
-          getComputedStyle(bars[1].querySelector("div")).animationName ===
-            "indeterminateAnimation",
-      );
+        bars[1].getAttribute("aria-valuenow") === null &&
+        getComputedStyle(bars[1].querySelector("div")).animationName ===
+        "indeterminateAnimation",
+    );
 
-      // --- switching themes ---------------------------------------------------
-      // The theme is a stylesheet swap: nothing is redrawn, so what proves it
-      // worked is the colours changing under controls that never moved.
-      const themeSelect = app.querySelector("#theme-combo");
-      const page = app.firstElementChild;
-      const background = () => getComputedStyle(page).backgroundColor;
-      const wear = (name) => {
+    // --- switching themes ---------------------------------------------------
+    // The theme is a stylesheet swap: nothing is redrawn, so what proves it
+    // worked is the colours changing under controls that never moved.
+    const themeSelect = app.querySelector("#theme-combo");
+    const page = app.firstElementChild;
+    const background = () => getComputedStyle(page).backgroundColor;
+    const wear = (name) => {
         themeSelect.value = name;
-        themeSelect.dispatchEvent(new Event("change", { bubbles: true }));
-      };
+        themeSelect.dispatchEvent(new Event("change", {bubbles: true}));
+    };
 
-      check(
+    check(
         "the theme combo drew its entries",
         themeSelect.options.length === 3,
-      );
+    );
 
-      const aristo = background();
-      wear("aristo_dark");
-      check(
+    const aristo = background();
+    wear("aristo_dark");
+    check(
         "switching to aristo_dark repainted the page",
         background() !== aristo,
-      );
-      check("and it is a dark surface", background() === "rgb(51, 51, 51)");
-      check("the switch is reported", last().includes("theme: aristo_dark"));
+    );
+    check("and it is a dark surface", background() === "rgb(51, 51, 51)");
+    check("the switch is reported", last().includes("theme: aristo_dark"));
 
-      wear("pop");
-      check(
+    wear("pop");
+    check(
         "switching to pop repainted it again",
         background() === "rgb(255, 255, 255)",
-      );
-      check(
+    );
+    check(
         "one stylesheet, rewritten — not one per theme",
         document.querySelectorAll("style[data-mosaic-theme]").length === 1,
-      );
+    );
 
-      // The theme rounds the search field into a pill. Both Aristo sheets say so
-      // in the same words, so both have to land the same way: the theme's rules
-      // are prefixed with `:root` to outscore a component's scoped stylesheet,
-      // and a sheet that lost that prefix would silently keep the component's
-      // 4px corners instead.
-      const searchRadius = () =>
+    // The theme rounds the search field into a pill. Both Aristo sheets say so
+    // in the same words, so both have to land the same way: the theme's rules
+    // are prefixed with `:root` to outscore a component's scoped stylesheet,
+    // and a sheet that lost that prefix would silently keep the component's
+    // 4px corners instead.
+    const searchRadius = () =>
         parseFloat(getComputedStyle(searchBox).borderTopLeftRadius);
-      wear("aristo");
-      const lightRadius = searchRadius();
-      wear("aristo_dark");
-      const darkRadius = searchRadius();
-      check(
+    wear("aristo");
+    const lightRadius = searchRadius();
+    wear("aristo_dark");
+    const darkRadius = searchRadius();
+    check(
         `the search field is a pill in aristo too (light ${lightRadius}px, dark ${darkRadius}px)`,
         lightRadius === darkRadius && lightRadius > 20,
-      );
+    );
 
-      // The magnifier and the reset X are chrome in the dark theme, a step
-      // quieter than the text. They are SVG, so it is fill and not color, and
-      // the theme has to outscore the component sheet's --search-icon-fill.
-      wear("aristo_dark");
-      typeInto(searchInput, "x");
-      const magnifierFill = getComputedStyle(
+    // The magnifier and the reset X are chrome in the dark theme, a step
+    // quieter than the text. They are SVG, so it is fill and not color, and
+    // the theme has to outscore the component sheet's --search-icon-fill.
+    wear("aristo_dark");
+    typeInto(searchInput, "x");
+    const magnifierFill = getComputedStyle(
         searchBox.querySelector(".search svg"),
-      ).fill;
-      const resetFill = getComputedStyle(
+    ).fill;
+    const resetFill = getComputedStyle(
         searchBox.querySelector("button.Search-reset > i svg"),
-      ).fill;
-      check(
+    ).fill;
+    check(
         `the dark theme fills the magnifier and the reset X with #bbb (${magnifierFill} / ${resetFill})`,
         magnifierFill === "rgb(187, 187, 187)" &&
-          resetFill === "rgb(187, 187, 187)",
-      );
-      click(clearButton);
+        resetFill === "rgb(187, 187, 187)",
+    );
+    click(clearButton);
 
-      wear("aristo");
-      check("and back to the one it started in", background() === aristo);
+    wear("aristo");
+    check("and back to the one it started in", background() === aristo);
 
-      // The controls kept the state they were in across all of that.
-      check(
+    // The controls kept the state they were in across all of that.
+    check(
         "a swap redraws nothing",
         remember.getAttribute("aria-checked") === "true",
-      );
+    );
 
-      // --- the toolbar disables everything ------------------------------------
-      click(labelled("Disable controls"));
-      const disabled = (el) => el.getAttribute("aria-disabled") === "true";
+    // --- the toolbar disables everything ------------------------------------
+    click(labelled("Disable controls"));
+    const disabled = (el) => el.getAttribute("aria-disabled") === "true";
 
-      check(
+    check(
         "every button in the sections is disabled",
         intentButtons().every(disabled),
-      );
-      check(
+    );
+    check(
         "but not the toolbar's, which is what turns them back on",
         disabled(labelled("Enable controls")) === false,
-      );
-      check("the loading button too", disabled(saveButton));
-      check("the checkboxes are disabled too", boxes().every(disabled));
-      check(
+    );
+    check("the loading button too", disabled(saveButton));
+    check("the checkboxes are disabled too", boxes().every(disabled));
+    check(
         "the switches and the radio group as well",
         switches().every(disabled) &&
-          disabled(group) &&
-          radios().every(disabled),
-      );
-      // Saying so is not the same as looking it: the switch sheet matched only
-      // `.disabled`, and the class a Control puts on is `is-disabled`, so a
-      // disabled switch stayed at full strength.
-      // Dimmed to exactly what the theme asks for. Opacity applies to the whole
-      // subtree, so a sheet that fades the root *and* the parts inside it fades
-      // them twice — which reads as a quarter rather than a half, and is what
-      // the checkbox and the switch both used to do.
-      const wantedOpacity = getComputedStyle(document.documentElement)
+        disabled(group) &&
+        radios().every(disabled),
+    );
+    // Saying so is not the same as looking it: the switch sheet matched only
+    // `.disabled`, and the class a Control puts on is `is-disabled`, so a
+    // disabled switch stayed at full strength.
+    // Dimmed to exactly what the theme asks for. Opacity applies to the whole
+    // subtree, so a sheet that fades the root *and* the parts inside it fades
+    // them twice — which reads as a quarter rather than a half, and is what
+    // the checkbox and the switch both used to do.
+    const wantedOpacity = getComputedStyle(document.documentElement)
         .getPropertyValue("--opacity-disable")
         .trim();
-      const opacityOf = (el) => (el ? getComputedStyle(el).opacity : "MISSING");
-      const fadedParts = [
+    const opacityOf = (el) => (el ? getComputedStyle(el).opacity : "MISSING");
+    const fadedParts = [
         ["switch", switches()[0]],
         ["switch knob", switches()[0].querySelector(".indicator")],
         ["checkbox", boxes()[0]],
         ["checkbox indicator", boxes()[0].querySelector(".indicator")],
         ["slider", app.querySelector(".v-Slider")],
-      ];
-      check(
+    ];
+    check(
         `every disabled control dims to ${wantedOpacity}, and nothing dims twice (${fadedParts
-          .map(([name, el]) => name + " " + opacityOf(el))
-          .join(", ")})`,
+            .map(([name, el]) => name + " " + opacityOf(el))
+            .join(", ")})`,
         fadedParts.every(([name, el]) =>
-          el === null
-            ? false
-            : name.includes("knob") || name.includes("indicator")
-              ? opacityOf(el) === "1"
-              : opacityOf(el) === wantedOpacity,
+            el === null
+                ? false
+                : name.includes("knob") || name.includes("indicator")
+                    ? opacityOf(el) === "1"
+                    : opacityOf(el) === wantedOpacity,
         ),
-      );
+    );
 
-      // Disabling a control is itself a setFocus(false), so a field that was
-      // never touched must not come out of it wearing a focus ring.
-      check(
+    // Disabling a control is itself a setFocus(false), so a field that was
+    // never touched must not come out of it wearing a focus ring.
+    check(
         "no disabled field wears a focus ring",
         [...app.querySelectorAll(".v-Text")].every(
-          (box) => !box.classList.contains("is-focused"),
+            (box) => !box.classList.contains("is-focused"),
         ),
-      );
+    );
 
-      check(
+    check(
         "so is the combo, down to its select",
         disabled(combo) && select.disabled === true,
-      );
-      check(
+    );
+    check(
         "a disabled control is out of the tab order",
         boxes().every((b) => b.getAttribute("tabindex") === "-1"),
-      );
+    );
 
-      click(boxes()[1]);
-      check(
+    click(boxes()[1]);
+    check(
         "and ignores a click",
         boxes()[1].getAttribute("aria-checked") === "false",
-      );
-      check(
+    );
+    check(
         "so the page did not change",
         last().includes("disabled every control"),
-      );
+    );
 
-      // --- and enables them again ---------------------------------------------
-      // The trigger is the part you press, so it answers the pointer — unless
-      // there is nothing to press. A pointer cannot be synthesised, so the
-      // theme's own rule is taken out of the sheet and asked directly: with
-      // `:hover` dropped, does what is left still match this combo? It matched
-      // before, which is how a disabled trigger still lit up under the pointer.
-      const chevronHoverRules = [...document.styleSheets]
+    // --- and enables them again ---------------------------------------------
+    // The trigger is the part you press, so it answers the pointer — unless
+    // there is nothing to press. A pointer cannot be synthesised, so the
+    // theme's own rule is taken out of the sheet and asked directly: with
+    // `:hover` dropped, does what is left still match this combo? It matched
+    // before, which is how a disabled trigger still lit up under the pointer.
+    const chevronHoverRules = [...document.styleSheets]
         .flatMap((sheet) => {
-          try {
-            return [...sheet.cssRules];
-          } catch {
-            return [];
-          }
+            try {
+                return [...sheet.cssRules];
+            } catch {
+                return [];
+            }
         })
         .filter(
-          (rule) =>
-            rule.selectorText &&
-            rule.selectorText.includes(".chevron") &&
-            rule.selectorText.includes(":hover"),
+            (rule) =>
+                rule.selectorText &&
+                rule.selectorText.includes(".chevron") &&
+                rule.selectorText.includes(":hover"),
         );
 
-      check(
+    check(
         "the theme states a hover face for the trigger",
         chevronHoverRules.length > 0,
-      );
-      check(
+    );
+    check(
         "which no longer reaches the combo once it is disabled",
         chevronHoverRules.every(
-          (rule) =>
-            !combo.matches(
-              rule.selectorText.replace(/:hover|\s*\.chevron\b/g, "").trim(),
-            ),
+            (rule) =>
+                !combo.matches(
+                    rule.selectorText.replace(/:hover|\s*\.chevron\b/g, "").trim(),
+                ),
         ),
-      );
+    );
 
-      click(labelled("Enable controls"));
-      check(
+    click(labelled("Enable controls"));
+    check(
         "enabling brings them back",
         intentButtons().some(disabled) === false,
-      );
+    );
 
-      click(boxes()[1]);
-      check(
+    click(boxes()[1]);
+    check(
         "the control works once more",
         boxes()[1].getAttribute("aria-checked") === "true",
-      );
-      check("and reports again", last().includes("newsletter: true"));
+    );
+    check("and reports again", last().includes("newsletter: true"));
 
-      // --- what the themes and the disabled state actually paint ---------------
-      // Colours are transitioned, and a transition does not advance under headless
-      // virtual time — so each of these is read after letting one settle.
-      const settle = () => new Promise((r) => setTimeout(r, 400));
-      const indicator = () => app.querySelector('[role="checkbox"] .indicator');
-      const rgb = (hex) => {
+    // --- what the themes and the disabled state actually paint ---------------
+    // Colours are transitioned, and a transition does not advance under headless
+    // virtual time — so each of these is read after letting one settle.
+    const settle = () => new Promise((r) => setTimeout(r, 400));
+    const indicator = () => app.querySelector('[role="checkbox"] .indicator');
+    const rgb = (hex) => {
         const n = parseInt(hex.trim().slice(1), 16);
         return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
-      };
+    };
 
-      wear("aristo_dark");
-      await settle();
-      const vars = () => getComputedStyle(document.documentElement);
-      check(
+    wear("aristo_dark");
+    await settle();
+    const vars = () => getComputedStyle(document.documentElement);
+    check(
         "a ticked box in the dark theme wears the theme's primary border",
         getComputedStyle(indicator()).borderTopColor ===
-          rgb(vars().getPropertyValue("--primary-border-color")),
-      );
-      check(
+        rgb(vars().getPropertyValue("--primary-border-color")),
+    );
+    check(
         "which is not the near-black it used to be",
         getComputedStyle(indicator()).borderTopColor !== "rgb(20, 38, 47)",
-      );
+    );
 
-      // An unchecked well needs an edge that reads: its rim used to be #4d4d52,
-      // the same value as the panel behind it, so the box looked like a bare face.
-      click(remember); // back to unchecked
-      await settle();
-      const lightness = (c) =>
+    // An unchecked well needs an edge that reads: its rim used to be #4d4d52,
+    // the same value as the panel behind it, so the box looked like a bare face.
+    click(remember); // back to unchecked
+    await settle();
+    const lightness = (c) =>
         c
-          .match(/\d+/g)
-          .slice(0, 3)
-          .reduce((a, n) => a + Number(n), 0) / 3;
-      const rim = getComputedStyle(indicator()).borderTopColor;
-      const behind = getComputedStyle(
+            .match(/\d+/g)
+            .slice(0, 3)
+            .reduce((a, n) => a + Number(n), 0) / 3;
+    const rim = getComputedStyle(indicator()).borderTopColor;
+    const behind = getComputedStyle(
         app.querySelector("section"),
-      ).backgroundColor;
-      check(
+    ).backgroundColor;
+    check(
         `an unchecked box in the dark theme has a rim that reads (rim ${rim} on ${behind})`,
         lightness(rim) - lightness(behind) > 15,
-      );
+    );
 
-      wear("pop");
-      await settle();
-      const successButton = buttons().find(
+    wear("pop");
+    await settle();
+    const successButton = buttons().find(
         (b) => b.textContent.trim() === "success",
-      );
-      check(
+    );
+    check(
         "pop draws a success button in its own green",
         getComputedStyle(successButton).backgroundColor ===
-          rgb(vars().getPropertyValue("--success-background-color")),
-      );
-      check(
+        rgb(vars().getPropertyValue("--success-background-color")),
+    );
+    check(
         "with white on it",
         getComputedStyle(successButton).color === "rgb(255, 255, 255)",
-      );
+    );
 
-      wear("aristo");
-      await settle();
+    wear("aristo");
+    await settle();
 
-      // The trigger dims with the control it belongs to: the browser fades a
-      // disabled <select> by itself, which used to leave the chevron beside it at
-      // full strength.
-      click(labelled("Disable controls"));
-      const dimmed = getComputedStyle(combo);
-      check(
+    // The trigger dims with the control it belongs to: the browser fades a
+    // disabled <select> by itself, which used to leave the chevron beside it at
+    // full strength.
+    click(labelled("Disable controls"));
+    const dimmed = getComputedStyle(combo);
+    check(
         "a disabled combo dims as a whole",
         dimmed.opacity === vars().getPropertyValue("--opacity-disable").trim(),
-      );
-      check(
+    );
+    check(
         "its trigger included",
         getComputedStyle(combo.querySelector(".chevron")).opacity === "1" &&
-          getComputedStyle(combo.querySelector("select")).opacity === "1",
-      );
-      click(labelled("Enable controls"));
+        getComputedStyle(combo.querySelector("select")).opacity === "1",
+    );
+    click(labelled("Enable controls"));
 
-      document.querySelector("#results").textContent = log.join("\n");
-      document.title =
+    document.querySelector("#results").textContent = log.join("\n");
+    document.title =
         failed === 0
-          ? `verdict PASS (${log.length} checks)`
-          : `verdict FAIL (${failed} of ${log.length})`;
-    </script>
-  </body>
+            ? `verdict PASS (${log.length} checks)`
+            : `verdict FAIL (${failed} of ${log.length})`;
+</script>
+</body>
 </html>

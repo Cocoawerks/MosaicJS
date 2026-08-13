@@ -4,7 +4,7 @@
 // Compare Counter_main/AppController.js, which drives every part of the counter
 // itself.
 export default class AppController {
-  constructor({ title = "Counter App" } = {}) {
-    this.title = title;
-  }
+    constructor({title = "Counter App"} = {}) {
+        this.title = title;
+    }
 }

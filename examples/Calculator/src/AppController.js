@@ -1,3 +1,5 @@
+// What the page is made of. Markup names a component; this is what puts it
+// within reach — and what keeps the rest of the framework out of the bundle.
 import {setTheme} from "mosaic/frameworks/ui";
 
 /**

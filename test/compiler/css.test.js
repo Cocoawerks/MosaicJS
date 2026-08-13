@@ -112,8 +112,9 @@ test("a comment between tokens does not become whitespace when dropped", () => {
     // which elements the rule matches.
     expect(scope(".a/* x */.b{color:red}", "", null, {minify: true}))
         .toBe(".a.b{color:red}");
+    // The spaces that stood either side of it are a combinator, and stay one.
     expect(scope(".a /* x */ .b{color:red}", "", null, {minify: true}))
-        .toBe(".a  .b{color:red}");
+        .toBe(".a .b{color:red}");
 });
 
 test("minifying a theme keeps the prefix it is emitted with", () => {
@@ -124,9 +125,9 @@ test("minifying a theme keeps the prefix it is emitted with", () => {
     expect(minified).toContain(":root .v-Button{color: red;}");
 });
 
-test("minifying drops the blank lines a stylesheet is written with", () => {
-    // The sheets space their rules apart, and taking the comments out leaves
-    // the lines those stood on behind — a blank line per rule and per note.
+test("minifying puts the whole sheet on one line", () => {
+    // The sheets space their rules apart and write a declaration to a line.
+    // A string's newlines are the one whitespace the bundler cannot reach.
     const sheet = `/* a note */
 
 .a { color: red; }
@@ -136,21 +137,20 @@ test("minifying drops the blank lines a stylesheet is written with", () => {
 .b { color: blue; }
 `;
     const minified = scope(sheet, ".h", null, {minify: true});
-    expect(minified).toBe(".a.h{color: red;}\n.b.h{color: blue;}\n");
-    // Trailing newline aside — that is a line ending, not an empty line.
-    expect(minified.trimEnd().split("\n").filter((l) => l.trim() === "")).toEqual([]);
+    expect(minified).toBe(".a.h{color: red;} .b.h{color: blue;}");
+    expect(minified).not.toContain("\n");
 
     // Untouched without the flag.
     expect(scope(sheet, ".h")).toContain("\n\n");
 });
 
-test("minifying keeps a newline that is doing a job", () => {
-    // A newline between two compounds is a descendant combinator: `.c\n.d`
-    // matches what `.c .d` matches. Only lines holding nothing come out.
+test("minifying leaves a space where whitespace was doing a job", () => {
+    // Whitespace between two compounds is a descendant combinator: `.c\n.d`
+    // matches what `.c .d` matches, so the newline becomes the space it was.
     expect(scope(".c\n.d{color:red}", ".h", null, {minify: true}))
-        .toBe(".c\n.d.h{color:red}");
+        .toBe(".c .d.h{color:red}");
 
-    // Including one inside a string, which is passed over whole.
+    // A newline inside a string is content, and is passed over whole.
     expect(scope('.x::after{content:"a\nb"}', ".h", null, {minify: true}))
         .toBe('.x.h::after{content:"a\nb"}');
 });

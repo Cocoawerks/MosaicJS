@@ -465,6 +465,10 @@ function vendorRuntime(config, app) {
     const exports = {".": main};
     for (const framework of config.frameworks) {
         exports[`./${FRAMEWORKS}/${framework.name}`] = `./${FRAMEWORKS}/${framework.name}/index.js`;
+        // And each component by its own path within the framework, which is how
+        // compiled markup names one: a `<Button/>` asks for Button and should
+        // bring in Button, not the index that names every component there is.
+        exports[`./${FRAMEWORKS}/${framework.name}/*`] = `./${FRAMEWORKS}/${framework.name}/*`;
     }
 
   fs.writeFileSync(
@@ -477,6 +481,12 @@ function vendorRuntime(config, app) {
               type: "module",
               main,
               exports,
+              // A component's module injects its stylesheet when it loads,
+              // which reads as a side effect and stops a bundler dropping a
+              // component nothing uses. The stylesheet is only wanted by the
+              // component, so dropping the two together is right: saying so
+              // here is what lets an application carry only what it imports.
+              sideEffects: false,
           },
           null,
           2,

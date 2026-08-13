@@ -12,18 +12,18 @@
  *   mount(Main, document.body, {}, controller);
  */
 
-export { Component, BROWSER_EVENTS } from "./Component.js";
+export {Component, BROWSER_EVENTS} from "./Component.js";
 
-export { coerceProps, coerceValue } from "./coerce.js";
-export { Fragment } from "./Fragment.js";
-export { h } from "./h.js";
-export { render } from "./render.js";
-export { mount } from "./mount.js";
-export { redraw } from "./redraw.js";
-export { refresh } from "./refresh.js";
-export { bindText } from "./bindText.js";
-export { bindAttr } from "./bindAttr.js";
-export { clearBindings } from "./clearBindings.js";
-export { addStyles } from "./addStyles.js";
-export { collectStyles } from "./collectStyles.js";
-export { MosaicApplication } from "./MosaicApplication.js";
+export {coerceProps, coerceValue} from "./coerce.js";
+export {Fragment} from "./Fragment.js";
+export {h} from "./h.js";
+export {render} from "./render.js";
+export {mount} from "./mount.js";
+export {redraw} from "./redraw.js";
+export {refresh} from "./refresh.js";
+export {bindText} from "./bindText.js";
+export {bindAttr} from "./bindAttr.js";
+export {clearBindings} from "./clearBindings.js";
+export {addStyles} from "./addStyles.js";
+export {collectStyles} from "./collectStyles.js";
+export {MosaicApplication} from "./MosaicApplication.js";

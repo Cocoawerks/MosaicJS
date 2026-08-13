@@ -7,40 +7,40 @@
  * draws. The box around them is TextBase's, and so are its rules.
  */
 .v-Search .search {
-  width: 21px;
-  height: 21px;
-  margin: 7px;
+    width: 21px;
+    height: 21px;
+    margin: 7px;
 }
 
 .v-Search button.Search-reset {
-  border: 0;
-  padding: 0;
-  height: 21px;
-  width: 21px;
-  margin-right: 10px;
-  margin-bottom: 3px;
-  transition: none;
-  overflow: visible;
-  background-color: transparent;
-  display: none;
-  fill: var(--search-icon-fill);
+    border: 0;
+    padding: 0;
+    height: 21px;
+    width: 21px;
+    margin-right: 10px;
+    margin-bottom: 3px;
+    transition: none;
+    overflow: visible;
+    background-color: transparent;
+    display: none;
+    fill: var(--search-icon-fill);
 }
 
 .v-Search button.Search-reset > i {
-  width: 24px;
-  height: 24px;
-  display: block;
+    width: 24px;
+    height: 24px;
+    display: block;
 }
 
 .v-Search button.Search-reset:hover > i {
-  fill: color-mix(in srgb, var(--search-icon-fill), white 15%);
+    fill: color-mix(in srgb, var(--search-icon-fill), white 15%);
 }
 
 /* The native clear affordance is replaced by the reset button below. */
 .v-Search::-ms-clear {
-  display: none;
+    display: none;
 }
 
 .v-Search button.Search-reset:active > i {
-  fill: color-mix(in srgb, var(--search-icon-fill), black 15%);
+    fill: color-mix(in srgb, var(--search-icon-fill), black 15%);
 }

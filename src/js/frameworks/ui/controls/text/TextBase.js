@@ -16,18 +16,18 @@ import Control from "../Control.js";
 import "./text.css";
 
 export default class TextBase extends Control {
-  static props = {
-    /** Whether the browser may complete the field. */
-    autocomplete: { type: Boolean, default: false },
-    /** Whether every keystroke is reported, or only Enter and leaving. */
-    continuous: { type: Boolean, default: true },
-    /** A font-icon class drawn before the text. */
-    prefixIcon: { type: String },
-    /** A font-icon class drawn after it. */
-    suffixIcon: { type: String },
-    /** Whether the field must be filled in. */
-    required: { type: Boolean, default: false },
-  };
+    static props = {
+        /** Whether the browser may complete the field. */
+        autocomplete: {type: Boolean, default: false},
+        /** Whether every keystroke is reported, or only Enter and leaving. */
+        continuous: {type: Boolean, default: true},
+        /** A font-icon class drawn before the text. */
+        prefixIcon: {type: String},
+        /** A font-icon class drawn after it. */
+        suffixIcon: {type: String},
+        /** Whether the field must be filled in. */
+        required: {type: Boolean, default: false},
+    };
 
     // --- value ---------------------------------------------------------------
 
@@ -88,7 +88,7 @@ export default class TextBase extends Control {
 
         this.listeners.set(this.inputLayer, attached);
     }
-    
+
     // --- focus ---------------------------------------------------------------
 
     /**

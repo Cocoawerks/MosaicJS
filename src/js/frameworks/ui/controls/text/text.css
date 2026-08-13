@@ -4,127 +4,127 @@
  * an application's own class names.
  */
 .v-Text {
-  box-sizing: border-box;
-  display: block;
-  border-radius: 3px;
-  padding: 5px 1px;
-  vertical-align: middle;
-  outline: 0.2rem solid transparent;
-  line-height: 1.25;
-  min-height: 32px;
-  position: relative;
-  overflow: visible;
-  font-size: 16px;
-  user-select: none;
-  background-color: var(--field-background);
-  border: 1px solid var(--default-border-color);
-  box-shadow: inset 0 1px 3px #ddd;
+    box-sizing: border-box;
+    display: block;
+    border-radius: 3px;
+    padding: 5px 1px;
+    vertical-align: middle;
+    outline: 0.2rem solid transparent;
+    line-height: 1.25;
+    min-height: 32px;
+    position: relative;
+    overflow: visible;
+    font-size: 16px;
+    user-select: none;
+    background-color: var(--field-background);
+    border: 1px solid var(--default-border-color);
+    box-shadow: inset 0 1px 3px #ddd;
 }
 
 .v-Text.highlighted {
-  background-color: var(--field-background);
-  transition: background-color 0s;
+    background-color: var(--field-background);
+    transition: background-color 0s;
 }
 
 .v-Text--mergeLeft {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  margin-left: -1px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: -1px;
 }
 
 .v-Text--mergeRight {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  margin-right: -1px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-right: -1px;
 }
 
 .v-Text > div {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  width: 100%;
-  height: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    height: 100%;
 }
 
 .v-Text input.v-Text-input {
-  box-sizing: border-box;
-  border: 1px solid transparent;
-  border-radius: 1px;
-  outline: 0;
-  width: 100%;
-  height: 100%;
-  -webkit-appearance: none;
-  background: 0;
-  word-wrap: break-word;
-  resize: none;
-  font-size: inherit;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    border-radius: 1px;
+    outline: 0;
+    width: 100%;
+    height: 100%;
+    -webkit-appearance: none;
+    background: 0;
+    word-wrap: break-word;
+    resize: none;
+    font-size: inherit;
 }
 
 /* The text sits off the border rather than against it. A search field is left
    out: its magnifier already holds the text away from the edge, and padding on
    top of that would push the text into the middle of the box. */
 .v-Text:not(.v-Search) input.v-Text-input {
-  padding-left: 8px;
+    padding-left: 8px;
 }
 
 .v-Text.is-disabled {
-  /* Fade the whole control (field, border, placeholder) so it reads as disabled. */
-  opacity: var(--opacity-disable);
+    /* Fade the whole control (field, border, placeholder) so it reads as disabled. */
+    opacity: var(--opacity-disable);
 }
 
 .v-Text.is-disabled input.v-Text-input {
-  color: var(--field-disabled-foreground);
-  cursor: not-allowed;
+    color: var(--field-disabled-foreground);
+    cursor: not-allowed;
 }
 
 .v-Text input.v-Text-input::-ms-clear {
-  display: none;
+    display: none;
 }
 
 .v-Text .icon {
-  background: transparent;
-  text-shadow: none;
-  text-align: center;
-  border-spacing: 0;
-  border-collapse: collapse;
-  padding: 0;
-  box-sizing: border-box;
-  font-size: 18px;
-  margin: 2px;
+    background: transparent;
+    text-shadow: none;
+    text-align: center;
+    border-spacing: 0;
+    border-collapse: collapse;
+    padding: 0;
+    box-sizing: border-box;
+    font-size: 18px;
+    margin: 2px;
 }
 
 .v-Text .v-Text-input {
-  flex: 1;
+    flex: 1;
 }
 
 .v-Search {
-  height: 36px;
-  width: 200px;
+    height: 36px;
+    width: 200px;
 }
 
 .v-Search.v-Text {
-  border-radius: 4px;
-  font-size: 17px;
+    border-radius: 4px;
+    font-size: 17px;
 }
 
 .v-Text-input::-webkit-input-placeholder,
 .v-Text-input::-moz-placeholder,
 .v-Text-input:-ms-input-placeholder,
 .v-Text-input--placeholder {
-  color: var(--field-placeholder-foreground);
+    color: var(--field-placeholder-foreground);
 }
 
 .v-Text.is-focused {
-  outline-offset: 0;
-  outline-width: 0.15rem;
-  outline-color: var(--focus-ring);
-  border-color: var(--focus-ring);
+    outline-offset: 0;
+    outline-width: 0.15rem;
+    outline-color: var(--focus-ring);
+    border-color: var(--focus-ring);
 }
 
 .v-Text.field-error {
-  border: 2px solid var(--field-error-border);
+    border: 2px solid var(--field-error-border);
 }
 
 .v-Text.field-error.is-focused {
-  outline-color: var(--field-error-border);
+    outline-color: var(--field-error-border);
 }

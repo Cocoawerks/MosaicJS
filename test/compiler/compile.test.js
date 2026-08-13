@@ -5,6 +5,7 @@ import * as path from "node:path";
 
 import {compileFile, componentName, destination, hash, relativeSpecifier,} from "../../src/js/core/compiler/compile.js";
 import {forModule, vlq} from "../../src/js/core/compiler/sourcemap.js";
+import {compileAll} from "../../src/js/core/compiler/build.js";
 
 const dirs = [];
 function tempDir() {
@@ -220,4 +221,68 @@ test("a parse error names the file and line", () => {
       runtime: "src/js/runtime/mosaic.js",
     }),
   ).toThrow(/line 2/);
+});
+
+// --- what an application may name in its markup -----------------------------
+//
+// A component tag resolves to a module compiled somewhere in the build. Naming
+// one is what asks for it: the import is written for the application, and it
+// names that component's own module — not the framework's index, which names
+// every component there is and would carry them all along with it.
+
+/** An application of one page and one controller, compiled with a framework. */
+function application(markup, extra = {}) {
+    const dir = tempDir();
+    const app = path.join(dir, "app");
+    const lib = path.join(dir, "lib", "controls");
+    fs.mkdirSync(app, {recursive: true});
+    fs.mkdirSync(lib, {recursive: true});
+
+    fs.writeFileSync(path.join(app, "main.mib"), markup);
+    const widget = 'import {Component} from "mosaic";\nexport default class %s extends Component {}\n';
+    fs.writeFileSync(path.join(lib, "Widget.js"), widget.replace("%s", "Widget"));
+    fs.writeFileSync(path.join(lib, "Unused.js"), widget.replace("%s", "Unused"));
+    for (const [name, source] of Object.entries(extra)) {
+        fs.writeFileSync(path.join(app, name), source);
+    }
+
+    const out = path.join(dir, "out");
+    compileAll(
+        [
+            {input: app, outdir: path.join(out, "app")},
+            {input: path.join(dir, "lib"), outdir: path.join(out, "lib"), specifier: "kit"},
+        ],
+        {runtime: "mosaic", sourcemap: false},
+    );
+    return fs.readFileSync(path.join(out, "app", "main.mib.js"), "utf8");
+}
+
+test("naming a framework component in markup imports it", () => {
+    const compiled = application("<div><Widget/></div>");
+    expect(compiled).toContain("import Widget from");
+});
+
+test("and imports the component's own module, not the framework's index", () => {
+    const compiled = application("<div><Widget/></div>");
+    expect(compiled).toContain('import Widget from "kit/controls/Widget.js"');
+    // The index would bring in every component the framework has.
+    expect(compiled).not.toContain('from "kit"');
+});
+
+test("a component the markup does not name is not imported at all", () => {
+    const compiled = application("<div><Widget/></div>");
+    expect(compiled).not.toContain("Unused");
+});
+
+test("a name nothing compiles to is still an error", () => {
+    expect(() => application("<div><Nowhere/></div>")).toThrow(
+        /<Nowhere\/> has no compiled module/,
+    );
+});
+
+test("a component of the application's own is imported by path", () => {
+    const compiled = application("<div><Counter/></div>", {
+        "Counter.js": 'import {Component} from "mosaic";\nexport default class Counter extends Component {}\n',
+    });
+    expect(compiled).toContain('import Counter from "./Counter.js"');
 });

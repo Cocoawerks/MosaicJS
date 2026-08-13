@@ -57,16 +57,16 @@ const STEPS = {
 };
 
 export default class AbstractSlider extends Control {
-  static props = {
-    /** Whether a drag is reported all the way or only where it comes to rest. */
-    continuous: { type: Boolean, default: true },
-    /** The near end of the track. */
-    minValue: { type: Number, default: 0 },
-    /** The far end. */
-    maxValue: { type: Number, default: 100 },
-    /** How far one move of a knob goes. */
-    step: { type: Number, default: 1 },
-  };
+    static props = {
+        /** Whether a drag is reported all the way or only where it comes to rest. */
+        continuous: {type: Boolean, default: true},
+        /** The near end of the track. */
+        minValue: {type: Number, default: 0},
+        /** The far end. */
+        maxValue: {type: Number, default: 100},
+        /** How far one move of a knob goes. */
+        step: {type: Number, default: 1},
+    };
 
     constructor() {
         super();
@@ -104,7 +104,8 @@ export default class AbstractSlider extends Control {
     }
 
     /** What a subclass takes from its props the first time it is drawn. */
-    readInitialValues() {}
+    readInitialValues() {
+    }
 
     // --- configuration -------------------------------------------------------
 
