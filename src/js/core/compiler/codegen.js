@@ -10,6 +10,8 @@ import {ACTION_ATTR, jsKey, jsString, lineMarker, OUTLET_ATTR, scopeClass, STYLE
  *              source, and a lookup for component tags: `name -> specifier`
  *              for a module imported by path, or `{specifier, named: true}`
  *              for one a package exports under its own name.
+ *              `controller` is the specifier of the controller module written
+ *              beside this one, when there is one.
  */
 export function generate(comp, opts) {
     const scope = scopeClass(opts.hash);
@@ -54,9 +56,20 @@ export function generate(comp, opts) {
 
     // `props` carries initial values only — it is forwarded to child components
     // and is otherwise the controller's business. There is no reactivity.
+    // A page's own controller, written beside it: `Foo.mib` is paired with the
+    // `FooController.js` next to it. The runtime builds one per drawn instance
+    // and calls the page against it, so the bindings, outlets and actions in
+    // this markup are that controller's rather than the page's above it.
+    if (opts.controller) {
+        out += `import ${opts.name}Controller from ${jsString(opts.controller)};\n\n`;
+    }
+
     out += `export default function ${opts.name}(props = {}) {\n`;
     const ctx = new Ctx(hasStyle ? scope : null);
     out += `  return ${ctx.childrenExpr(comp.markup, 1)};\n}\n`;
+    if (opts.controller) {
+        out += `\n${opts.name}.controller = ${opts.name}Controller;\n`;
+    }
     return out;
 }
 

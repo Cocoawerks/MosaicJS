@@ -286,3 +286,31 @@ test("a component of the application's own is imported by path", () => {
     });
     expect(compiled).toContain('import Counter from "./Counter.js"');
 });
+
+// --- a page's own controller -------------------------------------------------
+//
+// `Foo.mib` is paired with the `FooController.js` written beside it: the page is
+// drawn against a controller of its own rather than against whatever drew it.
+
+test("a page is paired with the controller written beside it", () => {
+    const compiled = application("<div>{heading}</div>", {
+        "MainController.js": "export default class MainController {}\n",
+    });
+
+    expect(compiled).toContain('import MainController from "./MainController.js"');
+    expect(compiled).toContain("Main.controller = MainController;");
+});
+
+test("and is paired with nothing when there is no such file", () => {
+    const compiled = application("<div>{heading}</div>");
+
+    expect(compiled).not.toContain("Controller");
+});
+
+test("the pairing goes by the page's name, not by any controller nearby", () => {
+    const compiled = application("<div>{heading}</div>", {
+        "OtherController.js": "export default class OtherController {}\n",
+    });
+
+    expect(compiled).not.toContain("Controller");
+});

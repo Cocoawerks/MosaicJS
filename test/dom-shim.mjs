@@ -2,6 +2,12 @@
 // Not a browser: it implements only what mosaic.js touches.
 
 class N {
+  /** The DOM's own numbering, which the runtime and the components compare against. */
+  static ELEMENT_NODE = 1;
+  static TEXT_NODE = 3;
+  static COMMENT_NODE = 8;
+  static DOCUMENT_FRAGMENT_NODE = 11;
+
   constructor() {
     this.childNodes = [];
     this.parentNode = null;
@@ -60,6 +66,8 @@ class N {
 }
 
 class Text extends N {
+  nodeType = N.TEXT_NODE;
+
   constructor(data) {
     super();
     this.data = data;
@@ -76,6 +84,8 @@ class Text extends N {
 }
 
 class Comment extends Text {
+  nodeType = N.COMMENT_NODE;
+
   get outerHTML() {
     return `<!--${this.data}-->`;
   }
@@ -84,7 +94,9 @@ class Comment extends Text {
   }
 }
 
-class Frag extends N {}
+class Frag extends N {
+  nodeType = N.DOCUMENT_FRAGMENT_NODE;
+}
 
 const VOID = new Set(["br", "img", "input", "hr", "meta", "link"]);
 
@@ -95,6 +107,8 @@ const VOID = new Set(["br", "img", "input", "hr", "meta", "link"]);
 const VALUE_ELEMENTS = new Set(["input", "select", "textarea"]);
 
 class Element extends N {
+  nodeType = N.ELEMENT_NODE;
+
   constructor(tag) {
     super();
     this.tagName = tag;
@@ -131,6 +145,21 @@ class Element extends N {
     const i = fns.indexOf(fn);
     if (i >= 0) fns.splice(i, 1);
   }
+  /**
+   * Everything measures to nothing: there is no layout here. A component that
+   * places itself reads a rect and gets zeros, which is a coherent answer —
+   * what is checked in these tests is what it does, not where it lands.
+   */
+  getBoundingClientRect() {
+    return {left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0};
+  }
+  get offsetWidth() {
+    return 0;
+  }
+  get offsetHeight() {
+    return 0;
+  }
+
   /** Whether `node` is this element or sits somewhere inside it. */
   contains(node) {
     for (let n = node; n; n = n.parentNode) if (n === this) return true;
@@ -233,6 +262,33 @@ const document = {
   },
 };
 
+const listeners = new Map();
+const listenTo = (target) => {
+  target.addEventListener = (type, fn) => {
+    const key = `${target === document ? "d" : "w"}:${type}`;
+    if (!listeners.has(key)) listeners.set(key, []);
+    listeners.get(key).push(fn);
+  };
+  target.removeEventListener = (type, fn) => {
+    const fns = listeners.get(`${target === document ? "d" : "w"}:${type}`);
+    const i = fns ? fns.indexOf(fn) : -1;
+    if (i >= 0) fns.splice(i, 1);
+  };
+  target.dispatchEvent = (ev) => {
+    if (ev.target === undefined) ev.target = target;
+    if (ev.stopPropagation === undefined) ev.stopPropagation = () => {};
+    if (ev.preventDefault === undefined) ev.preventDefault = () => {};
+    for (const fn of [...(listeners.get(`${target === document ? "d" : "w"}:${ev.type}`) ?? [])]) {
+      fn(ev);
+    }
+  };
+};
+
+const window = {innerWidth: 1024, innerHeight: 768};
+listenTo(document);
+listenTo(window);
+
+globalThis.window = window;
 globalThis.document = document;
 globalThis.Node = N;
 globalThis.DocumentFragment = Frag;

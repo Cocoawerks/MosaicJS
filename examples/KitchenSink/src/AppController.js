@@ -48,6 +48,12 @@ export default class AppController {
 
         /** Which row of the OutlineView is selected. */
         this.place = "inbox";
+
+        /** What the popover last reported back. */
+        this.picked = "";
+
+        /** The side the popover is asked to try first. */
+        this.where = "bottom_center";
         /** @type {string} What the name field holds. */
         this.name = "";
         /** @type {string} What the search field holds. */
@@ -335,6 +341,37 @@ export default class AppController {
             this.indicator.setComplete("Saved");
             this.note("saved");
         }, 900);
+    }
+
+    // --- the popover ----------------------------------------------------------
+
+    /**
+     * Show the popover against the button that asked for it.
+     *
+     * `this.colours` is the popover's own controller — an outlet on a page that
+     * has one hands that over rather than the element it drew — so this says
+     * what the page has to say to it, and nothing about what is inside it.
+     */
+    /**
+     * The side the popover should try first. It is a request rather than an
+     * instruction: shown with no room on that side, the popover takes the
+     * opposite one.
+     *
+     * @param {object} combo The ComboBox that changed.
+     * @param {string} value One of PopOverOrientation.
+     */
+    orientationChanged(combo, value) {
+        this.where = value;
+        this.colours.orientation = value;
+        this.note(`popover orientation: ${value}`);
+    }
+
+    showColours() {
+        this.colours.onPick = (colour) => {
+            this.picked = colour;
+            this.note(`colour picked: ${colour}`);
+        };
+        this.colours.show(this.colourButton);
     }
 
     /**

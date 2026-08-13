@@ -777,6 +777,154 @@
     check("a click on a nested row is not a click on the rows above it",
         app.textContent.includes("place=year"));
 
+    // --- PopOver ------------------------------------------------------------
+    // A popover of the application's own: ColourPopOver.mib with
+    // ColourPopOverController.js beside it, which the compiler pairs with it.
+    const popBox = section("PopOver");
+    const popover = app.querySelector(".v-PopOver");
+    const popButton = popBox.querySelector(".v-Button");
+    const popVisible = () => getComputedStyle(popover).visibility === "visible";
+    const colour = (text) =>
+        [...popover.querySelectorAll(".v-Button")].find((b) => b.textContent.trim() === text);
+
+    check("the popover drew, from the page's own .mib", popover !== null);
+    // In the middle of the page, so there is room on any side of it, with its
+    // controls centred for the same reason.
+    const sections = [...app.querySelectorAll("section")];
+    const where = sections.indexOf(popBox);
+    check(`its section sits in the middle of the page (${where + 1} of ${sections.length})`,
+        where > 2 && where < sections.length - 2);
+    check("with its controls centred",
+        getComputedStyle(popButton.parentElement).justifyContent === "center");
+    check("with its own controller's words in it",
+        popover.querySelector("h3").textContent === "Pick a colour");
+    check("it starts away", !popVisible());
+    check("and is out of the tab order while it is",
+        popover.hasAttribute("inert") && popover.getAttribute("aria-hidden") === "true");
+    check("its callout points back at what it hangs from",
+        popover.querySelector("b").className.includes("PopOver-callout--b"));
+
+    // Brought into view first: a popover is kept inside the window, so one
+    // hung from a button below the fold is pushed back up to the top edge —
+    // right, but not what the seating checks below are about.
+    popButton.scrollIntoView({block: "center"});
+    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("the page's button shows it", popVisible());
+    check("and it joins the tab order", !popover.hasAttribute("inert"));
+
+    const seat = () => {
+        const b = popButton.getBoundingClientRect();
+        const p = popover.getBoundingClientRect();
+        return {
+            gap: Math.round(p.top - b.bottom),
+            off: Math.abs((p.left + p.width / 2) - (b.left + b.width / 2)),
+        };
+    };
+    check(`it sits below the button, clear of it (gap ${seat().gap}px)`, seat().gap === 9);
+    check("on the side its markup asked for", popover.querySelector("b").className.includes("PopOver-callout--b"));
+    // Centred on the button, unless centring would take it off the page: this
+    // one sits near the left edge, so it is held there instead. Either way it
+    // is wholly in the window, which is what the nudge is for.
+    const box = popover.getBoundingClientRect();
+    check(`it is centred on the button, or held at the edge (off by ${seat().off.toFixed(1)}px, left ${Math.round(box.left)}px)`,
+        seat().off < 2 || Math.round(box.left) === 7);
+    check("and wholly inside the window",
+        box.left >= 0 && box.right <= window.innerWidth &&
+        box.top >= 0 && box.bottom <= window.innerHeight);
+    check("the theme paints it",
+        getComputedStyle(popover).borderTopWidth === "1px" &&
+        getComputedStyle(popover).backgroundColor !== "rgba(0, 0, 0, 0)");
+
+    colour("Green").dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("a button inside answers to the popover's own controller",
+        popover.querySelector("p.chosen, p:last-of-type").textContent.includes("Green"));
+    check("which tells the page, in the page's own words",
+        app.textContent.includes("picked=Green") && last().includes("colour picked: Green"));
+    check("and a press inside leaves it up", popVisible());
+
+    document.body.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true, clientX: 4, clientY: 4}));
+    check("a press outside puts it away", !popVisible());
+
+    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("it opens again, with what it held kept",
+        popVisible() && popover.textContent.includes("Green"));
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+    check("Escape puts it away", !popVisible());
+
+    // A press on the button it hangs from must not close it on the press only
+    // for the click to open it again.
+    popButton.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true}));
+    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("its own button opens it rather than fighting itself", popVisible());
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+
+    // The side is a choice, not a setting: told to sit below something with no
+    // room below it, a popover sits above it instead, and its callout turns so
+    // it still points at what it hangs from.
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+    popButton.scrollIntoView({block: "start"});
+    window.scrollBy(0, popButton.getBoundingClientRect().top - (window.innerHeight - 60));
+    await new Promise((r) => setTimeout(r, 50));
+
+    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    const flipped = () => {
+        const b = popButton.getBoundingClientRect();
+        const p = popover.getBoundingClientRect();
+        return {above: Math.round(b.top - p.bottom), fits: p.top >= 0 && p.bottom <= window.innerHeight};
+    };
+    check(`with no room below, it sits above instead (gap ${flipped().above}px)`,
+        popVisible() && flipped().above === 9);
+    check("and stays wholly in the window", flipped().fits);
+    check("its callout turns to point down at the button",
+        popover.querySelector("b").className.includes("PopOver-callout--t") &&
+        popover.querySelector("b b").className.includes("PopOver-triangle--t"));
+
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+    window.scrollTo(0, 0);
+
+    // The combo beside the button says which side to try first.
+    const wheres = popBox.querySelector("select");
+    const chooseWhere = (value) => {
+        wheres.value = value;
+        wheres.dispatchEvent(new Event("change", {bubbles: true}));
+    };
+    check("a combo beside the button offers every orientation",
+        wheres !== null && wheres.options.length === 12);
+    check("and starts on the one the markup asked for", wheres.value === "bottom_center");
+
+    popButton.scrollIntoView({block: "center"});
+    chooseWhere("right_middle");
+    check("choosing one reaches the controller", last().includes("popover orientation: right_middle"));
+    check("which the summary line shows", app.textContent.includes("where=right_middle"));
+
+    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    const beside = () => {
+        const b = popButton.getBoundingClientRect();
+        const p = popover.getBoundingClientRect();
+        return Math.round(p.left - b.right);
+    };
+    check(`the popover then sits to its right (gap ${beside()}px)`,
+        popVisible() && beside() === 9);
+    // The callout is named for the side the popover sits on, and the sheet puts
+    // it on the popover's opposite edge — a popover to the right of its anchor
+    // wears `--r`, drawn against its own left edge.
+    check("with its callout pointing back across at it",
+        popover.querySelector("b").className.includes("PopOver-callout--r") &&
+        popover.querySelector("b b").className.includes("PopOver-triangle--r"));
+
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+    chooseWhere("top_center");
+    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    const above = () => {
+        const b = popButton.getBoundingClientRect();
+        return Math.round(b.top - popover.getBoundingClientRect().bottom);
+    };
+    check(`and above it when that is what was asked for (gap ${above()}px)`,
+        popVisible() && above() === 9);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+    chooseWhere("bottom_center");
+
     // --- switching themes ---------------------------------------------------
     // The theme is a stylesheet swap: nothing is redrawn, so what proves it
     // worked is the colours changing under controls that never moved.
@@ -811,6 +959,21 @@
         "one stylesheet, rewritten — not one per theme",
         document.querySelectorAll("style[data-mosaic-theme]").length === 1,
     );
+
+    // A popover is drawn the same in both light themes: the surface it floats on
+    // is the one thing on the page that is not part of it, so aristo and pop
+    // give it the same face and the same edge.
+    const popFace = () => {
+        const style = getComputedStyle(popover);
+        return `${style.backgroundColor} / ${style.borderTopColor}`;
+    };
+    wear("aristo");
+    const aristoPopOver = popFace();
+    wear("pop");
+    check(`aristo and pop draw a popover alike (${popFace()})`,
+        popFace() === aristoPopOver);
+    wear("aristo_dark");
+    check("and the dark theme does not", popFace() !== aristoPopOver);
 
     // The theme rounds the search field into a pill. Both Aristo sheets say so
     // in the same words, so both have to land the same way: the theme's rules

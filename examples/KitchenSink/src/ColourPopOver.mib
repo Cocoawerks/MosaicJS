@@ -1,0 +1,56 @@
+<!-- A popover of the application's own: its markup here, its behaviour beside
+     it in ColourPopOverController.js, which the compiler pairs with it by name.
+     The page names it as a tag and keeps an outlet on it; what that outlet
+     hands over is this controller. -->
+<PopOver orientation="bottom_center" outlet="popover">
+    <div styleName="body">
+        <h3 styleName="heading">{heading}</h3>
+        <p styleName="note">
+            Anything can go in a popover: this one is html and Buttons, and the
+            Buttons answer to the controller written beside this markup.
+        </p>
+
+        <div styleName="colours">
+            <Button text="Red" intent="danger" action="pick"/>
+            <Button text="Green" intent="success" action="pick"/>
+            <Button text="Blue" intent="primary" action="pick"/>
+        </div>
+
+        <p styleName="chosen">chosen: {chosen}</p>
+    </div>
+</PopOver>
+
+<style>
+    .body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.35rem;
+        max-width: 260px;
+    }
+
+    .heading {
+        margin: 0;
+        font-size: 0.95rem;
+        color: var(--text-color);
+    }
+
+    .note {
+        margin: 0;
+        font-size: 0.8rem;
+        line-height: 1.4;
+        color: var(--secondary-foreground);
+    }
+
+    .colours {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .chosen {
+        margin: 0;
+        font-family: ui-monospace, monospace;
+        font-size: 0.8rem;
+        color: var(--secondary-foreground);
+    }
+</style>

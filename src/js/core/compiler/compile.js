@@ -43,7 +43,7 @@ export function compileFile(file, opts) {
 
     const js =
         path.extname(file) === MARKUP_EXT
-            ? compileIb(src, runtime, stem, dest, opts)
+            ? compileIb(src, runtime, stem, dest, opts, file)
             : compileJs(src, file, stem, runtime, opts);
 
     // Line markers travel with the generated code and come out here, becoming
@@ -68,13 +68,15 @@ export function compileFile(file, opts) {
     return dest;
 }
 
-function compileIb(src, runtime, stem, dest, opts) {
+function compileIb(src, runtime, stem, dest, opts, file) {
     const components = opts.components ?? new Map();
+    const name = opts.name ?? componentName(stem);
     return generate(parse(src), {
         minify: opts.minify,
         runtime,
-        name: opts.name ?? componentName(stem),
+        name,
         hash: hash(src),
+        controller: controllerFor(name, file, dest),
         resolve: (name) => {
             const target = components.get(name);
             if (!target) {
@@ -93,6 +95,28 @@ function compileIb(src, runtime, stem, dest, opts) {
             return relativeSpecifier(target.dest, path.dirname(dest));
         },
     });
+}
+
+/**
+ * The controller written beside a page: `Foo.mib` is paired with a
+ * `FooController.js` next to it, if there is one — that is the whole of the
+ * arrangement, and a page with no such file has no controller of its own.
+ *
+ * The specifier is written to where the *compiled* page lands, since that is
+ * what will do the importing.
+ *
+ * @returns {string|null} What the compiled page should import, or null.
+ */
+function controllerFor(name, file, dest) {
+    if (!file) return null;
+    for (const ext of [".js", ".jsx"]) {
+        const source = path.join(path.dirname(file), `${name}Controller${ext}`);
+        if (!fs.existsSync(source)) continue;
+        // Where that source itself compiles to, so the two sit as they do now.
+        const compiled = path.join(path.dirname(dest), `${name}Controller.js`);
+        return relativeSpecifier(compiled, path.dirname(dest));
+    }
+    return null;
 }
 
 function compileJs(src, file, stem, runtime, opts = {}) {

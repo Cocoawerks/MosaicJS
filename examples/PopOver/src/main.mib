@@ -1,0 +1,22 @@
+<div styleName="page">
+    <Button text="Colour…" outlet="colourButton" action="showColours"/>
+    <ColourPopOver outlet="colours"/>
+    <p styleName="hint">{said}</p>
+</div>
+
+<style>
+    .page {
+        font-family: system-ui, sans-serif;
+        color: var(--text-color);
+        background: var(--view-background);
+        min-height: 100vh;
+        margin: 0;
+        padding: 3rem;
+        box-sizing: border-box;
+    }
+
+    .hint {
+        font-size: 0.8rem;
+        color: var(--secondary-foreground);
+    }
+</style>

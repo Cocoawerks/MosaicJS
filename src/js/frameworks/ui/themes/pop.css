@@ -293,8 +293,11 @@
     --outline-hover-background: #efedeb;
     --outline-selected-foreground: #fcfbfa;
     --outline-selected-icon: #f6f4f2;
-    --popover-background: #fcfbfa;
-    --popover-border: #d8d4d1;
+    /* A popover is drawn the same in both light themes: the surface it floats on
+       is the one thing on the page that is not part of it, so it takes the
+       plainest white either theme has rather than the warm greys around it. */
+    --popover-background: #ffffff;
+    --popover-border: #c6c6c6;
     --progressbar-track: #e6e3e1;
     /* What fills the track. Pop's filled surfaces are the accent, not the green
        primary: the slider's range takes --accent-color, and this theme's switch

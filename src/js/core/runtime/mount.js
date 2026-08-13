@@ -5,7 +5,11 @@ import {drawInto, isComponentClass} from "./private/draw.js";
 import {attachTree, discard, disposeTree} from "./private/lifecycle.js";
 import {render} from "./render.js";
 
-export function mount(component, target, props = {}, controller = {}) {
+/** What `mount` was given when it was given no controller at all. */
+const EMPTY = Symbol("no controller");
+
+export function mount(component, target, props = {}, controller = EMPTY) {
+    if (controller === EMPTY && isComponentClass(component)) controller = {};
     // A Component subclass draws itself; it is its own controller.
     if (isComponentClass(component)) {
         const view = new component(controller === undefined ? null : controller);
@@ -36,6 +40,15 @@ export function mount(component, target, props = {}, controller = {}) {
 
     // Otherwise: a compiled `.mib` component. The controller reaches its view as
     // `this.view`; it does not inherit from it.
+    //
+    // A page may carry a controller of its own — `Foo.mib` paired with the
+    // `FooController.js` beside it. What the caller passes wins, since mounting
+    // a page by hand and naming its controller is saying which to use; a page
+    // mounted with nothing said uses the one written for it.
+    if (controller === EMPTY) {
+        controller = component?.controller ? new component.controller() : {};
+    }
+
     const view = new Component(controller);
     view.controller = controller;
     controller.view = view;

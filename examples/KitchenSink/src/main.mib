@@ -147,6 +147,42 @@
     </section>
 
     <section styleName="section">
+        <h2 styleName="heading">PopOver</h2>
+        <p styleName="note">
+            A panel that hangs off something on the page, with a callout pointing back
+            at it. This one is an application's own: ColourPopOver.mib holds its markup
+            and ColourPopOverController.js beside it holds its behaviour. A press
+            outside it, or Escape, puts it away.
+        </p>
+
+        <div styleName="row centred">
+            <Button text="Pick a colour…" outlet="colourButton" action="showColours"/>
+
+            <!-- Which side it should try first. It is only the side it *asks*
+                 for: a popover with no room there sits on the opposite one. -->
+            <ComboBox outlet="orientationCombo" action="orientationChanged"
+                      value="bottom_center">
+                <Option text="Bottom center" value="bottom_center"/>
+                <Option text="Bottom left" value="bottom_left"/>
+                <Option text="Bottom right" value="bottom_right"/>
+                <Option text="Top center" value="top_center"/>
+                <Option text="Top left" value="top_left"/>
+                <Option text="Top right" value="top_right"/>
+                <Option text="Right middle" value="right_middle"/>
+                <Option text="Right top" value="right_top"/>
+                <Option text="Right bottom" value="right_bottom"/>
+                <Option text="Left middle" value="left_middle"/>
+                <Option text="Left top" value="left_top"/>
+                <Option text="Left bottom" value="left_bottom"/>
+            </ComboBox>
+        </div>
+
+        <ColourPopOver outlet="colours"/>
+
+        <p styleName="values">picked={picked} where={where}</p>
+    </section>
+
+    <section styleName="section">
         <h2 styleName="heading">SpinButton</h2>
         <p styleName="note">
             A number with a step either side of it. Typing settles after a pause rather than on
@@ -303,6 +339,12 @@
         margin: 0 0 1rem;
         font-size: 0.85rem;
         color: var(--secondary-foreground);
+    }
+
+    /* The popover's own row: its controls sit in the middle of the page, so a
+       popover has room on any side of them. */
+    .centred {
+        justify-content: center;
     }
 
     .row {

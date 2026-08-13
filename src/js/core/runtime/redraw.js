@@ -133,14 +133,19 @@ function patch(parent, dom, oldV, newV, controller) {
                 typeof newV.type === "function" &&
                 dom.__ibFn === newV.type
             ) {
-                const produced = newV.type.call(controller, {
+                // The one this page was first drawn against: a page with a
+                // controller of its own keeps it across redraws, or its state
+                // would be built again every time anything above it changed.
+                const own = dom.__ibCtl ?? controller;
+                const produced = newV.type.call(own, {
                     ...newV.props,
                     children: newV.children,
                 });
-                const patched = patch(parent, dom, dom.__ibOut, produced, controller);
+                const patched = patch(parent, dom, dom.__ibOut, produced, own);
                 if (patched?.nodeType === Node.ELEMENT_NODE) {
                     patched.__ibFn = newV.type;
                     patched.__ibOut = produced;
+                    if (dom.__ibCtl) patched.__ibCtl = own;
                 }
                 return patched;
             }

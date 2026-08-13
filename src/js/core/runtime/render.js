@@ -80,12 +80,26 @@ export function render(vnode, controller = {}, ns = null) {
         // against and can only throw the node away and build another — which
         // destroys an icon mid-press, and with it the click that press was going
         // to become.
-        const produced = type.call(controller, {...props, children});
-        const dom = render(produced, controller, ns);
+        // A compiled page may carry a controller of its own — `Foo.mib` paired
+        // with the `FooController.js` beside it. One is built per drawn
+        // instance, and it is what the page is called against, so its
+        // `{bindings}`, outlets and actions are that controller's and not the
+        // controller of whatever drew it. Kept on the node, because a redraw
+        // has to call the page against the same one.
+        const own = type.controller ? new type.controller() : controller;
+        const produced = type.call(own, {...props, children});
+        const dom = render(produced, own, ns);
         if (dom?.nodeType === Node.ELEMENT_NODE) {
             dom.__ibFn = type;
             dom.__ibOut = produced;
+            if (own !== controller) dom.__ibCtl = own;
         }
+        // `outlet="colours"` on a page with a controller hands that controller
+        // over, not the element it drew: what the page above has to say to it
+        // is `show(button)` — the page's own words — and the element is the
+        // controller's business. A page without one hands over its element,
+        // which is all there is to hand.
+        applyRef(props.ref, own !== controller ? own : dom);
         return dom;
     }
 
