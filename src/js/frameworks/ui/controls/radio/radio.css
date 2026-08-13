@@ -1,0 +1,92 @@
+/*
+ * Ported from GWT Mosaic: client/components/resources/radio/style.css.
+ * Scoped to this module by the compiler, so .v-Radio and .v-RadioGroup cannot
+ * collide with an application's own class names.
+ */
+.v-Radio {
+  position: relative;
+  min-height: 20px;
+  padding-left: 22px;
+  text-transform: none;
+  width: fit-content;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.v-Radio > span {
+  margin-bottom: 1px;
+  padding: 0 5px;
+  font-size: 16px;
+  line-height: 100%;
+  user-select: none;
+}
+
+/* Control.setEnabled(false) adds "is-disabled" to the root; fading the whole
+   control dims the indicator and the label span together. */
+.v-Radio.is-disabled {
+  cursor: default;
+  color: #808080;
+  opacity: var(--opacity-disable);
+}
+
+.v-Radio:focus,
+ul.v-RadioGroup:focus {
+  border: none;
+  outline: none;
+}
+
+.v-Radio > .indicator {
+  position: absolute;
+  left: 0;
+  margin: 0;
+  background-clip: padding-box;
+  width: 17px;
+  height: 17px;
+  line-height: 100%;
+  border-radius: 50%;
+  font-size: 6px;
+  font-weight: 400;
+  font-style: normal;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  z-index: 0;
+  border: 2px solid var(--default-border-color);
+  background: var(--radio-indicator-background);
+}
+
+.v-Radio > .indicator:before {
+  position: relative;
+  content: "";
+  transition: background-color 100ms linear;
+}
+
+.v-Radio > .indicator.checked {
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--accent-color), black 5%);
+  background: var(--accent-color);
+}
+
+.v-Radio > .indicator.checked:before {
+  display: inline-block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  width: 9px;
+  height: 9px;
+  content: "";
+  background: var(--radio-mark-color);
+}
+
+.v-Radio:focus .indicator.checked {
+  outline-offset: 1px;
+  outline: 2px solid var(--focus-ring);
+}
+
+ul.v-RadioGroup {
+  display: block;
+  padding: 0;
+}

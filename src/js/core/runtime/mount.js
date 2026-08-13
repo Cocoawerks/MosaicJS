@@ -1,8 +1,9 @@
 // Putting a component into the document.
-import {Component} from "./Component.js";
-import {drawInto, isComponentClass} from "./private/draw.js";
-import {attachTree, discard, disposeTree} from "./private/lifecycle.js";
-import {render} from "./render.js";
+import { Component } from "./Component.js";
+import { coerceProps } from "./coerce.js";
+import { drawInto, isComponentClass } from "./private/draw.js";
+import { attachTree, discard, disposeTree } from "./private/lifecycle.js";
+import { render } from "./render.js";
 
 export function mount(component, target, props = {}, controller = {}) {
   // A Component subclass draws itself; it is its own controller.
@@ -40,12 +41,14 @@ export function mount(component, target, props = {}, controller = {}) {
   controller.view = view;
 
   const vnode =
-    typeof component === "function" ? component.call(controller, props) : component;
+    typeof component === "function"
+      ? component.call(controller, props)
+      : component;
   const dom = render(vnode, controller);
   const nodes = dom instanceof DocumentFragment ? [...dom.childNodes] : [dom];
   view.nodes = nodes;
   view.node = nodes[0] ?? null;
-  view.props = props;
+  view.props = coerceProps(props);
   if (view.node) view.node.__ibView = view;
 
   target.textContent = "";

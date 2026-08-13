@@ -109,7 +109,9 @@ export function takeLineMarkers(code) {
 /** Rust's `split_inclusive('\n')`: lines that keep their trailing newline. */
 export function splitInclusive(s) {
   if (s === "") return [];
-  const out = s.split("\n").map((l, i, all) => (i < all.length - 1 ? l + "\n" : l));
+  const out = s
+    .split("\n")
+    .map((l, i, all) => (i < all.length - 1 ? l + "\n" : l));
   if (out[out.length - 1] === "") out.pop();
   return out;
 }

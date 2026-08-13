@@ -7,7 +7,12 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import {collectSources, compileFile, componentName, destination} from "./compile.js";
+import {
+  collectSources,
+  compileFile,
+  componentName,
+  destination,
+} from "./compile.js";
 
 /**
  * Expand `sources` — `[{ input, outdir, specifier }]`, where `input` is a file
@@ -21,18 +26,21 @@ export function planJobs(sources) {
   const outdirs = sources.map((s) => path.resolve(s.outdir));
   const isOutput = (file) => {
     const full = path.resolve(file);
-    return outdirs.some((dir) => full === dir || full.startsWith(dir + path.sep));
+    return outdirs.some(
+      (dir) => full === dir || full.startsWith(dir + path.sep),
+    );
   };
 
   const jobs = [];
-  for (const {input, outdir, specifier} of sources) {
+  for (const { input, outdir, specifier } of sources) {
     if (!fs.existsSync(input)) throw new Error(`no such input: ${input}`);
     if (fs.statSync(input).isDirectory()) {
       for (const file of collectSources(input)) {
-        if (!isOutput(file)) jobs.push({file, root: input, outdir, specifier});
+        if (!isOutput(file))
+          jobs.push({ file, root: input, outdir, specifier });
       }
     } else {
-      jobs.push({file: input, root: path.dirname(input), outdir, specifier});
+      jobs.push({ file: input, root: path.dirname(input), outdir, specifier });
     }
   }
   return jobs;
@@ -41,7 +49,7 @@ export function planJobs(sources) {
 /**
  * Compile every source in `sources`.
  *
- * @param opts { runtime, name, sourcemap, out, onFile }
+ * @param opts { runtime, name, sourcemap, minify, icons, out, onFile }
  * @returns the destination path of each compiled file
  */
 export function compileAll(sources, opts = {}) {
@@ -55,6 +63,8 @@ export function compileAll(sources, opts = {}) {
     runtime: opts.runtime,
     name: opts.name ?? null,
     sourcemap: opts.sourcemap,
+    minify: opts.minify,
+    icons: opts.icons ?? [],
   });
 
   // Destinations are known before anything is written, so a `<Button/>` in one
@@ -64,7 +74,9 @@ export function compileAll(sources, opts = {}) {
   // Counter — so every candidate is kept and the choice is made per module.
   const byName = new Map();
   for (const job of jobs) {
-    const name = opts.name ?? componentName(path.basename(job.file, path.extname(job.file)));
+    const name =
+      opts.name ??
+      componentName(path.basename(job.file, path.extname(job.file)));
     if (!byName.has(name)) byName.set(name, []);
     byName.get(name).push({
       dest: destination(job.file, options(job)),
@@ -91,7 +103,8 @@ export function compileAll(sources, opts = {}) {
       // beside its neighbours: the package cannot import itself by name.
       map.set(name, {
         dest: chosen.dest,
-        specifier: chosen.outdir === job.outdir ? null : chosen.specifier ?? null,
+        specifier:
+          chosen.outdir === job.outdir ? null : (chosen.specifier ?? null),
       });
     }
     return map;
@@ -118,7 +131,10 @@ export function compileAll(sources, opts = {}) {
   for (const job of jobs) {
     let dest;
     try {
-      dest = compileFile(job.file, { ...options(job), components: componentsFor(job) });
+      dest = compileFile(job.file, {
+        ...options(job),
+        components: componentsFor(job),
+      });
     } catch (e) {
       throw new Error(`${job.file}: ${e.message}`, { cause: e });
     }

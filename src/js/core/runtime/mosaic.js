@@ -12,8 +12,9 @@
  *   mount(Main, document.body, {}, controller);
  */
 
-export {Component, BROWSER_EVENTS} from "./Component.js";
+export { Component, BROWSER_EVENTS } from "./Component.js";
 
+export { coerceProps, coerceValue } from "./coerce.js";
 export { Fragment } from "./Fragment.js";
 export { h } from "./h.js";
 export { render } from "./render.js";

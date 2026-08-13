@@ -1,0 +1,146 @@
+/*
+ * Ported from GWT Mosaic: client/components/resources/slider/style.css.
+ *
+ * Scoped to this module by the compiler, so every element these rules match is
+ * one the slider itself draws — track, filled range and handles alike.
+ */
+.v-Slider {
+    display: block;
+    text-align: left;
+    overflow: visible;
+    border: none;
+    font-weight: normal;
+    font-size: 16px;
+    padding: 0;
+    touch-action: none;
+    user-select: none;
+    position: relative;
+    box-sizing: border-box;
+    min-width: 50px;
+    border-radius: 3px;
+    background: var(--slider-track-background);
+    border-color: var(--default-border-color);
+}
+
+.v-Slider.disabled,
+.v-Slider.is-disabled {
+    opacity: var(--opacity-disable);
+}
+
+.v-Slider.vertical {
+    width: 6px;
+    min-width: 6px;
+    max-width: 6px;
+}
+
+.v-Slider.horizontal {
+    height: 6px;
+    min-height: 6px;
+    max-height: 6px;
+}
+
+.v-Slider .handle {
+    position: absolute;
+    display: block;
+    z-index: 0;
+    cursor: default;
+    border-radius: 50%;
+    padding: 0;
+    touch-action: none;
+    user-select: none;
+    margin: 0;
+    box-sizing: border-box;
+    border: 1px solid var(--default-border-color);
+    width: 23px;
+    height: 23px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    background: var(--slider-knob-background);
+}
+
+/* The knob is focusable, so the browser rings it with its own black outline.
+   The theme's ring replaces it — as the checkbox and radio sheets do for the
+   same reason — and appears only once the knob actually has focus. */
+.v-Slider .handle:focus,
+.v-Slider .handle:focus-visible {
+    outline: none;
+}
+
+.v-Slider .handle.is-focused {
+    outline-offset: 1px;
+    outline: var(--focus-ring) solid 3px;
+}
+
+.v-Slider:not(.is-disabled) .handle:hover {
+    background: var(--slider-knob-hover);
+}
+
+.v-Slider:not(.is-disabled) .handle.is-active {
+    background: var(--slider-knob-active);
+    border-color: var(--default-border-color);
+}
+
+.v-Slider.vertical .handle {
+    left: -7px;
+    margin-top: -10px;
+    top: 10px;
+}
+
+.v-Slider.horizontal .handle {
+    top: -9.5px;
+    margin-left: -12px;
+    left: 10px;
+}
+
+/* The filled part of the track. */
+.v-Slider .range {
+    border: none;
+    box-sizing: border-box;
+    position: absolute;
+    width: 100%;
+    border-radius: 3px;
+    background: var(--accent-color);
+}
+
+.v-Slider.vertical .range {
+    width: 7px;
+    min-width: 7px;
+    max-width: 7px;
+    height: auto;
+    bottom: -1px;
+}
+
+.v-Slider.horizontal .range {
+    height: 7px;
+    min-height: 7px;
+    max-height: 7px;
+    width: auto;
+    top: -1px;
+}
+
+.v-Slider-tip {
+    box-sizing: border-box;
+    border-radius: 3px;
+    height: 28px;
+    min-width: 30px;
+    font-size: 13px;
+    text-align: center;
+}
+
+.v-Slider-tip > div {
+    height: 28px;
+    text-align: center;
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    min-width: 24px;
+    font-size: 14px;
+    background: #f0f0f0;
+    box-shadow: 0 0 0 1px rgba(16, 22, 26, 0.1),
+    0 2px 4px rgba(16, 22, 26, 0.2),
+    0 8px 24px rgba(16, 22, 26, 0.2);
+    border-color: transparent;
+    color: #222;
+}

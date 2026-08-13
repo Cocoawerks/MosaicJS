@@ -1,0 +1,143 @@
+<!-- Calculator: a page of Buttons and a readout, and nothing else.
+
+     Every key is a `Button` from mosaic/frameworks/ui. There is no component of
+     its own here and no per-key handler: a control calls its action with
+     itself, so one method serves a whole row and asks the button that fired
+     what it says. `text="7"` is both what the key reads and what it means.
+
+     The readout is two bound lines. Assigning to `display` in the controller
+     updates it, because binding to a property is what makes it observed. -->
+
+<!-- `tabindex` and the keydown action are what let the keyboard work: on a DOM
+     element an action binds a listener, and a page nothing has focused hears no
+     keystrokes. The outlet hands this element over so it can be focused. -->
+<div styleName="calculator" tabindex="0" outlet="page" action="keydown:keyPressed">
+    <div styleName="topbar">
+        <Switch text="Dark" action="darkChanged"/>
+    </div>
+
+    <div styleName="readout">
+        <!-- What is being built up: "12 ×" while the second number is typed. -->
+        <div styleName="expression">{expression}</div>
+        <div styleName="display" role="status" aria-live="polite">{display}</div>
+    </div>
+
+    <div styleName="keys">
+        <Button text="C" intent="danger" action="clear"/>
+        <Button text="±" action="negate"/>
+        <Button text="%" action="percent"/>
+        <Button text="÷" intent="primary" action="operator"/>
+
+        <Button text="7" action="digit"/>
+        <Button text="8" action="digit"/>
+        <Button text="9" action="digit"/>
+        <Button text="×" intent="primary" action="operator"/>
+
+        <Button text="4" action="digit"/>
+        <Button text="5" action="digit"/>
+        <Button text="6" action="digit"/>
+        <Button text="−" intent="primary" action="operator"/>
+
+        <Button text="1" action="digit"/>
+        <Button text="2" action="digit"/>
+        <Button text="3" action="digit"/>
+        <Button text="+" intent="primary" action="operator"/>
+
+        <!-- The zero key is two columns wide, so the wrapper is what the grid
+             is told about: `styleName` on a component names one of its props,
+             not a class on what it draws. -->
+        <div styleName="wide">
+            <Button text="0" action="digit"/>
+        </div>
+        <Button text="." action="digit"/>
+        <Button text="=" intent="success" action="equals"/>
+    </div>
+
+    <p styleName="hint">{hint}</p>
+</div>
+
+<style>
+    .calculator {
+        /* The page takes focus so it can hear the keyboard, but it is the whole
+           window — ringing it would say nothing useful. The keys ring
+           themselves when tabbed to. */
+        outline: none;
+        font-family: system-ui, sans-serif;
+        color: var(--text-color);
+        background: var(--view-background);
+        min-height: 100vh;
+        margin: 0;
+        padding: 2rem;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    /* The readout: the sum being built above, the number being typed below. */
+    .readout {
+        width: 320px;
+        box-sizing: border-box;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        background: var(--light-view-background);
+        border: 1px solid var(--group-border-color);
+        text-align: right;
+    }
+
+    .expression {
+        font-family: ui-monospace, monospace;
+        font-size: 0.8rem;
+        color: var(--secondary-foreground);
+        min-height: 1.2em;
+    }
+
+    .display {
+        font-family: ui-monospace, monospace;
+        font-size: 2rem;
+        /* Room for the whole line: at 1.2 the glyphs stood a little taller than
+           their box, which is what put a scrollbar there in the first place. */
+        line-height: 1.4;
+        white-space: nowrap;
+        /* Clipped rather than scrolled. `overflow-x: auto` makes the other axis
+           scrollable too, and the line is a hair taller than its box — which
+           put a scrollbar and its little arrow beside the number. An answer is
+           formatted short enough not to need scrolling. */
+        overflow: hidden;
+    }
+
+    /* The toggle sits above the readout, at its right-hand end. */
+    .topbar {
+        width: 320px;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .keys {
+        width: 320px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+    }
+
+    .wide {
+        grid-column: span 2;
+        display: flex;
+    }
+
+    /* The keys are Buttons, which draw their own elements and carry their own
+       scope; `:global` is how this page reaches them to say only how big they
+       are. What they look like is the theme's business. */
+    .keys :global(.v-Button) {
+        width: 100%;
+        height: 48px;
+        font-size: 1.05rem;
+    }
+
+    .hint {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--secondary-foreground);
+    }
+</style>

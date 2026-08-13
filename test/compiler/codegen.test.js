@@ -282,3 +282,18 @@ test("line markers map generated lines back to source", () => {
   expect(code).not.toContain("/*@L");
   expect(mappings.length).toBeGreaterThan(0);
 });
+
+test("a component's prop cannot be bound", () => {
+    // A binding keeps this markup's own attribute up to date; a component is
+    // not markup, and what it does with `enabled` is its own. The outlet is
+    // how a controller reaches it.
+    expect(() => compile('<div><Card enabled="{on}"/></div>')).toThrow(
+        /a component's props are not bound/,
+    );
+    expect(() => compile('<div><Card title="hello {name}"/></div>')).toThrow(
+        /outlet="name"/,
+    );
+
+    // The same attribute on an element is a binding, as it always was.
+    expect(compile('<div><p title="{on}">x</p></div>')).toContain("bindAttr(this,");
+});

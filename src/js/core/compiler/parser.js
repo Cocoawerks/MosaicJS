@@ -23,18 +23,37 @@
 //   StrPart = { kind: "text", text } | { kind: "bind", path }
 //   Action  = { event, method }   // event is null for a bare method name
 
-import {ACTION_ATTR, DEFAULT_EVENT, isIdent, isPath, OUTLET_ATTR, STYLE_NAME_ATTR} from "./js.js";
+import {
+  ACTION_ATTR,
+  DEFAULT_EVENT,
+  isIdent,
+  isPath,
+  OUTLET_ATTR,
+  STYLE_NAME_ATTR,
+} from "./js.js";
 
 const VOID_ELEMENTS = new Set([
-  "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
-  "param", "source", "track", "wbr",
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr",
 ]);
 
 export class ParseError extends Error {}
 
 export function parse(src) {
   const p = new Parser(src);
-  const comp = {style: "", markup: []};
+  const comp = { style: "", markup: [] };
   comp.markup = trimEdges(p.parseNodes(null, comp));
   checkNames(comp.markup);
   return comp;
@@ -158,7 +177,8 @@ class Parser {
         }
         if (this.startsWithTag("style")) {
           const body = this.parseRawBlock("style");
-          if (comp.style.trim() !== "") throw this.err("duplicate <style> block");
+          if (comp.style.trim() !== "")
+            throw this.err("duplicate <style> block");
           comp.style = body;
           continue;
         }
@@ -209,7 +229,9 @@ class Parser {
    */
   checkClassAttr(name, attrs) {
     if (attrs.some((a) => a.name === "class")) {
-      throw this.err(`<${name}>: use \`${STYLE_NAME_ATTR}\` instead of \`class\``);
+      throw this.err(
+        `<${name}>: use \`${STYLE_NAME_ATTR}\` instead of \`class\``,
+      );
     }
   }
 
@@ -228,7 +250,15 @@ class Parser {
       if (this.startsWith("/>")) {
         this.pos += 2;
         this.checkClassAttr(name, attrs);
-        return { kind: "element", line, name, attrs, outlet, actions, children: [] };
+        return {
+          kind: "element",
+          line,
+          name,
+          attrs,
+          outlet,
+          actions,
+          children: [],
+        };
       }
       if (this.peek() === ">") {
         this.pos++;
@@ -238,10 +268,12 @@ class Parser {
 
       const attr = this.parseAttr();
       if (attr.name === OUTLET_ATTR) {
-        if (outlet !== null) throw this.err(`duplicate \`${OUTLET_ATTR}\` on <${name}>`);
+        if (outlet !== null)
+          throw this.err(`duplicate \`${OUTLET_ATTR}\` on <${name}>`);
         outlet = this.outletName(attr);
       } else if (attr.name === ACTION_ATTR) {
-        if (actions.length > 0) throw this.err(`duplicate \`${ACTION_ATTR}\` on <${name}>`);
+        if (actions.length > 0)
+          throw this.err(`duplicate \`${ACTION_ATTR}\` on <${name}>`);
         actions = this.parseActions(attr);
       } else {
         attrs.push(attr);
@@ -249,17 +281,34 @@ class Parser {
     }
 
     if (VOID_ELEMENTS.has(name.toLowerCase())) {
-      return { kind: "element", line, name, attrs, outlet, actions, children: [] };
+      return {
+        kind: "element",
+        line,
+        name,
+        attrs,
+        outlet,
+        actions,
+        children: [],
+      };
     }
 
     const children = this.parseNodes(name, comp);
     this.expect("</");
     const close = this.parseTagName();
-    if (close !== name) throw this.err(`expected </${name}>, found </${close}>`);
+    if (close !== name)
+      throw this.err(`expected </${name}>, found </${close}>`);
     this.skipWs();
     this.expect(">");
 
-    return { kind: "element", line, name, attrs, outlet, actions, children: trimEdges(children) };
+    return {
+      kind: "element",
+      line,
+      name,
+      attrs,
+      outlet,
+      actions,
+      children: trimEdges(children),
+    };
   }
 
   parseTagName() {
@@ -275,18 +324,22 @@ class Parser {
       if (/\s/.test(c) || c === "=" || c === ">" || c === "/") break;
       this.pos++;
     }
-    if (start === this.pos) throw this.err(`unexpected \`${this.peek()}\` in tag`);
+    if (start === this.pos)
+      throw this.err(`unexpected \`${this.peek()}\` in tag`);
     const name = this.src.slice(start, this.pos);
 
     if (this.peek() !== "=") return { name, value: { kind: "empty" } };
     this.pos++; // `=`
 
     if (this.peek() === "{") {
-      throw this.err(`\`${name}\`: put the binding inside quotes, as ${name}="{path}"`);
+      throw this.err(
+        `\`${name}\`: put the binding inside quotes, as ${name}="{path}"`,
+      );
     }
 
     const quote = this.peek();
-    if (quote !== '"' && quote !== "'") throw this.err("attribute value must be quoted");
+    if (quote !== '"' && quote !== "'")
+      throw this.err("attribute value must be quoted");
     this.pos++;
 
     const parts = [];
@@ -331,7 +384,8 @@ class Parser {
       if (this.peek() === "{" || this.peek() === "<") break;
       this.pos++;
     }
-    if (this.eof || this.peek() !== "}") throw this.err("unterminated `{` — expected `}`");
+    if (this.eof || this.peek() !== "}")
+      throw this.err("unterminated `{` — expected `}`");
     const path = this.src.slice(start, this.pos).trim();
     this.pos++; // `}`
 
@@ -373,14 +427,20 @@ class Parser {
       const method = colon === -1 ? part.trim() : part.slice(colon + 1).trim();
 
       if (!isIdent(method)) {
-        throw this.err(`\`${ACTION_ATTR}\`: \`${method}\` is not a valid controller method name`);
+        throw this.err(
+          `\`${ACTION_ATTR}\`: \`${method}\` is not a valid controller method name`,
+        );
       }
       if (event !== null && !/^[\p{L}\p{N}-]+$/u.test(event)) {
-        throw this.err(`\`${ACTION_ATTR}\`: \`${event}\` is not a valid event name`);
+        throw this.err(
+          `\`${ACTION_ATTR}\`: \`${event}\` is not a valid event name`,
+        );
       }
       const key = event ?? DEFAULT_EVENT;
       if (out.some((a) => (a.event ?? DEFAULT_EVENT) === key)) {
-        throw this.err(`\`${ACTION_ATTR}\`: \`${key}\` is bound twice on the same element`);
+        throw this.err(
+          `\`${ACTION_ATTR}\`: \`${key}\` is bound twice on the same element`,
+        );
       }
       out.push({ event, method });
     }
@@ -396,7 +456,8 @@ class Parser {
  */
 function trimEdges(nodes) {
   const out = nodes.filter(
-    (n) => !(n.kind === "text" && n.text.trim() === "" && n.text.includes("\n")),
+    (n) =>
+      !(n.kind === "text" && n.text.trim() === "" && n.text.includes("\n")),
   );
   if (out.length > 0 && out[0].kind === "text") {
     out[0] = { kind: "text", text: out[0].text.trimStart() };

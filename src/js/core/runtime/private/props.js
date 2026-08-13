@@ -2,6 +2,16 @@
 
 const DOM_PROPS = new Set(["value", "checked", "selected", "muted", "volume"]);
 
+/**
+ * Hand `target` to whatever the `ref`/`outlet` was: a function is called with
+ * it, an object gets it as `current`. The target is a DOM node for an element
+ * and the component itself for a component tag.
+ */
+export function applyRef(ref, target) {
+  if (typeof ref === "function") ref(target);
+  else if (ref && typeof ref === "object") ref.current = target;
+}
+
 export function setAttribute(el, name, value) {
   if (name === "children" || name === "key") return;
 
@@ -11,8 +21,7 @@ export function setAttribute(el, name, value) {
   }
 
   if (name === "ref") {
-    if (typeof value === "function") value(el);
-    else if (value && typeof value === "object") value.current = el;
+    applyRef(value, el);
     return;
   }
 
@@ -53,9 +62,12 @@ export function setAttribute(el, name, value) {
  */
 function normalizeClass(value) {
   if (typeof value === "string") return value.trim().replace(/\s+/g, " ");
-  if (Array.isArray(value)) return value.filter(Boolean).map(normalizeClass).join(" ");
+  if (Array.isArray(value))
+    return value.filter(Boolean).map(normalizeClass).join(" ");
   if (value && typeof value === "object") {
-    return Object.keys(value).filter((k) => value[k]).join(" ");
+    return Object.keys(value)
+      .filter((k) => value[k])
+      .join(" ");
   }
   return value == null || value === false ? "" : String(value);
 }

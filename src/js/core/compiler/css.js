@@ -8,19 +8,121 @@
 // this file's business.
 
 /** Nested at-rules whose bodies contain further style rules. */
-const NESTED_AT_RULES = ["@media", "@supports", "@container", "@layer", "@scope"];
+const NESTED_AT_RULES = [
+  "@media",
+  "@supports",
+  "@container",
+  "@layer",
+  "@scope",
+];
 
 const WS = new Set([" ", "\t", "\n", "\r", "\f", "\v"]);
 const COMBINATORS = new Set([" ", "\t", "\n", ">", "+", "~"]);
 
-/** `scopeSuffix` is appended to the last compound of every selector. */
-export function scope(css, scopeSuffix) {
+/**
+ * Rewrite every selector in `css`.
+ *
+ * `scopeSuffix` is appended to the last compound of each one — how a
+ * component's stylesheet is constrained to that component's elements.
+ *
+ * `prefix` is put in front of each one instead, which raises what a rule
+ * outscores without changing what it matches. A theme is written unscoped and
+ * uses `:root` for this: it has to beat a component's own stylesheet, which
+ * carries a scope class the theme's selectors have no way to name. A selector
+ * that already starts with the prefix is left alone, so the theme's own
+ * `:root { --vars }` stays what it was.
+ */
+export function scope(css, scopeSuffix, prefix = null, options = {}) {
+  const source = options.minify ? stripComments(css) : css;
   const out = [];
-  transformBlock(css, scopeSuffix, out);
-  return out.join("");
+  transformBlock(source, scopeSuffix, out, prefix);
+  const text = out.join("");
+  return options.minify ? dropBlankLines(text) : text;
 }
 
-function transformBlock(css, scopeSuffix, out) {
+/**
+ * Every line that holds nothing taken out.
+ *
+ * The sheets are written with a blank line between rules, and taking the
+ * comments out leaves the lines they stood on behind as well — so a minified
+ * bundle would carry a blank line for every rule and every note removed.
+ *
+ * Lines are dropped rather than all the whitespace collapsed, because a
+ * newline between two compounds is a descendant combinator: `.a\n.b` matches
+ * what `.a .b` matches, and running them together would mean something else
+ * entirely. Removing a line that holds nothing moves no token next to another.
+ * A string is passed over whole, newlines and all.
+ */
+function dropBlankLines(css) {
+  let out = "";
+  let line = "";
+  let quote = null;
+
+  for (let i = 0; i < css.length; i++) {
+    const c = css[i];
+
+    if (quote) {
+      line += c;
+      if (c === "\\") line += css[++i] ?? "";
+      else if (c === quote) quote = null;
+      continue;
+    }
+
+    if (c === '"' || c === "'") {
+      quote = c;
+      line += c;
+      continue;
+    }
+
+    if (c === "\n") {
+      if (line.trim() !== "") out += `${line.trimEnd()}\n`;
+      line = "";
+      continue;
+    }
+
+    line += c;
+  }
+
+  return line.trim() === "" ? out : out + line.trimEnd();
+}
+
+/**
+ * Every comment taken out.
+ *
+ * A stylesheet is carried into the bundle as a string, so the bundler's own
+ * minifier never sees inside it and its prose ships with the application. This
+ * is what `--minify` uses to leave that behind.
+ *
+ * Removed rather than replaced with a space: a comment separates tokens
+ * without standing between them, so `.a/*x*\/.b` is `.a.b` and always was.
+ * Strings are stepped over — a `content: "/*"` is content, not a comment.
+ */
+function stripComments(css) {
+  let out = "";
+  let i = 0;
+
+  while (i < css.length) {
+    if (css.startsWith("/*", i)) {
+      i = skipComment(css, i);
+      continue;
+    }
+
+    const c = css[i];
+    if (c === '"' || c === "'") {
+      let j = i + 1;
+      while (j < css.length && css[j] !== c) j += css[j] === "\\" ? 2 : 1;
+      out += css.slice(i, Math.min(j + 1, css.length));
+      i = j + 1;
+      continue;
+    }
+
+    out += c;
+    i++;
+  }
+  return out;
+}
+
+function transformBlock(css, scopeSuffix, out, prefix = null) {
   let i = 0;
   while (i < css.length) {
     // Emit leading whitespace and comments verbatim — a comment is not a
@@ -41,6 +143,12 @@ function transformBlock(css, scopeSuffix, out) {
     let depthParen = 0;
     while (i < css.length) {
       const c = css[i];
+      // As in matchingBrace: a comment inside a prelude is prose, and neither
+      // its punctuation nor its apostrophes are CSS.
+      if (css.startsWith("/*", i)) {
+        i = skipComment(css, i);
+        continue;
+      }
       if (c === "(") depthParen++;
       else if (c === ")") depthParen--;
       else if ((c === "{" || c === ";") && depthParen === 0) break;
@@ -74,18 +182,29 @@ function transformBlock(css, scopeSuffix, out) {
       const name = trimmed.split(/[\s(]/)[0];
       out.push(trimmed, "{");
       if (NESTED_AT_RULES.includes(name)) {
-        transformBlock(body, scopeSuffix, out);
+        transformBlock(body, scopeSuffix, out, prefix);
       } else {
         // @keyframes / @font-face bodies hold declarations, not selectors.
         out.push(body);
       }
       out.push("}");
     } else {
-      out.push(scopeSelectorList(trimmed, scopeSuffix), "{", body.trim(), "}");
+      out.push(
+        scopeSelectorList(trimmed, scopeSuffix, prefix),
+        "{",
+        body.trim(),
+        "}",
+      );
     }
 
     i = bodyEnd + 1;
   }
+}
+
+/** The index just past the comment starting at `at`, or the end of the sheet. */
+function skipComment(css, at) {
+  const end = css.indexOf("*/", at + 2);
+  return end === -1 ? css.length : end + 2;
 }
 
 function matchingBrace(css, open) {
@@ -93,6 +212,14 @@ function matchingBrace(css, open) {
   let i = open;
   while (i < css.length) {
     const c = css[i];
+    // A comment is skipped whole. Prose is not CSS: an apostrophe in one —
+    // "the push button's face" — would otherwise open a string that runs to
+    // the next apostrophe in the file, swallowing this rule's closing brace
+    // and everything after it.
+    if (css.startsWith("/*", i)) {
+      i = skipComment(css, i);
+      continue;
+    }
     if (c === "{") {
       depth++;
     } else if (c === "}") {
@@ -107,10 +234,21 @@ function matchingBrace(css, open) {
   return -1;
 }
 
-function scopeSelectorList(list, scopeSuffix) {
+function scopeSelectorList(list, scopeSuffix, prefix = null) {
   return splitTopLevel(list, ",")
-      .map((s) => scopeSelector(s.trim(), scopeSuffix))
+    .map((s) => withPrefix(scopeSelector(s.trim(), scopeSuffix), prefix))
     .join(", ");
+}
+
+/** `.v-Button` -> `:root .v-Button`, leaving one that already starts there. */
+function withPrefix(selector, prefix) {
+  if (!prefix) return selector;
+  const trimmed = selector.trim();
+  if (trimmed === "" || trimmed === prefix || trimmed.startsWith(`${prefix} `))
+    return selector;
+  // `:root:root` rather than `:root :root`: the root is not inside itself.
+  if (trimmed.startsWith(prefix)) return selector;
+  return `${prefix} ${trimmed}`;
 }
 
 /**
@@ -145,7 +283,9 @@ function scopeSelector(sel, scopeSuffix) {
 
   // Every compound was `:global(...)` — emit it unscoped.
   if (target === -1) return parts.join("");
-  return parts.map((p, i) => (i === target ? scopeCompound(p, scopeSuffix) : p)).join("");
+  return parts
+    .map((p, i) => (i === target ? scopeCompound(p, scopeSuffix) : p))
+    .join("");
 }
 
 function isCombinator(part) {

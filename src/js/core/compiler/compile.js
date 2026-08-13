@@ -9,10 +9,15 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import {generate} from "./codegen.js";
-import {ensureRuntimeNames, inlineCssImports, transform} from "./jsx.js";
-import {MARKUP_EXT, scopeClass, takeLineMarkers} from "./js.js";
-import {parse} from "./parser.js";
+import { generate } from "./codegen.js";
+import {
+  ensureRuntimeNames,
+  inlineCssImports,
+  inlineSvgImports,
+  transform,
+} from "./jsx.js";
+import { MARKUP_EXT, scopeClass, takeLineMarkers } from "./js.js";
+import { parse } from "./parser.js";
 import * as sourcemap from "./sourcemap.js";
 
 /** The stem of an application's bootstrap: `main.js` beside `main.mib`. */
@@ -22,7 +27,9 @@ const ENTRY_STEM = "main";
  * Compile `file` and write the result under `outdir`, mirroring its position
  * beneath `root`. Returns the destination path.
  *
- * @param opts { root, outdir, runtime, name, sourcemap, components }
+ * @param opts { root, outdir, runtime, name, sourcemap, components, icons }
+ *             `icons` are the directories an `import X from "svg:name"` is
+ *             looked up in, nearest first.
  *             `components` maps a component name to `{dest, specifier}` — where
  *             Button actually landed, and the name its package publishes it
  *             under if it has one — so a `<Button/>` tag imports the right one.
@@ -40,9 +47,9 @@ export function compileFile(file, opts) {
     : relativeSpecifier(opts.runtime, path.dirname(dest));
 
   const js =
-      path.extname(file) === MARKUP_EXT
+    path.extname(file) === MARKUP_EXT
       ? compileIb(src, runtime, stem, dest, opts)
-      : compileJs(src, file, stem, runtime);
+      : compileJs(src, file, stem, runtime, opts);
 
   // Line markers travel with the generated code and come out here, becoming
   // the source map's line table.
@@ -56,7 +63,11 @@ export function compileFile(file, opts) {
     fs.writeFileSync(dest, `${code}//# sourceMappingURL=${mapName}\n`);
     fs.writeFileSync(
       path.join(path.dirname(dest), mapName),
-      sourcemap.forModule(relativeSpecifier(file, path.dirname(dest)), src, mappings),
+      sourcemap.forModule(
+        relativeSpecifier(file, path.dirname(dest)),
+        src,
+        mappings,
+      ),
     );
   }
   return dest;
@@ -65,6 +76,7 @@ export function compileFile(file, opts) {
 function compileIb(src, runtime, stem, dest, opts) {
   const components = opts.components ?? new Map();
   return generate(parse(src), {
+    minify: opts.minify,
     runtime,
     name: opts.name ?? componentName(stem),
     hash: hash(src),
@@ -79,22 +91,32 @@ function compileIb(src, runtime, stem, dest, opts) {
       // it: `mosaic/frameworks/ui` says where Button comes from in a way that
       // survives the importing module moving, and reaches the same one copy
       // whichever application is being built.
-      if (target.specifier) return {specifier: target.specifier, named: true};
+      if (target.specifier) return { specifier: target.specifier, named: true };
       return relativeSpecifier(target.dest, path.dirname(dest));
     },
   });
 }
 
-function compileJs(src, file, stem, runtime) {
+function compileJs(src, file, stem, runtime, opts = {}) {
   // Drawn views are scoped like .mib components: one class per module, carried
   // by its elements and required by its stylesheet's selectors.
   const scope = scopeClass(hash(src));
   let code = transform(src, scope);
-  const [inlined, hasCss] = inlineCssImports(code, path.dirname(file), scope);
+  const [withCss, hasCss] = inlineCssImports(code, path.dirname(file), scope, {
+    minify: opts.minify,
+  });
+  // An icon is markup, and becomes the component that draws it — so `h` is
+  // needed for an icon just as it is for anything else drawn here.
+  const [inlined] = inlineSvgImports(withCss, opts.icons ?? [], scope);
 
   const needed = ["h", "Fragment"];
   if (hasCss) needed.push("addStyles");
-  return ensurePage(ensureRuntimeNames(inlined, runtime, needed), file, stem, runtime);
+  return ensurePage(
+    ensureRuntimeNames(inlined, runtime, needed),
+    file,
+    stem,
+    runtime,
+  );
 }
 
 /**
@@ -128,7 +150,9 @@ function ensurePage(code, file, stem, runtime) {
   if (isEntry) header.push(`MosaicApplication.registerPage(${name});`);
 
   const out = header.length > 0 ? `${header.join("\n")}\n${code}` : code;
-  return isEntry ? ensureRuntimeNames(out, runtime, ["MosaicApplication"]) : out;
+  return isEntry
+    ? ensureRuntimeNames(out, runtime, ["MosaicApplication"])
+    : out;
 }
 
 /**
@@ -153,7 +177,8 @@ export function collectSources(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) collectSources(full, out);
-    else if ([MARKUP_EXT, ".jsx", ".js"].includes(path.extname(full))) out.push(full);
+    else if ([MARKUP_EXT, ".jsx", ".js"].includes(path.extname(full)))
+      out.push(full);
   }
   return out.sort();
 }
@@ -170,7 +195,10 @@ export function isBare(specifier) {
  * output file no matter how deeply it is nested.
  */
 export function relativeSpecifier(target, from) {
-  let spec = path.relative(path.resolve(from), path.resolve(target)).split(path.sep).join("/");
+  let spec = path
+    .relative(path.resolve(from), path.resolve(target))
+    .split(path.sep)
+    .join("/");
   if (!spec.startsWith(".")) spec = `./${spec}`;
   return spec;
 }

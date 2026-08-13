@@ -26,7 +26,7 @@
 <script type="module">
     import {addStyles, Component, h, mount} from "mosaic";
     import Main from "../examples/Counter_component/build/src/main.mib.js";
-    import {Button} from "mosaic/frameworks/ui";
+    import {Button, CheckBox, ComboBox, Option} from "mosaic/frameworks/ui";
 
     // A drawn view for the checks below: the shape the compiler emits for a
     // `draw()` full of JSX, written out by hand. It belongs to this page rather
@@ -170,6 +170,129 @@
         pageHost.querySelector("output").textContent === "1");
     check("page around the child was untouched",
         pageHost.querySelector("h1").textContent === "Updated");
+
+    // --- CheckBox: the ported control, in a real browser ---------------------
+    const boxHost = document.createElement("div");
+    stage.appendChild(boxHost);
+    const fired = [];
+    const box = mount(CheckBox, boxHost, {
+        text: "Remember me",
+        action: (control, value) => fired.push(value),
+    }).view;
+    const boxEl = boxHost.firstElementChild;
+    const indicator = boxEl.querySelector(".indicator");
+
+    check("checkbox drew its role", boxEl.getAttribute("role") === "checkbox");
+    check("checkbox is labelled by its own label",
+        boxEl.getAttribute("aria-labelledby") === boxEl.querySelector("span").id);
+    check("checkbox indicator is positioned by its stylesheet",
+        getComputedStyle(indicator).position === "absolute");
+    check("unchecked indicator is not filled",
+        getComputedStyle(indicator).backgroundColor !== getComputedStyle(document.body).color);
+    check("the check mark is hidden while unchecked",
+        getComputedStyle(boxEl.querySelector(".check")).display === "none");
+
+    click(boxEl);
+    check("clicking checked it", box.value === true);
+    check("aria-checked followed", boxEl.getAttribute("aria-checked") === "true");
+    check("the check mark is shown once checked",
+        getComputedStyle(boxEl.querySelector(".check")).display === "inline-block");
+    check("the action fired with the new value", fired.length === 1 && fired[0] === true);
+
+    boxEl.dispatchEvent(new KeyboardEvent("keydown", {key: " ", bubbles: true}));
+    check("Space unchecked it", box.value === false);
+    check("the action fired again", fired.length === 2 && fired[1] === false);
+
+    // --- the theme reaches the control --------------------------------------
+    // These are aristo's own values, read off the elements the component drew:
+    // what is checked is that `theme` in info.json ends up painting the
+    // control, variable by variable, and not merely that something applied.
+    // Drawn in the state being read, so no transition stands between the class
+    // and the colour — the one above has been clicked since it mounted. Each
+    // gets a host of its own: mounting into one replaces what it held.
+    const plainHost = document.createElement("div");
+    stage.appendChild(plainHost);
+    mount(CheckBox, plainHost, {text: "Unchecked"});
+    const plainInd = plainHost.querySelector(".indicator");
+
+    const themedHost = document.createElement("div");
+    stage.appendChild(themedHost);
+    const themed = mount(CheckBox, themedHost, {text: "Checked", value: true}).view;
+    const themedEl = themedHost.firstElementChild;
+    const themedInd = themedEl.querySelector(".indicator");
+    const aristo = getComputedStyle(document.documentElement);
+    const rgb = (hex) => {
+        const n = parseInt(hex.trim().slice(1), 16);
+        return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+    };
+
+    check("aristo declared the variables the checkbox reads",
+        ["--accent-color", "--checkbox-indicator-background", "--checkbox-check-color",
+         "--default-border-color", "--focus-ring", "--opacity-disable"]
+            .every((name) => aristo.getPropertyValue(name).trim() !== ""));
+    check("an unchecked indicator wears --checkbox-indicator-background",
+        getComputedStyle(plainInd).backgroundColor
+            === rgb(aristo.getPropertyValue("--checkbox-indicator-background")));
+    check("its border wears --default-border-color",
+        getComputedStyle(plainInd).borderTopColor
+            === rgb(aristo.getPropertyValue("--default-border-color")));
+    // A ticked box is Aristo's default button — the pale sky face, with the
+    // glyph darkened to carry against it. Neither colour is the component's
+    // own: checkbox.css paints the accent behind a --checkbox-check-color
+    // glyph, and the theme's rules overrule both. That they win here is what
+    // says the whole theme is in effect and not just its variables.
+    check("a checked indicator wears the theme's --primary-background-color",
+        getComputedStyle(themedInd).backgroundColor
+            === rgb(aristo.getPropertyValue("--primary-background-color")));
+    check("and the check mark darkens to --checked-mark-color",
+        getComputedStyle(themedEl.querySelector(".check")).borderRightColor
+            === rgb(aristo.getPropertyValue("--checked-mark-color")));
+    check("a theme rule outscores the component stylesheet it restyles",
+        getComputedStyle(themedInd).backgroundColor
+            !== rgb(aristo.getPropertyValue("--accent-color")));
+
+    themed.enabled = false;
+    check("a disabled checkbox wears --opacity-disable",
+        getComputedStyle(themedHost.firstElementChild).opacity
+            === aristo.getPropertyValue("--opacity-disable").trim());
+
+    box.enabled = false;
+    click(boxEl);
+    check("a disabled checkbox ignores a click", box.value === false && fired.length === 2);
+    check("and is out of the tab order", boxEl.getAttribute("tabindex") === "-1");
+
+    // --- ComboBox, and the icon the compiler inlined ------------------------
+    const comboHost = document.createElement("div");
+    stage.appendChild(comboHost);
+    const chosen = [];
+    const combo = mount(ComboBox, comboHost, {
+        value: "red",
+        action: (control, value) => chosen.push(value),
+        children: [
+            h(Option, {text: "Red", value: "red"}),
+            h(Option, {text: "Green", value: "green"}),
+        ],
+    }).view;
+    const select = comboHost.querySelector("select");
+
+    check("the combo drew a native select", select instanceof HTMLSelectElement);
+    check("with an entry per Option", select.options.length === 2);
+    check("and the value it was given", select.value === "red");
+
+    select.value = "green";
+    select.dispatchEvent(new Event("change", {bubbles: true}));
+    check("choosing an entry fires the action", chosen.length === 1 && chosen[0] === "green");
+    check("and the control reads back what was chosen", combo.value === "green");
+
+    // `import ChevronDown from "svg:chevron-down"` — resolved at compile time
+    // out of the framework's icons. What matters in a browser is that it is a
+    // real SVG element: an <svg> made with createElement is an unknown HTML
+    // element that paints nothing.
+    const icon = comboHost.querySelector(".chevron svg");
+    check("the icon was inlined by the compiler", icon !== null);
+    check("in the SVG namespace, so it paints", icon instanceof SVGElement);
+    check("children of the icon too", icon.firstElementChild instanceof SVGElement);
+    check("and it has something to draw", icon.getBBox().width > 0);
 
     // --- lifecycle ----------------------------------------------------------
     // attached() runs with the node in the document, so it can measure.

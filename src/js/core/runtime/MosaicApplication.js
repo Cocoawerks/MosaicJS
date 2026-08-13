@@ -1,5 +1,5 @@
 // The application entry point.
-import {mount} from "./mount.js";
+import { mount } from "./mount.js";
 
 /**
  * The application entry point.
@@ -32,7 +32,7 @@ export class MosaicApplication {
   }
 
   constructor(props = {}) {
-    const {id, target, component, controller, ...rest} = props;
+    const { id, target, component, controller, ...rest } = props;
 
     this.controller = controller ?? {};
     this.props = rest;
@@ -55,7 +55,7 @@ export class MosaicApplication {
     const Component = component ?? MosaicApplication.page;
     if (typeof Component !== "function") {
       throw new Error(
-          "MosaicApplication has no root component to mount. A `main.js` beside a " +
+        "MosaicApplication has no root component to mount. A `main.js` beside a " +
           "`main.mib` registers one when it is compiled — otherwise pass { component }.",
       );
     }
@@ -75,7 +75,8 @@ function resolveTarget(id, target) {
   }
   if (typeof target === "string") {
     const el = document.querySelector(target);
-    if (!el) throw new Error(`MosaicApplication: no element matching "${target}"`);
+    if (!el)
+      throw new Error(`MosaicApplication: no element matching "${target}"`);
     return el;
   }
   return target ?? document.body;

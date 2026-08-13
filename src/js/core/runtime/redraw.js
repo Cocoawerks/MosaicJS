@@ -1,13 +1,20 @@
 // Re-running draw() and patching the result into place. The patcher lives here
 // because nothing else uses it: a redraw is the only thing that reconciles two
 // drawings.
-import {Fragment} from "./Fragment.js";
-import {render} from "./render.js";
-import {attrValue, BINDINGS, display, readPath, track} from "./private/bindings.js";
-import {drawInto, isComponentClass} from "./private/draw.js";
-import {flatten} from "./private/flatten.js";
-import {attachTree, discard} from "./private/lifecycle.js";
-import {setAttribute} from "./private/props.js";
+import { Fragment } from "./Fragment.js";
+import { coerceProps } from "./coerce.js";
+import { render, SVG_NS } from "./render.js";
+import {
+  attrValue,
+  BINDINGS,
+  display,
+  readPath,
+  track,
+} from "./private/bindings.js";
+import { drawInto, isComponentClass } from "./private/draw.js";
+import { flatten } from "./private/flatten.js";
+import { attachTree, discard } from "./private/lifecycle.js";
+import { applyRef, setAttribute } from "./private/props.js";
 
 export function redraw(view) {
   const anchor = view.nodes[0];
@@ -18,7 +25,8 @@ export function redraw(view) {
   const next = view.draw(view.props);
 
   // Bindings and outlets are re-registered against whichever nodes survive.
-  if (Object.prototype.hasOwnProperty.call(view, BINDINGS)) view[BINDINGS].length = 0;
+  if (Object.prototype.hasOwnProperty.call(view, BINDINGS))
+    view[BINDINGS].length = 0;
 
   // A multi-root draw has no single node to patch against; rebuild those.
   if (view.nodes.length !== 1 || previous === undefined) {
@@ -49,11 +57,23 @@ function sameKind(a, b) {
   return true;
 }
 
+/**
+ * The namespace a child of `parent` is created in. Read off the DOM rather
+ * than tracked alongside it: the node in hand already knows what it is. A
+ * `<foreignObject>` is the exception — it is an SVG element whose children are
+ * HTML again.
+ */
+function nsOf(parent) {
+  if (parent?.namespaceURI !== SVG_NS) return null;
+  return parent.tagName === "foreignObject" ? null : SVG_NS;
+}
+
 function kindOf(vnode) {
   if (typeof vnode === "string" || typeof vnode === "number") return "text";
   if (vnode.__ibBind === "text") return "text";
   if (vnode.type === Fragment) return "fragment";
-  if (isComponentClass(vnode.type) || typeof vnode.type === "function") return "component";
+  if (isComponentClass(vnode.type) || typeof vnode.type === "function")
+    return "component";
   return "element";
 }
 
@@ -79,7 +99,7 @@ function patch(parent, dom, oldV, newV, controller) {
   }
 
   if (!sameKind(oldV, newV)) {
-    const fresh = render(newV, controller);
+    const fresh = render(newV, controller, nsOf(parent));
     parent.insertBefore(fresh, dom);
     discard(dom);
     return fresh;
@@ -89,7 +109,8 @@ function patch(parent, dom, oldV, newV, controller) {
     case "text": {
       const { value, bind } = textOf(newV, controller);
       if (dom.textContent !== value) dom.textContent = value;
-      if (bind) track(bind.controller, { kind: "text", node: dom, path: bind.path });
+      if (bind)
+        track(bind.controller, { kind: "text", node: dom, path: bind.path });
       return dom;
     }
 
@@ -98,7 +119,10 @@ function patch(parent, dom, oldV, newV, controller) {
       // decide, so its state survives the parent's redraw.
       const view = dom.__ibView;
       if (view && dom.__ibType === newV.type) {
-        const props = { ...newV.props, children: newV.children };
+        const props = coerceProps({ ...newV.props, children: newV.children });
+        // Outlets are cleared before a redraw, so the one pointing at this
+        // component has to be set again — it is the same component either way.
+        applyRef(newV.props.ref, view);
         if (!sameProps(view.props, props)) {
           view.props = props;
           view.needsDisplay();
@@ -106,7 +130,28 @@ function patch(parent, dom, oldV, newV, controller) {
         }
         return dom;
       }
-      const fresh = render(newV, controller);
+      // A plain function component — an icon, a small helper — has no instance
+      // to hand props to, but it does leave behind what it drew. Draw it again
+      // and patch the two trees, so its DOM survives rather than being rebuilt
+      // under whatever is pointing at it.
+      if (
+        !isComponentClass(newV.type) &&
+        typeof newV.type === "function" &&
+        dom.__ibFn === newV.type
+      ) {
+        const produced = newV.type.call(controller, {
+          ...newV.props,
+          children: newV.children,
+        });
+        const patched = patch(parent, dom, dom.__ibOut, produced, controller);
+        if (patched?.nodeType === Node.ELEMENT_NODE) {
+          patched.__ibFn = newV.type;
+          patched.__ibOut = produced;
+        }
+        return patched;
+      }
+
+      const fresh = render(newV, controller, nsOf(parent));
       parent.insertBefore(fresh, dom);
       discard(dom);
       return fresh;
@@ -142,7 +187,7 @@ function patchChildren(parent, oldChildren = [], newChildren = [], controller) {
       continue;
     }
     if (node === undefined || oldV === undefined) {
-      parent.appendChild(render(newV, controller));
+      parent.appendChild(render(newV, controller, nsOf(parent)));
       continue;
     }
     patch(parent, node, oldV, newV, controller);
@@ -162,7 +207,12 @@ function patchProps(el, oldProps = {}, newProps = {}, controller) {
     // changed even when the vnode looks identical.
     if (next && next.__ibBind === "attr") {
       setAttribute(el, name, attrValue(next.parts, next.controller));
-      track(next.controller, { kind: "attr", node: el, name, parts: next.parts });
+      track(next.controller, {
+        kind: "attr",
+        node: el,
+        name,
+        parts: next.parts,
+      });
       continue;
     }
     if (name === "ref") {

@@ -4,8 +4,8 @@
 // so `<Counter limit="3"/>` is the whole of what main.mib says about it. A
 // drawn component states its markup in `draw()`; assigning to a property it
 // read redraws it, which is why nothing here calls needsDisplay().
-import {Component} from "mosaic";
-import {Button} from "mosaic/frameworks/ui";
+import { Component } from "mosaic";
+import { Button } from "mosaic/frameworks/ui";
 
 import "./counter.css";
 
@@ -36,9 +36,9 @@ export default class Counter extends Component {
   draw() {
     return (
       <div styleName="counter">
-        <Button text="-" action="decrement"/>
+        <Button text="-" action="decrement" />
         <output styleName={`value ${this.status}`}>{this.count}</output>
-        <Button text="+" intent="primary" action="increment"/>
+        <Button text="+" intent="primary" action="increment" />
       </div>
     );
   }

@@ -38,7 +38,24 @@ export function transform(src, scope = null) {
 
 /** Characters after which a `<` opens JSX rather than meaning "less than". */
 const EXPR_POSITION = new Set([
-  "(", ",", "=", "{", "}", "[", ";", ":", "?", "&", "|", "!", "+", "-", "*", "%", ">", "",
+  "(",
+  ",",
+  "=",
+  "{",
+  "}",
+  "[",
+  ";",
+  ":",
+  "?",
+  "&",
+  "|",
+  "!",
+  "+",
+  "-",
+  "*",
+  "%",
+  ">",
+  "",
 ]);
 
 class Jsx {
@@ -113,12 +130,17 @@ class Jsx {
    */
   jsxStartsHere(prev) {
     const next = this.at(1);
-    const plausible = /[\p{L}]/u.test(next) || next === ">" || next === "_" || next === "$";
+    const plausible =
+      /[\p{L}]/u.test(next) || next === ">" || next === "_" || next === "$";
     if (!plausible) return false;
     if (EXPR_POSITION.has(prev)) return true;
     // `return <div/>` — the only keyword case that matters in practice.
     const before = this.src.slice(0, this.pos).trimEnd();
-    return before.endsWith("return") || before.endsWith("=>") || before.endsWith("default");
+    return (
+      before.endsWith("return") ||
+      before.endsWith("=>") ||
+      before.endsWith("default")
+    );
   }
 
   copyString() {
@@ -179,7 +201,8 @@ class Jsx {
       while (!this.eof && this.peek() !== "\n") this.pos++;
     } else {
       this.pos += 2;
-      while (!this.eof && !(this.peek() === "*" && this.at(1) === "/")) this.pos++;
+      while (!this.eof && !(this.peek() === "*" && this.at(1) === "/"))
+        this.pos++;
       this.pos = Math.min(this.pos + 2, this.src.length);
     }
     return this.src.slice(start, this.pos);
@@ -228,7 +251,9 @@ class Jsx {
     let classValue = null;
     let selfClosing = false;
     const isComponent =
-      name !== "" && (isUpper(name[0]) || name.includes(".")) && name !== VIEW_TAG;
+      name !== "" &&
+      (isUpper(name[0]) || name.includes(".")) &&
+      name !== VIEW_TAG;
 
     for (;;) {
       this.skipWs();
@@ -244,7 +269,8 @@ class Jsx {
       }
       if (this.peek() === "{") {
         const inner = this.braced().trim();
-        if (!inner.startsWith("...")) throw this.err("expected {...spread} in tag");
+        if (!inner.startsWith("..."))
+          throw this.err("expected {...spread} in tag");
         spreads.push(transform(inner.slice(3).trim(), this.scope));
         continue;
       }
@@ -261,11 +287,11 @@ class Jsx {
       // A literal joins the string; anything else is a list the runtime
       // flattens, which is what `class` already accepts.
       classValue =
-          classValue === null
-              ? jsString(scope)
-              : classValue.startsWith('"')
-                  ? jsString(`${JSON.parse(classValue)} ${scope}`.trim())
-                  : `[${classValue}, ${jsString(scope)}]`;
+        classValue === null
+          ? jsString(scope)
+          : classValue.startsWith('"')
+            ? jsString(`${JSON.parse(classValue)} ${scope}`.trim())
+            : `[${classValue}, ${jsString(scope)}]`;
     }
     if (classValue !== null) props.unshift(`class: ${classValue}`);
 
@@ -310,11 +336,13 @@ class Jsx {
       if (/\s/.test(c) || c === "=" || c === ">" || c === "/") break;
       this.pos++;
     }
-    if (start === this.pos) throw this.err(`unexpected \`${this.peek()}\` in tag`);
+    if (start === this.pos)
+      throw this.err(`unexpected \`${this.peek()}\` in tag`);
     const name = this.src.slice(start, this.pos);
     const isDirective = name === OUTLET_ATTR || name === ACTION_ATTR;
 
-    if (name === "class") throw this.err(`use \`${STYLE_NAME_ATTR}\` instead of \`class\``);
+    if (name === "class")
+      throw this.err(`use \`${STYLE_NAME_ATTR}\` instead of \`class\``);
 
     // No `=`: a boolean attribute. Directives always need a value.
     if (this.peek() !== "=") {
@@ -325,8 +353,14 @@ class Jsx {
 
     if (this.peek() === "{") {
       const expr = this.braced();
-      if (isDirective) throw this.err(`\`${name}\` takes a quoted string, not {...}`);
-      return [[jsKey(attrKey(name, isComponent)), `(${transform(expr.trim(), this.scope)})`]];
+      if (isDirective)
+        throw this.err(`\`${name}\` takes a quoted string, not {...}`);
+      return [
+        [
+          jsKey(attrKey(name, isComponent)),
+          `(${transform(expr.trim(), this.scope)})`,
+        ],
+      ];
     }
 
     const value = this.quotedValue(name);
@@ -352,7 +386,8 @@ class Jsx {
   directive(name, rawValue, isComponent) {
     const value = rawValue.trim();
     if (name === OUTLET_ATTR) {
-      if (!isIdent(value)) throw this.err(`\`${OUTLET_ATTR}\` must be an identifier`);
+      if (!isIdent(value))
+        throw this.err(`\`${OUTLET_ATTR}\` must be an identifier`);
       return [["ref", `(__el) => { this.${value} = __el; }`]];
     }
 
@@ -366,7 +401,9 @@ class Jsx {
       const method = colon === -1 ? part : part.slice(colon + 1).trim();
 
       if (!isIdent(method)) {
-        throw this.err(`\`${ACTION_ATTR}\`: \`${method}\` is not a method name`);
+        throw this.err(
+          `\`${ACTION_ATTR}\`: \`${method}\` is not a method name`,
+        );
       }
       const key = isComponent
         ? event === null
@@ -397,7 +434,8 @@ class Jsx {
         this.skipWs();
         if (this.peek() !== ">") throw this.err(`malformed </${close}>`);
         this.pos++;
-        if (close !== name) throw this.err(`expected </${name}>, found </${close}>`);
+        if (close !== name)
+          throw this.err(`expected </${name}>, found </${close}>`);
         return out;
       }
 
@@ -455,7 +493,7 @@ function attrKey(name, isComponent) {
  *
  * @returns `[code, foundAny]`
  */
-export function inlineCssImports(code, dir, scope = null) {
+export function inlineCssImports(code, dir, scope = null, options = {}) {
   let out = "";
   let found = false;
 
@@ -486,7 +524,7 @@ export function inlineCssImports(code, dir, scope = null) {
     } catch (e) {
       throw new JsxError(`${file}: ${e.message}`);
     }
-    if (scope) text = css.scope(text, `.${scope}`);
+    if (scope) text = css.scope(text, `.${scope}`, null, {minify: options.minify});
 
     const key = path.basename(file, path.extname(file));
 
@@ -499,6 +537,83 @@ export function inlineCssImports(code, dir, scope = null) {
   }
 
   return [out, found];
+}
+
+/** How an icon is named: `import Chevron from "svg:chevron-down";` */
+const SVG_PREFIX = "svg:";
+
+/**
+ * Replace an icon import with the icon.
+ *
+ *   import Chevron from "svg:chevron-down";
+ *
+ * The file is found in the icon directories the build knows about, read at
+ * compile time and emitted as the component that draws it — the same idea as
+ * SvgIconLibrary.getIcon("svg:chevron-down") in the Java original, settled
+ * before the page is opened rather than looked up while it runs. Nothing is
+ * fetched, and an icon that is not there is a build error rather than a hole
+ * in the page.
+ *
+ * The component takes props and spreads them onto the `<svg>`, so an icon is
+ * sized and styled where it is used:
+ *
+ *   <Chevron styleName="chevron"/>
+ *
+ * @param dirs directories to look in, nearest first
+ * @returns `[code, foundAny]`
+ */
+export function inlineSvgImports(code, dirs = [], scope = null) {
+  let out = "";
+  let found = false;
+
+  for (const line of splitInclusive(code)) {
+    const [clean] = takeLineMarkers(line);
+    const match = clean
+      .trim()
+      .match(
+        /^import\s+([\p{L}_$][\p{L}\p{N}_$]*)\s+from\s+["']svg:([^"']+)["'];?$/u,
+      );
+
+    if (!match) {
+      out += line;
+      continue;
+    }
+
+    const [, name, icon] = match;
+    const file = findIcon(icon, dirs);
+    const svg = fs.readFileSync(file, "utf8").trim();
+
+    // The icon is markup, and is transformed exactly as the JSX in a `draw()`
+    // is — it is the same syntax, and this way an icon is vnodes rather than a
+    // string the page would have to parse.
+    const vnode = transform(`(${svg})`, scope).trim();
+
+    const markerEnd = line.lastIndexOf("*/");
+    out += markerEnd === -1 ? "" : line.slice(0, markerEnd + 2);
+    out +=
+      `const ${name} = (props = {}) => { const __icon = ${vnode}; ` +
+      `return { ...__icon, props: { ...__icon.props, ...props } }; };`;
+    if (line.endsWith("\n")) out += "\n";
+    found = true;
+  }
+
+  return [out, found];
+}
+
+/** Where an icon lives, searched nearest first. */
+function findIcon(icon, dirs) {
+  const name = icon.endsWith(".svg") ? icon : `${icon}.svg`;
+
+  for (const dir of dirs) {
+    const file = path.join(dir, name);
+    if (fs.existsSync(file)) return file;
+  }
+
+  const looked =
+    dirs.length > 0
+      ? dirs.join(", ")
+      : "nowhere — no icon directories are configured";
+  throw new JsxError(`no icon "${SVG_PREFIX}${icon}" — looked in ${looked}`);
 }
 
 /**
@@ -515,7 +630,9 @@ export function ensureRuntimeNames(code, runtime, needed) {
       .split(",")
       .map((n) => n.trim())
       .filter((n) => n !== "");
-    const missing = needed.filter((n) => !have.some((h) => h === n || h.endsWith(` ${n}`)));
+    const missing = needed.filter(
+      (n) => !have.some((h) => h === n || h.endsWith(` ${n}`)),
+    );
     if (missing.length === 0) return code;
     const merged = `import { ${[...missing, ...have].join(", ")} } from ${jsString(runtime)};`;
     return code.slice(0, start) + merged + code.slice(end);

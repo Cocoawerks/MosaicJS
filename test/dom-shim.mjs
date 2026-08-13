@@ -88,12 +88,23 @@ class Frag extends N {}
 
 const VOID = new Set(["br", "img", "input", "hr", "meta", "link"]);
 
+/**
+ * Elements that hold a value as a property rather than as an attribute.
+ * `<option>` is not one: its value reflects the attribute, in a browser too.
+ */
+const VALUE_ELEMENTS = new Set(["input", "select", "textarea"]);
+
 class Element extends N {
   constructor(tag) {
     super();
     this.tagName = tag;
+    this.namespaceURI = "http://www.w3.org/1999/xhtml";
     this.attributes = new Map();
     this.listeners = new Map();
+    // The runtime assigns `el.value` when the element has one, which is how a
+    // native control is driven; without it the property would land as an
+    // attribute and a control would read back undefined.
+    if (VALUE_ELEMENTS.has(tag)) this.value = "";
     this.style = {
       setProperty(k, v) {
         this[k] = v;
@@ -121,7 +132,14 @@ class Element extends N {
     if (i >= 0) fns.splice(i, 1);
   }
   dispatchEvent(ev) {
-    for (const fn of this.listeners.get(ev.type) ?? []) fn(ev);
+    // Events bubble, as they do in a browser: a control listens on the element
+    // it drew, and what the user works may be a node inside it. `bubbles:
+    // false` opts out, for the handful of events that do not.
+    if (ev.target === undefined) ev.target = this;
+    for (let node = this; node; node = node.parentNode) {
+      for (const fn of node.listeners?.get(ev.type) ?? []) fn(ev);
+      if (ev.bubbles === false) break;
+    }
   }
   focus() {
     if (document.activeElement === this) return;
@@ -174,6 +192,14 @@ const document = {
   body: new Element("body"),
   activeElement: null,
   createElement: (t) => new Element(t),
+  // The runtime creates an <svg> and its children in the SVG namespace; the
+  // element is otherwise the same, and remembering it is what lets a test see
+  // that the namespace was right.
+  createElementNS: (ns, t) => {
+    const el = new Element(t);
+    el.namespaceURI = ns;
+    return el;
+  },
   createTextNode: (d) => new Text(d),
   createComment: (d) => new Comment(d),
   createDocumentFragment: () => new Frag(),

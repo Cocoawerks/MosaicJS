@@ -1,0 +1,46 @@
+/*
+ * The search field's own pieces, ported from the same GWT sheet as text.css:
+ * client/components/resources/text/style.css.
+ *
+ * They live here rather than with the rest because a stylesheet is scoped to
+ * the module that imports it, and these rules match elements SearchField
+ * draws. The box around them is TextBase's, and so are its rules.
+ */
+.v-Search .search {
+  width: 21px;
+  height: 21px;
+  margin: 7px;
+}
+
+.v-Search button.Search-reset {
+  border: 0;
+  padding: 0;
+  height: 21px;
+  width: 21px;
+  margin-right: 10px;
+  margin-bottom: 3px;
+  transition: none;
+  overflow: visible;
+  background-color: transparent;
+  display: none;
+  fill: var(--search-icon-fill);
+}
+
+.v-Search button.Search-reset > i {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.v-Search button.Search-reset:hover > i {
+  fill: color-mix(in srgb, var(--search-icon-fill), white 15%);
+}
+
+/* The native clear affordance is replaced by the reset button below. */
+.v-Search::-ms-clear {
+  display: none;
+}
+
+.v-Search button.Search-reset:active > i {
+  fill: color-mix(in srgb, var(--search-icon-fill), black 15%);
+}

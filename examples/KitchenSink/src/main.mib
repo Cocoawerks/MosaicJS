@@ -1,0 +1,317 @@
+<!-- KitchenSink: one page showing every component in the ui framework.
+
+     The page is markup and the controller is AppController.js beside it. Each
+     control carries an `outlet`, which hands the controller the control
+     itself — so `this.rememberBox.enabled = false` is how the page is driven.
+     `action` names the method a control calls when the user works it.
+
+     Adding a component to the framework means adding a section here and the
+     handful of lines it needs in the controller. -->
+
+<div styleName="page">
+    <h1 styleName="title">{title}</h1>
+    <p styleName="lede">
+        Every control below comes from mosaic/frameworks/ui, drawn with the theme named in
+        info.json. The button at the top disables all of them at once.
+    </p>
+
+    <div styleName="toolbar">
+        <Button text="Disable controls" intent="danger" action="toggleControls"
+                outlet="toggleButton"/>
+        <span styleName="state">controls are {state}</span>
+
+        <span styleName="spacer"></span>
+
+        <label styleName="state" for="theme-combo">Theme</label>
+        <ComboBox controlId="theme-combo" action="themeChanged" outlet="themeCombo">
+            <Option text="Aristo" value="aristo"/>
+            <Option text="Aristo Dark" value="aristo_dark"/>
+            <Option text="Pop" value="pop"/>
+        </ComboBox>
+    </div>
+
+    <section styleName="section">
+        <h2 styleName="heading">Button</h2>
+        <p styleName="note">One per intent, then the two kinds that hold a state of their own.</p>
+
+        <div styleName="row">
+            <Button text="default" intent="default" action="buttonClicked" outlet="defaultButton"/>
+            <Button text="primary" intent="primary" action="buttonClicked" outlet="primaryButton"/>
+            <Button text="danger" intent="danger" action="buttonClicked" outlet="dangerButton"/>
+            <Button text="success" intent="success" action="buttonClicked" outlet="successButton"/>
+            <Button text="warning" intent="warning" action="buttonClicked" outlet="warningButton"/>
+            <Button text="info" intent="info" action="buttonClicked" outlet="infoButton"/>
+            <Button text="inverse" intent="inverse" action="buttonClicked" outlet="inverseButton"/>
+        </div>
+
+        <div styleName="row">
+            <Button text="Toggle" toggle action="toggleClicked" outlet="toggleStateButton"/>
+            <Button text="With a tooltip" tooltip="Shown as the native title"
+                    action="buttonClicked" outlet="tooltipButton"/>
+        </div>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">CheckBox</h2>
+        <p styleName="note">
+            Each one owns its value; the action carries the new one, which is what the line
+            below reads.
+        </p>
+
+        <div styleName="column">
+            <CheckBox text="Remember me" action="rememberChanged" outlet="rememberBox"/>
+            <CheckBox text="Send me the newsletter" action="newsletterChanged"
+                      outlet="newsletterBox"/>
+        </div>
+
+        <p styleName="values">remember={remember} newsletter={newsletter}</p>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">TextField and SearchField</h2>
+        <p styleName="note">
+            A field reports twice over: every keystroke as a change, and Enter as the action —
+            the user saying they are done. Clearing a search says so too.
+        </p>
+
+        <div styleName="column">
+            <TextField placeholder="Your name" outlet="nameField"
+                       action="nameSubmitted change:nameChanged"/>
+            <SearchField outlet="searchField"
+                         action="searchSubmitted change:searchChanged cancel:searchCleared"/>
+        </div>
+
+        <p styleName="values">name={name} search={search}</p>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">MaskedTextField</h2>
+        <p styleName="note">
+            A field that holds a shape. The mask states which places take a digit and which
+            are its own punctuation, and the user can only fill the former — the controller
+            is told the digits alone.
+        </p>
+
+        <div styleName="column">
+            <MaskedTextField mask="(999) 999-9999" outlet="phoneField"
+                             action="phoneSubmitted change:phoneChanged"/>
+        </div>
+
+        <p styleName="values">phone={phone} digits={phoneDigits}</p>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">LoadingButton and LoadingIndicator</h2>
+        <p styleName="note">
+            The button disables itself while its work runs, and shows a spinner only once the
+            work has gone on long enough to be worth mentioning.
+        </p>
+
+        <div styleName="row">
+            <LoadingButton text="Save" intent="primary" action="save" outlet="saveButton"/>
+        </div>
+
+        <LoadingIndicator message="Nothing is loading" size="small" outlet="indicator"/>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">Switch</h2>
+        <p styleName="note">
+            The same control as a CheckBox, worn differently: a track whose knob slides.
+        </p>
+
+        <div styleName="column">
+            <Switch text="Wi-Fi" value="true" action="wifiChanged" outlet="wifiSwitch"/>
+            <Switch text="Aeroplane mode" action="aeroplaneChanged" outlet="aeroplaneSwitch"/>
+        </div>
+
+        <p styleName="values">wifi={wifi} aeroplane={aeroplane}</p>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">Slider and RangeSlider</h2>
+        <p styleName="note">
+            A knob on a track. The track can be pressed anywhere, the arrow keys move the knob
+            a step at a time, and a range slider's two knobs cannot cross — each is the other's
+            limit.
+        </p>
+
+        <div styleName="sliders">
+            <Slider minValue="0" maxValue="100" value="40" step="5"
+                    outlet="volumeSlider" action="volumeChanged"/>
+            <RangeSlider minValue="0" maxValue="100" start="20" end="80"
+                         outlet="priceSlider" action="priceChanged"/>
+        </div>
+
+        <p styleName="values">volume={volume} price={price}</p>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">SpinButton</h2>
+        <p styleName="note">
+            A number with a step either side of it. Typing settles after a pause rather than on
+            every keystroke, and a step button switches itself off at the end it cannot go past.
+        </p>
+
+        <div styleName="row">
+            <SpinButton minValue="0" maxValue="10" value="3"
+                        outlet="quantitySpin" action="quantityChanged"/>
+        </div>
+
+        <p styleName="values">quantity={quantity}</p>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">ProgressBar</h2>
+        <p styleName="note">
+            How far along the work is — or, when its length is not known, only that it is
+            running. The first bar follows the slider above it.
+        </p>
+
+        <div styleName="column">
+            <ProgressBar value="40" outlet="progress"/>
+            <ProgressBar indeterminate outlet="busy"/>
+        </div>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">RadioGroup</h2>
+        <p styleName="note">
+            The group holds the choice, so exactly one option can be chosen. The arrow keys
+            move it, skipping any option that is disabled.
+        </p>
+
+        <RadioGroup value="medium" action="sizeChanged" outlet="sizeGroup">
+            <Radio text="Small" value="small"/>
+            <Radio text="Medium" value="medium"/>
+            <Radio text="Large" value="large"/>
+            <Radio text="Out of stock" value="none" enabled="false"/>
+        </RadioGroup>
+
+        <p styleName="values">size={size}</p>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">ComboBox</h2>
+        <p styleName="note">
+            A native select in a framed box: the platform's own list, with the theme's
+            frame and chevron around it.
+        </p>
+
+        <div styleName="row">
+            <ComboBox controlId="colour-combo" action="colourChanged" outlet="colourCombo">
+                <Option text="Red" value="red"/>
+                <Option text="Green" value="green"/>
+                <Option text="Blue" value="blue"/>
+                <Option text="Out of stock" value="none" enabled="false"/>
+            </ComboBox>
+        </div>
+
+        <p styleName="values">colour={colour}</p>
+    </section>
+
+    <p styleName="last">Last action: {lastAction}</p>
+</div>
+
+<style>
+    .page {
+        font-family: system-ui, sans-serif;
+        color: var(--text-color);
+        background: var(--view-background);
+        min-height: 100vh;
+        margin: 0;
+        padding: 2rem;
+        box-sizing: border-box;
+    }
+
+    .title {
+        font-size: 1.5rem;
+        margin: 0 0 0.25rem;
+    }
+
+    .lede {
+        margin: 0 0 1.5rem;
+        max-width: 60ch;
+        color: var(--secondary-foreground);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        margin-bottom: 1.5rem;
+        border-radius: 6px;
+        background: var(--toolbar-background);
+        border: 1px solid var(--group-border-color);
+    }
+
+    .state {
+        font-size: 0.85rem;
+        color: var(--secondary-foreground);
+    }
+
+    .spacer {
+        flex: 1;
+    }
+
+    .section {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 6px;
+        background: var(--light-view-background);
+        border: 1px solid var(--group-border-color);
+    }
+
+    .heading {
+        font-size: 1rem;
+        margin: 0 0 0.25rem;
+    }
+
+    .note {
+        margin: 0 0 1rem;
+        font-size: 0.85rem;
+        color: var(--secondary-foreground);
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .column {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    /* Sliders need more room between them than the other controls do: the track
+       is 6px, but the knob standing on it is 23px and overhangs both sides, so
+       two sliders a normal gap apart have their knobs almost touching. */
+    .sliders {
+        display: flex;
+        flex-direction: column;
+        gap: 2.25rem;
+        padding: 0.75rem 0;
+    }
+
+    .values {
+        margin: 1rem 0 0;
+        font-family: ui-monospace, monospace;
+        font-size: 0.8rem;
+        color: var(--secondary-foreground);
+    }
+
+    .last {
+        margin: 0;
+        padding: 0.6rem 0.75rem;
+        border-radius: 6px;
+        background: var(--dark-view-background);
+        font-size: 0.85rem;
+    }
+</style>

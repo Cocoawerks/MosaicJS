@@ -1,0 +1,49 @@
+/*
+ * The loading button's spinner.
+ *
+ * These rules live here rather than in button.css because a stylesheet is
+ * scoped to the module that imports it, and the element they match — the
+ * loader in the icon slot — is drawn by LoadingButton, not by Button. Scoped
+ * to Button they would carry Button's hash and match nothing, which is what
+ * left the spinner unsized.
+ */
+
+/* The slot is the loader's whether or not it is showing, so the label does not
+   shift when the spinner appears: it is collapsed to nothing until then. */
+.v-Button.loading .icon {
+  margin-right: 0;
+  width: 0;
+}
+
+.v-Button.loading.is-loading .icon {
+  margin-right: 6px;
+  width: 12px;
+}
+
+/* A ring with a gap, spun: the mask cuts the disc's middle out and the conic
+   gradient fades one end of it, so what is left reads as a chasing tail. */
+.button-loader {
+  visibility: hidden;
+  /* The padding is the ring's thickness, so it has to fall inside the 12px the
+     slot gives it rather than widening the loader past the label. */
+  box-sizing: border-box;
+  flex: none;
+  padding: 3px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: currentColor;
+  --_m: conic-gradient(#0000 10%, #000), linear-gradient(#000 0 0) content-box;
+  -webkit-mask: var(--_m);
+  mask: var(--_m);
+  -webkit-mask-composite: source-out;
+  mask-composite: subtract;
+  animation: v-button-loader-spin 1s infinite linear;
+  width: 12px;
+  height: 12px;
+}
+
+@keyframes v-button-loader-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}

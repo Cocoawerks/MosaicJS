@@ -216,6 +216,44 @@ test("nested components bind their outlets to the same controller", () => {
   assert.equal(controller.badge.tagName, "span");
 });
 
+test("an outlet on a component hands over the component, not its element", () => {
+  // What a controller has to say to a control — `enabled`, `text` — belongs to
+  // the component. On a DOM element the node is the thing, and still is.
+  const controller = {};
+  const Page = function () {
+    return h("div", { ref: (el) => (this.box = el) }, h(CounterView, { ref: (v) => (this.counter = v) }));
+  };
+
+  mount(Page, document.createElement("div"), {}, controller);
+
+  assert.equal(controller.box.tagName, "div", "an element outlet is still the node");
+  assert.ok(controller.counter instanceof Component, "a component outlet is the component");
+  assert.equal(controller.counter.count, 0);
+
+  // Which is what makes driving it from the controller work at all.
+  controller.counter.count = 3;
+  assert.match(controller.box.innerHTML, /<output[^>]*>3<\/output>/);
+});
+
+test("a redraw points the outlet at the component that survived it", () => {
+  const controller = {};
+  class Host extends Component {
+    constructor() {
+      super();
+      this.label = "before";
+    }
+    draw() {
+      return h("div", null, this.label, h(CounterView, { ref: (v) => (controller.counter = v) }));
+    }
+  }
+
+  const host = mount(Host, document.createElement("div"), {}).view;
+  const first = controller.counter;
+
+  host.label = "after";
+  assert.equal(controller.counter, first, "the same component, still in hand");
+});
+
 // --- MosaicApplication -----------------------------------------------------
 
 
@@ -995,4 +1033,24 @@ test("a method is not mistaken for state", () => {
 
   const increment = Object.getOwnPropertyDescriptor(view, "increment");
   assert.equal(increment, undefined, "methods stay on the prototype");
+});
+
+test("a control fires as itself, not as the proxy its drawing ran against", () => {
+  // A drawing runs against a proxy so its reads can be recorded. A handler set
+  // up while drawing closes over that proxy, so anything handing itself
+  // outward has to unwrap first — `this.self` is what does it.
+  let handed;
+  class Host extends Component {
+    draw() {
+      const fire = () => (handed = this.self);
+      return h("button", { onclick: fire }, "go");
+    }
+  }
+
+  const root = document.createElement("div");
+  const view = mount(Host, root, {}).view;
+  root.childNodes[0].dispatchEvent({ type: "click" });
+
+  assert.equal(handed, view, "the component, not a wrapper around it");
+  assert.equal(view.self, view, "and unwrapping outside a draw is a no-op");
 });

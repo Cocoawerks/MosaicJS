@@ -1,7 +1,16 @@
 // Emits an ES module that builds the component's markup with `h()` calls.
 
 import * as css from "./css.js";
-import {ACTION_ATTR, jsKey, jsString, lineMarker, scopeClass, STYLE_NAME_ATTR, VIEW_TAG,} from "./js.js";
+import {
+  ACTION_ATTR,
+  jsKey,
+  jsString,
+  lineMarker,
+  OUTLET_ATTR,
+  scopeClass,
+  STYLE_NAME_ATTR,
+  VIEW_TAG,
+} from "./js.js";
 
 /**
  * @param comp  the parsed component
@@ -36,9 +45,9 @@ export function generate(comp, opts) {
     // its components under one specifier exports them by name instead.
     const target = resolve(name);
     out +=
-        typeof target === "object" && target.named
-            ? `import { ${name} } from ${jsString(target.specifier)};\n`
-            : `import ${name} from ${jsString(target)};\n`;
+      typeof target === "object" && target.named
+        ? `import { ${name} } from ${jsString(target.specifier)};\n`
+        : `import ${name} from ${jsString(target)};\n`;
   }
   if (tags.length > 0) out += "\n";
 
@@ -46,7 +55,9 @@ export function generate(comp, opts) {
     // Namespaced by component: bundling puts every module in one scope, where
     // a bare `CSS` would collide.
     const cssVar = `CSS_${opts.name}`;
-    out += `const ${cssVar} = ${jsString(css.scope(comp.style, `.${scope}`))};\n`;
+    out += `const ${cssVar} = ${jsString(
+      css.scope(comp.style, `.${scope}`, null, {minify: opts.minify}),
+    )};\n`;
     out += `addStyles(${jsString(opts.hash)}, ${cssVar});\n\n`;
   }
 
@@ -82,7 +93,9 @@ function isUpper(c) {
 /** Does the tree contain `{path}` in text? */
 function usesTextBinding(nodes) {
   return nodes.some(
-    (n) => n.kind === "bind" || (n.kind === "element" && usesTextBinding(n.children)),
+    (n) =>
+      n.kind === "bind" ||
+      (n.kind === "element" && usesTextBinding(n.children)),
   );
 }
 
@@ -91,7 +104,8 @@ function usesAttrBinding(nodes) {
   return nodes.some(
     (n) =>
       n.kind === "element" &&
-      (n.attrs.some((a) => a.value.kind === "template") || usesAttrBinding(n.children)),
+      (n.attrs.some((a) => a.value.kind === "template") ||
+        usesAttrBinding(n.children)),
   );
 }
 
@@ -152,7 +166,9 @@ class Ctx {
     // not scoped — their own file styles their own markup — and neither is
     // <style>, which renders nothing.
     const scope =
-        !isComponent && tag.toLowerCase() !== "style" && this.scope ? this.scope : null;
+      !isComponent && tag.toLowerCase() !== "style" && this.scope
+        ? this.scope
+        : null;
     let scoped = false;
 
     for (const a of attrs) {
@@ -168,13 +184,26 @@ class Ctx {
       if (a.value.kind === "empty") {
         value = "true";
       } else if (a.value.kind === "static") {
-        value = jsString(withScope ? `${a.value.text} ${scope}`.trim() : a.value.text);
+        value = jsString(
+          withScope ? `${a.value.text} ${scope}`.trim() : a.value.text,
+        );
       } else {
+        // A binding keeps an attribute of *this* markup up to date. A
+        // component is not markup: what it does with `enabled` is its own,
+        // and there is nothing to rewrite when the value changes.
+        if (isComponent) {
+          throw new Error(
+            `<${tag} ${a.name}="{...}"/>: a component's props are not bound. ` +
+              `Give it \`${OUTLET_ATTR}="name"\` and set ${a.name} on it from the controller.`,
+          );
+        }
         const parts = withScope
-            ? [...a.value.parts, {kind: "text", text: ` ${scope}`}]
-            : a.value.parts;
+          ? [...a.value.parts, { kind: "text", text: ` ${scope}` }]
+          : a.value.parts;
         const items = parts.map((p) =>
-          p.kind === "text" ? jsString(p.text) : `{ path: ${jsString(p.path)} }`,
+          p.kind === "text"
+            ? jsString(p.text)
+            : `{ path: ${jsString(p.path)} }`,
         );
         value = `bindAttr(this, [${items.join(", ")}])`;
       }

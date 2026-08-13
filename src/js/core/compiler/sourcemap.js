@@ -4,7 +4,8 @@
 // came from, which is all `h()` output needs — devtools then show the original
 // `.mib` rather than the generated calls.
 
-const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const ALPHABET =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /**
  * Build the map for one module.

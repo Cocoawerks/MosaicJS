@@ -1,0 +1,499 @@
+/*
+ * The Pop theme, ported from GWT Mosaic: themes/pop/client/style.css, whole.
+ *
+ * Warmer than Aristo and flatter — its greys are browns and its controls carry
+ * no gloss. The same variables underneath, so a component styled for one theme
+ * is styled for this one.
+ *
+ * A theme is global by nature and is emitted unscoped, so these selectors mean
+ * what they say. What the build adds is a `:root ` in front of each one, which
+ * buys back the specificity a component's stylesheet gets from its scope class.
+ */
+:root {
+  --text-color: #292929;
+  --accent-color: #5fa8b6;
+  /* The strip above the toolbar (see the .v-TitleBar rule below). */
+  --titlebar-background-color: #4e4136;
+  --titlebar-border-color: #3a3431;
+
+  /* The travelling part of a loading spinner — the arc in the indicator and
+       the small one in a save-status pill. */
+  --loading-indicator-background: #5fa8b6;
+  /* Zebra striping: the tint every other row of a list takes. */
+  --alternate-row-color: #f6f9fc;
+
+  /* The workspace a view's content sits on — the page behind a view's content. */
+  --view-background: #ffffff;
+
+  /* A panel sitting on the workspace — a card, a list frame, a tile —
+       white, as a panel on the workspace has always been. */
+  --light-view-background: #ffffff;
+
+  /* The counterpart: a step below the workspace — a well, a gutter, anything meant to sit under it
+       rather than on it. */
+  --dark-view-background: #e6e3e1;
+
+  /* Overlay washes: the darkening a flat control takes on hover, on press, and
+       while held on. A dark theme replaces these with lightenings, so anything
+       built from them works on either surface. */
+  --wash-hover: rgba(0, 0, 0, 0.06);
+  --wash-press: rgba(0, 0, 0, 0.12);
+  --wash-on: rgba(0, 0, 0, 0.18);
+  --wash-on-press: rgba(0, 0, 0, 0.24);
+
+  --opacity-disable: 0.6;
+  --focus-ring: #efbe5a;
+
+  /* Text insertion caret — Pop GTK tints it with the accent teal. */
+  --caret-color: var(--accent-color);
+
+  /* Hyperlinks — darkened teal from the accent family, Pop GTK link look */
+  --link-color: #287782;
+  --link-color-hover: #34828c;
+  --link-color-active: #266f79;
+
+  /* Blue / Teal Series — anchored on the Pop accent */
+
+  /* Green Series — built around Pop sage #82BF8C */
+
+  /* Yellow Series — Pop yellow #FEDB40 */
+
+  /* Orange Series — Pop orange #FFAD00 */
+
+  /* Red Series — Pop coral #E56A54 */
+
+  /* Purple Series — Pop muted purple */
+
+  /* Brown / Warm Grey Series — Pop warm greys (toolbar/headerbar family) */
+
+  /* Light Series — warm-tinted neutrals to harmonize with brown toolbar */
+
+  /* Dark Series — Pop dark_ui (warm-tinted) */
+
+  /* Textarea/TextView placeholder — the body text lightened a touch, darker
+       than the light theme's mix so it still reads clearly on Pop's own
+       (already darker) text colour. */
+  --placeholder-color: color-mix(in srgb, #574f4a, #d8d4d1 20%);
+
+  /** intent colors — uniform construction:
+        hover  = bg mixed with 12% white
+        active = bg mixed with 18% black
+        border = bg mixed with 25% black
+     */
+
+  /* DEFAULT Intent */
+  --default-background-color: #f6f4f2;
+  --default-background-color-hover: #efedeb;
+  --default-background-color-active: #e6e3e1;
+  --default-border-color: #d8d4d1;
+  --default-foreground-color: var(--text-color);
+
+  /* Text color for selected list rows: the default text color, not white. */
+  /* What marks a thing as chosen — a menu item, a page in the print
+       preview, a word in the clue list, a grid tile: the teal it accents with. */
+  --selection-color: var(--accent-color);
+
+  --selection-foreground: var(--default-foreground-color);
+
+  /* PRIMARY Intent — Pop "suggested action" sage green */
+  --primary-background-color: #82bf8c;
+  --primary-background-color-hover: color-mix(
+    in srgb,
+    var(--primary-background-color),
+    white 12%
+  );
+  --primary-background-color-active: color-mix(
+    in srgb,
+    var(--primary-background-color),
+    black 18%
+  );
+  --primary-border-color: color-mix(
+    in srgb,
+    var(--primary-background-color),
+    black 25%
+  );
+  --primary-foreground-color: var(--text-color);
+
+  /* DANGER Intent — Pop coral */
+  --danger-background-color: #e56a54;
+  --danger-background-color-hover: color-mix(
+    in srgb,
+    var(--danger-background-color),
+    white 12%
+  );
+  --danger-background-color-active: color-mix(
+    in srgb,
+    var(--danger-background-color),
+    black 18%
+  );
+  --danger-border-color: color-mix(
+    in srgb,
+    var(--danger-background-color),
+    black 25%
+  );
+  --danger-foreground-color: #ffffff;
+
+  /* SUCCESS Intent — Pop sage green, a touch lighter than the primary action */
+  --success-background-color: #2d893d;
+  --success-background-color-hover: color-mix(
+    in srgb,
+    var(--success-background-color),
+    white 12%
+  );
+  --success-background-color-active: color-mix(
+    in srgb,
+    var(--success-background-color),
+    black 18%
+  );
+  --success-border-color: color-mix(
+    in srgb,
+    var(--success-background-color),
+    black 25%
+  );
+  /* White: the face is dark enough now that the theme's text colour would
+       not carry on it. */
+  --success-foreground-color: #ffffff;
+
+  /* WARNING Intent — Pop orange (yellow reads as a caution, not a success) */
+  --warning-background-color: #ffad00;
+  --warning-background-color-hover: color-mix(
+    in srgb,
+    var(--warning-background-color),
+    white 12%
+  );
+  --warning-background-color-active: color-mix(
+    in srgb,
+    var(--warning-background-color),
+    black 18%
+  );
+  --warning-border-color: color-mix(
+    in srgb,
+    var(--warning-background-color),
+    black 25%
+  );
+  --warning-foreground-color: var(--text-color);
+
+  /* INFO Intent — Pop progress teal (accent family) */
+  --info-background-color: #6acad8;
+  --info-background-color-hover: color-mix(
+    in srgb,
+    var(--info-background-color),
+    white 12%
+  );
+  --info-background-color-active: color-mix(
+    in srgb,
+    var(--info-background-color),
+    black 18%
+  );
+  --info-border-color: color-mix(
+    in srgb,
+    var(--info-background-color),
+    black 25%
+  );
+  --info-foreground-color: var(--text-color);
+
+  /* INVERSE Intent — warm dark to match toolbar */
+  --inverse-background-color: #574f4a;
+  --inverse-background-color-hover: color-mix(
+    in srgb,
+    var(--inverse-background-color),
+    white 14%
+  );
+  --inverse-background-color-active: color-mix(
+    in srgb,
+    var(--inverse-background-color),
+    black 20%
+  );
+  --inverse-border-color: #3a3431;
+  --inverse-foreground-color: #ffffff;
+
+  /* The toolbar is light with dark text, as the app's own toolbar was before
+       it moved into Mosaic: the bar takes the default button face, its items are
+       transparent and wash darker on hover. (The dark brown headerbar these
+       variables used to describe belonged to the previous ToolBar, whose
+       stylesheet drew items as bordered buttons.) */
+  --toolbar-background: var(--default-background-color);
+
+  /* A grouping box's frame — the hairline it has always worn. Also worn by anything framed to match
+       one, e.g. the clue dialog's word list. */
+  --group-border-color: #bbbbbb;
+
+  /* The split panel's divider face — white, as it has always been. */
+  --splitter-background: #ffffff;
+
+  /* The cell-marker icons' square face and the heavy bar drawn on its edge. */
+  --marker-cell-face: #ffffff;
+  --marker-bar-color: #4a4a4a;
+  --toolbar-foreground: var(--text-color);
+  --toolbar-button-background: transparent;
+  --toolbar-button-border: transparent;
+  --toolbar-button-foreground: var(--text-color);
+
+  /* Resting glyph in a segmented toggle group (bold/italic/underline) — the mid grey it has always worn. */
+  --segmented-glyph: #393634;
+
+  /* Its hovered / latched glyph — a step brighter than the resting one. */
+  --segmented-glyph-on: #574f4a;
+  --toolbar-button-hover: rgba(0, 0, 0, 0.06);
+  --toolbar-button-active: rgba(0, 0, 0, 0.12);
+
+  --navbar-separator: #3a3431;
+
+  --tooltip-background: #e19f3b;
+  --tooltip-foreground: #ffffff;
+
+  /* Dialog (Pop GTK headerbar look) */
+  --dialog-border: #574f4a;
+  --dialog-shadow:
+    0 18px 40px -6px color-mix(in srgb, #000000, transparent 65%),
+    0 4px 10px -2px color-mix(in srgb, #000000, transparent 80%);
+  --dialog-backdrop: rgba(0, 0, 0, 0.6);
+  --dialog-header-background: #574f4a;
+  --dialog-header-foreground: #ffffff;
+  --dialog-header-border: #3a3431;
+  --dialog-header-highlight: inset 0 1px 0
+    color-mix(in srgb, #ffffff, transparent 85%);
+  --dialog-header-title-weight: 600;
+  --dialog-header-title-align: center;
+  --dialog-close-background: var(--tooltip-background);
+  --dialog-close-foreground: var(--tooltip-foreground);
+  --dialog-close-hover: color-mix(
+    in srgb,
+    var(--tooltip-background),
+    white 12%
+  );
+  --dialog-close-active: color-mix(
+    in srgb,
+    var(--tooltip-background),
+    black 18%
+  );
+
+  /* Wizard step navigation */
+  --sidebar-background-gradient-start: #efedeb;
+  --sidebar-background-gradient-end: #e6e3e1;
+  --wizard-nav-border: #d8d4d1;
+  --wizard-step-color: #7a6f6b;
+  --wizard-step-disabled-color: #8a8581;
+  --wizard-step-bullet-background: #7a6f6b;
+  --wizard-step-bullet-foreground: #ffffff;
+  --wizard-step-connector: #9b8e8a;
+  --wizard-step-completed: #559a63;
+  --wizard-step-current-color: #00496d;
+
+  /* ── Component colours ───────────────────────────────────────────────
+       What each part is painted with, named for the part rather than for a
+       place on a palette. The values were the ramp entries these replaced. */
+  --navitem-active-foreground: #fcfbfa;
+  --accordion-divider: #efedeb;
+  --accordion-header-foreground: #474341;
+  --accordion-header-hover: #f6f4f2;
+  --box-title-background: #fcfbfa;
+  --box-title-foreground: #474341;
+  --checkbox-check-color: #f6f4f2;
+  --checkbox-indicator-background: #f6f4f2;
+  --combobox-background: #f6f4f2;
+  --dialog-background: #fcfbfa;
+  --error-color: #e56a54;
+  --field-background: #f6f4f2;
+  --field-disabled-foreground: #d8d4d1;
+  --field-error-border: #ea9090;
+  --field-invalid-background: #a0252b;
+  --field-invalid-border: #c94a36;
+  --field-placeholder-foreground: #574f4a;
+  --hrline-background: #fcfbfa;
+  --hrline-foreground: #635e5b;
+  --hrline-rule: #d8d4d1;
+  --list-empty-foreground: #474341;
+  --menu-active-background: #e6e3e1;
+  --menu-active-foreground: #393634;
+  --menu-background: #f6f4f2;
+  --menu-foreground: #2b2928;
+  --outline-focus-border: #efedeb;
+  --outline-foreground: #393634;
+  --outline-hover-background: #efedeb;
+  --outline-selected-foreground: #fcfbfa;
+  --outline-selected-icon: #f6f4f2;
+  --popover-background: #fcfbfa;
+  --popover-border: #d8d4d1;
+  --progressbar-track: #e6e3e1;
+  /* What fills the track. Pop's filled surfaces are the accent, not the green
+     primary: the slider's range takes --accent-color, and this theme's switch
+     mixes its own checked face from it too. Left unset, the progress bar falls
+     back to --primary-background-color and is the only filled thing on the
+     page wearing the green. */
+  --switch-checked-background: var(--accent-color);
+  --radio-indicator-background: #f6f4f2;
+  --radio-mark-color: #f6f4f2;
+  --search-icon-fill: #393634;
+  --slider-knob-active: #efedeb;
+  --slider-knob-background: #fcfbfa;
+  --slider-knob-hover: #f6f4f2;
+  --slider-track-background: #e6e3e1;
+  --snackbar-danger-background: #e56a54;
+  --snackbar-danger-border: #c94a36;
+  --snackbar-divider: #e6e3e1;
+  --snackbar-foreground: #fcfbfa;
+  --spinbutton-field-background: #fcfbfa;
+  --spinner-mask: #fcfbfa;
+  --spinner-track: #e6e3e1;
+  --splitter-hover: #635e5b;
+  --success-color: #559a63;
+  --switch-knob-background: #fcfbfa;
+  --switch-track-background: #e6e3e1;
+  --tab-selected-foreground: #2b2928;
+  --tabbar-background: #efedeb;
+  --wizard-buttons-border: #e6e3e1;
+  --secondary-foreground: #4a4441;
+  --list-divider: #e6e3e1;
+  --badge-background: #e6e3e1;
+  --badge-foreground: #4a4441;
+}
+
+/* Hyperlinks, styled to match the Pop!_OS GTK theme. */
+a {
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+a:hover {
+  color: var(--link-color-hover);
+}
+
+a:active {
+  color: var(--link-color-active);
+}
+
+a:focus-visible {
+  /* Match the focus ring used by buttons and other controls. */
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+/* Text insertion caret tinted with the accent, matching the Pop GTK theme. A
+   thin transparent text-stroke on the editable text fattens the native caret
+   (the caret inherits the text's effective stroke), giving a bolder cursor. */
+input,
+textarea,
+[contenteditable] {
+  caret-color: var(--caret-color);
+  -webkit-text-stroke: 2px transparent;
+}
+
+/* Text selection uses the same accent color as the caret (Pop GTK look). */
+::selection {
+  background-color: var(--caret-color);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background-color: var(--caret-color);
+  color: #ffffff;
+}
+
+/* ---- Drawer / TitleBar -------------------------------------------------- */
+
+/* The side panel: a light surface with a hairline against the page and a soft
+   shadow, its header mirroring a dialog's. */
+.v-Drawer {
+  background: #fcfbfa;
+  border-left: 1px solid #afadad;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.15);
+}
+
+.v-Drawer .header {
+  background-color: var(--dialog-header-background);
+  border-bottom: 1px solid var(--dialog-header-border);
+  color: var(--dialog-header-foreground);
+  box-shadow: var(--dialog-header-highlight, none);
+}
+
+.v-Drawer .title {
+  font-weight: var(--dialog-header-title-weight);
+  text-align: var(--dialog-header-title-align);
+}
+
+/* Its close button reads from the same variables as a dialog's. */
+.v-Drawer .header button.close {
+  background-color: var(--dialog-close-background);
+}
+
+.v-Drawer .header button.close .icon {
+  fill: var(--dialog-close-foreground);
+}
+
+.v-Drawer .header button.close:not(.is-active):not(.is-disabled):hover {
+  background-color: var(--dialog-close-hover);
+}
+
+.v-Drawer .header button.close.active {
+  background-color: var(--dialog-close-active);
+}
+
+/* The strip above the toolbar — Pop's warm dark headerbar, with light content
+   on it. */
+.v-TitleBar {
+  background-color: var(--titlebar-background-color);
+  color: #ffffff;
+  border-bottom: 1px solid var(--titlebar-border-color);
+}
+
+/* Its buttons stay transparent: hovering lightens them against the dark bar,
+   while an item held on — a menu bar item with its menu down — darkens instead,
+   so "open" reads as pressed into the bar rather than raised out of it. */
+.v-TitleBarButton.v-Button {
+  color: #ffffff;
+  fill: #ffffff;
+}
+
+.v-TitleBarButton.v-TitleBarButton.v-Button:not(.is-active):not(
+    .is-disabled
+  ):hover {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.v-TitleBarButton.v-TitleBarButton.v-Button.is-active {
+  background-color: rgba(0, 0, 0, 0.28);
+}
+
+/* ---- Tabs ---------------------------------------------------------------- */
+
+/* Square tabs that fill the bar edge to edge, rather than the default rounded
+   pills floating inside it. */
+.v-TabBar.v-TabBar {
+  border-radius: 0;
+}
+
+/* No margin, so a tab (and the indicator tracking it) runs the full height of
+   the bar and butts against its neighbour. */
+.v-TabButton.v-TabButton {
+  margin: 0;
+  border-radius: 0;
+  padding: 9px 4px;
+}
+
+/* The selected tab is a light grey slab underlined in the same orange the dialog
+   close button uses. The underline is an inset shadow rather than a border so it
+   doesn't change the slab's size — the bar positions the indicator from measured
+   geometry. */
+.v-TabBar-indicator.v-TabBar-indicator {
+  background: #e6e3e1;
+  box-shadow: inset 0 -3px 0 var(--dialog-close-background);
+  border-radius: 0;
+}
+
+/* ---- Switch -------------------------------------------------------------- */
+
+/* An on switch sits a step darker than the accent: the track is a wide, flat
+   area, where the accent itself reads lighter than it does on a checkbox or a
+   radio. Doubled to outscore the component's own .v-Switch.checked rule. */
+.v-Switch.checked.checked > .indicator {
+  background-color: color-mix(in srgb, var(--accent-color), black 18%);
+  border-color: color-mix(in srgb, var(--accent-color), black 18%);
+}
+
+.v-Switch.checked.checked > .indicator:before {
+  border-color: color-mix(in srgb, var(--accent-color), black 28%);
+}

@@ -10,6 +10,14 @@
 // Observation replaces a plain property with an accessor over the same value.
 // A property nobody depends on is left alone.
 
+/**
+ * Asking a recording proxy for the object behind it. A drawing runs against a
+ * proxy so its reads can be recorded, and anything the drawing hands outward —
+ * a control passing itself to its action — should be the component, not the
+ * wrapper around it.
+ */
+export const SELF = Symbol.for("mosaic.self");
+
 /** Per-object record of what is observed: key -> the callbacks to run. */
 const OBSERVED = Symbol.for("mosaic.observed");
 
@@ -19,13 +27,25 @@ const OBSERVED = Symbol.for("mosaic.observed");
  * would mean a draw scheduling its own redraw.
  */
 const INTERNAL = new Set([
-  "props", "nodes", "node", "vtree", "listeners", "controller",
-  "isAttached", "children", "parent", "view", "root",
+  "props",
+  "nodes",
+  "node",
+  "vtree",
+  "listeners",
+  "controller",
+  "isAttached",
+  "children",
+  "parent",
+  "view",
+  "root",
 ]);
 
 function notifiers(target) {
   if (!Object.prototype.hasOwnProperty.call(target, OBSERVED)) {
-    Object.defineProperty(target, OBSERVED, { value: new Map(), enumerable: false });
+    Object.defineProperty(target, OBSERVED, {
+      value: new Map(),
+      enumerable: false,
+    });
   }
   return target[OBSERVED];
 }
@@ -36,7 +56,8 @@ function notifiers(target) {
  * the property keeps whatever value it already had.
  */
 export function observe(target, key, notify) {
-  if (!target || (typeof target !== "object" && typeof target !== "function")) return;
+  if (!target || (typeof target !== "object" && typeof target !== "function"))
+    return;
 
   const watched = notifiers(target);
   const existing = watched.get(key);
@@ -97,6 +118,7 @@ export function recordReads(target, body) {
 
   const self = new Proxy(target, {
     get(object, key, receiver) {
+      if (key === SELF) return object;
       if (typeof key === "string") reads.add(key);
       return Reflect.get(object, key, receiver);
     },

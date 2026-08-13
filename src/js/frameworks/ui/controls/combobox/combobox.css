@@ -1,0 +1,70 @@
+/*
+ * Ported from GWT Mosaic: client/components/resources/combobox/style.css.
+ * Scoped to this module by the compiler, so .v-ComboBox and friends cannot
+ * collide with an application's own class names.
+ *
+ * The rule for `select.Combo-input::-ms-expand` is dropped: it hides the
+ * arrow old Edge drew, on a class this template never sets.
+ */
+.v-ComboBox {
+  position: relative;
+  display: grid;
+  grid-template-areas: "select";
+  align-items: center;
+  border-radius: 0.3em;
+  line-height: 100%;
+  height: 33px;
+  width: fit-content;
+  overflow: visible;
+  border: 1px solid var(--default-border-color);
+}
+
+.v-ComboBox select {
+  appearance: none;
+  background-color: var(--combobox-background);
+  border: none;
+  border-radius: 0.3em;
+  padding: 4px 36px 4px 8px;
+  margin: 0;
+  height: 100%;
+  overflow: visible;
+  width: 100%;
+  cursor: inherit;
+  line-height: inherit;
+  font-size: 16px;
+}
+
+.v-ComboBox.disabled:hover {
+  background-image: none;
+  cursor: inherit;
+}
+
+/* Disabled: the whole control dims, the trigger included. The browser fades a
+   disabled <select> on its own, which left the chevron beside it at full
+   strength — so the control carries the dimming and the select is put back to
+   full opacity inside it. */
+.v-ComboBox.disabled,
+.v-ComboBox.is-disabled {
+  cursor: default;
+  opacity: var(--opacity-disable);
+}
+
+.v-ComboBox.disabled select,
+.v-ComboBox.is-disabled select {
+  opacity: 1;
+}
+
+.v-ComboBox:focus,
+.v-ComboBox select:focus {
+  outline: var(--focus-ring) solid 3px;
+}
+
+.v-ComboBox .chevron {
+  display: flex;
+  position: absolute;
+  top: 0;
+  right: 8px;
+  width: 21px;
+  pointer-events: none;
+  height: calc(100% + 1.5px);
+}

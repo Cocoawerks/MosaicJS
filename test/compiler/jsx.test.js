@@ -4,7 +4,12 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 import {lineMarker, takeLineMarkers} from "../../src/js/core/compiler/js.js";
-import {ensureRuntimeNames, inlineCssImports, transform} from "../../src/js/core/compiler/jsx.js";
+import {
+    ensureRuntimeNames,
+    inlineCssImports,
+    inlineSvgImports,
+    transform,
+} from "../../src/js/core/compiler/jsx.js";
 
 /** A scratch directory of its own, so tests never race over one shared path. */
 const dirs = [];
@@ -192,4 +197,61 @@ test("spread props are merged", () => {
   expect(clean('return <p {...rest} id="a"/>;')).toBe(
     'return h("p", Object.assign({}, (rest), { id: "a" }));',
   );
+});
+
+// --- svg: imports -----------------------------------------------------------
+
+const CHEVRON = '<svg viewBox="0 0 24 24"><path d="M5 9l6 6"/></svg>';
+
+test("an svg: import becomes the component that draws the icon", () => {
+    const dir = tempDir({"chevron-down.svg": CHEVRON});
+    const [code, found] = inlineSvgImports('import Chevron from "svg:chevron-down";\n', [dir]);
+
+    expect(found).toBe(true);
+    // The icon is markup, and compiles the way any other markup does.
+    expect(code).toContain('h("svg", { viewBox: "0 0 24 24" }');
+    expect(code).toContain('h("path", { d: "M5 9l6 6" })');
+    // A component, so it is drawn where it is used rather than pasted in.
+    expect(code).toContain("const Chevron = (props = {}) =>");
+    expect(code).not.toContain("import Chevron");
+});
+
+test("the icon takes props, so it is sized and styled where it is used", () => {
+    const dir = tempDir({"chevron-down.svg": CHEVRON});
+    const [code] = inlineSvgImports('import Chevron from "svg:chevron-down";\n', [dir]);
+
+    // Whatever the caller passes wins over what the file said.
+    expect(code).toContain("props: { ...__icon.props, ...props }");
+});
+
+test("the icon carries the scope of the module that imported it", () => {
+    const dir = tempDir({"plus.svg": CHEVRON});
+    const [code] = inlineSvgImports('import Plus from "svg:plus";\n', [dir], "abc1234");
+
+    expect(code).toContain('class: "abc1234"');
+});
+
+test("directories are searched nearest first, so an app can replace an icon", () => {
+    const near = tempDir({"close.svg": '<svg id="mine"></svg>'});
+    const far = tempDir({"close.svg": '<svg id="theirs"></svg>'});
+
+    const [code] = inlineSvgImports('import Close from "svg:close";\n', [near, far]);
+    expect(code).toContain('id: "mine"');
+});
+
+test("a missing icon is a build error, not a hole in the page", () => {
+    const dir = tempDir({"close.svg": CHEVRON});
+    expect(() => inlineSvgImports('import Nope from "svg:nope";\n', [dir])).toThrow(
+        /no icon "svg:nope" — looked in/,
+    );
+});
+
+test("the .svg is optional, and everything else is left alone", () => {
+    const dir = tempDir({"close.svg": CHEVRON});
+    expect(inlineSvgImports('import Close from "svg:close.svg";\n', [dir])[0]).toContain(
+        "const Close =",
+    );
+
+    const untouched = 'import Control from "./Control.js";\nconst svg = "svg:not-an-import";\n';
+    expect(inlineSvgImports(untouched, [dir])).toEqual([untouched, false]);
 });

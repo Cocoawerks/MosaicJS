@@ -1,6 +1,6 @@
 // Pushing `{path}` bindings back into the DOM.
-import {attrValue, BINDINGS, display, readPath} from "./private/bindings.js";
-import {setAttribute} from "./private/props.js";
+import { attrValue, BINDINGS, display, readPath } from "./private/bindings.js";
+import { setAttribute } from "./private/props.js";
 
 export function refresh(controller) {
   const entries = controller?.[BINDINGS];

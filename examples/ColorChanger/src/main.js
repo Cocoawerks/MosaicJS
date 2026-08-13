@@ -4,8 +4,8 @@
 // compiles it and registers it as the application's page — there is nothing to
 // import and nothing to name. The runtime is vendored into the build as a
 // package, so it is imported by name.
-import {MosaicApplication} from "mosaic";
+import { MosaicApplication } from "mosaic";
 
 import AppController from "./AppController.js";
 
-new MosaicApplication({id: "app", controller: new AppController()});
+new MosaicApplication({ id: "app", controller: new AppController() });
