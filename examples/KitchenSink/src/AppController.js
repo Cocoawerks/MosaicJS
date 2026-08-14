@@ -52,6 +52,12 @@ export default class AppController {
         /** What the popover last reported back. */
         this.picked = "";
 
+        /** The colour the well holds, as it reads. */
+        this.wellColour = "#3584E4";
+
+        /** Which tab of the TabView is chosen. */
+        this.tab = "0: Overview";
+
         /** The side the popover is asked to try first. */
         this.where = "bottom_center";
         /** @type {string} What the name field holds. */
@@ -98,6 +104,7 @@ export default class AppController {
             this.aeroplaneSwitch,
             this.sizeGroup,
             this.colourCombo,
+            this.colourWell,
             this.nameField,
             this.searchField,
             this.phoneField,
@@ -341,6 +348,37 @@ export default class AppController {
             this.indicator.setComplete("Saved");
             this.note("saved");
         }, 900);
+    }
+
+    // --- the tabs -------------------------------------------------------------
+
+    /**
+     * A tab was chosen. The view says which and what it reads, so the page does
+     * not have to keep a list of titles to look one up in.
+     *
+     * @param {object} view The TabView.
+     * @param {number} index Which tab, counting from the first.
+     * @param {string} title What that tab reads.
+     */
+    tabChosen(view, index, title) {
+        this.tab = `${index}: ${title}`;
+        this.note(`tab: ${title}`);
+    }
+
+    // --- the colour well ------------------------------------------------------
+
+    /**
+     * The well's action is the colour, not the press: pressing it opens its
+     * chooser, and this is what the chooser settled on.
+     *
+     * @param {object} well The ColorWell.
+     * @param {object} colour The colour it now holds.
+     */
+    wellColourChanged(well, colour) {
+        this.wellColour = colour.alpha === 100
+            ? colour.toHexString()
+            : `${colour.toHexString()} at ${colour.alpha}%`;
+        this.note(`colour well: ${this.wellColour}`);
     }
 
     // --- the popover ----------------------------------------------------------

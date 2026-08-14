@@ -1,0 +1,22 @@
+/*
+ * A deck and its cards. GWT's DeckPanel writes `display` on each child widget
+ * as it shows and hides them; here the state is a class and this sheet says
+ * what it means, which is the same arrangement every other component here uses.
+ */
+.v-Deck {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/*
+ * A card that is not showing is out of the way but not thrown away: `display:
+ * none` rather than `visibility`, so it takes no room, and the component keeps
+ * whatever was typed into it for when it comes back round.
+ */
+.v-Deck-card {
+    display: none;
+}
+
+.v-Deck-card.is-showing {
+    display: block;
+}

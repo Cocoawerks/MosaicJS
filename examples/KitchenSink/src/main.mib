@@ -183,6 +183,22 @@
     </section>
 
     <section styleName="section">
+        <h2 styleName="heading">ColorWell</h2>
+        <p styleName="note">
+            A button whose face is the colour it holds. Pressing it opens a colour
+            chooser in a popover — a palette, a saturation square with a hue strip, an
+            opacity slider and a hex entry. A swatch or Enter in the field settles it
+            and puts the chooser away; dragging reports as it goes.
+        </p>
+
+        <div styleName="row centred">
+            <ColorWell outlet="colourWell" color="#3584e4" action="wellColourChanged"/>
+        </div>
+
+        <p styleName="values">colour={wellColour}</p>
+    </section>
+
+    <section styleName="section">
         <h2 styleName="heading">SpinButton</h2>
         <p styleName="note">
             A number with a step either side of it. Typing settles after a pause rather than on
@@ -273,6 +289,33 @@
         </OutlineView>
 
         <p styleName="values">place={place}</p>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">TabView</h2>
+        <p styleName="note">
+            A bar of tabs over a deck of cards, with a pill that slides to whichever is
+            chosen. The arrows move along the bar. Every card is drawn and stays drawn,
+            so what is typed on one is still there when it comes back round.
+        </p>
+
+        <TabView outlet="tabs" action="tabChosen">
+            <Tab title="Overview">
+                <p styleName="note">The first card. Nothing on it but this line.</p>
+            </Tab>
+            <Tab title="A field">
+                <div styleName="column">
+                    <TextField outlet="tabField" placeholder="Type here, then switch tabs"/>
+                </div>
+            </Tab>
+            <Tab title="A control">
+                <div styleName="column">
+                    <Switch text="Something to flip" outlet="tabSwitch"/>
+                </div>
+            </Tab>
+        </TabView>
+
+        <p styleName="values">tab={tab}</p>
     </section>
 
     <p styleName="last">Last action: {lastAction}</p>

@@ -67,7 +67,7 @@
     const buttons = () => [...app.querySelectorAll("button")];
     // A Switch carries role="checkbox" too — it is the same control worn
     // differently — so the checkboxes are picked out by their own class.
-    const boxes = () => [...app.querySelectorAll(".v-CheckBox")];
+    const boxes = () => [...section("CheckBox").querySelectorAll(".v-CheckBox")];
     // styleName classes stay literal; the scope hash rides along beside them.
     const last = () => app.querySelector("p.last").textContent;
     const labelled = (text) =>
@@ -327,7 +327,7 @@
     check("and says so", loadingIndicator.textContent.includes("Saved"));
 
     // --- Switch -------------------------------------------------------------
-    const switches = () => [...app.querySelectorAll(".v-Switch")];
+    const switches = () => [...section("Switch").querySelectorAll(".v-Switch")];
     const wifi = switches()[0];
 
     check("both switches drew", switches().length === 2);
@@ -924,6 +924,122 @@
 
     document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
     chooseWhere("bottom_center");
+
+    // --- ColorWell ------------------------------------------------------------
+    const wellBox = section("ColorWell");
+    const well = wellBox.querySelector(".cw-well");
+    const wellSwatch = well.querySelector(".cw-swatch");
+    const chooser = () => document.querySelector(".ccp-root");
+
+    check("the well drew as a button wearing a colour", well.tagName === "BUTTON");
+    check("with the colour the markup gave it",
+        getComputedStyle(wellSwatch).backgroundColor === "rgb(53, 132, 228)");
+    check("the theme frames it", getComputedStyle(well).borderTopWidth === "1px");
+    check("and no chooser exists until one is asked for", chooser() === null);
+
+    well.scrollIntoView({block: "center"});
+    well.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("pressing it opens a chooser", chooser() !== null &&
+        getComputedStyle(chooser().closest(".v-PopOver")).visibility === "visible");
+    check("the chooser drew its palette", chooser().querySelectorAll(".ccp-swatch").length === 45);
+    check("and both pickers, sized and painted",
+        [...chooser().querySelectorAll("canvas")].every((c) => c.width > 0 && c.height > 0));
+    check("the hex field shows the well's colour",
+        chooser().querySelector("input").value === "3584E4");
+    check("as does the preview",
+        getComputedStyle(chooser().querySelector(".ccp-preview-color")).backgroundColor ===
+        "rgb(53, 132, 228)");
+    check("pressing the well did not report a colour",
+        app.textContent.includes("colour=#3584E4"));
+
+    // Dragging the square streams colours: the well and the page follow, and the
+    // chooser stays up.
+    const square = chooser().querySelector(".ccp-sv");
+    const squareBox = square.getBoundingClientRect();
+    square.dispatchEvent(new PointerEvent("pointerdown", {
+        bubbles: true, pointerId: 1,
+        clientX: squareBox.left + 1, clientY: squareBox.top + 1
+    }));
+    check("dragging the square to white reports it",
+        chooser().querySelector("input").value !== "3584E4" &&
+        getComputedStyle(wellSwatch).backgroundColor !== "rgb(53, 132, 228)");
+    check("which the page hears", last().includes("colour well:"));
+    check("and the chooser stays up while it is dragged",
+        getComputedStyle(chooser().closest(".v-PopOver")).visibility === "visible");
+    square.dispatchEvent(new PointerEvent("pointerup", {bubbles: true, pointerId: 1}));
+
+    // A palette swatch is a commit: it settles the colour and closes.
+    chooser().querySelectorAll(".ccp-swatch")[18].dispatchEvent(
+        new PointerEvent("pointerdown", {bubbles: true}));
+    check("a palette swatch settles the colour",
+        getComputedStyle(wellSwatch).backgroundColor === "rgb(53, 132, 228)" &&
+        app.textContent.includes("colour=#3584E4"));
+    check("and puts the chooser away",
+        getComputedStyle(chooser().closest(".v-PopOver")).visibility === "hidden");
+
+    // --- TabView --------------------------------------------------------------
+    const tabBox = section("TabView");
+    const tabBar = tabBox.querySelector(".v-TabBar");
+    const pill = tabBox.querySelector(".v-TabBar-indicator");
+    const tabButtons = [...tabBox.querySelectorAll(".v-TabButton")];
+    const cards = [...tabBox.querySelectorAll(".v-Deck-card")];
+    const onScreenCard = () =>
+        cards.findIndex((card) => getComputedStyle(card).display !== "none");
+    const pillBox = () => pill.getBoundingClientRect();
+
+    check("the bar drew, as a tablist with one tab stop",
+        tabBar.getAttribute("role") === "tablist" && tabBar.getAttribute("tabindex") === "0" &&
+        tabButtons.every((b) => b.getAttribute("role") === "tab"));
+    check("a tab per Tab, and a card for what each holds",
+        tabButtons.map((b) => b.textContent).join("|") === "Overview|A field|A control" &&
+        cards.length === 3);
+    check("the first is chosen, and only its card is on screen",
+        tabButtons[0].className.includes("is-selected") && onScreenCard() === 0);
+
+    // The pill sits behind the chosen tab, which is a thing only layout knows.
+    const sits = () => {
+        const tab = tabButtons[onScreenCard()].getBoundingClientRect();
+        return Math.round(Math.abs(pillBox().left - tab.left)) +
+            Math.round(Math.abs(pillBox().width - tab.width));
+    };
+    check(`the pill sits behind the chosen tab (out by ${sits()}px)`, sits() <= 1);
+    check("and did not slide into place", pill.className.includes("no-anim"));
+
+    // What is typed on a card is still there after leaving and returning: the
+    // cards are hidden, not thrown away.
+    tabBox.scrollIntoView({block: "center"});
+    tabButtons[1].dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("clicking a tab turns the deck over", onScreenCard() === 1);
+    check("and says which was chosen",
+        app.textContent.includes("tab=1: A field") && last().includes("tab: A field"));
+    // Where it was *told* to go, not where it is: a sliding pill is somewhere
+    // between the two for the next 200ms, so its box says nothing yet.
+    const told = () => {
+        const tab = tabButtons[onScreenCard()];
+        return Math.abs(parseFloat(pill.style.left) - tab.offsetLeft) +
+            Math.abs(parseFloat(pill.style.width) - tab.offsetWidth);
+    };
+    check(`the pill was sent after it (out by ${told()}px)`, told() <= 1);
+    check("and this time it slid rather than jumping",
+        !pill.className.includes("no-anim"));
+
+    const tabInput = cards[1].querySelector("input");
+    typeInto(tabInput, "half typed");
+    tabButtons[0].dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("turning away puts the card out of the way", onScreenCard() === 0);
+    tabButtons[1].dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("and what was typed on it is still there",
+        cards[1].querySelector("input") === tabInput && tabInput.value === "half typed");
+
+    // The arrows walk the bar, and stop at either end.
+    tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true}));
+    check("the right arrow moves along the bar", onScreenCard() === 2);
+    tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true}));
+    check("and stops at the last tab", onScreenCard() === 2);
+    tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
+    tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
+    tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
+    check("the left arrow walks back, and stops at the first", onScreenCard() === 0);
 
     // --- switching themes ---------------------------------------------------
     // The theme is a stylesheet swap: nothing is redrawn, so what proves it
