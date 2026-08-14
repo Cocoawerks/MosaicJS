@@ -1,0 +1,32 @@
+/*
+ * Ported from GWT Mosaic: client/components/resources/tooltip/style.css.
+ *
+ * The panel is a PopOver, drawn by that module, so the rules that reach it go
+ * through :global — what a tooltip adds is its own face, not another panel.
+ */
+:global(.v-PopOver.v-Tooltip) {
+    background-color: var(--tooltip-background);
+    border: 1px solid var(--tooltip-background);
+    color: var(--tooltip-foreground);
+    font-size: 15px;
+    font-weight: bold;
+    line-height: 1.2;
+    padding: 5px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 3px 10px #777;
+}
+
+:global(.v-Tooltip .PopOver-callout) {
+    width: 10px;
+    height: 10px;
+    display: block;
+}
+
+:global(.v-Tooltip .PopOver-triangle) {
+    background: var(--tooltip-background);
+    border-color: var(--tooltip-background);
+    width: 10px;
+    height: 10px;
+}

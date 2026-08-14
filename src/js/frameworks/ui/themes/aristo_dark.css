@@ -204,7 +204,7 @@
 
     /* A grouping box's frame — near-black, so the frame reads as a cut rather than a drawn line. Also worn by anything framed to match
          one, e.g. the clue dialog's word list. */
-    --group-border-color: #4f4f4f;
+    --group-border-color: color(srgb 1 1 1 / 0.46);
 
     /* The split panel's divider face — a couple of steps up the ramp, so it separates from the panes. */
     --splitter-background: #38383c;

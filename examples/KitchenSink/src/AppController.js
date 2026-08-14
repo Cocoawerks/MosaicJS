@@ -1,4 +1,4 @@
-import {setTheme, theme} from "mosaic/frameworks/ui";
+import {setTheme, theme, Tooltip} from "mosaic/frameworks/ui";
 
 /**
  * The controller behind `main.mib`: what the page binds to, and what drives
@@ -54,6 +54,15 @@ export default class AppController {
 
         /** The colour the well holds, as it reads. */
         this.wellColour = "#3584E4";
+
+        /** What the Edit menu last chose. */
+        this.edit = "";
+
+        /** What the box's wells last reported. */
+        this.boxColour = "#3584E4";
+
+        /** Which accordion sections are open, as they read. */
+        this.sections = "delivery";
 
         /** Which tab of the TabView is chosen. */
         this.tab = "0: Overview";
@@ -348,6 +357,84 @@ export default class AppController {
             this.indicator.setComplete("Saved");
             this.note("saved");
         }, 900);
+    }
+
+    // --- the menu and the tooltip ---------------------------------------------
+
+    /**
+     * The button the tooltip hangs off, handed over by its outlet.
+     *
+     * A tooltip is not drawn where it is used — it belongs to something already
+     * on the page — so it is attached once that thing exists. The outlet is
+     * assigned on every redraw, so it is attached only the first time.
+     *
+     * @param {object} button The Button to explain.
+     */
+    set hoverButton(button) {
+        this.hovered = button;
+        if (!button || this.tooltip) return;
+        this.tooltip = Tooltip.attach(button, "A tooltip, once the pointer rests");
+    }
+
+    get hoverButton() {
+        return this.hovered;
+    }
+
+    /**
+     * The menu button's action is the item its menu chose, not the press.
+     *
+     * @param {object} button The MenuButton.
+     * @param {string} value The value of the item that was chosen.
+     */
+    editChosen(button, value) {
+        this.edit = value;
+        this.note(`edit menu: ${value}`);
+    }
+
+    // --- the box and the accordion --------------------------------------------
+
+    /**
+     * Either well in the box reports here; which one it was is the well itself.
+     *
+     * @param {object} well The ColorWell that changed.
+     * @param {object} colour The colour it now holds.
+     */
+    boxColourChanged(well, colour) {
+        this.boxColour = colour.toHexString();
+        this.note(`box colour: ${this.boxColour}`);
+    }
+
+    /**
+     * A section was opened or shut. The view says which and which way, so the
+     * page keeps no list of its own.
+     *
+     * @param {object} view The AccordionView.
+     * @param {string} value The section's value.
+     * @param {boolean} expanded Whether it is now open.
+     */
+    sectionToggled(view, value, expanded) {
+        this.showSections();
+        this.note(`section ${value}: ${expanded ? "open" : "shut"}`);
+    }
+
+    openAllSections() {
+        this.details.expandAll(true);
+        this.showSections();
+        this.note("opened every section");
+    }
+
+    shutAllSections() {
+        this.details.expandAll(false);
+        this.showSections();
+        this.note("shut every section");
+    }
+
+    /** The open sections, in the order they are written. */
+    showSections() {
+        const open = this.details.sections
+            .filter((section) => this.details.isExpanded(section.value))
+            .map((section) => section.value);
+        this.sections = open.join(" ") || "none";
     }
 
     // --- the tabs -------------------------------------------------------------

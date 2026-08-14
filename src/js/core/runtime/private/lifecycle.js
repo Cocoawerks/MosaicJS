@@ -16,6 +16,12 @@ export function attachTree(node) {
     const view = node.__ibView;
     if (view && !view.isAttached) {
         view.isAttached = true;
+        // Anything assigned before it was on the page is drawn now: `redraw`
+        // could not patch a component whose nodes had nowhere to be.
+        if (view.redrawWanted) {
+            view.redrawWanted = false;
+            view.needsDisplay();
+        }
         view.attached?.();
     }
 }

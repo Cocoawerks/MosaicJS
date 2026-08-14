@@ -33,7 +33,7 @@ export default class ColorWell extends Button {
         this.current = Color.white();
 
         /** Whether the markup's `color` has been read. */
-        this.seeded = false;
+        this.awakened = false;
     }
 
     // --- the colour ----------------------------------------------------------
@@ -60,9 +60,15 @@ export default class ColorWell extends Button {
         if (fireEvents) this.fireAction(color);
     }
 
-    seed() {
-        if (this.seeded) return;
-        this.seeded = true;
+    /**
+     * Read what the markup said, once, at the first drawing — a component has
+     * no props before then, and what is read here is state it goes on to own,
+     * so reading it again on a later drawing would undo whatever has happened
+     * to it since.
+     */
+    awake() {
+        if (this.awakened) return;
+        this.awakened = true;
 
         const stated = this.props.color;
         if (stated instanceof Color) this.current = stated;
@@ -206,7 +212,7 @@ export default class ColorWell extends Button {
     }
 
     draw() {
-        this.seed();
+        this.awake();
         return super.draw();
     }
 }

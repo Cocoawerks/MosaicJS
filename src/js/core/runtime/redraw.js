@@ -12,7 +12,15 @@ import {applyRef, setAttribute} from "./private/props.js";
 
 export function redraw(view) {
     const anchor = view.nodes[0];
-    if (!anchor || !anchor.parentNode) return;
+    // Nothing to patch against yet: the component has drawn but its nodes have
+    // not been put anywhere — which is where they are when an `outlet` hands a
+    // component over and the controller says something to it straight away. The
+    // redraw is remembered rather than dropped, and done when the nodes land
+    // (see `attachTree`); dropping it loses whatever was just assigned.
+    if (!anchor || !anchor.parentNode) {
+        if (anchor) view.redrawWanted = true;
+        return;
+    }
 
     const parent = anchor.parentNode;
     const previous = view.vtree;

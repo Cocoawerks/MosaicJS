@@ -1,0 +1,130 @@
+/*
+ * Ported from GWT Mosaic: client/components/resources/menu/style.css.
+ *
+ * Both modules of the port import this sheet: the menu draws the panel and its
+ * list, an item draws its own line. The panel itself is a PopOver, drawn by
+ * that module, so the rules that reach it go through :global.
+ */
+:global(.v-PopOver.v-Menu) {
+    list-style: none;
+    padding: 5px 0;
+    line-height: 12px;
+    display: block;
+    margin: 0;
+    outline: none;
+    border-radius: 8px;
+    border: 1px solid var(--default-border-color);
+    background-color: var(--menu-background);
+    backdrop-filter: blur(5px);
+}
+
+:global(.v-Menu) .content {
+    margin: 0;
+    padding: 5px 0;
+    list-style: none;
+}
+
+:global(.v-PopOver.v-Menu .PopOver-triangle) {
+    background: var(--menu-background);
+    border-color: var(--default-border-color);
+}
+
+:global(.v-Menu.submenu) b {
+    display: none;
+}
+
+.v-MenuItem {
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    outline: none;
+    box-sizing: border-box;
+    position: relative;
+    border: 1px solid transparent;
+    min-height: 30px;
+    margin: 0 4px;
+    padding: 0 4px;
+    border-radius: 4px;
+    white-space: nowrap;
+    color: var(--menu-foreground);
+}
+
+.v-MenuItem,
+.v-MenuItem .icon,
+.v-MenuItem label {
+    color: var(--menu-foreground);
+}
+
+.v-MenuItem.active {
+    outline: none;
+    z-index: 1;
+    border-color: transparent;
+    background-color: var(--menu-active-background);
+    color: var(--menu-active-foreground);
+}
+
+.v-MenuItem.active .icon,
+.v-MenuItem.active label {
+    color: var(--menu-active-foreground);
+}
+
+/* Disabled items: dim the text and icon, and don't react to hover/press. */
+.v-MenuItem.disabled,
+.v-MenuItem.is-disabled {
+    opacity: var(--opacity-disable, 0.4);
+    cursor: default;
+    pointer-events: none;
+}
+
+.v-MenuItem.disabled.active {
+    border-top: 1px solid transparent;
+    border-bottom: 1px solid transparent;
+    background-color: transparent;
+}
+
+.v-MenuItem.focused {
+    outline: none;
+}
+
+.v-MenuItem .icon {
+    margin: 1px 12px 0 0;
+    border: none;
+    padding: 1px;
+    background-color: transparent;
+    user-select: none;
+    width: fit-content;
+    height: fit-content;
+    min-width: 19px;
+}
+
+.v-MenuItem span {
+    box-sizing: border-box;
+    display: inline-block;
+    cursor: default;
+    flex: 1;
+    margin-right: 18px;
+    margin-left: 0;
+    user-select: none;
+    font-size: 17px;
+}
+
+.v-MenuItem.noIcon span {
+    margin-left: 36px;
+    white-space: nowrap;
+}
+
+.v-MenuItem .submenu-indicator {
+    display: none;
+    margin-right: 2px;
+}
+
+.v-MenuItem-Separator,
+.v-MenuItem.v-MenuItem-Separator.active {
+    min-height: 1px;
+    height: 1px;
+    border: none;
+    box-sizing: border-box;
+    margin: 6px;
+    background-color: var(--menu-active-background);
+}

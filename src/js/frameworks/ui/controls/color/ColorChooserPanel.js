@@ -53,7 +53,7 @@ export default class ColorChooserPanel extends Component {
         this.dragging = null;
 
         /** Whether the markup's `color` has been read. */
-        this.seeded = false;
+        this.awakened = false;
     }
 
     // --- the colour ----------------------------------------------------------
@@ -109,9 +109,15 @@ export default class ColorChooserPanel extends Component {
 
     // --- what the markup said ------------------------------------------------
 
-    seed() {
-        if (this.seeded) return;
-        this.seeded = true;
+    /**
+     * Read what the markup said, once, at the first drawing — a component has
+     * no props before then, and what is read here is state it goes on to own,
+     * so reading it again on a later drawing would undo whatever has happened
+     * to it since.
+     */
+    awake() {
+        if (this.awakened) return;
+        this.awakened = true;
 
         const stated = this.props.color;
         const color =
@@ -333,7 +339,7 @@ export default class ColorChooserPanel extends Component {
     }
 
     draw() {
-        this.seed();
+        this.awake();
         const color = this.current;
 
         return (

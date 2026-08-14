@@ -61,6 +61,14 @@ const OPPOSITE = Object.freeze({
     right: "left",
 });
 
+/**
+ * How near a corner the callout may sit, and how far along its side it may go.
+ * A callout asked for a place outside that is a callout pointing at nothing —
+ * see {@link PopOver#pointCallout}.
+ */
+const CALLOUT_EDGE = 8;
+const CALLOUT_END = 14;
+
 /** How close to the window's edge a popover may be pushed. */
 const EDGE_MARGIN = 7;
 
@@ -113,6 +121,13 @@ export default class PopOver extends Component {
          * @type {string|null}
          */
         this.placedPosition = null;
+
+        /**
+         * Whether the callout can be aimed at what the popover hangs from. It
+         * cannot when the popover had to be pushed clear of the window's edge
+         * and ended up beside its anchor rather than against it.
+         */
+        this.calloutFits = true;
 
         /** Elements a press on which does not count as a press outside. */
         this.closeExceptions = new Set();
@@ -231,6 +246,16 @@ export default class PopOver extends Component {
             this.node?.blur?.();
         }
 
+        this.reportOpen(open);
+    }
+
+    /**
+     * Say that it opened, or that it closed. A kind of popover whose action
+     * means something else — a menu's is the item that was chosen — says so
+     * here instead, and keeps `onOpen` and `onClose`, which never mean anything
+     * but what they say.
+     */
+    reportOpen(open) {
         this.props.action?.(this.self, open);
         (open ? this.props.onOpen : this.props.onClose)?.(this.self);
     }
@@ -371,20 +396,40 @@ export default class PopOver extends Component {
         let top = 0;
 
         switch (side) {
-            case "bottom": top = frame.top + frame.height + ANCHOR_GAP; break;
-            case "top": top = frame.top - height - ANCHOR_GAP; break;
-            case "right": left = frame.left + frame.width + ANCHOR_GAP; break;
-            case "left": left = frame.left - width - ANCHOR_GAP; break;
+            case "bottom":
+                top = frame.top + frame.height + ANCHOR_GAP;
+                break;
+            case "top":
+                top = frame.top - height - ANCHOR_GAP;
+                break;
+            case "right":
+                left = frame.left + frame.width + ANCHOR_GAP;
+                break;
+            case "left":
+                left = frame.left - width - ANCHOR_GAP;
+                break;
             default:
         }
 
         switch (this.edge) {
-            case "center": left = frame.left - (width - frame.width) / 2; break;
-            case "left": left = frame.left; break;
-            case "right": left = frame.left + frame.width - width; break;
-            case "middle": top = frame.top - (height - frame.height) / 2; break;
-            case "top": top = frame.top; break;
-            case "bottom": top = frame.top + frame.height - height; break;
+            case "center":
+                left = frame.left - (width - frame.width) / 2;
+                break;
+            case "left":
+                left = frame.left;
+                break;
+            case "right":
+                left = frame.left + frame.width - width;
+                break;
+            case "middle":
+                top = frame.top - (height - frame.height) / 2;
+                break;
+            case "top":
+                top = frame.top;
+                break;
+            case "bottom":
+                top = frame.top + frame.height - height;
+                break;
             default:
         }
 
@@ -400,10 +445,18 @@ export default class PopOver extends Component {
         if (!node) return;
 
         switch (this.position) {
-            case "bottom": top += 2; break;
-            case "top": top -= node.offsetHeight + 2; break;
-            case "right": left += 2; break;
-            case "left": left -= node.offsetWidth + 2; break;
+            case "bottom":
+                top += 2;
+                break;
+            case "top":
+                top -= node.offsetHeight + 2;
+                break;
+            case "right":
+                left += 2;
+                break;
+            case "left":
+                left -= node.offsetWidth + 2;
+                break;
             default:
         }
         this.writePosition(left, top);
@@ -447,6 +500,16 @@ export default class PopOver extends Component {
     /**
      * Point the callout at the middle of what the popover hangs from, wherever
      * the popover itself had to be moved to.
+     *
+     * A popover pushed back inside the window can end up somewhere its callout
+     * cannot point from. There are two ways of that, and both leave the callout
+     * out — a popover with no callout is a plain panel, which says less than a
+     * callout aimed at the wrong thing:
+     *
+     *   - beside what it hangs from rather than against it, so no place along
+     *     its edge points at the anchor;
+     *   - over what it hangs from, when the window has room for it on neither
+     *     side, so the callout would point into the popover itself.
      */
     pointCallout(box, frame) {
         const callout = this.calloutNode;
@@ -456,26 +519,82 @@ export default class PopOver extends Component {
         const sideways =
             this.shownPosition === "top" || this.shownPosition === "bottom";
 
+        let at;
+        let end;
         if (sideways) {
             const dx = Math.max(0, frame.left) - box.left;
-            const limit = box.width - 14;
-            let at = dx + frame.width / 2;
-            if (this.edge === "left") at = 14 + dx;
+            end = box.width - CALLOUT_END;
+            at = dx + frame.width / 2;
+            if (this.edge === "left") at = CALLOUT_END + dx;
             else if (this.edge === "right") at = dx + frame.width - 28;
-            callout.style.left = `${Math.min(limit, at)}px`;
         } else {
-            const middle = frame.top + frame.height / 2;
-            const limit = box.height - 14;
-            callout.style.top = `${Math.max(8, Math.min(limit, middle - box.top))}px`;
+            end = box.height - CALLOUT_END;
+            at = frame.top + frame.height / 2 - box.top;
+        }
+
+        this.showCallout(
+            this.clearOfAnchor(box, frame) && at >= CALLOUT_EDGE && at <= end,
+        );
+        if (!this.calloutFits) return;
+
+        if (sideways) {
+            callout.style.left = `${at}px`;
+        } else {
+            callout.style.top = `${at}px`;
             callout.style.marginTop = "-6px";
         }
     }
 
+    /**
+     * Whether the popover ended up on the side it claims, clear of what it
+     * hangs from. A window with room on neither side leaves it over the anchor,
+     * and a callout has nothing to span.
+     */
+    clearOfAnchor(box, frame) {
+        switch (this.shownPosition) {
+            case "bottom":
+                return box.top >= frame.bottom;
+            case "top":
+                return box.top + box.height <= frame.top;
+            case "right":
+                return box.left >= frame.right;
+            case "left":
+                return box.left + box.width <= frame.left;
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * Whether the callout is drawn at all this time round. Drawn rather than
+     * hidden by hand, because what the callout wears is `draw`'s to say — and a
+     * change of mind has to be drawn before the callout can be placed.
+     */
+    showCallout(fits) {
+        if (this.calloutFits === fits) return;
+        this.calloutFits = fits;
+        this.needsDisplay();
+    }
+
     // --- drawing -------------------------------------------------------------
+
+    /** Whether a callout is wanted and can be aimed at what it belongs to. */
+    get hasCallout() {
+        return this.callout && this.calloutFits !== false;
+    }
+
+    /**
+     * Classes the panel wears besides `v-PopOver`. A kind of popover that has a
+     * face of its own — a menu, a tooltip — names it here, and the theme has
+     * something to style.
+     */
+    panelClasses() {
+        return [];
+    }
 
     /** The classes the callout wears, which say where it points from. */
     calloutClasses() {
-        if (!this.callout) return ["PopOver-callout", "PopOver-callout-none"];
+        if (!this.hasCallout) return ["PopOver-callout", "PopOver-callout-none"];
         return [
             "PopOver-callout",
             `PopOver-callout--${this.shownPosition[0]}`,
@@ -484,15 +603,33 @@ export default class PopOver extends Component {
     }
 
     triangleClasses() {
-        if (!this.callout) return ["PopOver-triangle", "PopOver-triangle-none"];
+        if (!this.hasCallout) return ["PopOver-triangle", "PopOver-triangle-none"];
         return ["PopOver-triangle", `PopOver-triangle--${this.shownPosition[0]}`];
+    }
+
+    /**
+     * What a reader is being shown. A popover is a dialogue by default; a kind
+     * of popover that is something else — a menu — says so here, as
+     * `Roles.getMenuRole().set(...)` does for the Java version.
+     */
+    panelRole() {
+        return "dialog";
+    }
+
+    /**
+     * What the popover holds: whatever the markup put in it. A popover of a
+     * kind that holds one particular thing — a tooltip's words, a menu's items
+     * — says so here instead.
+     */
+    drawContent() {
+        return this.props.children;
     }
 
     draw() {
         return (
             <div
-                styleName={["v-PopOver", this.open ? "is-open" : null]}
-                role="dialog"
+                styleName={["v-PopOver", ...this.panelClasses(), this.open ? "is-open" : null]}
+                role={this.panelRole()}
                 tabindex="0"
                 aria-hidden={this.open ? null : "true"}
                 inert={this.open ? null : ""}
@@ -500,7 +637,7 @@ export default class PopOver extends Component {
                 <b styleName={this.calloutClasses()} ref={(el) => (this.calloutNode = el)}>
                     <b styleName={this.triangleClasses()}/>
                 </b>
-                {this.props.children}
+                {this.drawContent()}
             </div>
         );
     }
@@ -513,11 +650,16 @@ export default class PopOver extends Component {
  */
 function fits(side, at, width, height) {
     switch (side) {
-        case "bottom": return at.top + height <= window.innerHeight;
-        case "top": return at.top >= 0;
-        case "right": return at.left + width <= window.innerWidth;
-        case "left": return at.left >= 0;
-        default: return true;
+        case "bottom":
+            return at.top + height <= window.innerHeight;
+        case "top":
+            return at.top >= 0;
+        case "right":
+            return at.left + width <= window.innerWidth;
+        case "left":
+            return at.left >= 0;
+        default:
+            return true;
     }
 }
 

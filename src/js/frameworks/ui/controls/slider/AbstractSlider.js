@@ -83,7 +83,7 @@ export default class AbstractSlider extends Control {
         this.dragging = false;
         this.resizeObserver = null;
         /** Whether the knobs have taken the values the markup gave them. */
-        this.seeded = false;
+        this.awakened = false;
 
         this.createHandles();
     }
@@ -97,9 +97,9 @@ export default class AbstractSlider extends Control {
      * earliest moment they are, and it is the moment before anyone can see the
      * knobs anyway.
      */
-    seedValues() {
-        if (this.seeded) return;
-        this.seeded = true;
+    awake() {
+        if (this.awakened) return;
+        this.awakened = true;
         this.readInitialValues();
     }
 
@@ -372,7 +372,7 @@ export default class AbstractSlider extends Control {
     }
 
     draw() {
-        this.seedValues();
+        this.awake();
         return (
             <div {...this.controlProps()} styleName={this.sliderClasses()} tabindex={null}>
                 <div styleName="range" ref={(el) => (this.rangeLayer = el)}/>

@@ -1,0 +1,93 @@
+/*
+ * Ported from GWT Mosaic: client/components/resources/accordion/style.css.
+ *
+ * Both modules of the port import this sheet, as RadioGroup and Radio do with
+ * theirs: the view draws the column, a section draws its own line and what is
+ * under it, and every rule here is anchored on one or the other.
+ */
+/* Accordion Panel */
+.v-accordionPanel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    list-style: none;
+    margin: 0 0 6px 0;
+    padding-left: 0;
+    height: fit-content;
+}
+
+/* Accordion Section */
+.v-accordionSection {
+    display: flex;
+    flex-direction: column;
+    min-height: 26px;
+    border-bottom: 1px solid var(--accordion-divider);
+}
+
+/* Accordion Header */
+.v-accordionSection .header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    cursor: pointer;
+    padding: 12px 19px 12px 12px;
+    box-sizing: border-box;
+    font-weight: bold;
+    font-size: 17px;
+    background: none;
+    color: var(--accordion-header-foreground);
+}
+
+.v-accordionSection .header > span {
+    flex: 1;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    white-space: pre-wrap;
+    line-break: anywhere;
+}
+
+.v-accordionSection .header:focus {
+    outline: none;
+}
+
+.v-accordionSection .header:focus > span {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 1px;
+}
+
+.v-accordionSection .header:hover {
+    background-color: var(--accordion-header-hover);
+}
+
+/* Accordion State Icon */
+.v-accordionSection .accordion-state-icon {
+    float: right;
+    transition-duration: 0.25s;
+    transition-property: transform;
+    width: 24px;
+    height: 24px;
+    fill: var(--outline-foreground);
+    color: var(--outline-foreground);
+}
+
+.v-accordionSection.expanded .accordion-state-icon {
+    transform: rotate(180deg);
+}
+
+/* Accordion Form Content */
+.v-accordionSection .form {
+    max-height: 0;
+    height: auto;
+    overflow: hidden;
+    box-sizing: border-box;
+    transition: unset;
+}
+
+.v-accordionSection.expanded .form {
+    max-height: 1000px;
+    transition: max-height 0.5s ease-in;
+}

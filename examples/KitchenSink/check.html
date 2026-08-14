@@ -8,6 +8,13 @@
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
+    <!-- Source Sans 3, the page's own face. The stack keeps system-ui behind it,
+         so the page still reads properly before the font arrives — or at all,
+         if it cannot be fetched. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..700;1,300..700&amp;display=swap"/>
     <title>KitchenSink browser check</title>
 </head>
 
@@ -1040,6 +1047,197 @@
     tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
     tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
     check("the left arrow walks back, and stops at the first", onScreenCard() === 0);
+
+    // --- MenuButton and Tooltip -----------------------------------------------
+    const menuBox = section("MenuButton and Tooltip");
+    const menuButton = menuBox.querySelector(".v-MenuButton");
+    const hoverButton = [...menuBox.querySelectorAll(".v-Button")].find(
+        (b) => b.textContent.trim() === "Hover me",
+    );
+    const menuPanel = () => document.querySelector(".v-Menu");
+    const menuItems = () => [...document.querySelectorAll(".v-MenuItem")];
+    const menuUp = () =>
+        menuPanel() !== null && getComputedStyle(menuPanel()).visibility === "visible";
+    const activeItem = () =>
+        menuItems().find((li) => li.className.includes("active"))?.textContent ?? null;
+    const pressButton = (el) => {
+        el.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true, button: 0}));
+        el.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    };
+
+    check("the menu button says it has a menu", menuButton.getAttribute("aria-haspopup") === "menu");
+    check("and has none until it is pressed",
+        menuPanel() === null && menuButton.getAttribute("aria-expanded") === "false");
+
+    menuBox.scrollIntoView({block: "center"});
+    pressButton(menuButton);
+    check("pressing it drops the menu",
+        menuUp() && menuButton.getAttribute("aria-expanded") === "true");
+    check("the theme paints it",
+        getComputedStyle(menuPanel()).borderTopWidth === "1px" &&
+        getComputedStyle(menuPanel()).backgroundColor !== "rgba(0, 0, 0, 0)");
+    check("with a line per item, a rule, and one that cannot be chosen",
+        menuItems().map((li) => li.textContent.trim() || "-").join("|") ===
+        "Find|Delete|-|Paste|Share with" &&
+        menuItems()[2].getAttribute("role") === "separator" &&
+        menuItems()[3].getAttribute("aria-disabled") === "true");
+    // The icon slot keeps menu.css's 19px min-width; what the page's sheet adds
+    // is the height and the mask that draws the icon into it.
+    check("two lines carry an icon, drawn where the sheet says",
+        menuItems()[0].querySelector(".icon").className.includes("ks-icon-search") &&
+        getComputedStyle(menuItems()[0].querySelector(".icon")).height === "18px" &&
+        getComputedStyle(menuItems()[0].querySelector(".icon")).maskImage.startsWith("url("));
+    check("and the line that holds a menu of its own says so",
+        menuItems()[4].getAttribute("aria-haspopup") === "menu" &&
+        getComputedStyle(menuItems()[4].querySelector(".submenu-indicator")).display === "block");
+    check("it dropped below the button, not over it",
+        menuPanel().getBoundingClientRect().top >= menuButton.getBoundingClientRect().bottom);
+
+    menuItems()[1].dispatchEvent(new PointerEvent("pointerenter", {bubbles: true}));
+    check("pointing at a line makes it the active one", activeItem() === "Delete");
+
+    menuPanel().dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowDown", bubbles: true}));
+    check("the down arrow passes over the rule and the disabled line",
+        activeItem() === "Share with");
+    menuPanel().dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowUp", bubbles: true}));
+    menuPanel().dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowUp", bubbles: true}));
+    check("and the up arrow walks back", activeItem() === "Find");
+
+    menuPanel().dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+    check("Enter chooses it, and says so",
+        app.textContent.includes("edit=find") && last().includes("edit menu: find"));
+    check("the menu goes, and the button comes back up",
+        !menuUp() && menuButton.getAttribute("aria-expanded") === "false");
+
+    pressButton(menuButton);
+    menuItems()[1].dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("clicking a line chooses it too",
+        app.textContent.includes("edit=delete") && !menuUp());
+
+    // A line that holds a menu opens it to the side, and choosing in that one
+    // settles both.
+    pressButton(menuButton);
+    const submenu = () => [...document.querySelectorAll(".v-Menu")].find(
+        (m) => m.className.includes("submenu"),
+    );
+    check("the menu of its own is not showing until the line is pointed at",
+        submenu() === undefined || getComputedStyle(submenu()).visibility === "hidden");
+
+    menuItems()[4].dispatchEvent(new PointerEvent("pointerenter", {bubbles: true}));
+    check("pointing at it opens one",
+        submenu() !== undefined && getComputedStyle(submenu()).visibility === "visible");
+    check("beside the line, not over it",
+        submenu().getBoundingClientRect().left >=
+        menuItems()[4].getBoundingClientRect().right - 8);
+    check("with its own lines, icons and all",
+        [...submenu().querySelectorAll(".v-MenuItem")].map((li) => li.textContent.trim())
+            .join("|") === "Someone|Nobody");
+
+    submenu().querySelectorAll(".v-MenuItem")[0]
+        .dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("choosing in it reports through the button",
+        app.textContent.includes("edit=someone") && last().includes("edit menu: someone"));
+    check("and puts both menus away", !menuUp() &&
+        getComputedStyle(submenu()).visibility === "hidden");
+
+    pressButton(menuButton);
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+    check("and Escape puts the menu away with nothing chosen",
+        !menuUp() && app.textContent.includes("edit=someone"));
+
+    // The tooltip waits for the pointer to rest, and explains itself only then.
+    const tooltip = () => document.querySelector(".v-Tooltip");
+    hoverButton.dispatchEvent(new PointerEvent("pointerenter", {bubbles: true}));
+    check("a tooltip does not appear the moment the pointer arrives",
+        tooltip() === null || getComputedStyle(tooltip()).visibility === "hidden");
+
+    await new Promise((r) => setTimeout(r, 900));
+    check("but does once it has rested",
+        tooltip() !== null && getComputedStyle(tooltip()).visibility === "visible");
+    check("and says what it was given", tooltip().textContent.includes("once the pointer rests"));
+
+    hoverButton.dispatchEvent(new PointerEvent("pointerleave", {bubbles: true}));
+    check("leaving takes it away", getComputedStyle(tooltip()).visibility === "hidden");
+
+    // --- Box --------------------------------------------------------------------
+    const boxSection = section("Box");
+    const boxEl = boxSection.querySelector(".v-Box");
+    const boxTitle = boxEl.querySelector(".v-Box-title");
+
+    check("the box drew, with its title and a well for its children",
+        boxEl !== null && boxTitle.textContent === "Colours" &&
+        boxEl.querySelector(".v-Box-content") !== null);
+    check("the title straddles the top edge",
+        getComputedStyle(boxTitle).position === "absolute" &&
+        Math.abs(boxTitle.getBoundingClientRect().top +
+            boxTitle.getBoundingClientRect().height / 2 -
+            boxEl.getBoundingClientRect().top) < 2);
+    check("and the theme frames it",
+        getComputedStyle(boxEl).borderTopWidth === "1px");
+    check("what it holds is inside it",
+        boxEl.querySelectorAll(".cw-well").length === 2 &&
+        boxEl.querySelector(".v-CheckBox") !== null);
+
+    boxEl.querySelectorAll(".cw-well")[1].dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    const boxChooser = document.querySelectorAll(".ccp-root");
+    check("a control inside a box works as it does anywhere",
+        boxChooser.length > 0);
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+
+    // --- AccordionView ------------------------------------------------------------
+    const accordionBox = section("AccordionView");
+    const accordion = accordionBox.querySelector(".v-accordionPanel");
+    const panels = () => [...accordion.querySelectorAll(".v-accordionSection")];
+    const headerOf = (i) => panels()[i].querySelector(".header");
+    const openOnes = () =>
+        panels().filter((s) => s.className.includes("expanded"))
+            .map((s) => s.querySelector(".header span").textContent);
+    const shownHeight = (i) =>
+        Math.round(panels()[i].querySelector(".form").getBoundingClientRect().height);
+
+    check("the accordion drew a section per AccordionSection",
+        panels().length === 3 &&
+        panels().map((s) => s.querySelector(".header span").textContent).join("|") ===
+        "Delivery|Payment|Anything else");
+    check("a header says it is a button, and what it opens",
+        headerOf(0).getAttribute("role") === "button" &&
+        headerOf(0).getAttribute("tabindex") === "0" &&
+        headerOf(0).getAttribute("aria-controls") ===
+        panels()[0].querySelector(".form").getAttribute("id"));
+    check("the markup said which starts open",
+        openOnes().join("|") === "Delivery" &&
+        headerOf(0).getAttribute("aria-expanded") === "true");
+    check("and a shut section shows nothing", shownHeight(1) === 0);
+
+    accordionBox.scrollIntoView({block: "center"});
+    headerOf(1).dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("pressing a header opens that section", openOnes().join("|") === "Delivery|Payment");
+    check("which the page hears",
+        app.textContent.includes("sections=delivery payment") &&
+        last().includes("section payment: open"));
+    check("and more than one may be open at once", openOnes().length === 2);
+
+    headerOf(0).dispatchEvent(new KeyboardEvent("keydown", {key: " ", bubbles: true}));
+    check("the space bar shuts one too",
+        openOnes().join("|") === "Payment" && last().includes("section delivery: shut"));
+
+    accordionBox.querySelectorAll(".v-Button")[0]
+        .dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("Open all opens every section", openOnes().length === 3);
+    accordionBox.querySelectorAll(".v-Button")[1]
+        .dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("and Shut all shuts them", openOnes().length === 0 &&
+        app.textContent.includes("sections=none"));
+
+    // What is typed into a section is still there after it is shut and reopened.
+    accordionBox.querySelectorAll(".v-Button")[0]
+        .dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    const cardInput = panels()[1].querySelector("input");
+    typeInto(cardInput, "4242");
+    headerOf(1).dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    headerOf(1).dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    check("what was typed in a section survives it being shut",
+        panels()[1].querySelector("input") === cardInput && cardInput.value === "4242");
 
     // --- switching themes ---------------------------------------------------
     // The theme is a stylesheet swap: nothing is redrawn, so what proves it

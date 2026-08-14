@@ -23,7 +23,7 @@
 // and handing them their parent; in Mosaic the markup's nesting is that list
 // already, so the view reads the tree it was given rather than being told about
 // it a widget at a time.
-import {Component, coerceProps} from "mosaic";
+import {coerceProps, Component} from "mosaic";
 
 import OutlineItem from "./OutlineItem.js";
 import "./outline.css";
@@ -43,7 +43,7 @@ export default class OutlineView extends Component {
         this.expandedValues = new Set();
 
         /** Whether the markup's own `expanded` and `selected` have been read. */
-        this.seeded = false;
+        this.awakened = false;
     }
 
     // --- selection -----------------------------------------------------------
@@ -195,12 +195,14 @@ export default class OutlineView extends Component {
      * Read what the markup said about the rows, once: which start open and
      * which starts selected.
      *
-     * Deferred to the first draw rather than done in the constructor, because a
-     * component has no props until it is drawn.
+     * Left until the first drawing rather than done in the constructor, because
+     * a component has no props before then — and read once, because what is
+     * read here is state the view goes on to own: reading it again would shut a
+     * row the user had opened.
      */
-    seed() {
-        if (this.seeded) return;
-        this.seeded = true;
+    awake() {
+        if (this.awakened) return;
+        this.awakened = true;
 
         for (const row of this.allItems()) {
             if (row.props.expanded === true) this.expandedValues.add(row.value);
@@ -285,7 +287,7 @@ export default class OutlineView extends Component {
     }
 
     draw() {
-        this.seed();
+        this.awake();
 
         return (
             <div
