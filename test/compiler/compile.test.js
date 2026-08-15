@@ -314,3 +314,90 @@ test("the pairing goes by the page's name, not by any controller nearby", () => 
 
     expect(compiled).not.toContain("Controller");
 });
+
+// --- the theme ---------------------------------------------------------------
+//
+// A theme belongs to the application, not to any component: nothing in the
+// import graph names one, so the build has to link it in itself or every
+// `var(--…)` in the bundle resolves to nothing. Run against the real tool, since
+// what is being checked is what reaches the bundle.
+
+/**
+ * Build a whole application, given what its bootstrap says, and hand back the
+ * bundle.
+ */
+function bundle(main) {
+    const dir = tempDir();
+    fs.mkdirSync(path.join(dir, "src"));
+    fs.writeFileSync(
+        path.join(dir, "info.json"),
+        JSON.stringify({app_name: "Themed", version: "0.1.0", theme: "aristo", main_file: "src/main.js"}),
+    );
+    fs.writeFileSync(path.join(dir, "src", "main.js"), main);
+
+    const root = path.resolve(import.meta.dir, "../..");
+    const built = Bun.spawnSync(["bun", path.join(root, "bin", "mosaic.js"), "compile", dir, "--quiet"]);
+    expect(built.stderr.toString()).toBe("");
+    return fs.readFileSync(path.join(dir, "build", "app.js"), "utf8");
+}
+
+test("an application that draws none of the framework carries no theme", () => {
+    // Nothing here imports the framework at all, so its theme would be a
+    // stylesheet nothing reads.
+    const bundled = bundle('console.log("nothing but this");\n');
+
+    expect(bundled).not.toContain("--default-background-color:");
+});
+
+test("but one that draws with it carries the theme, without asking for it", () => {
+    // The application that used to come out with a bundle holding no custom
+    // properties whatever: it names a component, and nothing names the theme.
+    const bundled = bundle(
+        'import {Button} from "mosaic/frameworks/ui";\nconsole.log(Button);\n',
+    );
+
+    expect(bundled).toContain("--default-background-color:");
+    expect(bundled).toContain("data-mosaic-theme");
+});
+
+test("and in one that imports a component by its own path", () => {
+    // Imported past the index, which is the other way a theme went missing: the
+    // index is what re-exports it.
+    const bundled = bundle(
+        'import Button from "mosaic/frameworks/ui/controls/button/Button.js";\nconsole.log(Button);\n',
+    );
+
+    expect(bundled).toContain("--default-background-color:");
+});
+
+test("the theme is worn after the sheets it restyles, not before them", () => {
+    // Imports are evaluated in the order they are written, and the theme's
+    // <style> element is appended when its module runs. Linked at the top of the
+    // bootstrap it would land before every component's stylesheet and lose every
+    // argument of equal weight — which is the whole of what a theme does.
+    const dir = tempDir();
+    fs.mkdirSync(path.join(dir, "src"));
+    fs.writeFileSync(
+        path.join(dir, "info.json"),
+        JSON.stringify({app_name: "Ordered", version: "0.1.0", theme: "aristo", main_file: "src/main.js"}),
+    );
+    fs.writeFileSync(
+        path.join(dir, "src", "main.js"),
+        'import {Button} from "mosaic/frameworks/ui";\nconsole.log(Button);\n',
+    );
+
+    const root = path.resolve(import.meta.dir, "../..");
+    Bun.spawnSync(["bun", path.join(root, "bin", "mosaic.js"), "compile", dir, "--quiet", "--keep-modules"]);
+
+    const entry = fs.readFileSync(path.join(dir, "build", "src", "main.js"), "utf8");
+    expect(entry.indexOf("theme.js")).toBeGreaterThan(entry.indexOf("frameworks/ui"));
+});
+
+test("and is not doubled in one that reads the theme itself", () => {
+    const bundled = bundle(
+        'import {setTheme, theme} from "mosaic/frameworks/ui";\nconsole.log(setTheme, theme);\n',
+    );
+
+    const declarations = bundled.split("--default-background-color:").length - 1;
+    expect(declarations).toBe(1);
+});

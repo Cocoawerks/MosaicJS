@@ -1,12 +1,12 @@
-import {setTheme} from "mosaic/frameworks/ui";
+import { setTheme } from "mosaic/frameworks/ui";
 
 export default class AppController {
-    constructor() {
-        setTheme("aristo");
-        this.said = "nothing yet";
-    }
+  constructor() {
+    setTheme("aristo");
+    this.said = "nothing yet";
+  }
 
-    showColours(button) {
-        this.colours.show(button);
-    }
+  showColours(button) {
+    this.colours.show(button);
+  }
 }

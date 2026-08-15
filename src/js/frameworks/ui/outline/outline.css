@@ -86,11 +86,10 @@
 /* Label */
 .v-OutlineItem > .content > span.label {
     box-sizing: border-box;
-    border: 1px solid transparent;
     flex: 1;
-    margin-bottom: 1px;
     user-select: none;
     overflow: hidden;
+    margin-top: 1px;
     text-overflow: ellipsis;
 }
 

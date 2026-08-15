@@ -325,6 +325,7 @@
     --switch-knob-background: #fcfbfa;
     --switch-track-background: #e6e3e1;
     --tab-selected-foreground: #2b2928;
+    --tab-separator-color: transparent;
     --tabbar-background: #efedeb;
     --wizard-buttons-border: #e6e3e1;
     --secondary-foreground: #4a4441;
@@ -332,6 +333,7 @@
     --badge-background: #e6e3e1;
     --badge-foreground: #4a4441;
 }
+
 
 /* Hyperlinks, styled to match the Pop!_OS GTK theme. */
 a {

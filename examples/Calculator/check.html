@@ -6,227 +6,256 @@
      is the shipped application and not a reconstruction of it. -->
 
 <html lang="en">
-
-<head>
-    <meta charset="utf-8"/>
+  <head>
+    <meta charset="utf-8" />
     <title>Calculator browser check</title>
-</head>
+  </head>
 
-<body>
+  <body>
+    <div id="app"></div>
+    <pre id="results"></pre>
 
-<div id="app"></div>
-<pre id="results"></pre>
+    <script type="module" src="build/app.js"></script>
 
-<script type="module" src="build/app.js"></script>
-
-<script type="module">
-    const log = [];
-    let failed = 0;
-    const check = (name, cond) => {
+    <script type="module">
+      const log = [];
+      let failed = 0;
+      const check = (name, cond) => {
         log.push(`${cond ? "PASS" : "FAIL"}  ${name}`);
         if (!cond) failed++;
         document.querySelector("#results").textContent = log.join("\n");
-    };
+      };
 
-    window.addEventListener("unhandledrejection", (e) => {
+      window.addEventListener("unhandledrejection", (e) => {
         document.querySelector("#results").textContent =
-            log.join("\n") + `\nERROR  ${e.reason?.message ?? e.reason}`;
+          log.join("\n") + `\nERROR  ${e.reason?.message ?? e.reason}`;
         document.title = "verdict FAIL (threw)";
-    });
-    window.addEventListener("error", (e) => {
-        document.querySelector("#results").textContent = log.join("\n") + `\nERROR  ${e.message}`;
+      });
+      window.addEventListener("error", (e) => {
+        document.querySelector("#results").textContent =
+          log.join("\n") + `\nERROR  ${e.message}`;
         document.title = "verdict FAIL (threw)";
-    });
+      });
 
-    const app = document.querySelector("#app");
-    for (let waited = 0; app.childElementCount === 0 && waited < 10000; waited += 25) {
+      const app = document.querySelector("#app");
+      for (
+        let waited = 0;
+        app.childElementCount === 0 && waited < 10000;
+        waited += 25
+      ) {
         await new Promise((r) => setTimeout(r, 25));
-    }
-    check("the application loaded", app.childElementCount > 0);
+      }
+      check("the application loaded", app.childElementCount > 0);
 
-    // --- working the keys -----------------------------------------------------
+      // --- working the keys -----------------------------------------------------
 
-    const keys = () => [...app.querySelectorAll(".v-Button")];
-    const key = (label) => keys().find((b) => b.textContent.trim() === label);
-    const display = () => app.querySelector(".display").textContent;
-    const expression = () => app.querySelector(".expression").textContent;
-    const hint = () => app.querySelector(".hint").textContent;
+      const keys = () => [...app.querySelectorAll(".v-Button")];
+      const key = (label) => keys().find((b) => b.textContent.trim() === label);
+      const display = () => app.querySelector(".display").textContent;
+      const expression = () => app.querySelector(".expression").textContent;
+      const hint = () => app.querySelector(".hint").textContent;
 
-    /** Press keys, given as one string: "12+3=". */
-    const press = (sequence) => {
+      /** Press keys, given as one string: "12+3=". */
+      const press = (sequence) => {
         for (const label of sequence) {
-            const button = key(label);
-            if (!button) throw new Error(`no key reads ${label}`);
-            button.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+          const button = key(label);
+          if (!button) throw new Error(`no key reads ${label}`);
+          button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         }
-    };
+      };
 
-    check("every key drew", keys().length === 19);
-    check("it starts at nothing", display() === "0" && expression() === "");
+      check("every key drew", keys().length === 19);
+      check("it starts at nothing", display() === "0" && expression() === "");
 
-    // --- the four functions ---------------------------------------------------
+      // --- the four functions ---------------------------------------------------
 
-    const sums = [
+      const sums = [
         ["12+3=", "15"],
         ["7×8=", "56"],
         ["9−4=", "5"],
         ["8÷2=", "4"],
-        ["2+3×4=", "20"],          // four-function order: (2+3) then ×4
+        ["2+3×4=", "20"], // four-function order: (2+3) then ×4
         ["1.5+2.25=", "3.75"],
-        ["0.1+0.2=", "0.3"],       // and not 0.30000000000000004
-    ];
-    for (const [sequence, want] of sums) {
+        ["0.1+0.2=", "0.3"], // and not 0.30000000000000004
+      ];
+      for (const [sequence, want] of sums) {
         press("C");
         press(sequence);
         check(`${sequence.padEnd(10)} is ${want}`, display() === want);
-    }
+      }
 
-    // --- entering a number ----------------------------------------------------
+      // --- entering a number ----------------------------------------------------
 
-    press("C");
-    press("0");
-    press("5");
-    check("a leading zero is not kept", display() === "5");
+      press("C");
+      press("0");
+      press("5");
+      check("a leading zero is not kept", display() === "5");
 
-    press("C");
-    press(".");
-    check("a point on its own starts 0.", display() === "0.");
-    press("5");
-    press(".");
-    press("2");
-    check("and a number takes only one point", display() === "0.52");
+      press("C");
+      press(".");
+      check("a point on its own starts 0.", display() === "0.");
+      press("5");
+      press(".");
+      press("2");
+      check("and a number takes only one point", display() === "0.52");
 
-    press("C");
-    press("7");
-    press("±");
-    check("± turns it negative", display() === "-7");
-    press("±");
-    check("and back again", display() === "7");
+      press("C");
+      press("7");
+      press("±");
+      check("± turns it negative", display() === "-7");
+      press("±");
+      check("and back again", display() === "7");
 
-    // --- what the readout says ------------------------------------------------
+      // --- what the readout says ------------------------------------------------
 
-    press("C");
-    press("12+");
-    check("the sum so far is shown while the second number is typed",
-        expression() === "12 +");
-    press("3=");
-    check("and reads as a whole once it is settled", expression() === "12 + 3 =");
+      press("C");
+      press("12+");
+      check(
+        "the sum so far is shown while the second number is typed",
+        expression() === "12 +",
+      );
+      press("3=");
+      check(
+        "and reads as a whole once it is settled",
+        expression() === "12 + 3 =",
+      );
 
-    // --- per cent --------------------------------------------------------------
+      // --- per cent --------------------------------------------------------------
 
-    press("C");
-    press("50%");
-    check("% on its own is a hundredth", display() === "0.5");
+      press("C");
+      press("50%");
+      check("% on its own is a hundredth", display() === "0.5");
 
-    press("C");
-    press("200+10%");
-    check("% against a pending sum is a share of it", display() === "20");
-    press("=");
-    check("which then adds", display() === "220");
+      press("C");
+      press("200+10%");
+      check("% against a pending sum is a share of it", display() === "20");
+      press("=");
+      check("which then adds", display() === "220");
 
-    // --- what cannot be done ---------------------------------------------------
+      // --- what cannot be done ---------------------------------------------------
 
-    press("C");
-    press("8÷0=");
-    check("dividing by zero is refused", display() === "Error");
-    check("and says why", hint().includes("Nothing divides by zero"));
-    press("5");
-    check("and nothing works until it is cleared", display() === "Error");
-    press("C");
-    check("clearing brings it back", display() === "0" && hint().includes("Use the keys"));
+      press("C");
+      press("8÷0=");
+      check("dividing by zero is refused", display() === "Error");
+      check("and says why", hint().includes("Nothing divides by zero"));
+      press("5");
+      check("and nothing works until it is cleared", display() === "Error");
+      press("C");
+      check(
+        "clearing brings it back",
+        display() === "0" && hint().includes("Use the keys"),
+      );
 
-    // --- chaining --------------------------------------------------------------
+      // --- chaining --------------------------------------------------------------
 
-    press("C");
-    press("2+3+4=");
-    check("a running total settles as it goes", display() === "9");
+      press("C");
+      press("2+3+4=");
+      check("a running total settles as it goes", display() === "9");
 
-    press("C");
-    press("10−");
-    press("3");
-    press("×");
-    check("an operator settles what is pending first", display() === "7");
-    press("2=");
-    check("and carries on from there", display() === "14");
+      press("C");
+      press("10−");
+      press("3");
+      press("×");
+      check("an operator settles what is pending first", display() === "7");
+      press("2=");
+      check("and carries on from there", display() === "14");
 
-    // --- the keyboard ----------------------------------------------------------
-    // The page takes focus so it can hear the keyboard at all; a keydown is then
-    // the same press as the key on screen.
+      // --- the keyboard ----------------------------------------------------------
+      // The page takes focus so it can hear the keyboard at all; a keydown is then
+      // the same press as the key on screen.
 
-    const root = app.querySelector(".calculator");
-    check("the page can take focus", root.getAttribute("tabindex") === "0");
-    check("and has it, without anything being clicked first",
-        document.activeElement === root || root.contains(document.activeElement));
+      const root = app.querySelector(".calculator");
+      check("the page can take focus", root.getAttribute("tabindex") === "0");
+      check(
+        "and has it, without anything being clicked first",
+        document.activeElement === root ||
+          root.contains(document.activeElement),
+      );
 
-    const typeKey = (key) =>
-        root.dispatchEvent(new KeyboardEvent("keydown", {key, bubbles: true}));
-    const typeAll = (text) => {
+      const typeKey = (key) =>
+        root.dispatchEvent(
+          new KeyboardEvent("keydown", { key, bubbles: true }),
+        );
+      const typeAll = (text) => {
         for (const ch of text) typeKey(ch);
-    };
+      };
 
-    typeKey("Escape");
-    typeAll("12+34");
-    typeKey("Enter");
-    check("typing 12+34 and Enter is 46", display() === "46");
+      typeKey("Escape");
+      typeAll("12+34");
+      typeKey("Enter");
+      check("typing 12+34 and Enter is 46", display() === "46");
 
-    typeKey("Escape");
-    typeAll("7*8");
-    typeKey("Enter");
-    check("* is the × key", display() === "56");
+      typeKey("Escape");
+      typeAll("7*8");
+      typeKey("Enter");
+      check("* is the × key", display() === "56");
 
-    typeKey("Escape");
-    typeAll("100/4");
-    typeKey("=");
-    check("/ is the ÷ key, and = settles", display() === "25");
+      typeKey("Escape");
+      typeAll("100/4");
+      typeKey("=");
+      check("/ is the ÷ key, and = settles", display() === "25");
 
-    typeKey("Escape");
-    typeAll("123");
-    typeKey("Backspace");
-    check("Backspace takes the last digit back", display() === "12");
-    typeKey("Backspace");
-    typeKey("Backspace");
-    check("and stops at zero", display() === "0");
+      typeKey("Escape");
+      typeAll("123");
+      typeKey("Backspace");
+      check("Backspace takes the last digit back", display() === "12");
+      typeKey("Backspace");
+      typeKey("Backspace");
+      check("and stops at zero", display() === "0");
 
-    typeKey("Escape");
-    check("Escape clears", display() === "0" && expression() === "");
+      typeKey("Escape");
+      check("Escape clears", display() === "0" && expression() === "");
 
-    typeAll("5");
-    check("a key the page does not know is left alone",
-        (typeKey("q"), display() === "5"));
+      typeAll("5");
+      check(
+        "a key the page does not know is left alone",
+        (typeKey("q"), display() === "5"),
+      );
 
-    // --- the theme toggle -----------------------------------------------------
+      // --- the theme toggle -----------------------------------------------------
 
-    const bg = () => getComputedStyle(app.querySelector(".calculator")).backgroundColor;
-    const toggle = app.querySelector(".v-Switch");
-    const light = bg();
+      const bg = () =>
+        getComputedStyle(app.querySelector(".calculator")).backgroundColor;
+      const toggle = app.querySelector(".v-Switch");
+      const light = bg();
 
-    check("the page carries a toggle", toggle !== null);
-    const showing = display();
-    toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check(`flipping it wears the dark theme (${bg()})`, bg() !== light && bg() === "rgb(51, 51, 51)");
-    check("and what was on screen is untouched", display() === showing);
-    toggle.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("flipping it back returns to the light one", bg() === light);
+      check("the page carries a toggle", toggle !== null);
+      const showing = display();
+      toggle.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        `flipping it wears the dark theme (${bg()})`,
+        bg() !== light && bg() === "rgb(51, 51, 51)",
+      );
+      check("and what was on screen is untouched", display() === showing);
+      toggle.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check("flipping it back returns to the light one", bg() === light);
 
-    check("only the two themes are carried",
-        document.querySelectorAll("style[data-mosaic-theme]").length === 1);
+      check(
+        "only the two themes are carried",
+        document.querySelectorAll("style[data-mosaic-theme]").length === 1,
+      );
 
-    // --- the display does not scroll -------------------------------------------
+      // --- the display does not scroll -------------------------------------------
 
-    const readout = app.querySelector(".display");
-    check(`the display is clipped, not scrolled (overflow ${getComputedStyle(readout).overflowX}/${getComputedStyle(readout).overflowY})`,
+      const readout = app.querySelector(".display");
+      check(
+        `the display is clipped, not scrolled (overflow ${getComputedStyle(readout).overflowX}/${getComputedStyle(readout).overflowY})`,
         getComputedStyle(readout).overflowX === "hidden" &&
-        getComputedStyle(readout).overflowY === "hidden");
-    press("C");
-    press("9");
-    check("so nothing can scroll beside the number",
-        readout.scrollHeight <= readout.clientHeight && readout.scrollWidth <= readout.clientWidth);
+          getComputedStyle(readout).overflowY === "hidden",
+      );
+      press("C");
+      press("9");
+      check(
+        "so nothing can scroll beside the number",
+        readout.scrollHeight <= readout.clientHeight &&
+          readout.scrollWidth <= readout.clientWidth,
+      );
 
-    document.querySelector("#results").textContent = log.join("\n");
-    document.title =
-        failed === 0 ? `verdict PASS (${log.length} checks)` : `verdict FAIL (${failed} of ${log.length})`;
-</script>
-
-</body>
-
+      document.querySelector("#results").textContent = log.join("\n");
+      document.title =
+        failed === 0
+          ? `verdict PASS (${log.length} checks)`
+          : `verdict FAIL (${failed} of ${log.length})`;
+    </script>
+  </body>
 </html>

@@ -1,0 +1,367 @@
+/*
+ * Ported from GWT Mosaic: client/components/resources/snackbar/style.css.
+ *
+ * The class names are the Java version's — the themes in both repos carry rules
+ * for `.v-SnackBar`, `.v-SnackBar-content` and `.v-Toast` already, and they name
+ * what a snackbar *is* rather than what the component is called.
+ *
+ * Two kinds of selector reach out of this module and so are written `:global`:
+ * the close button, whose element is drawn by Button and carries Button's scope,
+ * and whatever an application puts inside a bar, which carries its own.
+ */
+
+/* --- the layer the bars stack on ------------------------------------------ */
+
+.v-SnackBar-container {
+    position: fixed;
+    z-index: 400;
+    padding: 0 15px 15px;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    /* Clipped: the layer is pinned to an edge and its bars slide in from off
+       screen, so anything reaching past it must not extend the page — a
+       scrollbar appearing mid-animation shifts the layout underneath. */
+    overflow: hidden;
+    /* The layer covers a corner of the page whether or not anything is up, so it
+       lets presses through; a bar itself takes them back. */
+    pointer-events: none;
+}
+
+.v-SnackBar-container > span {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0;
+}
+
+.v-SnackBar-container.top {
+    top: 0;
+}
+
+.v-SnackBar-container.bottom {
+    bottom: 0;
+}
+
+.v-SnackBar-container.left {
+    left: 0;
+    align-items: flex-start;
+}
+
+.v-SnackBar-container.right {
+    right: 0;
+    align-items: flex-end;
+}
+
+/* Pinned to both sides at once, which is what centres the stack. */
+.v-SnackBar-container.left.right {
+    align-items: center;
+}
+
+/* --- the bar -------------------------------------------------------------- */
+
+.v-SnackBar {
+    position: relative;
+    min-width: 50px;
+    min-height: 32px;
+    max-width: 600px;
+    margin: 10px auto;
+    border-radius: 4px;
+    pointer-events: all;
+    opacity: 0.97;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 5px;
+    border: 1px solid var(--default-border-color);
+    color: var(--default-foreground-color);
+    background-color: var(--default-background-color);
+}
+
+.v-SnackBar:focus {
+    outline: none;
+}
+
+/* --- coming and going ----------------------------------------------------- */
+
+/* Placed above where it belongs, or below it in a stack pinned to the bottom,
+   and then told to come in. */
+.v-SnackBar.v-SnackBar-enter {
+    transform: translateY(-60px);
+}
+
+.v-SnackBar-container.bottom > span > .v-SnackBar.v-SnackBar-enter {
+    transform: translateY(60px);
+}
+
+.v-SnackBar.v-SnackBar-appear {
+    transform: translateY(0);
+    transition-property: transform;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.54, 1.12, 0.38, 1.11);
+    transition-delay: 0ms;
+}
+
+.v-SnackBar.v-SnackBar-exit {
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 500ms;
+    pointer-events: none;
+}
+
+/* --- what it says --------------------------------------------------------- */
+
+.v-SnackBar > .v-SnackBar-content {
+    text-align: left;
+    min-height: 36px;
+    max-width: 600px;
+    font-size: 18px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    word-wrap: normal;
+    color: var(--default-foreground-color);
+}
+
+.v-SnackBar-content > div {
+    margin: 6px;
+    width: auto;
+    flex-grow: 1;
+    overflow: visible;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Whatever an application puts in a bar is its own, and carries its own scope. */
+.v-SnackBar-content :global(label) {
+    font-size: 16px;
+}
+
+.v-SnackBar-content > div > .icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    margin-left: -8px;
+    flex: none;
+}
+
+.v-SnackBar-content > div > .icon :global(svg) {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+    display: block;
+}
+
+/* --- the close button ----------------------------------------------------- */
+
+/* Plain: no border, and none of the raised face a theme gives a push button —
+   just the hover and press washes below. The element is Button's, so the
+   selectors reach it as any other module's would. */
+.v-SnackBar :global(.v-Button.close) {
+    margin-left: 10px;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    border: none;
+    color: var(--default-foreground-color);
+    fill: var(--default-foreground-color);
+}
+
+/* The glyph fills the icon box — an inline SVG has no intrinsic size, so
+   without this it collapses and the button looks empty. */
+.v-SnackBar :global(.v-Button.close .icon) {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    display: block;
+}
+
+.v-SnackBar :global(.v-Button.close .icon svg) {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.v-SnackBar :global(.v-Button.close:not(.is-active):not(.is-disabled):hover) {
+    background-color: color-mix(in srgb, var(--default-background-color), black 10%);
+}
+
+.v-SnackBar :global(.v-Button.close.is-active) {
+    background-color: color-mix(in srgb, var(--default-background-color), black 15%);
+}
+
+/* --- a toast -------------------------------------------------------------- */
+
+.v-Toast {
+    padding: 0 15px;
+    border: none;
+    min-height: unset;
+}
+
+.v-Toast .v-SnackBar-content > div > .icon {
+    margin: 0 6px 0 0;
+}
+
+.v-Toast .v-SnackBar-content > div > .icon :global(svg) {
+    width: 20px;
+    height: 20px;
+}
+
+/* --- intent --------------------------------------------------------------- */
+
+.v-SnackBar.intent,
+.v-SnackBar.intent > .v-SnackBar-content {
+    color: var(--snackbar-foreground);
+}
+
+/* What an application put in a bar is coloured for the page, not for a
+   saturated slab; lifted so it carries against one. A theme that tints its bars
+   instead turns this off. */
+.v-SnackBar.primary .v-SnackBar-content :global(*),
+.v-SnackBar.danger .v-SnackBar-content :global(*),
+.v-SnackBar.success .v-SnackBar-content :global(*),
+.v-SnackBar.warning .v-SnackBar-content :global(*),
+.v-SnackBar.info .v-SnackBar-content :global(*),
+.v-SnackBar.inverse .v-SnackBar-content :global(*) {
+    filter: brightness(1.15);
+}
+
+.v-SnackBar.primary {
+    background-color: var(--primary-background-color);
+    border-color: var(--primary-border-color);
+}
+
+.v-SnackBar.primary,
+.v-SnackBar.primary > .v-SnackBar-content {
+    color: var(--primary-foreground-color);
+}
+
+.v-SnackBar.primary :global(.v-Button.close) {
+    color: var(--primary-foreground-color);
+    fill: var(--primary-foreground-color);
+}
+
+.v-SnackBar.primary :global(.v-Button.close:not(.is-active):not(.is-disabled):hover) {
+    background-color: color-mix(in srgb, var(--primary-background-color), white 15%);
+}
+
+.v-SnackBar.primary :global(.v-Button.close.is-active) {
+    background-color: color-mix(in srgb, var(--primary-background-color), black 15%);
+}
+
+.v-SnackBar.danger {
+    background-color: var(--snackbar-danger-background);
+    border-color: var(--snackbar-danger-border);
+}
+
+.v-SnackBar.danger,
+.v-SnackBar.danger > .v-SnackBar-content {
+    color: var(--snackbar-foreground);
+}
+
+.v-SnackBar.danger :global(.v-Button.close) {
+    color: var(--snackbar-foreground);
+    fill: currentColor;
+}
+
+.v-SnackBar.danger :global(.v-Button.close:not(.is-active):not(.is-disabled):hover) {
+    background-color: color-mix(in srgb, var(--snackbar-danger-background), white 15%);
+}
+
+.v-SnackBar.danger :global(.v-Button.close.is-active) {
+    background-color: color-mix(in srgb, var(--snackbar-danger-background), black 15%);
+}
+
+.v-SnackBar.success {
+    background-color: var(--success-background-color);
+    border-color: var(--success-border-color);
+}
+
+.v-SnackBar.success,
+.v-SnackBar.success > .v-SnackBar-content {
+    color: var(--success-foreground-color);
+}
+
+.v-SnackBar.success :global(.v-Button.close) {
+    color: var(--success-foreground-color);
+    fill: var(--success-foreground-color);
+}
+
+.v-SnackBar.success :global(.v-Button.close:not(.is-active):not(.is-disabled):hover) {
+    background-color: color-mix(in srgb, var(--success-background-color), white 15%);
+}
+
+.v-SnackBar.success :global(.v-Button.close.is-active) {
+    background-color: color-mix(in srgb, var(--success-background-color), black 15%);
+}
+
+.v-SnackBar.warning {
+    background-color: var(--warning-background-color);
+    border-color: var(--warning-border-color);
+}
+
+.v-SnackBar.warning,
+.v-SnackBar.warning > .v-SnackBar-content {
+    color: var(--warning-foreground-color);
+}
+
+.v-SnackBar.warning :global(.v-Button.close) {
+    color: var(--warning-foreground-color);
+    fill: var(--warning-foreground-color);
+}
+
+.v-SnackBar.warning :global(.v-Button.close:not(.is-active):not(.is-disabled):hover) {
+    background-color: color-mix(in srgb, var(--warning-background-color), white 15%);
+}
+
+.v-SnackBar.warning :global(.v-Button.close.is-active) {
+    background-color: color-mix(in srgb, var(--warning-background-color), black 15%);
+}
+
+.v-SnackBar.info {
+    background-color: var(--info-background-color);
+    border-color: var(--info-border-color);
+}
+
+.v-SnackBar.info,
+.v-SnackBar.info > .v-SnackBar-content {
+    color: var(--info-foreground-color);
+}
+
+.v-SnackBar.info :global(.v-Button.close) {
+    color: var(--info-foreground-color);
+    fill: var(--info-foreground-color);
+}
+
+.v-SnackBar.info :global(.v-Button.close:not(.is-active):not(.is-disabled):hover) {
+    background-color: color-mix(in srgb, var(--info-background-color), white 15%);
+}
+
+.v-SnackBar.info :global(.v-Button.close.is-active) {
+    background-color: color-mix(in srgb, var(--info-background-color), black 15%);
+}
+
+.v-SnackBar.inverse {
+    background-color: var(--inverse-background-color);
+    border-color: var(--inverse-border-color);
+}
+
+.v-SnackBar.inverse,
+.v-SnackBar.inverse > .v-SnackBar-content {
+    color: var(--inverse-foreground-color);
+}
+
+.v-SnackBar.inverse :global(.v-Button.close) {
+    color: var(--inverse-foreground-color);
+    fill: var(--inverse-foreground-color);
+}
+
+.v-SnackBar.inverse :global(.v-Button.close:not(.is-active):not(.is-disabled):hover) {
+    background-color: color-mix(in srgb, var(--inverse-background-color), white 15%);
+}
+
+.v-SnackBar.inverse :global(.v-Button.close.is-active) {
+    background-color: color-mix(in srgb, var(--inverse-background-color), black 15%);
+}

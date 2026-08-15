@@ -6,105 +6,147 @@
      placement is measured and there is no layout outside a browser. -->
 
 <html lang="en">
-
-<head>
-    <meta charset="utf-8"/>
+  <head>
+    <meta charset="utf-8" />
     <title>PopOver browser check</title>
-</head>
+  </head>
 
-<body>
+  <body>
+    <div id="app"></div>
+    <pre id="results"></pre>
 
-<div id="app"></div>
-<pre id="results"></pre>
+    <script type="module" src="build/app.js"></script>
 
-<script type="module" src="build/app.js"></script>
-
-<script type="module">
-    const log = [];
-    let failed = 0;
-    const check = (name, cond) => {
+    <script type="module">
+      const log = [];
+      let failed = 0;
+      const check = (name, cond) => {
         log.push(`${cond ? "PASS" : "FAIL"}  ${name}`);
         if (!cond) failed++;
         document.querySelector("#results").textContent = log.join("\n");
-    };
+      };
 
-    window.addEventListener("error", (e) => {
-        document.querySelector("#results").textContent = log.join("\n") + `\nERROR  ${e.message}`;
+      window.addEventListener("error", (e) => {
+        document.querySelector("#results").textContent =
+          log.join("\n") + `\nERROR  ${e.message}`;
         document.title = "verdict FAIL (threw)";
-    });
+      });
 
-    const app = document.querySelector("#app");
-    for (let waited = 0; app.childElementCount === 0 && waited < 10000; waited += 25) {
+      const app = document.querySelector("#app");
+      for (
+        let waited = 0;
+        app.childElementCount === 0 && waited < 10000;
+        waited += 25
+      ) {
         await new Promise((r) => setTimeout(r, 25));
-    }
-    check("the application loaded", app.childElementCount > 0);
+      }
+      check("the application loaded", app.childElementCount > 0);
 
-    const popover = app.querySelector(".v-PopOver");
-    const button = app.querySelector(".v-Button");
-    const visible = () => getComputedStyle(popover).visibility === "visible";
-    const click = (el) => el.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    const inside = (text) =>
-        [...popover.querySelectorAll(".v-Button")].find((b) => b.textContent.trim() === text);
+      const popover = app.querySelector(".v-PopOver");
+      const button = app.querySelector(".v-Button");
+      const visible = () => getComputedStyle(popover).visibility === "visible";
+      const click = (el) =>
+        el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      const inside = (text) =>
+        [...popover.querySelectorAll(".v-Button")].find(
+          (b) => b.textContent.trim() === text,
+        );
 
-    // --- what it drew ---------------------------------------------------------
+      // --- what it drew ---------------------------------------------------------
 
-    check("the popover drew, from the page's own .mib", popover !== null);
-    check("with what that markup put in it", popover.querySelector("h3") !== null);
-    check("and its own controller's words in it",
-        popover.querySelector("h3").textContent === "Pick a colour");
-    check("it starts away", !visible());
-    check("and is out of the tab order while it is",
-        popover.hasAttribute("inert") && popover.getAttribute("aria-hidden") === "true");
+      check("the popover drew, from the page's own .mib", popover !== null);
+      check(
+        "with what that markup put in it",
+        popover.querySelector("h3") !== null,
+      );
+      check(
+        "and its own controller's words in it",
+        popover.querySelector("h3").textContent === "Pick a colour",
+      );
+      check("it starts away", !visible());
+      check(
+        "and is out of the tab order while it is",
+        popover.hasAttribute("inert") &&
+          popover.getAttribute("aria-hidden") === "true",
+      );
 
-    check("the callout points up at what it hangs from",
-        popover.querySelector("b").className.includes("PopOver-callout--b"));
+      check(
+        "the callout points up at what it hangs from",
+        popover.querySelector("b").className.includes("PopOver-callout--b"),
+      );
 
-    // --- where it lands -------------------------------------------------------
+      // --- where it lands -------------------------------------------------------
 
-    click(button);
-    check("clicking the page's button shows it", visible());
-    check("and it is in the tab order now",
-        !popover.hasAttribute("inert") && !popover.hasAttribute("aria-hidden"));
+      click(button);
+      check("clicking the page's button shows it", visible());
+      check(
+        "and it is in the tab order now",
+        !popover.hasAttribute("inert") && !popover.hasAttribute("aria-hidden"),
+      );
 
-    const seat = () => {
+      const seat = () => {
         const b = button.getBoundingClientRect();
         const p = popover.getBoundingClientRect();
-        return {gap: Math.round(p.top - b.bottom), off: Math.abs((p.left + p.width / 2) - (b.left + b.width / 2))};
-    };
-    check(`it sits below the button, clear of it (gap ${seat().gap}px)`, seat().gap === 9);
-    check(`and centred on it (off by ${seat().off.toFixed(1)}px)`, seat().off < 2);
+        return {
+          gap: Math.round(p.top - b.bottom),
+          off: Math.abs(p.left + p.width / 2 - (b.left + b.width / 2)),
+        };
+      };
+      check(
+        `it sits below the button, clear of it (gap ${seat().gap}px)`,
+        seat().gap === 9,
+      );
+      check(
+        `and centred on it (off by ${seat().off.toFixed(1)}px)`,
+        seat().off < 2,
+      );
 
-    // --- whose controller answers ---------------------------------------------
+      // --- whose controller answers ---------------------------------------------
 
-    click(inside("Red"));
-    check("a button inside reaches the popover's own controller",
-        popover.querySelector("p").textContent === "chosen: Red");
-    check("and a press inside leaves it up", visible());
+      click(inside("Red"));
+      check(
+        "a button inside reaches the popover's own controller",
+        popover.querySelector("p").textContent === "chosen: Red",
+      );
+      check("and a press inside leaves it up", visible());
 
-    // --- what puts it away ----------------------------------------------------
+      // --- what puts it away ----------------------------------------------------
 
-    document.body.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true, clientX: 5, clientY: 400}));
-    check("a press outside puts it away", !visible());
+      document.body.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          clientX: 5,
+          clientY: 400,
+        }),
+      );
+      check("a press outside puts it away", !visible());
 
-    click(button);
-    check("it opens again", visible());
-    check("with what it had in it kept",
-        popover.querySelector("p").textContent === "chosen: Red");
+      click(button);
+      check("it opens again", visible());
+      check(
+        "with what it had in it kept",
+        popover.querySelector("p").textContent === "chosen: Red",
+      );
 
-    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
-    check("Escape puts it away", !visible());
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      check("Escape puts it away", !visible());
 
-    // A press on the button it hangs from must not close it on the press and
-    // open it again on the click.
-    button.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true}));
-    click(button);
-    check("and the button it hangs from opens it rather than fighting itself", visible());
+      // A press on the button it hangs from must not close it on the press and
+      // open it again on the click.
+      button.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      click(button);
+      check(
+        "and the button it hangs from opens it rather than fighting itself",
+        visible(),
+      );
 
-    document.querySelector("#results").textContent = log.join("\n");
-    document.title =
-        failed === 0 ? `verdict PASS (${log.length} checks)` : `verdict FAIL (${failed} of ${log.length})`;
-</script>
-
-</body>
-
+      document.querySelector("#results").textContent = log.join("\n");
+      document.title =
+        failed === 0
+          ? `verdict PASS (${log.length} checks)`
+          : `verdict FAIL (${failed} of ${log.length})`;
+    </script>
+  </body>
 </html>

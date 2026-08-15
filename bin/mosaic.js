@@ -73,6 +73,8 @@ const SRC = "src";
 const FRAMEWORKS = "frameworks";
 /** Where a framework keeps its themes, one stylesheet each. */
 const THEMES = "themes";
+/** The module a framework's themes are written into, beside its index. */
+const THEME_MODULE = "theme.js";
 /** Where a framework keeps its icons, beside the themes that style them. */
 const ICONS = `${THEMES}/icons`;
 
@@ -486,7 +488,12 @@ function vendorRuntime(config, app) {
               // component nothing uses. The stylesheet is only wanted by the
               // component, so dropping the two together is right: saying so
               // here is what lets an application carry only what it imports.
-              sideEffects: false,
+              //
+              // A theme is the exception. It is nobody's component and every
+              // component's colours, so it is named here as the one thing whose
+              // side effect — writing the stylesheet into the document — must
+              // survive an application that never mentions it.
+              sideEffects: [`./${FRAMEWORKS}/*/theme.js`],
           },
           null,
           2,
@@ -570,7 +577,7 @@ function writeFrameworkTheme(config, framework, options = {}) {
         ).trimEnd(),
     ]);
 
-    const module = path.join(framework.outdir, "theme.js");
+    const module = path.join(framework.outdir, THEME_MODULE);
     const entries = sheets
         .map(([name, css]) => `  ${JSON.stringify(name)}: ${JSON.stringify(css)},`)
         .join("\n");
@@ -617,6 +624,71 @@ setTheme(theme);
     fs.mkdirSync(path.dirname(module), {recursive: true});
     fs.writeFileSync(module, source);
     return {name: chosen, module, bundled};
+}
+
+/**
+ * Whether anything outside `framework` imports it — a component named in
+ * markup, a class imported in JavaScript, anything at all.
+ *
+ * A theme is only worth carrying for an application that draws with the
+ * framework it belongs to; one that draws none of it would be given a
+ * stylesheet nothing reads. The framework's own modules are not asked, since
+ * they import each other whatever the application does.
+ *
+ * @param {object} framework The framework and where it was compiled to.
+ * @param {string[]} written Every module this build compiled.
+ * @param {string[]} own The ones that are the framework's.
+ * @returns {boolean} Whether the application reaches into it.
+ */
+function usesFramework(framework, written, own) {
+    const theirs = new Set(own);
+
+    return written.some((module) => {
+        if (theirs.has(module)) return false;
+        // The specifier as an import would write it: `"mosaic/frameworks/ui"`
+        // for the index, and `"mosaic/frameworks/ui/…"` for a component reached
+        // by its own path, which is how a compiled tag names one.
+        return fs.readFileSync(module, "utf8").includes(`"${framework.specifier}`);
+    });
+}
+
+/**
+ * Make the application's bootstrap import the themes, so the bundle carries the
+ * one `info.json` named whether or not a line of the application ever mentions
+ * it.
+ *
+ * A theme belongs to the application, not to any component: no component names
+ * one, which is what leaves nothing in the import graph to pull it in. An
+ * application that imports the framework index for a Button would carry the
+ * theme through it; one that imports a component by its own path, or that draws
+ * nothing from the framework at all and only reads the theme's custom properties
+ * in its own stylesheet, would end up with every `var(--…)` resolving to
+ * nothing — the components would draw, colourless.
+ *
+ * The bootstrap is compiled output, rewritten on every build, so this is a line
+ * added to a generated file rather than to anything anyone wrote.
+ *
+ * @param {object} app The application's layout, whose `entry` is the bootstrap.
+ * @param {string[]} specifiers The theme modules to import, one per framework.
+ */
+function linkThemes(app, specifiers) {
+    if (specifiers.length === 0) return;
+
+    const imports = specifiers
+        .map((specifier) => `import ${JSON.stringify(specifier)};`)
+        .join("\n");
+
+    // Written last, not first. Imports are evaluated in the order they are
+    // written, and a theme has to be worn after the stylesheets it restyles:
+    // two rules of equal weight are settled by which came later. Linking it at
+    // the top of the bootstrap puts its <style> element before every
+    // component's, and the theme loses every argument it was meant to win.
+    const source = fs.readFileSync(app.entry, "utf8");
+    fs.writeFileSync(
+        app.entry,
+        `${source.trimEnd()}\n\n// The theme ${CONFIG} named, linked in by mosaic: a theme is the\n` +
+            `// application's, and nothing imports it by hand.\n${imports}\n`,
+    );
 }
 
 /**
@@ -737,6 +809,7 @@ async function compile(config, app, args) {
 
     // Each framework's index is written from what actually compiled into it, so
     // adding a component to the tree is all it takes to export one.
+    const themes = [];
     for (const framework of frameworks) {
         const modules = written.filter(
             (dest) => path.resolve(dest).startsWith(path.resolve(framework.outdir) + path.sep),
@@ -748,7 +821,12 @@ async function compile(config, app, args) {
               (theme.bundled.length > 1 ? ` (+${theme.bundled.length - 1} to switch to)` : "")
             : "";
         log(`    ${framework.specifier} -> ${index}  (${modules.length} modules${themed})`);
+        if (theme && usesFramework(framework, written, modules)) {
+            themes.push(`${framework.specifier}/${THEME_MODULE}`);
+        }
     }
+
+    linkThemes(app, themes);
 
   log("==> bundling");
   // `throw: false`: a thrown build carries only "Bundle failed", and the

@@ -54,6 +54,21 @@
     display: block;
     color: #656666;
     user-select: none;
+    box-sizing: border-box;
+}
+
+/* A line between one tab and the next, and none after the last. The tabs are
+   the bar's last children — the indicator is its first — so :last-child is the
+   last tab.
+   Every tab carries the border and the last one wears it in nothing: a border
+   only some of them had would leave that one a pixel wider than the rest, since
+   the bar shares out what is left after borders. */
+.v-TabButton {
+    border-right: 1px solid transparent;
+}
+
+.v-TabButton:not(:last-child) {
+    border-right-color: var(--tab-separator-color, var(--group-border-color));
 }
 
 .v-TabButton.is-selected {

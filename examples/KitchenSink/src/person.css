@@ -1,0 +1,26 @@
+/*
+ * The KitchenSink's own row. A list draws the line a row sits on; what is on
+ * that line is the row's business, which is this.
+ */
+.person {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 7px 10px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--group-border-color);
+  font-size: 0.9rem;
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.worth {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: var(--secondary-foreground);
+}

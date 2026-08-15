@@ -315,6 +315,7 @@
     --switch-knob-background: #ffffff;
     --switch-track-background: #dddddd;
     --tab-selected-foreground: #2a2a2a;
+    --tab-separator-color: #d8d8d8;
     --tabbar-background: #ebebeb;
     --wizard-buttons-border: #dddddd;
     --secondary-foreground: #444444;
@@ -322,6 +323,7 @@
     --badge-background: #dddddd;
     --badge-foreground: #444444;
 }
+
 
 /* Hyperlinks. */
 a {

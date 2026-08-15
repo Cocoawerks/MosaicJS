@@ -6,1539 +6,2073 @@
      checked is the shipped application and not a reconstruction of it. -->
 
 <html lang="en">
-<head>
-    <meta charset="utf-8"/>
+  <head>
+    <meta charset="utf-8" />
     <!-- Source Sans 3, the page's own face. The stack keeps system-ui behind it,
          so the page still reads properly before the font arrives — or at all,
          if it cannot be fetched. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..700;1,300..700&amp;display=swap"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..700;1,300..700&amp;display=swap"
+    />
     <title>KitchenSink browser check</title>
-</head>
+  </head>
 
-<body>
-<div id="app"></div>
-<pre id="results"></pre>
+  <body>
+    <div id="app"></div>
+    <pre id="results"></pre>
 
-<script type="module" src="build/app.js"></script>
+    <script type="module" src="build/app.js"></script>
 
-<script type="module">
-    const log = [];
-    let failed = 0;
-    const check = (name, cond) => {
+    <script type="module">
+      const log = [];
+      let failed = 0;
+      const check = (name, cond) => {
         log.push(`${cond ? "PASS" : "FAIL"}  ${name}`);
         if (!cond) failed++;
         // Written as they go: a page that stops halfway still says how far it got.
         document.querySelector("#results").textContent = log.join("\n");
-    };
+      };
 
-    // A module's failure arrives as a rejection, not as an error event, and a
-    // page that dies quietly reads as a page that never finished.
-    window.addEventListener("unhandledrejection", (e) => {
+      // A module's failure arrives as a rejection, not as an error event, and a
+      // page that dies quietly reads as a page that never finished.
+      window.addEventListener("unhandledrejection", (e) => {
         document.querySelector("#results").textContent =
-            log.join("\n") + `\nERROR  ${e.reason?.message ?? e.reason}`;
+          log.join("\n") + `\nERROR  ${e.reason?.message ?? e.reason}`;
         document.title = "verdict FAIL (threw)";
-    });
+      });
 
-    window.addEventListener("error", (e) => {
+      window.addEventListener("error", (e) => {
         // Whatever ran before the throw is worth seeing: it says how far it got.
         document.querySelector("#results").textContent = log.join("\n");
         document.querySelector("#results").textContent +=
-            `\nERROR  ${e.message}`;
+          `\nERROR  ${e.message}`;
         document.title = "verdict FAIL (threw)";
-    });
+      });
 
-    const app = document.querySelector("#app");
-    const guard = (where, fn) => {
+      const app = document.querySelector("#app");
+      const guard = (where, fn) => {
         try {
-            return fn();
+          return fn();
         } catch (e) {
-            log.push(`ERROR  at ${where}: ${e.message}`);
-            failed++;
-            return null;
+          log.push(`ERROR  at ${where}: ${e.message}`);
+          failed++;
+          return null;
         }
-    };
+      };
 
-    // The bundle is a separate request, and on a cold cache it can still be in
-    // flight when this module runs. Wait for the application to be there rather
-    // than assuming it: a page that checks an app it loads has to.
-    let waited = 0;
-    for (; app.childElementCount === 0 && waited < 10000; waited += 25) {
+      // The bundle is a separate request, and on a cold cache it can still be in
+      // flight when this module runs. Wait for the application to be there rather
+      // than assuming it: a page that checks an app it loads has to.
+      let waited = 0;
+      for (; app.childElementCount === 0 && waited < 10000; waited += 25) {
         await new Promise((r) => setTimeout(r, 25));
-    }
-    check("the application loaded", app.childElementCount > 0);
-    const click = (el) =>
-        el.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    const buttons = () => [...app.querySelectorAll("button")];
-    // A Switch carries role="checkbox" too — it is the same control worn
-    // differently — so the checkboxes are picked out by their own class.
-    const boxes = () => [...section("CheckBox").querySelectorAll(".v-CheckBox")];
-    // styleName classes stay literal; the scope hash rides along beside them.
-    const last = () => app.querySelector("p.last").textContent;
-    const labelled = (text) =>
+      }
+      check("the application loaded", app.childElementCount > 0);
+      const click = (el) =>
+        el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      const buttons = () => [...app.querySelectorAll("button")];
+      // A Switch carries role="checkbox" too — it is the same control worn
+      // differently — so the checkboxes are picked out by their own class.
+      const boxes = () => [
+        ...section("CheckBox").querySelectorAll(".v-CheckBox"),
+      ];
+      // styleName classes stay literal; the scope hash rides along beside them.
+      const last = () => app.querySelector("p.last").textContent;
+      const labelled = (text) =>
         buttons().find((b) => b.textContent.trim() === text);
 
-    // --- it drew ------------------------------------------------------------
-    check("the page mounted", app.querySelector("h1") !== null);
-    // The section a control belongs to, found by its heading: the page has grown
-    // enough that "every button" no longer means one thing.
-    const section = (heading) =>
+      // --- it drew ------------------------------------------------------------
+      check("the page mounted", app.querySelector("h1") !== null);
+      // The section a control belongs to, found by its heading: the page has grown
+      // enough that "every button" no longer means one thing.
+      const section = (heading) =>
         [...app.querySelectorAll("section")].find(
-            (s) => s.querySelector("h2").textContent === heading,
+          (s) => s.querySelector("h2").textContent === heading,
         );
-    const intentButtons = () => [
+      const intentButtons = () => [
         ...section("Button").querySelectorAll(".v-Button"),
-    ];
+      ];
 
-    check(
+      check(
         "every intent drew a button, and the two stateful ones",
         intentButtons().length === 9,
-    );
-    check("both checkboxes drew", boxes().length === 2);
-    check(
+      );
+      check("both checkboxes drew", boxes().length === 2);
+      check(
         "the theme reached the controls",
         getComputedStyle(buttons()[1]).backgroundColor !== "rgba(0, 0, 0, 0)",
-    );
+      );
 
-    // --- a control reports what it did --------------------------------------
-    click(labelled("primary"));
-    check(
+      // --- a control reports what it did --------------------------------------
+      click(labelled("primary"));
+      check(
         "clicking a button is reported",
         last().includes("clicked the primary button"),
-    );
+      );
 
-    // --- CheckBox -----------------------------------------------------------
-    const remember = boxes()[0];
-    check(
+      // --- CheckBox -----------------------------------------------------------
+      const remember = boxes()[0];
+      check(
         "a checkbox starts unchecked",
         remember.getAttribute("aria-checked") === "false",
-    );
+      );
 
-    click(remember);
-    check(
+      click(remember);
+      check(
         "clicking it checked it",
         remember.getAttribute("aria-checked") === "true",
-    );
-    check(
+      );
+      check(
         "and the controller heard the new value",
         last().includes("remember me: true"),
-    );
-    check(
+      );
+      check(
         "which the summary line shows too",
         app.textContent.includes("remember=true"),
-    );
+      );
 
-    // --- TextField and SearchField ------------------------------------------
-    const nameField = guard("name field", () =>
+      // --- TextField and SearchField ------------------------------------------
+      const nameField = guard("name field", () =>
         app.querySelector(".v-Text:not(.v-Search) input"),
-    );
-    const searchBox = guard("search box", () =>
+      );
+      const searchBox = guard("search box", () =>
         app.querySelector(".v-Search"),
-    );
-    const searchInput = searchBox.querySelector("input");
-    const clearButton = searchBox.querySelector(".Search-reset");
-    const typeInto = (input, text) => {
+      );
+      const searchInput = searchBox.querySelector("input");
+      const clearButton = searchBox.querySelector(".Search-reset");
+      const typeInto = (input, text) => {
         input.value = text;
-        input.dispatchEvent(new Event("input", {bubbles: true}));
-    };
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      };
 
-    check("the field drew its input", nameField instanceof HTMLInputElement);
-    check(
+      check("the field drew its input", nameField instanceof HTMLInputElement);
+      check(
         "with the placeholder it was given",
         nameField.placeholder === "Your name",
-    );
-    const fieldBox = getComputedStyle(nameField.closest(".v-Text"));
-    check(
+      );
+      const fieldBox = getComputedStyle(nameField.closest(".v-Text"));
+      check(
         `and its box is drawn by the stylesheet (border ${fieldBox.borderTopWidth} ${fieldBox.borderTopStyle}, radius ${fieldBox.borderRadius}, bg ${fieldBox.backgroundColor})`,
         fieldBox.borderRadius === "3px",
-    );
+      );
 
-    check(
+      check(
         "the text sits off the field's left edge",
         parseFloat(getComputedStyle(nameField).paddingLeft) >= 8,
-    );
-    check(
+      );
+      check(
         "and the search field is left out of that — its magnifier already does it",
         parseFloat(getComputedStyle(searchInput).paddingLeft) < 8,
-    );
+      );
 
-    // The GWT template always emits the two icon slots, and `.v-Text .icon`
-    // is what gives them their margin. They are drawn by TextBase so that
-    // rule — which belongs to TextBase's stylesheet — can reach them.
-    const prefixSlot = nameField
+      // The GWT template always emits the two icon slots, and `.v-Text .icon`
+      // is what gives them their margin. They are drawn by TextBase so that
+      // rule — which belongs to TextBase's stylesheet — can reach them.
+      const prefixSlot = nameField
         .closest(".v-Text")
         .querySelector("i.icon.prefix");
-    const suffixSlot = nameField
+      const suffixSlot = nameField
         .closest(".v-Text")
         .querySelector("i.icon.suffix");
-    check(
+      check(
         "the field drew the icon slots the GWT template emits",
         prefixSlot !== null && suffixSlot !== null,
-    );
-    check(
+      );
+      check(
         `and the sheet reaches them (margin ${prefixSlot && getComputedStyle(prefixSlot).margin}, font-size ${prefixSlot && getComputedStyle(prefixSlot).fontSize})`,
         prefixSlot &&
-        getComputedStyle(prefixSlot).margin === "2px" &&
-        getComputedStyle(prefixSlot).fontSize === "18px",
-    );
-    check(
+          getComputedStyle(prefixSlot).margin === "2px" &&
+          getComputedStyle(prefixSlot).fontSize === "18px",
+      );
+      check(
         "the input takes the rest of the row",
         getComputedStyle(nameField).flexGrow === "1",
-    );
+      );
 
-    typeInto(nameField, "Mosaic");
-    check(
+      typeInto(nameField, "Mosaic");
+      check(
         "typing reaches the controller",
         app.textContent.includes("name=Mosaic"),
-    );
+      );
 
-    nameField.dispatchEvent(
-        new KeyboardEvent("keypress", {key: "Enter", bubbles: true}),
-    );
-    check("Enter is the action", last().includes("name submitted: Mosaic"));
+      nameField.dispatchEvent(
+        new KeyboardEvent("keypress", { key: "Enter", bubbles: true }),
+      );
+      check("Enter is the action", last().includes("name submitted: Mosaic"));
 
-    check(
+      check(
         "the search field drew its magnifier",
         searchBox.querySelector(".search svg") instanceof SVGElement,
-    );
-    check(
+      );
+      check(
         "and its clear button is out of the way while it is empty",
         getComputedStyle(clearButton).display === "none",
-    );
+      );
 
-    typeInto(searchInput, "combo");
-    check(
+      typeInto(searchInput, "combo");
+      check(
         "searching reaches the controller",
         app.textContent.includes("search=combo"),
-    );
-    check(
+      );
+      check(
         "and the clear button appears",
         getComputedStyle(clearButton).display === "block",
-    );
+      );
 
-    click(clearButton);
-    check("clearing empties the field", searchInput.value === "");
-    check("and says so", last().includes("search cleared"));
+      click(clearButton);
+      check("clearing empties the field", searchInput.value === "");
+      check("and says so", last().includes("search cleared"));
 
-    // --- MaskedTextField ------------------------------------------------------
-    const phoneBox = section("MaskedTextField").querySelector(".v-Text");
-    const phoneInput = phoneBox.querySelector("input");
-    const phoneView = () => phoneInput.value;
+      // --- MaskedTextField ------------------------------------------------------
+      const phoneBox = section("MaskedTextField").querySelector(".v-Text");
+      const phoneInput = phoneBox.querySelector("input");
+      const phoneView = () => phoneInput.value;
 
-    phoneInput.focus();
-    check(
+      phoneInput.focus();
+      check(
         "focusing a masked field lays the mask out",
         phoneView() === "(___) ___-____",
-    );
+      );
 
-    // Typing is the input event the field listens for; the buffer decides
-    // what actually lands, so the letters are refused and the digits are
-    // placed around the mask's own punctuation.
-    typeInto(phoneInput, "(2a16) 555x0134");
-    check(
+      // Typing is the input event the field listens for; the buffer decides
+      // what actually lands, so the letters are refused and the digits are
+      // placed around the mask's own punctuation.
+      typeInto(phoneInput, "(2a16) 555x0134");
+      check(
         `digits fill the slots and letters are refused (${phoneView()})`,
         phoneView() === "(216) 555-0134",
-    );
-    // The change is reported once the keystroke has been dealt with, as the
-    // Java version's scheduleDeferred does, so it is not there yet.
-    await Promise.resolve();
-    check(
+      );
+      // The change is reported once the keystroke has been dealt with, as the
+      // Java version's scheduleDeferred does, so it is not there yet.
+      await Promise.resolve();
+      check(
         "the controller is told the digits without the mask",
         app.textContent.includes("digits=2165550134"),
-    );
+      );
 
-    // Backspace closes the gap rather than leaving a hole in the middle.
-    phoneInput.setSelectionRange(14, 14);
-    phoneInput.dispatchEvent(
-        new KeyboardEvent("keydown", {key: "Backspace", bubbles: true}),
-    );
-    check(
+      // Backspace closes the gap rather than leaving a hole in the middle.
+      phoneInput.setSelectionRange(14, 14);
+      phoneInput.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Backspace", bubbles: true }),
+      );
+      check(
         `backspace takes the last digit back (${phoneView()})`,
         phoneView() === "(216) 555-013_",
-    );
+      );
 
-    // A mask is not content: a field holding only its own punctuation is blank.
-    const phoneControl = phoneBox.__ibView ?? null;
-    typeInto(phoneInput, "");
-    phoneInput.blur();
-    check(
+      // A mask is not content: a field holding only its own punctuation is blank.
+      const phoneControl = phoneBox.__ibView ?? null;
+      typeInto(phoneInput, "");
+      phoneInput.blur();
+      check(
         "and a field with nothing typed into it is emptied on leaving",
         phoneView() === "",
-    );
+      );
 
-    // --- LoadingButton and LoadingIndicator ---------------------------------
-    const saveButton = labelled("Save");
-    const loadingIndicator = app.querySelector(".v-LoadingIndicator");
-    const spinner = () =>
+      // --- LoadingButton and LoadingIndicator ---------------------------------
+      const saveButton = labelled("Save");
+      const loadingIndicator = app.querySelector(".v-LoadingIndicator");
+      const spinner = () =>
         loadingIndicator.querySelector(".v-LoadingIndicator-spinner");
 
-    check(
+      check(
         "the loading button keeps the icon slot for its loader",
         saveButton.querySelector(".button-loader") !== null &&
-        !saveButton.classList.contains("noIcon"),
-    );
-    check(
+          !saveButton.classList.contains("noIcon"),
+      );
+      check(
         "which is not shown before there is anything to wait for",
         getComputedStyle(saveButton.querySelector(".button-loader"))
-            .visibility === "hidden",
-    );
-    check(
+          .visibility === "hidden",
+      );
+      check(
         "the indicator spins",
         getComputedStyle(spinner()).animationName === "v-loading-spin",
-    );
+      );
 
-    // Pressing it is what starts the work: the controller is told to save and
-    // says when it is done, but it never puts the button into loading itself.
-    click(saveButton);
-    check(
+      // Pressing it is what starts the work: the controller is told to save and
+      // says when it is done, but it never puts the button into loading itself.
+      click(saveButton);
+      check(
         "saving disables the button",
         saveButton.getAttribute("aria-disabled") === "true",
-    );
-    check(
+      );
+      check(
         "and says it is busy",
         saveButton.getAttribute("aria-busy") === "true",
-    );
-    check(
+      );
+      check(
         "the indicator says what is happening",
         loadingIndicator.textContent.includes("Saving"),
-    );
+      );
 
-    await new Promise((r) => setTimeout(r, 600));
-    check(
+      await new Promise((r) => setTimeout(r, 600));
+      check(
         "a wait that runs on shows the spinner",
         getComputedStyle(saveButton.querySelector(".button-loader"))
-            .visibility === "visible",
-    );
-    const loaderRect = saveButton
+          .visibility === "visible",
+      );
+      const loaderRect = saveButton
         .querySelector(".button-loader")
         .getBoundingClientRect();
-    const labelEl = saveButton.querySelector(".label");
-    check(
+      const labelEl = saveButton.querySelector(".label");
+      check(
         `and it is drawn to the left of the label (${loaderRect.width}px wide)`,
         loaderRect.width > 0 &&
-        loaderRect.left < labelEl.getBoundingClientRect().left,
-    );
+          loaderRect.left < labelEl.getBoundingClientRect().left,
+      );
 
-    await new Promise((r) => setTimeout(r, 800));
-    check(
+      await new Promise((r) => setTimeout(r, 800));
+      check(
         "the button comes back when the work is done",
         saveButton.getAttribute("aria-disabled") === null,
-    );
-    check("the indicator ticks", spinner().classList.contains("is-complete"));
-    check(
+      );
+      check("the indicator ticks", spinner().classList.contains("is-complete"));
+      check(
         "and stops spinning",
         getComputedStyle(spinner()).animationName === "none",
-    );
-    check("and says so", loadingIndicator.textContent.includes("Saved"));
+      );
+      check("and says so", loadingIndicator.textContent.includes("Saved"));
 
-    // --- Switch -------------------------------------------------------------
-    const switches = () => [...section("Switch").querySelectorAll(".v-Switch")];
-    const wifi = switches()[0];
+      // --- Switch -------------------------------------------------------------
+      const switches = () => [
+        ...section("Switch").querySelectorAll(".v-Switch"),
+      ];
+      const wifi = switches()[0];
 
-    check("both switches drew", switches().length === 2);
-    check(
+      check("both switches drew", switches().length === 2);
+      check(
         "the one told to be on is on",
         wifi.getAttribute("aria-checked") === "true",
-    );
-    check(
+      );
+      check(
         "its state is on the root, which is what slides the knob",
         wifi.classList.contains("checked"),
-    );
-    check(
+      );
+      check(
         "the track is drawn by its stylesheet",
         getComputedStyle(wifi.querySelector(".indicator")).borderRadius ===
-        "28px",
-    );
+          "28px",
+      );
 
-    click(wifi);
-    check(
+      click(wifi);
+      check(
         "clicking flipped it",
         switches()[0].getAttribute("aria-checked") === "false",
-    );
-    check("and the controller heard it", last().includes("wi-fi: false"));
-    check(
+      );
+      check("and the controller heard it", last().includes("wi-fi: false"));
+      check(
         "which the summary line shows",
         app.textContent.includes("wifi=false"),
-    );
+      );
 
-    // --- RadioGroup ---------------------------------------------------------
-    const group = app.querySelector('[role="radiogroup"]');
-    const radios = () => [...group.querySelectorAll('[role="radio"]')];
-    const chosenRadio = () =>
+      // --- RadioGroup ---------------------------------------------------------
+      const group = app.querySelector('[role="radiogroup"]');
+      const radios = () => [...group.querySelectorAll('[role="radio"]')];
+      const chosenRadio = () =>
         radios().findIndex((r) => r.getAttribute("aria-checked") === "true");
 
-    check("the group drew an option per Radio", radios().length === 4);
-    check("and starts on the one it was given", chosenRadio() === 1);
-    check(
+      check("the group drew an option per Radio", radios().length === 4);
+      check("and starts on the one it was given", chosenRadio() === 1);
+      check(
         "a group is one tab stop",
         radios().filter((r) => r.getAttribute("tabindex") === "0").length === 1,
-    );
-    check(
+      );
+      check(
         "the chosen option's dot is drawn by the stylesheet",
         getComputedStyle(radios()[1].querySelector(".indicator"))
-            .borderRadius === "50%",
-    );
+          .borderRadius === "50%",
+      );
 
-    click(radios()[2]);
-    check("clicking an option chooses it", chosenRadio() === 2);
-    check(
+      click(radios()[2]);
+      check("clicking an option chooses it", chosenRadio() === 2);
+      check(
         "and only one stays chosen",
         radios().filter((r) => r.getAttribute("aria-checked") === "true")
-            .length === 1,
-    );
-    check("the controller heard which", last().includes("size: large"));
+          .length === 1,
+      );
+      check("the controller heard which", last().includes("size: large"));
 
-    group.dispatchEvent(
-        new KeyboardEvent("keydown", {key: "ArrowUp", bubbles: true}),
-    );
-    check("the arrow keys move the choice", chosenRadio() === 1);
-    group.dispatchEvent(
-        new KeyboardEvent("keydown", {key: "ArrowDown", bubbles: true}),
-    );
-    group.dispatchEvent(
-        new KeyboardEvent("keydown", {key: "ArrowDown", bubbles: true}),
-    );
-    check(
+      group.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }),
+      );
+      check("the arrow keys move the choice", chosenRadio() === 1);
+      group.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
+      group.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
+      check(
         "and skip a disabled option rather than landing on it",
         chosenRadio() === 2,
-    );
+      );
 
-    // --- ComboBox -----------------------------------------------------------
-    // By id: the toolbar's theme combo is a listbox too, and comes first.
-    const select = app.querySelector("#colour-combo");
-    const combo = select.parentElement;
+      // --- ComboBox -----------------------------------------------------------
+      // By id: the toolbar's theme combo is a listbox too, and comes first.
+      const select = app.querySelector("#colour-combo");
+      const combo = select.parentElement;
 
-    check("the combo drew a native select", select !== null);
-    check("with an entry per Option", select.options.length === 4);
-    check("a disabled entry says so", select.options[3].disabled === true);
-    check(
+      check("the combo drew a native select", select !== null);
+      check("with an entry per Option", select.options.length === 4);
+      check("a disabled entry says so", select.options[3].disabled === true);
+      check(
         "and it drew its own chevron",
         combo.querySelector(".chevron svg") !== null,
-    );
-    check(
+      );
+      check(
         "the frame is drawn by the theme",
         getComputedStyle(combo).borderTopWidth === "1px",
-    );
+      );
 
-    select.value = "blue";
-    select.dispatchEvent(new Event("change", {bubbles: true}));
-    check(
+      select.value = "blue";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      check(
         "choosing an entry reaches the controller",
         last().includes("colour: blue"),
-    );
-    check(
+      );
+      check(
         "which the summary line shows",
         app.textContent.includes("colour=blue"),
-    );
+      );
 
-    // --- Slider ---------------------------------------------------------------
-    const sliderBox = section("Slider and RangeSlider");
-    const slider = sliderBox.querySelector(".v-Slider");
-    const sliderHandle = slider.querySelector(".handle");
-    const range = slider.querySelector(".range");
-    const press = (el, key) =>
-        el.dispatchEvent(new KeyboardEvent("keydown", {key, bubbles: true}));
+      // --- Slider ---------------------------------------------------------------
+      const sliderBox = section("Slider and RangeSlider");
+      const slider = sliderBox.querySelector(".v-Slider");
+      const sliderHandle = slider.querySelector(".handle");
+      const range = slider.querySelector(".range");
+      const press = (el, key) =>
+        el.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
 
-    check(
+      check(
         "the slider drew a track, a filled range and a knob",
         slider !== null && range !== null && sliderHandle !== null,
-    );
-    check(
+      );
+      check(
         "the knob is placed along the track for its value",
         parseFloat(sliderHandle.style.left) > 0,
-    );
-    check(
+      );
+      check(
         "and the filled range reaches it",
         parseFloat(range.style.width) > 0,
-    );
-    check(
+      );
+      check(
         "the knob says what it is worth",
         sliderHandle.getAttribute("aria-valuenow") === "40" &&
-        sliderHandle.getAttribute("aria-valuemax") === "100",
-    );
+          sliderHandle.getAttribute("aria-valuemax") === "100",
+      );
 
-    const wasAt = parseFloat(sliderHandle.style.left);
-    press(sliderHandle, "ArrowRight");
-    check(
+      const wasAt = parseFloat(sliderHandle.style.left);
+      press(sliderHandle, "ArrowRight");
+      check(
         "an arrow key moves it a step, and the controller hears",
         sliderHandle.getAttribute("aria-valuenow") === "45" &&
-        app.textContent.includes("volume=45"),
-    );
-    check("and the knob moved with it", parseFloat(sliderHandle.style.left) > wasAt);
-    check(
+          app.textContent.includes("volume=45"),
+      );
+      check(
+        "and the knob moved with it",
+        parseFloat(sliderHandle.style.left) > wasAt,
+      );
+      check(
         "the bar below follows the slider",
-        section("ProgressBar").querySelector(".v-ProgressBar > div").style.width ===
-        "45%",
-    );
+        section("ProgressBar").querySelector(".v-ProgressBar > div").style
+          .width === "45%",
+      );
 
-    // The knob is a focusable div, so the browser rings it in black unless the
-    // sheet says otherwise. What should show is the theme's ring, and only
-    // once it is focused — which is a class the slider puts on, as
-    // SliderHandle.onFocus does in Java.
-    check(
+      // The knob is a focusable div, so the browser rings it in black unless the
+      // sheet says otherwise. What should show is the theme's ring, and only
+      // once it is focused — which is a class the slider puts on, as
+      // SliderHandle.onFocus does in Java.
+      check(
         "the knob wears no ring until it is focused",
         !sliderHandle.classList.contains("is-focused") &&
-        getComputedStyle(sliderHandle).outlineStyle === "none",
-    );
+          getComputedStyle(sliderHandle).outlineStyle === "none",
+      );
 
-    sliderHandle.focus();
-    const focusedKnob = slider.querySelector(".handle");
-    const ring = getComputedStyle(focusedKnob);
-    check(
+      sliderHandle.focus();
+      const focusedKnob = slider.querySelector(".handle");
+      const ring = getComputedStyle(focusedKnob);
+      check(
         `focusing it draws the theme's ring, not the browser's black one (${ring.outlineColor} ${ring.outlineStyle} ${ring.outlineWidth})`,
         focusedKnob.classList.contains("is-focused") &&
-        ring.outlineStyle === "solid" &&
-        ring.outlineWidth === "3px" &&
-        ring.outlineColor !== "rgb(0, 0, 0)",
-    );
+          ring.outlineStyle === "solid" &&
+          ring.outlineWidth === "3px" &&
+          ring.outlineColor !== "rgb(0, 0, 0)",
+      );
 
-    focusedKnob.blur();
-    check(
+      focusedKnob.blur();
+      check(
         "and it goes again when focus leaves",
         !slider.querySelector(".handle").classList.contains("is-focused"),
-    );
+      );
 
-    // Dragging a knob is not a reason to ring it. A press must not hand it
-    // focus at all — tabbing is what does that.
-    const knobNow = () => slider.querySelector(".handle");
-    knobNow().dispatchEvent(
-        new PointerEvent("pointerdown", {bubbles: true, button: 0, clientX: 40}),
-    );
-    check(
+      // Dragging a knob is not a reason to ring it. A press must not hand it
+      // focus at all — tabbing is what does that.
+      const knobNow = () => slider.querySelector(".handle");
+      knobNow().dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          clientX: 40,
+        }),
+      );
+      check(
         "a press does not hand the knob focus",
         document.activeElement !== knobNow(),
-    );
-    check(
+      );
+      check(
         "and leaves it unringed",
         !knobNow().classList.contains("is-focused") &&
-        getComputedStyle(knobNow()).outlineStyle === "none",
-    );
-    knobNow().dispatchEvent(
-        new PointerEvent("pointerup", {bubbles: true, button: 0}),
-    );
+          getComputedStyle(knobNow()).outlineStyle === "none",
+      );
+      knobNow().dispatchEvent(
+        new PointerEvent("pointerup", { bubbles: true, button: 0 }),
+      );
 
-    // --- RangeSlider ------------------------------------------------------------
-    const rangeSlider = sliderBox.querySelectorAll(".v-Slider")[1];
-    const knobs = [...rangeSlider.querySelectorAll(".handle")];
-    check("a range slider drew two knobs", knobs.length === 2);
-    check(
+      // --- RangeSlider ------------------------------------------------------------
+      const rangeSlider = sliderBox.querySelectorAll(".v-Slider")[1];
+      const knobs = [...rangeSlider.querySelectorAll(".handle")];
+      check("a range slider drew two knobs", knobs.length === 2);
+      check(
         "each holding one end of the span",
         knobs[0].getAttribute("aria-valuenow") === "20" &&
-        knobs[1].getAttribute("aria-valuenow") === "80",
-    );
-    check(
+          knobs[1].getAttribute("aria-valuenow") === "80",
+      );
+      check(
         "and each is bounded by the other, not by the track",
         knobs[0].getAttribute("aria-valuemax") === "80" &&
-        knobs[1].getAttribute("aria-valuemin") === "20",
-    );
+          knobs[1].getAttribute("aria-valuemin") === "20",
+      );
 
-    // The near knob is walked up against the far one; it must stop there.
-    for (let i = 0; i < 70; i++) press(knobs[0], "ArrowRight");
-    check(
+      // The near knob is walked up against the far one; it must stop there.
+      for (let i = 0; i < 70; i++) press(knobs[0], "ArrowRight");
+      check(
         `the two cannot cross (${knobs[0].getAttribute("aria-valuenow")} vs ${knobs[1].getAttribute("aria-valuenow")})`,
         Number(knobs[0].getAttribute("aria-valuenow")) === 80,
-    );
-    check("which the controller was told", app.textContent.includes("price=80–80"));
+      );
+      check(
+        "which the controller was told",
+        app.textContent.includes("price=80–80"),
+      );
 
-    // --- SpinButton -------------------------------------------------------------
-    const spin = section("SpinButton").querySelector(".v-SpinButton");
-    const spinField = spin.querySelector("input");
-    const spinButtons = [...spin.querySelectorAll(".v-Button")];
-    const spinValue = () => spin.getAttribute("aria-valuenow");
+      // --- SpinButton -------------------------------------------------------------
+      const spin = section("SpinButton").querySelector(".v-SpinButton");
+      const spinField = spin.querySelector("input");
+      const spinButtons = [...spin.querySelectorAll(".v-Button")];
+      const spinValue = () => spin.getAttribute("aria-valuenow");
 
-    check("a spin button drew a field and two steps", spinButtons.length === 2);
-    check("reading the value it was given", spinField.value === "3");
-    check(
+      check(
+        "a spin button drew a field and two steps",
+        spinButtons.length === 2,
+      );
+      check("reading the value it was given", spinField.value === "3");
+      check(
         "the steps carry the theme's icons",
         spinButtons.every((b) => b.querySelector(".icon svg") !== null),
-    );
+      );
 
-    const pressFully = (el) => {
-        el.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true, button: 0, pointerId: 1}));
-        el.dispatchEvent(new PointerEvent("pointerup", {bubbles: true, button: 0, pointerId: 1}));
-        el.dispatchEvent(new MouseEvent("click", {bubbles: true, button: 0}));
-    };
-    // dispatchEvent ignores layout; a real click has to hit the element. Ask
-    // the document what is actually at the middle of each step button.
-    // dispatchEvent ignores layout, so a step button could be covered or of no
-    // size and every check here would still pass while a real click missed
-    // it. Ask the document what is actually at the middle of each one.
-    spin.scrollIntoView({block: "center"});
-    check(
+      const pressFully = (el) => {
+        el.dispatchEvent(
+          new PointerEvent("pointerdown", {
+            bubbles: true,
+            button: 0,
+            pointerId: 1,
+          }),
+        );
+        el.dispatchEvent(
+          new PointerEvent("pointerup", {
+            bubbles: true,
+            button: 0,
+            pointerId: 1,
+          }),
+        );
+        el.dispatchEvent(new MouseEvent("click", { bubbles: true, button: 0 }));
+      };
+      // dispatchEvent ignores layout; a real click has to hit the element. Ask
+      // the document what is actually at the middle of each step button.
+      // dispatchEvent ignores layout, so a step button could be covered or of no
+      // size and every check here would still pass while a real click missed
+      // it. Ask the document what is actually at the middle of each one.
+      spin.scrollIntoView({ block: "center" });
+      check(
         "a real click would land on each step button",
         spinButtons.every((b) => {
-            const r = b.getBoundingClientRect();
-            if (r.width === 0 || r.height === 0) return false;
-            const at = document.elementFromPoint(
-                r.left + r.width / 2,
-                r.top + r.height / 2,
-            );
-            return at !== null && b.contains(at);
+          const r = b.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) return false;
+          const at = document.elementFromPoint(
+            r.left + r.width / 2,
+            r.top + r.height / 2,
+          );
+          return at !== null && b.contains(at);
         }),
-    );
+      );
 
-    // The click a real press becomes is only delivered if what was pressed is
-    // still there at release. A redraw that rebuilds the icon under the
-    // pointer — which is what a press on a Button sets off — takes the click
-    // with it, and the button does nothing. Clicking its corner still worked,
-    // which is how this was found.
-    const stepIcon = spinButtons[1].querySelector("svg");
-    spinButtons[1].dispatchEvent(
-        new PointerEvent("pointerdown", {bubbles: true, button: 0, pointerId: 1}),
-    );
-    check(
+      // The click a real press becomes is only delivered if what was pressed is
+      // still there at release. A redraw that rebuilds the icon under the
+      // pointer — which is what a press on a Button sets off — takes the click
+      // with it, and the button does nothing. Clicking its corner still worked,
+      // which is how this was found.
+      const stepIcon = spinButtons[1].querySelector("svg");
+      spinButtons[1].dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          pointerId: 1,
+        }),
+      );
+      check(
         "a press does not rebuild the icon under the pointer",
         spinButtons[1].querySelector("svg") === stepIcon &&
-        document.contains(stepIcon),
-    );
-    spinButtons[1].dispatchEvent(
-        new PointerEvent("pointerup", {bubbles: true, button: 0, pointerId: 1}),
-    );
+          document.contains(stepIcon),
+      );
+      spinButtons[1].dispatchEvent(
+        new PointerEvent("pointerup", {
+          bubbles: true,
+          button: 0,
+          pointerId: 1,
+        }),
+      );
 
-    // And the full sequence a real press sends, not just a bare click.
-    const pressed = [spinValue()];
-    for (let i = 0; i < 2; i++) {
+      // And the full sequence a real press sends, not just a bare click.
+      const pressed = [spinValue()];
+      for (let i = 0; i < 2; i++) {
         pressFully(spin.querySelectorAll(".v-Button")[1]);
         pressed.push(spinValue() + "/" + spin.querySelector("input").value);
-    }
-    check(
+      }
+      check(
         `pointerdown, pointerup and click step it and the field follows (${pressed.join(" ")})`,
         spinValue() === "5" && spin.querySelector("input").value === "5",
-    );
-    while (Number(spinValue()) > 3) click(spin.querySelectorAll(".v-Button")[0]);
+      );
+      while (Number(spinValue()) > 3)
+        click(spin.querySelectorAll(".v-Button")[0]);
 
-    click(spinButtons[1]);
-    check(
+      click(spinButtons[1]);
+      check(
         "stepping up raises it and reports",
         spinValue() === "4" && app.textContent.includes("quantity=4"),
-    );
-    click(spinButtons[0]);
-    check("stepping down lowers it again", spinValue() === "3");
+      );
+      click(spinButtons[0]);
+      check("stepping down lowers it again", spinValue() === "3");
 
-    press(spinField, "ArrowUp");
-    check("and the arrow keys step it too", spinValue() === "4");
+      press(spinField, "ArrowUp");
+      check("and the arrow keys step it too", spinValue() === "4");
 
-    // The step buttons switch themselves off at the end they cannot pass.
-    for (let i = 0; i < 10; i++) click(spinButtons[1]);
-    check(`it stops at its maximum (${spinValue()})`, spinValue() === "10");
-    check(
+      // The step buttons switch themselves off at the end they cannot pass.
+      for (let i = 0; i < 10; i++) click(spinButtons[1]);
+      check(`it stops at its maximum (${spinValue()})`, spinValue() === "10");
+      check(
         "and the step it cannot take is disabled",
         spinButtons[1].getAttribute("aria-disabled") === "true" &&
-        spinButtons[0].getAttribute("aria-disabled") === null,
-    );
-    for (let i = 0; i < 12; i++) click(spinButtons[0]);
-    check(`down to its minimum (${spinValue()})`, spinValue() === "0");
-    check(
+          spinButtons[0].getAttribute("aria-disabled") === null,
+      );
+      for (let i = 0; i < 12; i++) click(spinButtons[0]);
+      check(`down to its minimum (${spinValue()})`, spinValue() === "0");
+      check(
         "where the other one switches off instead",
         spinButtons[0].getAttribute("aria-disabled") === "true" &&
-        spinButtons[1].getAttribute("aria-disabled") === null,
-    );
+          spinButtons[1].getAttribute("aria-disabled") === null,
+      );
 
-    // --- ProgressBar ------------------------------------------------------------
-    const bars = [...section("ProgressBar").querySelectorAll(".v-ProgressBar")];
-    check("both bars drew", bars.length === 2);
-    check(
+      // --- ProgressBar ------------------------------------------------------------
+      const bars = [
+        ...section("ProgressBar").querySelectorAll(".v-ProgressBar"),
+      ];
+      check("both bars drew", bars.length === 2);
+      check(
         "a bar under way says so, and how far",
         bars[0].classList.contains("progress") &&
-        bars[0].getAttribute("aria-valuenow") === "45",
-    );
-    // Pop fills with its accent, not the green primary: the theme sets no
-    // --switch-checked-background, so the bar fell back to
-    // --primary-background-color and was the only filled thing on the page
-    // wearing the green while the slider beside it was teal.
-    const setTheme = (name) => {
+          bars[0].getAttribute("aria-valuenow") === "45",
+      );
+      // Pop fills with its accent, not the green primary: the theme sets no
+      // --switch-checked-background, so the bar fell back to
+      // --primary-background-color and was the only filled thing on the page
+      // wearing the green while the slider beside it was teal.
+      const setTheme = (name) => {
         const sel = app.querySelector("#theme-combo");
         sel.value = name;
-        sel.dispatchEvent(new Event("change", {bubbles: true}));
-    };
-    const fillIn = (name) => {
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      };
+      const fillIn = (name) => {
         setTheme(name);
         const style = getComputedStyle(document.documentElement);
         return {
-            bar: getComputedStyle(bars[0].querySelector("div")).backgroundColor,
-            range: getComputedStyle(slider.querySelector(".range")).backgroundColor,
-            accent: style.getPropertyValue("--accent-color").trim(),
-            primary: style.getPropertyValue("--primary-background-color").trim(),
+          bar: getComputedStyle(bars[0].querySelector("div")).backgroundColor,
+          range: getComputedStyle(slider.querySelector(".range"))
+            .backgroundColor,
+          accent: style.getPropertyValue("--accent-color").trim(),
+          primary: style.getPropertyValue("--primary-background-color").trim(),
         };
-    };
+      };
 
-    const popFill = fillIn("pop");
-    check(
+      const popFill = fillIn("pop");
+      check(
         `pop fills the bar with its accent, not its green primary (${popFill.bar})`,
         popFill.bar === "rgb(95, 168, 182)" && popFill.bar === popFill.range,
-    );
+      );
 
-    // The other two are untouched: each already set the variable itself.
-    const aristoFill = fillIn("aristo");
-    check(
+      // The other two are untouched: each already set the variable itself.
+      const aristoFill = fillIn("aristo");
+      check(
         `aristo's bar is unchanged by that (${aristoFill.bar})`,
         aristoFill.bar === "rgb(103, 155, 182)",
-    );
-    setTheme("aristo");
+      );
+      setTheme("aristo");
 
-    check(
+      check(
         "an indeterminate one sweeps instead, and claims no value",
         bars[1].classList.contains("indeterminate") &&
-        bars[1].getAttribute("aria-valuenow") === null &&
-        getComputedStyle(bars[1].querySelector("div")).animationName ===
-        "indeterminateAnimation",
-    );
+          bars[1].getAttribute("aria-valuenow") === null &&
+          getComputedStyle(bars[1].querySelector("div")).animationName ===
+            "indeterminateAnimation",
+      );
 
-    // --- OutlineView ------------------------------------------------------------
-    const outlineBox = section("OutlineView");
-    const outline = outlineBox.querySelector(".v-OutlineView");
-    const outlineRows = () => [...outline.querySelectorAll("li")];
-    const rowNamed = (text) =>
-        outlineRows().find((li) => li.querySelector(".label").textContent === text);
-    // A row is on screen only when nothing above it is shut. A shut row's rows
-    // still have a height of their own — they are clipped, not removed — so
-    // what settles it is the `.collapse` above them, which the sheet gives no
-    // height to at all.
-    const onScreen = (li) => {
-        for (let n = li.parentElement; n && n !== outline; n = n.parentElement) {
-            if (n.classList.contains("collapse") && n.offsetHeight === 0) return false;
+      // --- OutlineView ------------------------------------------------------------
+      const outlineBox = section("OutlineView");
+      const outline = outlineBox.querySelector(".v-OutlineView");
+      const outlineRows = () => [...outline.querySelectorAll("li")];
+      const rowNamed = (text) =>
+        outlineRows().find(
+          (li) => li.querySelector(".label").textContent === text,
+        );
+      // A row is on screen only when nothing above it is shut. A shut row's rows
+      // still have a height of their own — they are clipped, not removed — so
+      // what settles it is the `.collapse` above them, which the sheet gives no
+      // height to at all.
+      const onScreen = (li) => {
+        for (
+          let n = li.parentElement;
+          n && n !== outline;
+          n = n.parentElement
+        ) {
+          if (n.classList.contains("collapse") && n.offsetHeight === 0)
+            return false;
         }
         return true;
-    };
-    const readable = () =>
-        outlineRows().filter(onScreen).map((li) => li.querySelector(".label").textContent);
-    const outlineButton = (text) =>
+      };
+      const readable = () =>
+        outlineRows()
+          .filter(onScreen)
+          .map((li) => li.querySelector(".label").textContent);
+      const outlineButton = (text) =>
         [...outlineBox.querySelectorAll(".v-Button")].find(
-            (b) => b.textContent.trim() === text,
+          (b) => b.textContent.trim() === text,
         );
 
-    check("the tree drew, with a row per OutlineItem", outlineRows().length === 7);
-    check("it is the tab stop, not the rows in it",
+      check(
+        "the tree drew, with a row per OutlineItem",
+        outlineRows().length === 7,
+      );
+      check(
+        "it is the tab stop, not the rows in it",
         outline.getAttribute("tabindex") === "0" &&
-        outlineRows().every((li) => li.getAttribute("tabindex") === null));
-    check("and says what it is", outline.getAttribute("role") === "tree" &&
-        rowNamed("Mail").getAttribute("role") === "treeitem");
+          outlineRows().every((li) => li.getAttribute("tabindex") === null),
+      );
+      check(
+        "and says what it is",
+        outline.getAttribute("role") === "tree" &&
+          rowNamed("Mail").getAttribute("role") === "treeitem",
+      );
 
-    check("the markup said which row starts open",
-        readable().join() === "Mail,Inbox,Sent,Files,Trash");
-    check("and which starts selected",
-        rowNamed("Inbox").className.includes("selected"));
+      check(
+        "the markup said which row starts open",
+        readable().join() === "Mail,Inbox,Sent,Files,Trash",
+      );
+      check(
+        "and which starts selected",
+        rowNamed("Inbox").className.includes("selected"),
+      );
 
-    check("only a row with something under it is expandable",
+      check(
+        "only a row with something under it is expandable",
         rowNamed("Mail").className.includes("expandable") &&
-        !rowNamed("Trash").className.includes("expandable"));
+          !rowNamed("Trash").className.includes("expandable"),
+      );
 
-    // The chevron opens a row. It is the theme that turns it, so this is what
-    // the reader actually sees rather than what the class list says.
-    const chevronOf = (li) => li.querySelector(".toggle");
-    check("a shut row's chevron points along the row",
-        getComputedStyle(chevronOf(rowNamed("Files"))).transform === "none");
-    check("and an open one's is turned to point down",
-        getComputedStyle(chevronOf(rowNamed("Mail"))).transform !== "none");
+      // The chevron opens a row. It is the theme that turns it, so this is what
+      // the reader actually sees rather than what the class list says.
+      const chevronOf = (li) => li.querySelector(".toggle");
+      check(
+        "a shut row's chevron points along the row",
+        getComputedStyle(chevronOf(rowNamed("Files"))).transform === "none",
+      );
+      check(
+        "and an open one's is turned to point down",
+        getComputedStyle(chevronOf(rowNamed("Mail"))).transform !== "none",
+      );
 
-    chevronOf(rowNamed("Files")).dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("clicking a chevron opens its row", readable().includes("Work"));
-    check("without selecting it", app.textContent.includes("place=inbox"));
+      chevronOf(rowNamed("Files")).dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      check("clicking a chevron opens its row", readable().includes("Work"));
+      check("without selecting it", app.textContent.includes("place=inbox"));
 
-    chevronOf(rowNamed("Files")).dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("and clicking it again shuts it", !readable().includes("Work"));
+      chevronOf(rowNamed("Files")).dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      check("and clicking it again shuts it", !readable().includes("Work"));
 
-    rowNamed("Sent").dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("clicking a row selects it", last().includes("place: sent"));
-    check("which the summary line shows", app.textContent.includes("place=sent"));
-    check("and only it wears the selection",
+      rowNamed("Sent").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      check("clicking a row selects it", last().includes("place: sent"));
+      check(
+        "which the summary line shows",
+        app.textContent.includes("place=sent"),
+      );
+      check(
+        "and only it wears the selection",
         rowNamed("Sent").className.includes("selected") &&
-        !rowNamed("Inbox").className.includes("selected"));
-    check("the theme paints the selected row",
-        getComputedStyle(rowNamed("Sent").querySelector(".content")).backgroundColor !==
-        getComputedStyle(rowNamed("Inbox").querySelector(".content")).backgroundColor);
+          !rowNamed("Inbox").className.includes("selected"),
+      );
+      check(
+        "the theme paints the selected row",
+        getComputedStyle(rowNamed("Sent").querySelector(".content"))
+          .backgroundColor !==
+          getComputedStyle(rowNamed("Inbox").querySelector(".content"))
+            .backgroundColor,
+      );
 
-    // The keyboard: the tree has focus, and the arrows move through what can be
-    // seen — Sent is shut, so below it is Files and not "This year".
-    outline.focus();
-    const type = (key) =>
-        outline.dispatchEvent(new KeyboardEvent("keydown", {key, bubbles: true}));
+      // The keyboard: the tree has focus, and the arrows move through what can be
+      // seen — Sent is shut, so below it is Files and not "This year".
+      outline.focus();
+      const type = (key) =>
+        outline.dispatchEvent(
+          new KeyboardEvent("keydown", { key, bubbles: true }),
+        );
 
-    type("ArrowDown");
-    check("the down arrow moves to the next row on screen",
-        app.textContent.includes("place=files"));
-    type("ArrowUp");
-    check("and the up arrow moves back", app.textContent.includes("place=sent"));
+      type("ArrowDown");
+      check(
+        "the down arrow moves to the next row on screen",
+        app.textContent.includes("place=files"),
+      );
+      type("ArrowUp");
+      check(
+        "and the up arrow moves back",
+        app.textContent.includes("place=sent"),
+      );
 
-    type(" ");
-    check("the space bar opens the selected row", readable().includes("This year"));
-    type("ArrowDown");
-    check("which the arrows then step into", app.textContent.includes("place=year"));
-    type("ArrowUp");
-    type(" ");
-    check("and the space bar shuts it again", !readable().includes("This year"));
+      type(" ");
+      check(
+        "the space bar opens the selected row",
+        readable().includes("This year"),
+      );
+      type("ArrowDown");
+      check(
+        "which the arrows then step into",
+        app.textContent.includes("place=year"),
+      );
+      type("ArrowUp");
+      type(" ");
+      check(
+        "and the space bar shuts it again",
+        !readable().includes("This year"),
+      );
 
-    outlineButton("Expand all").dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("expandAll opens every row that has one",
-        readable().join() === "Mail,Inbox,Sent,This year,Files,Work,Trash");
-    outlineButton("Collapse all").dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("collapseAll shuts them all",
-        readable().join() === "Mail,Files,Trash");
+      outlineButton("Expand all").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      check(
+        "expandAll opens every row that has one",
+        readable().join() === "Mail,Inbox,Sent,This year,Files,Work,Trash",
+      );
+      outlineButton("Collapse all").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      check(
+        "collapseAll shuts them all",
+        readable().join() === "Mail,Files,Trash",
+      );
 
-    // A row sits inside its parent row, so a click on one must not be a click
-    // on everything above it.
-    outlineButton("Expand all").dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    rowNamed("This year").dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("a click on a nested row is not a click on the rows above it",
-        app.textContent.includes("place=year"));
+      // A row sits inside its parent row, so a click on one must not be a click
+      // on everything above it.
+      outlineButton("Expand all").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      rowNamed("This year").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      check(
+        "a click on a nested row is not a click on the rows above it",
+        app.textContent.includes("place=year"),
+      );
 
-    // --- PopOver ------------------------------------------------------------
-    // A popover of the application's own: ColourPopOver.mib with
-    // ColourPopOverController.js beside it, which the compiler pairs with it.
-    const popBox = section("PopOver");
-    const popover = app.querySelector(".v-PopOver");
-    const popButton = popBox.querySelector(".v-Button");
-    const popVisible = () => getComputedStyle(popover).visibility === "visible";
-    const colour = (text) =>
-        [...popover.querySelectorAll(".v-Button")].find((b) => b.textContent.trim() === text);
+      // --- PopOver ------------------------------------------------------------
+      // A popover of the application's own: ColourPopOver.mib with
+      // ColourPopOverController.js beside it, which the compiler pairs with it.
+      const popBox = section("PopOver");
+      const popover = app.querySelector(".v-PopOver");
+      const popButton = popBox.querySelector(".v-Button");
+      const popVisible = () =>
+        getComputedStyle(popover).visibility === "visible";
+      const colour = (text) =>
+        [...popover.querySelectorAll(".v-Button")].find(
+          (b) => b.textContent.trim() === text,
+        );
 
-    check("the popover drew, from the page's own .mib", popover !== null);
-    // In the middle of the page, so there is room on any side of it, with its
-    // controls centred for the same reason.
-    const sections = [...app.querySelectorAll("section")];
-    const where = sections.indexOf(popBox);
-    check(`its section sits in the middle of the page (${where + 1} of ${sections.length})`,
-        where > 2 && where < sections.length - 2);
-    check("with its controls centred",
-        getComputedStyle(popButton.parentElement).justifyContent === "center");
-    check("with its own controller's words in it",
-        popover.querySelector("h3").textContent === "Pick a colour");
-    check("it starts away", !popVisible());
-    check("and is out of the tab order while it is",
-        popover.hasAttribute("inert") && popover.getAttribute("aria-hidden") === "true");
-    check("its callout points back at what it hangs from",
-        popover.querySelector("b").className.includes("PopOver-callout--b"));
+      check("the popover drew, from the page's own .mib", popover !== null);
+      // In the middle of the page, so there is room on any side of it, with its
+      // controls centred for the same reason.
+      const sections = [...app.querySelectorAll("section")];
+      const where = sections.indexOf(popBox);
+      check(
+        `its section sits in the middle of the page (${where + 1} of ${sections.length})`,
+        where > 2 && where < sections.length - 2,
+      );
+      check(
+        "with its controls centred",
+        getComputedStyle(popButton.parentElement).justifyContent === "center",
+      );
+      check(
+        "with its own controller's words in it",
+        popover.querySelector("h3").textContent === "Pick a colour",
+      );
+      check("it starts away", !popVisible());
+      check(
+        "and is out of the tab order while it is",
+        popover.hasAttribute("inert") &&
+          popover.getAttribute("aria-hidden") === "true",
+      );
+      check(
+        "its callout points back at what it hangs from",
+        popover.querySelector("b").className.includes("PopOver-callout--b"),
+      );
 
-    // Brought into view first: a popover is kept inside the window, so one
-    // hung from a button below the fold is pushed back up to the top edge —
-    // right, but not what the seating checks below are about.
-    popButton.scrollIntoView({block: "center"});
-    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("the page's button shows it", popVisible());
-    check("and it joins the tab order", !popover.hasAttribute("inert"));
+      // Brought into view first: a popover is kept inside the window, so one
+      // hung from a button below the fold is pushed back up to the top edge —
+      // right, but not what the seating checks below are about.
+      popButton.scrollIntoView({ block: "center" });
+      popButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check("the page's button shows it", popVisible());
+      check("and it joins the tab order", !popover.hasAttribute("inert"));
 
-    const seat = () => {
+      const seat = () => {
         const b = popButton.getBoundingClientRect();
         const p = popover.getBoundingClientRect();
         return {
-            gap: Math.round(p.top - b.bottom),
-            off: Math.abs((p.left + p.width / 2) - (b.left + b.width / 2)),
+          gap: Math.round(p.top - b.bottom),
+          off: Math.abs(p.left + p.width / 2 - (b.left + b.width / 2)),
         };
-    };
-    check(`it sits below the button, clear of it (gap ${seat().gap}px)`, seat().gap === 9);
-    check("on the side its markup asked for", popover.querySelector("b").className.includes("PopOver-callout--b"));
-    // Centred on the button, unless centring would take it off the page: this
-    // one sits near the left edge, so it is held there instead. Either way it
-    // is wholly in the window, which is what the nudge is for.
-    const box = popover.getBoundingClientRect();
-    check(`it is centred on the button, or held at the edge (off by ${seat().off.toFixed(1)}px, left ${Math.round(box.left)}px)`,
-        seat().off < 2 || Math.round(box.left) === 7);
-    check("and wholly inside the window",
-        box.left >= 0 && box.right <= window.innerWidth &&
-        box.top >= 0 && box.bottom <= window.innerHeight);
-    check("the theme paints it",
+      };
+      check(
+        `it sits below the button, clear of it (gap ${seat().gap}px)`,
+        seat().gap === 9,
+      );
+      check(
+        "on the side its markup asked for",
+        popover.querySelector("b").className.includes("PopOver-callout--b"),
+      );
+      // Centred on the button, unless centring would take it off the page: this
+      // one sits near the left edge, so it is held there instead. Either way it
+      // is wholly in the window, which is what the nudge is for.
+      const box = popover.getBoundingClientRect();
+      check(
+        `it is centred on the button, or held at the edge (off by ${seat().off.toFixed(1)}px, left ${Math.round(box.left)}px)`,
+        seat().off < 2 || Math.round(box.left) === 7,
+      );
+      check(
+        "and wholly inside the window",
+        box.left >= 0 &&
+          box.right <= window.innerWidth &&
+          box.top >= 0 &&
+          box.bottom <= window.innerHeight,
+      );
+      check(
+        "the theme paints it",
         getComputedStyle(popover).borderTopWidth === "1px" &&
-        getComputedStyle(popover).backgroundColor !== "rgba(0, 0, 0, 0)");
+          getComputedStyle(popover).backgroundColor !== "rgba(0, 0, 0, 0)",
+      );
 
-    colour("Green").dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("a button inside answers to the popover's own controller",
-        popover.querySelector("p.chosen, p:last-of-type").textContent.includes("Green"));
-    check("which tells the page, in the page's own words",
-        app.textContent.includes("picked=Green") && last().includes("colour picked: Green"));
-    check("and a press inside leaves it up", popVisible());
+      colour("Green").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        "a button inside answers to the popover's own controller",
+        popover
+          .querySelector("p.chosen, p:last-of-type")
+          .textContent.includes("Green"),
+      );
+      check(
+        "which tells the page, in the page's own words",
+        app.textContent.includes("picked=Green") &&
+          last().includes("colour picked: Green"),
+      );
+      check("and a press inside leaves it up", popVisible());
 
-    document.body.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true, clientX: 4, clientY: 4}));
-    check("a press outside puts it away", !popVisible());
+      document.body.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          clientX: 4,
+          clientY: 4,
+        }),
+      );
+      check("a press outside puts it away", !popVisible());
 
-    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("it opens again, with what it held kept",
-        popVisible() && popover.textContent.includes("Green"));
-    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
-    check("Escape puts it away", !popVisible());
+      popButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        "it opens again, with what it held kept",
+        popVisible() && popover.textContent.includes("Green"),
+      );
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      check("Escape puts it away", !popVisible());
 
-    // A press on the button it hangs from must not close it on the press only
-    // for the click to open it again.
-    popButton.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true}));
-    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("its own button opens it rather than fighting itself", popVisible());
-    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+      // A press on the button it hangs from must not close it on the press only
+      // for the click to open it again.
+      popButton.dispatchEvent(
+        new PointerEvent("pointerdown", { bubbles: true }),
+      );
+      popButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        "its own button opens it rather than fighting itself",
+        popVisible(),
+      );
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
 
-    // The side is a choice, not a setting: told to sit below something with no
-    // room below it, a popover sits above it instead, and its callout turns so
-    // it still points at what it hangs from.
-    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
-    popButton.scrollIntoView({block: "start"});
-    window.scrollBy(0, popButton.getBoundingClientRect().top - (window.innerHeight - 60));
-    await new Promise((r) => setTimeout(r, 50));
+      // The side is a choice, not a setting: told to sit below something with no
+      // room below it, a popover sits above it instead, and its callout turns so
+      // it still points at what it hangs from.
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      popButton.scrollIntoView({ block: "start" });
+      window.scrollBy(
+        0,
+        popButton.getBoundingClientRect().top - (window.innerHeight - 60),
+      );
+      await new Promise((r) => setTimeout(r, 50));
 
-    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    const flipped = () => {
+      popButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      const flipped = () => {
         const b = popButton.getBoundingClientRect();
         const p = popover.getBoundingClientRect();
-        return {above: Math.round(b.top - p.bottom), fits: p.top >= 0 && p.bottom <= window.innerHeight};
-    };
-    check(`with no room below, it sits above instead (gap ${flipped().above}px)`,
-        popVisible() && flipped().above === 9);
-    check("and stays wholly in the window", flipped().fits);
-    check("its callout turns to point down at the button",
+        return {
+          above: Math.round(b.top - p.bottom),
+          fits: p.top >= 0 && p.bottom <= window.innerHeight,
+        };
+      };
+      check(
+        `with no room below, it sits above instead (gap ${flipped().above}px)`,
+        popVisible() && flipped().above === 9,
+      );
+      check("and stays wholly in the window", flipped().fits);
+      check(
+        "its callout turns to point down at the button",
         popover.querySelector("b").className.includes("PopOver-callout--t") &&
-        popover.querySelector("b b").className.includes("PopOver-triangle--t"));
+          popover
+            .querySelector("b b")
+            .className.includes("PopOver-triangle--t"),
+      );
 
-    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
-    window.scrollTo(0, 0);
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      window.scrollTo(0, 0);
 
-    // The combo beside the button says which side to try first.
-    const wheres = popBox.querySelector("select");
-    const chooseWhere = (value) => {
+      // The combo beside the button says which side to try first.
+      const wheres = popBox.querySelector("select");
+      const chooseWhere = (value) => {
         wheres.value = value;
-        wheres.dispatchEvent(new Event("change", {bubbles: true}));
-    };
-    check("a combo beside the button offers every orientation",
-        wheres !== null && wheres.options.length === 12);
-    check("and starts on the one the markup asked for", wheres.value === "bottom_center");
+        wheres.dispatchEvent(new Event("change", { bubbles: true }));
+      };
+      check(
+        "a combo beside the button offers every orientation",
+        wheres !== null && wheres.options.length === 12,
+      );
+      check(
+        "and starts on the one the markup asked for",
+        wheres.value === "bottom_center",
+      );
 
-    popButton.scrollIntoView({block: "center"});
-    chooseWhere("right_middle");
-    check("choosing one reaches the controller", last().includes("popover orientation: right_middle"));
-    check("which the summary line shows", app.textContent.includes("where=right_middle"));
+      popButton.scrollIntoView({ block: "center" });
+      chooseWhere("right_middle");
+      check(
+        "choosing one reaches the controller",
+        last().includes("popover orientation: right_middle"),
+      );
+      check(
+        "which the summary line shows",
+        app.textContent.includes("where=right_middle"),
+      );
 
-    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    const beside = () => {
+      popButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      const beside = () => {
         const b = popButton.getBoundingClientRect();
         const p = popover.getBoundingClientRect();
         return Math.round(p.left - b.right);
-    };
-    check(`the popover then sits to its right (gap ${beside()}px)`,
-        popVisible() && beside() === 9);
-    // The callout is named for the side the popover sits on, and the sheet puts
-    // it on the popover's opposite edge — a popover to the right of its anchor
-    // wears `--r`, drawn against its own left edge.
-    check("with its callout pointing back across at it",
+      };
+      check(
+        `the popover then sits to its right (gap ${beside()}px)`,
+        popVisible() && beside() === 9,
+      );
+      // The callout is named for the side the popover sits on, and the sheet puts
+      // it on the popover's opposite edge — a popover to the right of its anchor
+      // wears `--r`, drawn against its own left edge.
+      check(
+        "with its callout pointing back across at it",
         popover.querySelector("b").className.includes("PopOver-callout--r") &&
-        popover.querySelector("b b").className.includes("PopOver-triangle--r"));
+          popover
+            .querySelector("b b")
+            .className.includes("PopOver-triangle--r"),
+      );
 
-    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
-    chooseWhere("top_center");
-    popButton.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    const above = () => {
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      chooseWhere("top_center");
+      popButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      const above = () => {
         const b = popButton.getBoundingClientRect();
         return Math.round(b.top - popover.getBoundingClientRect().bottom);
-    };
-    check(`and above it when that is what was asked for (gap ${above()}px)`,
-        popVisible() && above() === 9);
+      };
+      check(
+        `and above it when that is what was asked for (gap ${above()}px)`,
+        popVisible() && above() === 9,
+      );
 
-    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
-    chooseWhere("bottom_center");
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      chooseWhere("bottom_center");
 
-    // --- ColorWell ------------------------------------------------------------
-    const wellBox = section("ColorWell");
-    const well = wellBox.querySelector(".cw-well");
-    const wellSwatch = well.querySelector(".cw-swatch");
-    const chooser = () => document.querySelector(".ccp-root");
+      // --- ColorWell ------------------------------------------------------------
+      const wellBox = section("ColorWell");
+      const well = wellBox.querySelector(".cw-well");
+      const wellSwatch = well.querySelector(".cw-swatch");
+      const chooser = () => document.querySelector(".ccp-root");
 
-    check("the well drew as a button wearing a colour", well.tagName === "BUTTON");
-    check("with the colour the markup gave it",
-        getComputedStyle(wellSwatch).backgroundColor === "rgb(53, 132, 228)");
-    check("the theme frames it", getComputedStyle(well).borderTopWidth === "1px");
-    check("and no chooser exists until one is asked for", chooser() === null);
+      check(
+        "the well drew as a button wearing a colour",
+        well.tagName === "BUTTON",
+      );
+      check(
+        "with the colour the markup gave it",
+        getComputedStyle(wellSwatch).backgroundColor === "rgb(53, 132, 228)",
+      );
+      check(
+        "the theme frames it",
+        getComputedStyle(well).borderTopWidth === "1px",
+      );
+      check("and no chooser exists until one is asked for", chooser() === null);
 
-    well.scrollIntoView({block: "center"});
-    well.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("pressing it opens a chooser", chooser() !== null &&
-        getComputedStyle(chooser().closest(".v-PopOver")).visibility === "visible");
-    check("the chooser drew its palette", chooser().querySelectorAll(".ccp-swatch").length === 45);
-    check("and both pickers, sized and painted",
-        [...chooser().querySelectorAll("canvas")].every((c) => c.width > 0 && c.height > 0));
-    check("the hex field shows the well's colour",
-        chooser().querySelector("input").value === "3584E4");
-    check("as does the preview",
-        getComputedStyle(chooser().querySelector(".ccp-preview-color")).backgroundColor ===
-        "rgb(53, 132, 228)");
-    check("pressing the well did not report a colour",
-        app.textContent.includes("colour=#3584E4"));
+      well.scrollIntoView({ block: "center" });
+      well.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        "pressing it opens a chooser",
+        chooser() !== null &&
+          getComputedStyle(chooser().closest(".v-PopOver")).visibility ===
+            "visible",
+      );
+      check(
+        "the chooser drew its palette",
+        chooser().querySelectorAll(".ccp-swatch").length === 45,
+      );
+      check(
+        "and both pickers, sized and painted",
+        [...chooser().querySelectorAll("canvas")].every(
+          (c) => c.width > 0 && c.height > 0,
+        ),
+      );
+      check(
+        "the hex field shows the well's colour",
+        chooser().querySelector("input").value === "3584E4",
+      );
+      check(
+        "as does the preview",
+        getComputedStyle(chooser().querySelector(".ccp-preview-color"))
+          .backgroundColor === "rgb(53, 132, 228)",
+      );
+      check(
+        "pressing the well did not report a colour",
+        app.textContent.includes("colour=#3584E4"),
+      );
 
-    // Dragging the square streams colours: the well and the page follow, and the
-    // chooser stays up.
-    const square = chooser().querySelector(".ccp-sv");
-    const squareBox = square.getBoundingClientRect();
-    square.dispatchEvent(new PointerEvent("pointerdown", {
-        bubbles: true, pointerId: 1,
-        clientX: squareBox.left + 1, clientY: squareBox.top + 1
-    }));
-    check("dragging the square to white reports it",
+      // Dragging the square streams colours: the well and the page follow, and the
+      // chooser stays up.
+      const square = chooser().querySelector(".ccp-sv");
+      const squareBox = square.getBoundingClientRect();
+      square.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          pointerId: 1,
+          clientX: squareBox.left + 1,
+          clientY: squareBox.top + 1,
+        }),
+      );
+      check(
+        "dragging the square to white reports it",
         chooser().querySelector("input").value !== "3584E4" &&
-        getComputedStyle(wellSwatch).backgroundColor !== "rgb(53, 132, 228)");
-    check("which the page hears", last().includes("colour well:"));
-    check("and the chooser stays up while it is dragged",
-        getComputedStyle(chooser().closest(".v-PopOver")).visibility === "visible");
-    square.dispatchEvent(new PointerEvent("pointerup", {bubbles: true, pointerId: 1}));
+          getComputedStyle(wellSwatch).backgroundColor !== "rgb(53, 132, 228)",
+      );
+      check("which the page hears", last().includes("colour well:"));
+      check(
+        "and the chooser stays up while it is dragged",
+        getComputedStyle(chooser().closest(".v-PopOver")).visibility ===
+          "visible",
+      );
+      square.dispatchEvent(
+        new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }),
+      );
 
-    // A palette swatch is a commit: it settles the colour and closes.
-    chooser().querySelectorAll(".ccp-swatch")[18].dispatchEvent(
-        new PointerEvent("pointerdown", {bubbles: true}));
-    check("a palette swatch settles the colour",
+      // A palette swatch is a commit: it settles the colour and closes.
+      chooser()
+        .querySelectorAll(".ccp-swatch")[18]
+        .dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      check(
+        "a palette swatch settles the colour",
         getComputedStyle(wellSwatch).backgroundColor === "rgb(53, 132, 228)" &&
-        app.textContent.includes("colour=#3584E4"));
-    check("and puts the chooser away",
-        getComputedStyle(chooser().closest(".v-PopOver")).visibility === "hidden");
+          app.textContent.includes("colour=#3584E4"),
+      );
+      check(
+        "and puts the chooser away",
+        getComputedStyle(chooser().closest(".v-PopOver")).visibility ===
+          "hidden",
+      );
 
-    // --- TabView --------------------------------------------------------------
-    const tabBox = section("TabView");
-    const tabBar = tabBox.querySelector(".v-TabBar");
-    const pill = tabBox.querySelector(".v-TabBar-indicator");
-    const tabButtons = [...tabBox.querySelectorAll(".v-TabButton")];
-    const cards = [...tabBox.querySelectorAll(".v-Deck-card")];
-    const onScreenCard = () =>
+      // --- TabView --------------------------------------------------------------
+      const tabBox = section("TabView");
+      const tabBar = tabBox.querySelector(".v-TabBar");
+      const pill = tabBox.querySelector(".v-TabBar-indicator");
+      const tabButtons = [...tabBox.querySelectorAll(".v-TabButton")];
+      const cards = [...tabBox.querySelectorAll(".v-Deck-card")];
+      const onScreenCard = () =>
         cards.findIndex((card) => getComputedStyle(card).display !== "none");
-    const pillBox = () => pill.getBoundingClientRect();
+      const pillBox = () => pill.getBoundingClientRect();
 
-    check("the bar drew, as a tablist with one tab stop",
-        tabBar.getAttribute("role") === "tablist" && tabBar.getAttribute("tabindex") === "0" &&
-        tabButtons.every((b) => b.getAttribute("role") === "tab"));
-    check("a tab per Tab, and a card for what each holds",
-        tabButtons.map((b) => b.textContent).join("|") === "Overview|A field|A control" &&
-        cards.length === 3);
-    check("the first is chosen, and only its card is on screen",
-        tabButtons[0].className.includes("is-selected") && onScreenCard() === 0);
+      check(
+        "the bar drew, as a tablist with one tab stop",
+        tabBar.getAttribute("role") === "tablist" &&
+          tabBar.getAttribute("tabindex") === "0" &&
+          tabButtons.every((b) => b.getAttribute("role") === "tab"),
+      );
+      check(
+        "a tab per Tab, and a card for what each holds",
+        tabButtons.map((b) => b.textContent).join("|") ===
+          "Overview|A field|A control" && cards.length === 3,
+      );
+      check(
+        "the first is chosen, and only its card is on screen",
+        tabButtons[0].className.includes("is-selected") && onScreenCard() === 0,
+      );
 
-    // The pill sits behind the chosen tab, which is a thing only layout knows.
-    const sits = () => {
+      // The pill sits behind the chosen tab, which is a thing only layout knows.
+      const sits = () => {
         const tab = tabButtons[onScreenCard()].getBoundingClientRect();
-        return Math.round(Math.abs(pillBox().left - tab.left)) +
-            Math.round(Math.abs(pillBox().width - tab.width));
-    };
-    check(`the pill sits behind the chosen tab (out by ${sits()}px)`, sits() <= 1);
-    check("and did not slide into place", pill.className.includes("no-anim"));
+        return (
+          Math.round(Math.abs(pillBox().left - tab.left)) +
+          Math.round(Math.abs(pillBox().width - tab.width))
+        );
+      };
+      check(
+        `the pill sits behind the chosen tab (out by ${sits()}px)`,
+        sits() <= 1,
+      );
+      check("and did not slide into place", pill.className.includes("no-anim"));
 
-    // What is typed on a card is still there after leaving and returning: the
-    // cards are hidden, not thrown away.
-    tabBox.scrollIntoView({block: "center"});
-    tabButtons[1].dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("clicking a tab turns the deck over", onScreenCard() === 1);
-    check("and says which was chosen",
-        app.textContent.includes("tab=1: A field") && last().includes("tab: A field"));
-    // Where it was *told* to go, not where it is: a sliding pill is somewhere
-    // between the two for the next 200ms, so its box says nothing yet.
-    const told = () => {
+      // What is typed on a card is still there after leaving and returning: the
+      // cards are hidden, not thrown away.
+      tabBox.scrollIntoView({ block: "center" });
+      tabButtons[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check("clicking a tab turns the deck over", onScreenCard() === 1);
+      check(
+        "and says which was chosen",
+        app.textContent.includes("tab=1: A field") &&
+          last().includes("tab: A field"),
+      );
+      // Where it was *told* to go, not where it is: a sliding pill is somewhere
+      // between the two for the next 200ms, so its box says nothing yet.
+      const told = () => {
         const tab = tabButtons[onScreenCard()];
-        return Math.abs(parseFloat(pill.style.left) - tab.offsetLeft) +
-            Math.abs(parseFloat(pill.style.width) - tab.offsetWidth);
-    };
-    check(`the pill was sent after it (out by ${told()}px)`, told() <= 1);
-    check("and this time it slid rather than jumping",
-        !pill.className.includes("no-anim"));
+        return (
+          Math.abs(parseFloat(pill.style.left) - tab.offsetLeft) +
+          Math.abs(parseFloat(pill.style.width) - tab.offsetWidth)
+        );
+      };
+      check(`the pill was sent after it (out by ${told()}px)`, told() <= 1);
+      check(
+        "and this time it slid rather than jumping",
+        !pill.className.includes("no-anim"),
+      );
 
-    const tabInput = cards[1].querySelector("input");
-    typeInto(tabInput, "half typed");
-    tabButtons[0].dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("turning away puts the card out of the way", onScreenCard() === 0);
-    tabButtons[1].dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("and what was typed on it is still there",
-        cards[1].querySelector("input") === tabInput && tabInput.value === "half typed");
+      const tabInput = cards[1].querySelector("input");
+      typeInto(tabInput, "half typed");
+      tabButtons[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check("turning away puts the card out of the way", onScreenCard() === 0);
+      tabButtons[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        "and what was typed on it is still there",
+        cards[1].querySelector("input") === tabInput &&
+          tabInput.value === "half typed",
+      );
 
-    // The arrows walk the bar, and stop at either end.
-    tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true}));
-    check("the right arrow moves along the bar", onScreenCard() === 2);
-    tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true}));
-    check("and stops at the last tab", onScreenCard() === 2);
-    tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
-    tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
-    tabBar.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
-    check("the left arrow walks back, and stops at the first", onScreenCard() === 0);
+      // The arrows walk the bar, and stop at either end.
+      tabBar.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+      );
+      check("the right arrow moves along the bar", onScreenCard() === 2);
+      tabBar.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+      );
+      check("and stops at the last tab", onScreenCard() === 2);
+      tabBar.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }),
+      );
+      tabBar.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }),
+      );
+      tabBar.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }),
+      );
+      check(
+        "the left arrow walks back, and stops at the first",
+        onScreenCard() === 0,
+      );
 
-    // --- MenuButton and Tooltip -----------------------------------------------
-    const menuBox = section("MenuButton and Tooltip");
-    const menuButton = menuBox.querySelector(".v-MenuButton");
-    const hoverButton = [...menuBox.querySelectorAll(".v-Button")].find(
+      // --- MenuButton and Tooltip -----------------------------------------------
+      const menuBox = section("MenuButton and Tooltip");
+      const menuButton = menuBox.querySelector(".v-MenuButton");
+      const hoverButton = [...menuBox.querySelectorAll(".v-Button")].find(
         (b) => b.textContent.trim() === "Hover me",
-    );
-    const menuPanel = () => document.querySelector(".v-Menu");
-    const menuItems = () => [...document.querySelectorAll(".v-MenuItem")];
-    const menuUp = () =>
-        menuPanel() !== null && getComputedStyle(menuPanel()).visibility === "visible";
-    const activeItem = () =>
-        menuItems().find((li) => li.className.includes("active"))?.textContent ?? null;
-    const pressButton = (el) => {
-        el.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true, button: 0}));
-        el.dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    };
+      );
+      const menuPanel = () => document.querySelector(".v-Menu");
+      const menuItems = () => [...document.querySelectorAll(".v-MenuItem")];
+      const menuUp = () =>
+        menuPanel() !== null &&
+        getComputedStyle(menuPanel()).visibility === "visible";
+      const activeItem = () =>
+        menuItems().find((li) => li.className.includes("active"))
+          ?.textContent ?? null;
+      const pressButton = (el) => {
+        el.dispatchEvent(
+          new PointerEvent("pointerdown", { bubbles: true, button: 0 }),
+        );
+        el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      };
 
-    check("the menu button says it has a menu", menuButton.getAttribute("aria-haspopup") === "menu");
-    check("and has none until it is pressed",
-        menuPanel() === null && menuButton.getAttribute("aria-expanded") === "false");
+      check(
+        "the menu button says it has a menu",
+        menuButton.getAttribute("aria-haspopup") === "menu",
+      );
+      check(
+        "and has none until it is pressed",
+        menuPanel() === null &&
+          menuButton.getAttribute("aria-expanded") === "false",
+      );
 
-    menuBox.scrollIntoView({block: "center"});
-    pressButton(menuButton);
-    check("pressing it drops the menu",
-        menuUp() && menuButton.getAttribute("aria-expanded") === "true");
-    check("the theme paints it",
+      menuBox.scrollIntoView({ block: "center" });
+      pressButton(menuButton);
+      check(
+        "pressing it drops the menu",
+        menuUp() && menuButton.getAttribute("aria-expanded") === "true",
+      );
+      check(
+        "the theme paints it",
         getComputedStyle(menuPanel()).borderTopWidth === "1px" &&
-        getComputedStyle(menuPanel()).backgroundColor !== "rgba(0, 0, 0, 0)");
-    check("with a line per item, a rule, and one that cannot be chosen",
-        menuItems().map((li) => li.textContent.trim() || "-").join("|") ===
-        "Find|Delete|-|Paste|Share with" &&
-        menuItems()[2].getAttribute("role") === "separator" &&
-        menuItems()[3].getAttribute("aria-disabled") === "true");
-    // The icon slot keeps menu.css's 19px min-width; what the page's sheet adds
-    // is the height and the mask that draws the icon into it.
-    check("two lines carry an icon, drawn where the sheet says",
-        menuItems()[0].querySelector(".icon").className.includes("ks-icon-search") &&
-        getComputedStyle(menuItems()[0].querySelector(".icon")).height === "18px" &&
-        getComputedStyle(menuItems()[0].querySelector(".icon")).maskImage.startsWith("url("));
-    check("and the line that holds a menu of its own says so",
+          getComputedStyle(menuPanel()).backgroundColor !== "rgba(0, 0, 0, 0)",
+      );
+      check(
+        "with a line per item, a rule, and one that cannot be chosen",
+        menuItems()
+          .map((li) => li.textContent.trim() || "-")
+          .join("|") === "Find|Delete|-|Paste|Share with" &&
+          menuItems()[2].getAttribute("role") === "separator" &&
+          menuItems()[3].getAttribute("aria-disabled") === "true",
+      );
+      // The icon slot keeps menu.css's 19px min-width; what the page's sheet adds
+      // is the height and the mask that draws the icon into it.
+      check(
+        "two lines carry an icon, drawn where the sheet says",
+        menuItems()[0]
+          .querySelector(".icon")
+          .className.includes("ks-icon-search") &&
+          getComputedStyle(menuItems()[0].querySelector(".icon")).height ===
+            "18px" &&
+          getComputedStyle(
+            menuItems()[0].querySelector(".icon"),
+          ).maskImage.startsWith("url("),
+      );
+      check(
+        "and the line that holds a menu of its own says so",
         menuItems()[4].getAttribute("aria-haspopup") === "menu" &&
-        getComputedStyle(menuItems()[4].querySelector(".submenu-indicator")).display === "block");
-    check("it dropped below the button, not over it",
-        menuPanel().getBoundingClientRect().top >= menuButton.getBoundingClientRect().bottom);
+          getComputedStyle(menuItems()[4].querySelector(".submenu-indicator"))
+            .display === "block",
+      );
+      check(
+        "it dropped below the button, not over it",
+        menuPanel().getBoundingClientRect().top >=
+          menuButton.getBoundingClientRect().bottom,
+      );
 
-    menuItems()[1].dispatchEvent(new PointerEvent("pointerenter", {bubbles: true}));
-    check("pointing at a line makes it the active one", activeItem() === "Delete");
+      menuItems()[1].dispatchEvent(
+        new PointerEvent("pointerenter", { bubbles: true }),
+      );
+      check(
+        "pointing at a line makes it the active one",
+        activeItem() === "Delete",
+      );
 
-    menuPanel().dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowDown", bubbles: true}));
-    check("the down arrow passes over the rule and the disabled line",
-        activeItem() === "Share with");
-    menuPanel().dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowUp", bubbles: true}));
-    menuPanel().dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowUp", bubbles: true}));
-    check("and the up arrow walks back", activeItem() === "Find");
+      menuPanel().dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
+      check(
+        "the down arrow passes over the rule and the disabled line",
+        activeItem() === "Share with",
+      );
+      menuPanel().dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }),
+      );
+      menuPanel().dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }),
+      );
+      check("and the up arrow walks back", activeItem() === "Find");
 
-    menuPanel().dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
-    check("Enter chooses it, and says so",
-        app.textContent.includes("edit=find") && last().includes("edit menu: find"));
-    check("the menu goes, and the button comes back up",
-        !menuUp() && menuButton.getAttribute("aria-expanded") === "false");
+      menuPanel().dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+      check(
+        "Enter chooses it, and says so",
+        app.textContent.includes("edit=find") &&
+          last().includes("edit menu: find"),
+      );
+      check(
+        "the menu goes, and the button comes back up",
+        !menuUp() && menuButton.getAttribute("aria-expanded") === "false",
+      );
 
-    pressButton(menuButton);
-    menuItems()[1].dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("clicking a line chooses it too",
-        app.textContent.includes("edit=delete") && !menuUp());
+      pressButton(menuButton);
+      menuItems()[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        "clicking a line chooses it too",
+        app.textContent.includes("edit=delete") && !menuUp(),
+      );
 
-    // A line that holds a menu opens it to the side, and choosing in that one
-    // settles both.
-    pressButton(menuButton);
-    const submenu = () => [...document.querySelectorAll(".v-Menu")].find(
-        (m) => m.className.includes("submenu"),
-    );
-    check("the menu of its own is not showing until the line is pointed at",
-        submenu() === undefined || getComputedStyle(submenu()).visibility === "hidden");
+      // A line that holds a menu opens it to the side, and choosing in that one
+      // settles both.
+      pressButton(menuButton);
+      const submenu = () =>
+        [...document.querySelectorAll(".v-Menu")].find((m) =>
+          m.className.includes("submenu"),
+        );
+      check(
+        "the menu of its own is not showing until the line is pointed at",
+        submenu() === undefined ||
+          getComputedStyle(submenu()).visibility === "hidden",
+      );
 
-    menuItems()[4].dispatchEvent(new PointerEvent("pointerenter", {bubbles: true}));
-    check("pointing at it opens one",
-        submenu() !== undefined && getComputedStyle(submenu()).visibility === "visible");
-    check("beside the line, not over it",
+      menuItems()[4].dispatchEvent(
+        new PointerEvent("pointerenter", { bubbles: true }),
+      );
+      check(
+        "pointing at it opens one",
+        submenu() !== undefined &&
+          getComputedStyle(submenu()).visibility === "visible",
+      );
+      check(
+        "beside the line, not over it",
         submenu().getBoundingClientRect().left >=
-        menuItems()[4].getBoundingClientRect().right - 8);
-    check("with its own lines, icons and all",
-        [...submenu().querySelectorAll(".v-MenuItem")].map((li) => li.textContent.trim())
-            .join("|") === "Someone|Nobody");
+          menuItems()[4].getBoundingClientRect().right - 8,
+      );
+      check(
+        "with its own lines, icons and all",
+        [...submenu().querySelectorAll(".v-MenuItem")]
+          .map((li) => li.textContent.trim())
+          .join("|") === "Someone|Nobody",
+      );
 
-    submenu().querySelectorAll(".v-MenuItem")[0]
-        .dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("choosing in it reports through the button",
-        app.textContent.includes("edit=someone") && last().includes("edit menu: someone"));
-    check("and puts both menus away", !menuUp() &&
-        getComputedStyle(submenu()).visibility === "hidden");
+      submenu()
+        .querySelectorAll(".v-MenuItem")[0]
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        "choosing in it reports through the button",
+        app.textContent.includes("edit=someone") &&
+          last().includes("edit menu: someone"),
+      );
+      check(
+        "and puts both menus away",
+        !menuUp() && getComputedStyle(submenu()).visibility === "hidden",
+      );
 
-    pressButton(menuButton);
-    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
-    check("and Escape puts the menu away with nothing chosen",
-        !menuUp() && app.textContent.includes("edit=someone"));
+      pressButton(menuButton);
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      check(
+        "and Escape puts the menu away with nothing chosen",
+        !menuUp() && app.textContent.includes("edit=someone"),
+      );
 
-    // The tooltip waits for the pointer to rest, and explains itself only then.
-    const tooltip = () => document.querySelector(".v-Tooltip");
-    hoverButton.dispatchEvent(new PointerEvent("pointerenter", {bubbles: true}));
-    check("a tooltip does not appear the moment the pointer arrives",
-        tooltip() === null || getComputedStyle(tooltip()).visibility === "hidden");
+      // The tooltip waits for the pointer to rest, and explains itself only then.
+      const tooltip = () => document.querySelector(".v-Tooltip");
+      hoverButton.dispatchEvent(
+        new PointerEvent("pointerenter", { bubbles: true }),
+      );
+      check(
+        "a tooltip does not appear the moment the pointer arrives",
+        tooltip() === null ||
+          getComputedStyle(tooltip()).visibility === "hidden",
+      );
 
-    await new Promise((r) => setTimeout(r, 900));
-    check("but does once it has rested",
-        tooltip() !== null && getComputedStyle(tooltip()).visibility === "visible");
-    check("and says what it was given", tooltip().textContent.includes("once the pointer rests"));
+      await new Promise((r) => setTimeout(r, 900));
+      check(
+        "but does once it has rested",
+        tooltip() !== null &&
+          getComputedStyle(tooltip()).visibility === "visible",
+      );
+      check(
+        "and says what it was given",
+        tooltip().textContent.includes("once the pointer rests"),
+      );
 
-    hoverButton.dispatchEvent(new PointerEvent("pointerleave", {bubbles: true}));
-    check("leaving takes it away", getComputedStyle(tooltip()).visibility === "hidden");
+      hoverButton.dispatchEvent(
+        new PointerEvent("pointerleave", { bubbles: true }),
+      );
+      check(
+        "leaving takes it away",
+        getComputedStyle(tooltip()).visibility === "hidden",
+      );
 
-    // --- Box --------------------------------------------------------------------
-    const boxSection = section("Box");
-    const boxEl = boxSection.querySelector(".v-Box");
-    const boxTitle = boxEl.querySelector(".v-Box-title");
+      // --- Box --------------------------------------------------------------------
+      const boxSection = section("Box");
+      const boxEl = boxSection.querySelector(".v-Box");
+      const boxTitle = boxEl.querySelector(".v-Box-title");
 
-    check("the box drew, with its title and a well for its children",
-        boxEl !== null && boxTitle.textContent === "Colours" &&
-        boxEl.querySelector(".v-Box-content") !== null);
-    check("the title straddles the top edge",
+      check(
+        "the box drew, with its title and a well for its children",
+        boxEl !== null &&
+          boxTitle.textContent === "Colours" &&
+          boxEl.querySelector(".v-Box-content") !== null,
+      );
+      check(
+        "the title straddles the top edge",
         getComputedStyle(boxTitle).position === "absolute" &&
-        Math.abs(boxTitle.getBoundingClientRect().top +
-            boxTitle.getBoundingClientRect().height / 2 -
-            boxEl.getBoundingClientRect().top) < 2);
-    check("and the theme frames it",
-        getComputedStyle(boxEl).borderTopWidth === "1px");
-    check("what it holds is inside it",
+          Math.abs(
+            boxTitle.getBoundingClientRect().top +
+              boxTitle.getBoundingClientRect().height / 2 -
+              boxEl.getBoundingClientRect().top,
+          ) < 2,
+      );
+      check(
+        "and the theme frames it",
+        getComputedStyle(boxEl).borderTopWidth === "1px",
+      );
+      check(
+        "what it holds is inside it",
         boxEl.querySelectorAll(".cw-well").length === 2 &&
-        boxEl.querySelector(".v-CheckBox") !== null);
+          boxEl.querySelector(".v-CheckBox") !== null,
+      );
 
-    boxEl.querySelectorAll(".cw-well")[1].dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    const boxChooser = document.querySelectorAll(".ccp-root");
-    check("a control inside a box works as it does anywhere",
-        boxChooser.length > 0);
-    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+      boxEl
+        .querySelectorAll(".cw-well")[1]
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      const boxChooser = document.querySelectorAll(".ccp-root");
+      check(
+        "a control inside a box works as it does anywhere",
+        boxChooser.length > 0,
+      );
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
 
-    // --- AccordionView ------------------------------------------------------------
-    const accordionBox = section("AccordionView");
-    const accordion = accordionBox.querySelector(".v-accordionPanel");
-    const panels = () => [...accordion.querySelectorAll(".v-accordionSection")];
-    const headerOf = (i) => panels()[i].querySelector(".header");
-    const openOnes = () =>
-        panels().filter((s) => s.className.includes("expanded"))
-            .map((s) => s.querySelector(".header span").textContent);
-    const shownHeight = (i) =>
-        Math.round(panels()[i].querySelector(".form").getBoundingClientRect().height);
+      // --- AccordionView ------------------------------------------------------------
+      const accordionBox = section("AccordionView");
+      const accordion = accordionBox.querySelector(".v-accordionPanel");
+      const panels = () => [
+        ...accordion.querySelectorAll(".v-accordionSection"),
+      ];
+      const headerOf = (i) => panels()[i].querySelector(".header");
+      const openOnes = () =>
+        panels()
+          .filter((s) => s.className.includes("expanded"))
+          .map((s) => s.querySelector(".header span").textContent);
+      const shownHeight = (i) =>
+        Math.round(
+          panels()[i].querySelector(".form").getBoundingClientRect().height,
+        );
 
-    check("the accordion drew a section per AccordionSection",
+      check(
+        "the accordion drew a section per AccordionSection",
         panels().length === 3 &&
-        panels().map((s) => s.querySelector(".header span").textContent).join("|") ===
-        "Delivery|Payment|Anything else");
-    check("a header says it is a button, and what it opens",
+          panels()
+            .map((s) => s.querySelector(".header span").textContent)
+            .join("|") === "Delivery|Payment|Anything else",
+      );
+      check(
+        "a header says it is a button, and what it opens",
         headerOf(0).getAttribute("role") === "button" &&
-        headerOf(0).getAttribute("tabindex") === "0" &&
-        headerOf(0).getAttribute("aria-controls") ===
-        panels()[0].querySelector(".form").getAttribute("id"));
-    check("the markup said which starts open",
+          headerOf(0).getAttribute("tabindex") === "0" &&
+          headerOf(0).getAttribute("aria-controls") ===
+            panels()[0].querySelector(".form").getAttribute("id"),
+      );
+      check(
+        "the markup said which starts open",
         openOnes().join("|") === "Delivery" &&
-        headerOf(0).getAttribute("aria-expanded") === "true");
-    check("and a shut section shows nothing", shownHeight(1) === 0);
+          headerOf(0).getAttribute("aria-expanded") === "true",
+      );
+      check("and a shut section shows nothing", shownHeight(1) === 0);
 
-    accordionBox.scrollIntoView({block: "center"});
-    headerOf(1).dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("pressing a header opens that section", openOnes().join("|") === "Delivery|Payment");
-    check("which the page hears",
+      accordionBox.scrollIntoView({ block: "center" });
+      headerOf(1).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        "pressing a header opens that section",
+        openOnes().join("|") === "Delivery|Payment",
+      );
+      check(
+        "which the page hears",
         app.textContent.includes("sections=delivery payment") &&
-        last().includes("section payment: open"));
-    check("and more than one may be open at once", openOnes().length === 2);
+          last().includes("section payment: open"),
+      );
+      check("and more than one may be open at once", openOnes().length === 2);
 
-    headerOf(0).dispatchEvent(new KeyboardEvent("keydown", {key: " ", bubbles: true}));
-    check("the space bar shuts one too",
-        openOnes().join("|") === "Payment" && last().includes("section delivery: shut"));
+      headerOf(0).dispatchEvent(
+        new KeyboardEvent("keydown", { key: " ", bubbles: true }),
+      );
+      check(
+        "the space bar shuts one too",
+        openOnes().join("|") === "Payment" &&
+          last().includes("section delivery: shut"),
+      );
 
-    accordionBox.querySelectorAll(".v-Button")[0]
-        .dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("Open all opens every section", openOnes().length === 3);
-    accordionBox.querySelectorAll(".v-Button")[1]
-        .dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("and Shut all shuts them", openOnes().length === 0 &&
-        app.textContent.includes("sections=none"));
+      accordionBox
+        .querySelectorAll(".v-Button")[0]
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check("Open all opens every section", openOnes().length === 3);
+      accordionBox
+        .querySelectorAll(".v-Button")[1]
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        "and Shut all shuts them",
+        openOnes().length === 0 && app.textContent.includes("sections=none"),
+      );
 
-    // What is typed into a section is still there after it is shut and reopened.
-    accordionBox.querySelectorAll(".v-Button")[0]
-        .dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    const cardInput = panels()[1].querySelector("input");
-    typeInto(cardInput, "4242");
-    headerOf(1).dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    headerOf(1).dispatchEvent(new MouseEvent("click", {bubbles: true}));
-    check("what was typed in a section survives it being shut",
-        panels()[1].querySelector("input") === cardInput && cardInput.value === "4242");
+      // What is typed into a section is still there after it is shut and reopened.
+      accordionBox
+        .querySelectorAll(".v-Button")[0]
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      const cardInput = panels()[1].querySelector("input");
+      typeInto(cardInput, "4242");
+      headerOf(1).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      headerOf(1).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        "what was typed in a section survives it being shut",
+        panels()[1].querySelector("input") === cardInput &&
+          cardInput.value === "4242",
+      );
 
-    // --- switching themes ---------------------------------------------------
-    // The theme is a stylesheet swap: nothing is redrawn, so what proves it
-    // worked is the colours changing under controls that never moved.
-    const themeSelect = app.querySelector("#theme-combo");
-    const page = app.firstElementChild;
-    const background = () => getComputedStyle(page).backgroundColor;
-    const wear = (name) => {
+      // --- ListView and ProgressiveListView --------------------------------------
+      const listBox = section("ListView and ProgressiveListView");
+      const lists = [...listBox.querySelectorAll(".v-List")];
+      const plain = lists[0];
+      const crowd = lists[1];
+      const rowsOf = (list) => [...list.querySelectorAll(".person")];
+      const said = (which) =>
+        [...listBox.querySelectorAll("p")]
+          .map((p) => p.textContent)
+          .find((text) => text.startsWith(which));
+
+      check(
+        "the plain list drew a row per person, in the page's own kind of row",
+        rowsOf(plain).length === 5 &&
+          rowsOf(plain)[0].textContent.includes("Ada Lovelace"),
+      );
+      check("and says how many it holds", said("people=") === "people=5");
+
+      check(
+        "the big list holds five thousand",
+        said("crowd=").startsWith("crowd=5000"),
+      );
+      const drawnAtFirst = rowsOf(crowd).length;
+      check(
+        "but draws only the rows in view, and a little either side",
+        drawnAtFirst > 0 && drawnAtFirst < 60,
+      );
+      check(
+        "and is as tall as all five thousand of them",
+        Math.round(
+          crowd
+            .querySelector(".v-ProgressiveList-sizer")
+            .getBoundingClientRect().height,
+        ) ===
+          5000 * 34,
+      );
+      check(
+        "the first row sits at the top",
+        rowsOf(crowd)[0].textContent.includes("Person 0"),
+      );
+
+      // Scrolling a long way draws the rows that came into view, and no more of
+      // them than were drawn at the top.
+      const scroller = crowd.querySelector(".scroller");
+      scroller.scrollTop = 1000 * 34;
+      scroller.dispatchEvent(new Event("scroll"));
+      await new Promise((r) => setTimeout(r, 50));
+
+      check(
+        "scrolling draws the ones that came into view",
+        rowsOf(crowd)[0].textContent.includes("Person 9"),
+      );
+      check(
+        "and no more of them than before",
+        rowsOf(crowd).length <= drawnAtFirst + 20,
+      );
+      check(
+        "the page is told how many are drawn",
+        said("crowd=").includes(`drawn=${rowsOf(crowd).length}`),
+      );
+
+      click(labelled("Empty it"));
+      check(
+        "emptying the list says what an empty list says",
+        rowsOf(plain).length === 0 &&
+          plain.className.includes("empty") &&
+          plain.textContent.trim() === "Nobody here",
+      );
+
+      click(labelled("Fill it"));
+      check("and filling it puts them back", rowsOf(plain).length === 5);
+
+      // A load shows nothing at first: only one that runs on is worth a spinner.
+      click(labelled("Load slowly"));
+      check(
+        "a load draws no spinner straight away",
+        plain.querySelector(".v-LoadingIndicator") === null,
+      );
+      await new Promise((r) => setTimeout(r, 400));
+      check(
+        "but one that runs on puts a spinner up",
+        plain.querySelector(".v-LoadingIndicator") !== null &&
+          plain.className.includes("loading"),
+      );
+      await new Promise((r) => setTimeout(r, 1100));
+      check(
+        "and the answer takes it down",
+        plain.querySelector(".v-LoadingIndicator") === null &&
+          rowsOf(plain).length === 5,
+      );
+
+      // A line between one tab and the next, and none after the last. Every tab
+      // carries the border so that they stay the same width; the last wears it
+      // in nothing.
+      const separatedBar = section("TabView").querySelector(".v-TabBar");
+      const separatedTabs = [...separatedBar.querySelectorAll(".v-TabButton")];
+      const lineOn = (el) => getComputedStyle(el).borderRightColor;
+      const clear = (colour) => colour === "rgba(0, 0, 0, 0)" || colour === "transparent";
+
+      check(
+        "every tab but the last carries a line on its right",
+        separatedTabs.slice(0, -1).every((t) => !clear(lineOn(t))) &&
+          clear(lineOn(separatedTabs[separatedTabs.length - 1])),
+      );
+      check(
+        "and the tabs are all the same width as each other",
+        new Set(separatedTabs.map((t) => Math.round(t.getBoundingClientRect().width)))
+          .size === 1,
+      );
+
+      // --- switching themes ---------------------------------------------------
+      // The theme is a stylesheet swap: nothing is redrawn, so what proves it
+      // worked is the colours changing under controls that never moved.
+      const themeSelect = app.querySelector("#theme-combo");
+      const page = app.firstElementChild;
+      const background = () => getComputedStyle(page).backgroundColor;
+      const wear = (name) => {
         themeSelect.value = name;
-        themeSelect.dispatchEvent(new Event("change", {bubbles: true}));
-    };
+        themeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      };
 
-    check(
+      check(
         "the theme combo drew its entries",
         themeSelect.options.length === 3,
-    );
+      );
 
-    const aristo = background();
-    wear("aristo_dark");
-    check(
+      const aristo = background();
+      wear("aristo_dark");
+      check(
         "switching to aristo_dark repainted the page",
         background() !== aristo,
-    );
-    check("and it is a dark surface", background() === "rgb(51, 51, 51)");
-    check("the switch is reported", last().includes("theme: aristo_dark"));
+      );
+      check("and it is a dark surface", background() === "rgb(51, 51, 51)");
+      check("the switch is reported", last().includes("theme: aristo_dark"));
 
-    wear("pop");
-    check(
+      wear("pop");
+      check(
         "switching to pop repainted it again",
         background() === "rgb(255, 255, 255)",
-    );
-    check(
+      );
+      check(
         "one stylesheet, rewritten — not one per theme",
         document.querySelectorAll("style[data-mosaic-theme]").length === 1,
-    );
+      );
 
-    // A popover is drawn the same in both light themes: the surface it floats on
-    // is the one thing on the page that is not part of it, so aristo and pop
-    // give it the same face and the same edge.
-    const popFace = () => {
+      // A popover is drawn the same in both light themes: the surface it floats on
+      // is the one thing on the page that is not part of it, so aristo and pop
+      // give it the same face and the same edge.
+      const popFace = () => {
         const style = getComputedStyle(popover);
         return `${style.backgroundColor} / ${style.borderTopColor}`;
-    };
-    wear("aristo");
-    const aristoPopOver = popFace();
-    wear("pop");
-    check(`aristo and pop draw a popover alike (${popFace()})`,
-        popFace() === aristoPopOver);
-    wear("aristo_dark");
-    check("and the dark theme does not", popFace() !== aristoPopOver);
+      };
+      wear("aristo");
+      const aristoPopOver = popFace();
+      wear("pop");
+      check(
+        `aristo and pop draw a popover alike (${popFace()})`,
+        popFace() === aristoPopOver,
+      );
+      wear("aristo_dark");
+      check("and the dark theme does not", popFace() !== aristoPopOver);
 
-    // The theme rounds the search field into a pill. Both Aristo sheets say so
-    // in the same words, so both have to land the same way: the theme's rules
-    // are prefixed with `:root` to outscore a component's scoped stylesheet,
-    // and a sheet that lost that prefix would silently keep the component's
-    // 4px corners instead.
-    const searchRadius = () =>
+      // The theme rounds the search field into a pill. Both Aristo sheets say so
+      // in the same words, so both have to land the same way: the theme's rules
+      // are prefixed with `:root` to outscore a component's scoped stylesheet,
+      // and a sheet that lost that prefix would silently keep the component's
+      // 4px corners instead.
+      const searchRadius = () =>
         parseFloat(getComputedStyle(searchBox).borderTopLeftRadius);
-    wear("aristo");
-    const lightRadius = searchRadius();
-    wear("aristo_dark");
-    const darkRadius = searchRadius();
-    check(
+      wear("aristo");
+      const lightRadius = searchRadius();
+      wear("aristo_dark");
+      const darkRadius = searchRadius();
+      check(
         `the search field is a pill in aristo too (light ${lightRadius}px, dark ${darkRadius}px)`,
         lightRadius === darkRadius && lightRadius > 20,
-    );
+      );
 
-    // The magnifier and the reset X are chrome in the dark theme, a step
-    // quieter than the text. They are SVG, so it is fill and not color, and
-    // the theme has to outscore the component sheet's --search-icon-fill.
-    wear("aristo_dark");
-    typeInto(searchInput, "x");
-    const magnifierFill = getComputedStyle(
+      // The magnifier and the reset X are chrome in the dark theme, a step
+      // quieter than the text. They are SVG, so it is fill and not color, and
+      // the theme has to outscore the component sheet's --search-icon-fill.
+      wear("aristo_dark");
+      typeInto(searchInput, "x");
+      const magnifierFill = getComputedStyle(
         searchBox.querySelector(".search svg"),
-    ).fill;
-    const resetFill = getComputedStyle(
+      ).fill;
+      const resetFill = getComputedStyle(
         searchBox.querySelector("button.Search-reset > i svg"),
-    ).fill;
-    check(
+      ).fill;
+      check(
         `the dark theme fills the magnifier and the reset X with #bbb (${magnifierFill} / ${resetFill})`,
         magnifierFill === "rgb(187, 187, 187)" &&
-        resetFill === "rgb(187, 187, 187)",
-    );
-    click(clearButton);
+          resetFill === "rgb(187, 187, 187)",
+      );
+      click(clearButton);
 
-    wear("aristo");
-    check("and back to the one it started in", background() === aristo);
+      wear("aristo");
+      check("and back to the one it started in", background() === aristo);
 
-    // The controls kept the state they were in across all of that.
-    check(
+      // The controls kept the state they were in across all of that.
+      check(
         "a swap redraws nothing",
         remember.getAttribute("aria-checked") === "true",
-    );
+      );
 
-    // --- the toolbar disables everything ------------------------------------
-    click(labelled("Disable controls"));
-    const disabled = (el) => el.getAttribute("aria-disabled") === "true";
+      // --- the toolbar disables everything ------------------------------------
+      click(labelled("Disable controls"));
+      const disabled = (el) => el.getAttribute("aria-disabled") === "true";
 
-    check(
+      check(
         "every button in the sections is disabled",
         intentButtons().every(disabled),
-    );
-    check(
+      );
+      check(
         "but not the toolbar's, which is what turns them back on",
         disabled(labelled("Enable controls")) === false,
-    );
-    check("the loading button too", disabled(saveButton));
-    check("the checkboxes are disabled too", boxes().every(disabled));
-    check(
+      );
+      check("the loading button too", disabled(saveButton));
+      check("the checkboxes are disabled too", boxes().every(disabled));
+      check(
         "the switches and the radio group as well",
         switches().every(disabled) &&
-        disabled(group) &&
-        radios().every(disabled),
-    );
-    // Saying so is not the same as looking it: the switch sheet matched only
-    // `.disabled`, and the class a Control puts on is `is-disabled`, so a
-    // disabled switch stayed at full strength.
-    // Dimmed to exactly what the theme asks for. Opacity applies to the whole
-    // subtree, so a sheet that fades the root *and* the parts inside it fades
-    // them twice — which reads as a quarter rather than a half, and is what
-    // the checkbox and the switch both used to do.
-    const wantedOpacity = getComputedStyle(document.documentElement)
+          disabled(group) &&
+          radios().every(disabled),
+      );
+      // Saying so is not the same as looking it: the switch sheet matched only
+      // `.disabled`, and the class a Control puts on is `is-disabled`, so a
+      // disabled switch stayed at full strength.
+      // Dimmed to exactly what the theme asks for. Opacity applies to the whole
+      // subtree, so a sheet that fades the root *and* the parts inside it fades
+      // them twice — which reads as a quarter rather than a half, and is what
+      // the checkbox and the switch both used to do.
+      const wantedOpacity = getComputedStyle(document.documentElement)
         .getPropertyValue("--opacity-disable")
         .trim();
-    const opacityOf = (el) => (el ? getComputedStyle(el).opacity : "MISSING");
-    const fadedParts = [
+      const opacityOf = (el) => (el ? getComputedStyle(el).opacity : "MISSING");
+      const fadedParts = [
         ["switch", switches()[0]],
         ["switch knob", switches()[0].querySelector(".indicator")],
         ["checkbox", boxes()[0]],
         ["checkbox indicator", boxes()[0].querySelector(".indicator")],
         ["slider", app.querySelector(".v-Slider")],
-    ];
-    check(
+      ];
+      check(
         `every disabled control dims to ${wantedOpacity}, and nothing dims twice (${fadedParts
-            .map(([name, el]) => name + " " + opacityOf(el))
-            .join(", ")})`,
+          .map(([name, el]) => name + " " + opacityOf(el))
+          .join(", ")})`,
         fadedParts.every(([name, el]) =>
-            el === null
-                ? false
-                : name.includes("knob") || name.includes("indicator")
-                    ? opacityOf(el) === "1"
-                    : opacityOf(el) === wantedOpacity,
+          el === null
+            ? false
+            : name.includes("knob") || name.includes("indicator")
+              ? opacityOf(el) === "1"
+              : opacityOf(el) === wantedOpacity,
         ),
-    );
+      );
 
-    // Disabling a control is itself a setFocus(false), so a field that was
-    // never touched must not come out of it wearing a focus ring.
-    check(
+      // Disabling a control is itself a setFocus(false), so a field that was
+      // never touched must not come out of it wearing a focus ring.
+      check(
         "no disabled field wears a focus ring",
         [...app.querySelectorAll(".v-Text")].every(
-            (box) => !box.classList.contains("is-focused"),
+          (box) => !box.classList.contains("is-focused"),
         ),
-    );
+      );
 
-    check(
+      check(
         "so is the combo, down to its select",
         disabled(combo) && select.disabled === true,
-    );
-    check(
+      );
+      check(
         "a disabled control is out of the tab order",
         boxes().every((b) => b.getAttribute("tabindex") === "-1"),
-    );
+      );
 
-    click(boxes()[1]);
-    check(
+      click(boxes()[1]);
+      check(
         "and ignores a click",
         boxes()[1].getAttribute("aria-checked") === "false",
-    );
-    check(
+      );
+      check(
         "so the page did not change",
         last().includes("disabled every control"),
-    );
+      );
 
-    // --- and enables them again ---------------------------------------------
-    // The trigger is the part you press, so it answers the pointer — unless
-    // there is nothing to press. A pointer cannot be synthesised, so the
-    // theme's own rule is taken out of the sheet and asked directly: with
-    // `:hover` dropped, does what is left still match this combo? It matched
-    // before, which is how a disabled trigger still lit up under the pointer.
-    const chevronHoverRules = [...document.styleSheets]
+      // --- and enables them again ---------------------------------------------
+      // The trigger is the part you press, so it answers the pointer — unless
+      // there is nothing to press. A pointer cannot be synthesised, so the
+      // theme's own rule is taken out of the sheet and asked directly: with
+      // `:hover` dropped, does what is left still match this combo? It matched
+      // before, which is how a disabled trigger still lit up under the pointer.
+      const chevronHoverRules = [...document.styleSheets]
         .flatMap((sheet) => {
-            try {
-                return [...sheet.cssRules];
-            } catch {
-                return [];
-            }
+          try {
+            return [...sheet.cssRules];
+          } catch {
+            return [];
+          }
         })
         .filter(
-            (rule) =>
-                rule.selectorText &&
-                rule.selectorText.includes(".chevron") &&
-                rule.selectorText.includes(":hover"),
+          (rule) =>
+            rule.selectorText &&
+            rule.selectorText.includes(".chevron") &&
+            rule.selectorText.includes(":hover"),
         );
 
-    check(
+      check(
         "the theme states a hover face for the trigger",
         chevronHoverRules.length > 0,
-    );
-    check(
+      );
+      check(
         "which no longer reaches the combo once it is disabled",
         chevronHoverRules.every(
-            (rule) =>
-                !combo.matches(
-                    rule.selectorText.replace(/:hover|\s*\.chevron\b/g, "").trim(),
-                ),
+          (rule) =>
+            !combo.matches(
+              rule.selectorText.replace(/:hover|\s*\.chevron\b/g, "").trim(),
+            ),
         ),
-    );
+      );
 
-    click(labelled("Enable controls"));
-    check(
+      click(labelled("Enable controls"));
+      check(
         "enabling brings them back",
         intentButtons().some(disabled) === false,
-    );
+      );
 
-    click(boxes()[1]);
-    check(
+      click(boxes()[1]);
+      check(
         "the control works once more",
         boxes()[1].getAttribute("aria-checked") === "true",
-    );
-    check("and reports again", last().includes("newsletter: true"));
+      );
+      check("and reports again", last().includes("newsletter: true"));
 
-    // --- what the themes and the disabled state actually paint ---------------
-    // Colours are transitioned, and a transition does not advance under headless
-    // virtual time — so each of these is read after letting one settle.
-    const settle = () => new Promise((r) => setTimeout(r, 400));
-    const indicator = () => app.querySelector('[role="checkbox"] .indicator');
-    const rgb = (hex) => {
+      // --- what the themes and the disabled state actually paint ---------------
+      // Colours are transitioned, and a transition does not advance under headless
+      // virtual time — so each of these is read after letting one settle.
+      const settle = () => new Promise((r) => setTimeout(r, 400));
+      const indicator = () => app.querySelector('[role="checkbox"] .indicator');
+      const rgb = (hex) => {
         const n = parseInt(hex.trim().slice(1), 16);
         return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
-    };
+      };
 
-    wear("aristo_dark");
-    await settle();
-    const vars = () => getComputedStyle(document.documentElement);
-    check(
+      wear("aristo_dark");
+      await settle();
+      const vars = () => getComputedStyle(document.documentElement);
+      check(
         "a ticked box in the dark theme wears the theme's primary border",
         getComputedStyle(indicator()).borderTopColor ===
-        rgb(vars().getPropertyValue("--primary-border-color")),
-    );
-    check(
+          rgb(vars().getPropertyValue("--primary-border-color")),
+      );
+      check(
         "which is not the near-black it used to be",
         getComputedStyle(indicator()).borderTopColor !== "rgb(20, 38, 47)",
-    );
+      );
 
-    // An unchecked well needs an edge that reads: its rim used to be #4d4d52,
-    // the same value as the panel behind it, so the box looked like a bare face.
-    click(remember); // back to unchecked
-    await settle();
-    const lightness = (c) =>
+      // An unchecked well needs an edge that reads: its rim used to be #4d4d52,
+      // the same value as the panel behind it, so the box looked like a bare face.
+      click(remember); // back to unchecked
+      await settle();
+      const lightness = (c) =>
         c
-            .match(/\d+/g)
-            .slice(0, 3)
-            .reduce((a, n) => a + Number(n), 0) / 3;
-    const rim = getComputedStyle(indicator()).borderTopColor;
-    const behind = getComputedStyle(
+          .match(/\d+/g)
+          .slice(0, 3)
+          .reduce((a, n) => a + Number(n), 0) / 3;
+      const rim = getComputedStyle(indicator()).borderTopColor;
+      const behind = getComputedStyle(
         app.querySelector("section"),
-    ).backgroundColor;
-    check(
+      ).backgroundColor;
+      check(
         `an unchecked box in the dark theme has a rim that reads (rim ${rim} on ${behind})`,
         lightness(rim) - lightness(behind) > 15,
-    );
+      );
 
-    wear("pop");
-    await settle();
-    const successButton = buttons().find(
+      wear("pop");
+      await settle();
+      const successButton = buttons().find(
         (b) => b.textContent.trim() === "success",
-    );
-    check(
+      );
+      check(
         "pop draws a success button in its own green",
         getComputedStyle(successButton).backgroundColor ===
-        rgb(vars().getPropertyValue("--success-background-color")),
-    );
-    check(
+          rgb(vars().getPropertyValue("--success-background-color")),
+      );
+      check(
         "with white on it",
         getComputedStyle(successButton).color === "rgb(255, 255, 255)",
-    );
+      );
 
-    wear("aristo");
-    await settle();
+      wear("aristo");
+      await settle();
 
-    // The trigger dims with the control it belongs to: the browser fades a
-    // disabled <select> by itself, which used to leave the chevron beside it at
-    // full strength.
-    click(labelled("Disable controls"));
-    const dimmed = getComputedStyle(combo);
-    check(
+      // The trigger dims with the control it belongs to: the browser fades a
+      // disabled <select> by itself, which used to leave the chevron beside it at
+      // full strength.
+      click(labelled("Disable controls"));
+      const dimmed = getComputedStyle(combo);
+      check(
         "a disabled combo dims as a whole",
         dimmed.opacity === vars().getPropertyValue("--opacity-disable").trim(),
-    );
-    check(
+      );
+      check(
         "its trigger included",
         getComputedStyle(combo.querySelector(".chevron")).opacity === "1" &&
-        getComputedStyle(combo.querySelector("select")).opacity === "1",
-    );
-    click(labelled("Enable controls"));
+          getComputedStyle(combo.querySelector("select")).opacity === "1",
+      );
+      click(labelled("Enable controls"));
 
-    document.querySelector("#results").textContent = log.join("\n");
-    document.title =
+      document.querySelector("#results").textContent = log.join("\n");
+      document.title =
         failed === 0
-            ? `verdict PASS (${log.length} checks)`
-            : `verdict FAIL (${failed} of ${log.length})`;
-</script>
-</body>
+          ? `verdict PASS (${log.length} checks)`
+          : `verdict FAIL (${failed} of ${log.length})`;
+    </script>
+  </body>
 </html>

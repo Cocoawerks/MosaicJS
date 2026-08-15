@@ -116,7 +116,7 @@
 
 .v-Text.is-focused {
     outline-offset: 0;
-    outline-width: 0.2rem;
+    outline-width: 0.18rem;
     outline-color: var(--focus-ring);
     border-color: var(--focus-ring);
 }

@@ -57,6 +57,7 @@
 .v-ComboBox:focus,
 .v-ComboBox select:focus {
     outline: var(--focus-ring) solid 3px;
+    outline-offset: 1.5px;
 }
 
 .v-ComboBox .chevron {
