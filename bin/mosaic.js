@@ -268,6 +268,17 @@ new MosaicApplication({ id: "app", controller: new AppController() });
 <head>
     <meta charset="utf-8" />
     <title>${name}</title>
+
+    <!-- Source Sans 3, the face the themes are drawn in. Everything still reads
+         without it — the theme's stack falls back to the system face — so this
+         is the one line to drop for an application that would rather not
+         fetch a font. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..700;1,300..700&amp;display=swap"
+    />
 </head>
 
 <body>

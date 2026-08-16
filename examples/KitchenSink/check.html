@@ -2068,6 +2068,218 @@
       );
       click(labelled("Enable controls"));
 
+      // --- TitleBar and ToolBar -------------------------------------------------
+      const barBox = section("TitleBar and ToolBar");
+      const frame = barBox.querySelector("div");
+      const titleBar = barBox.querySelector(".v-TitleBar");
+      const titleLabel = barBox.querySelector(".v-TitleBar-title");
+      const toolBar = barBox.querySelector(".v-ToolBar");
+      const overflowBtn = () => toolBar.querySelector(".v-ToolBar-overflow");
+      // The overflow button is a ToolBarItem too, so the items are the ones
+      // outside the slot it sits in.
+      const tools = () =>
+        [...toolBar.querySelectorAll(".v-ToolBarItem")].filter(
+          (item) => !overflowBtn().contains(item),
+        );
+      const inBar = () =>
+        tools()
+          .filter((item) => getComputedStyle(item).display !== "none")
+          .map((item) => item.textContent.trim());
+
+      // A toggle latches on the press, as every toggle in the framework does,
+      // so the press is what has to be sent — the click alone would not flip it.
+      const pressBarButton = (el) => {
+        el.dispatchEvent(
+          new PointerEvent("pointerdown", { bubbles: true, button: 0 }),
+        );
+        click(el);
+      };
+
+      barBox.scrollIntoView({ block: "center" });
+      // Let the page settle where it landed: a popover puts itself away when the
+      // page scrolls under it, and a scroll still arriving would close the menu
+      // this block is about to open.
+      await settle();
+
+      // Centred on the bar itself, not on the room the side regions leave —
+      // which is the whole reason the three of them are out of flow.
+      const offCentre = () => {
+        const bar = titleBar.getBoundingClientRect();
+        const label = titleLabel.getBoundingClientRect();
+        return Math.abs(
+          (label.left + label.right) / 2 - (bar.left + bar.right) / 2,
+        );
+      };
+      check(
+        `the title is centred on the strip (out by ${offCentre().toFixed(1)}px)`,
+        offCentre() <= 1,
+      );
+      check(
+        "and the strip was told how narrow it may get",
+        parseFloat(titleBar.style.minWidth) > 0,
+      );
+
+      // The theme's push-button gloss must not come through on a bar meant to be
+      // flat, and the item is as tall as the strip rather than floating in it,
+      // clipped: both are what the sheet's extra class of specificity buys.
+      const backButton = titleBar.querySelector(".v-TitleBarButton");
+      const backFace = getComputedStyle(backButton);
+      check(
+        `a title bar button is flat, with no push-button gloss on it (bg ${backFace.backgroundImage}, shadow ${backFace.boxShadow})`,
+        backFace.backgroundImage === "none" && backFace.boxShadow === "none",
+      );
+      check(
+        `and fills the strip's height (${backButton.getBoundingClientRect().height} of ${titleBar.getBoundingClientRect().height})`,
+        Math.abs(
+          backButton.getBoundingClientRect().height -
+            titleBar.getBoundingClientRect().height,
+        ) <= 1,
+      );
+
+      // --- MenuBarItem ---------------------------------------------------------
+      const barItems = [...titleBar.querySelectorAll(".v-MenuBarItem")];
+      const barMenu = () =>
+        [...document.querySelectorAll(".v-MenuBarItem-menu")].find(
+          (menu) => getComputedStyle(menu).visibility !== "hidden",
+        );
+
+      check(
+        `the strip drew its two menu bar items (${barItems
+          .map((i) => i.textContent.trim())
+          .join("|")})`,
+        barItems.map((i) => i.textContent.trim()).join("|") === "File|Edit",
+      );
+      check(
+        `and only the one that asked for it advertises its menu (${!!barItems[0].querySelector(
+          "i.chevron",
+        )}, ${!!barItems[1].querySelector("i.chevron")})`,
+        !!barItems[0].querySelector("i.chevron") &&
+          !barItems[1].querySelector("i.chevron"),
+      );
+
+      pressBarButton(barItems[0]);
+      await settle();
+      const dropped = barMenu();
+      check(
+        "pressing one drops its menu, and the item says so",
+        !!dropped &&
+          barItems[0].className.includes("is-active") &&
+          barItems[0].getAttribute("aria-expanded") === "true",
+      );
+
+      // A menu bar's menu hangs off its item rather than floating below it:
+      // left edges flush, and no gap where a callout would have gone.
+      const barItemBox = barItems[0].getBoundingClientRect();
+      const barMenuBox = dropped?.getBoundingClientRect() ?? {};
+      check(
+        `it hangs from the item's left edge and meets its bottom (${Math.round(
+          barMenuBox.left - barItemBox.left,
+        )}px across, ${Math.round(barMenuBox.top - barItemBox.bottom)}px down)`,
+        Math.abs(barMenuBox.left - barItemBox.left) <= 1 &&
+          Math.abs(barMenuBox.top - barItemBox.bottom) <= 1,
+      );
+      check(
+        `and squares the corners it shares with the item (${
+          getComputedStyle(dropped).borderRadius
+        })`,
+        getComputedStyle(dropped).borderTopLeftRadius === "0px" &&
+          getComputedStyle(dropped).borderBottomLeftRadius !== "0px",
+      );
+
+      // With one open the bar is one control: the pointer alone switches.
+      barItems[1].dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
+      await settle();
+      check(
+        "moving the pointer to its neighbour switches menus without a press",
+        !barItems[0].className.includes("is-active") &&
+          barItems[1].className.includes("is-active") &&
+          barMenu()?.textContent.trim().startsWith("Cut"),
+      );
+
+      const cutLine = barMenu().querySelector(".v-MenuItem");
+      click(cutLine);
+      await settle();
+      check(
+        "choosing a line is what the item reports, not the press that opened it",
+        app.textContent.includes("bar=Edit: cut") &&
+          !barItems[1].className.includes("is-active"),
+      );
+
+      // A toolbar item stacks: its label sits below its icon, not beside it.
+      const findItem = tools()[0];
+      const findIcon = findItem.querySelector(".icon").getBoundingClientRect();
+      const findLabel = findItem.querySelector(".label").getBoundingClientRect();
+      check(
+        "a toolbar item stacks its label under its icon",
+        findLabel.top >= findIcon.bottom - 1 &&
+          Math.abs(
+            (findLabel.left + findLabel.right) / 2 -
+              (findIcon.left + findIcon.right) / 2,
+          ) <= 1,
+      );
+
+      check(
+        "the toolbar holds every item, with nothing in overflow",
+        inBar().join("|") === "Find|Delete|Account|Dismiss|Nowhere" &&
+          getComputedStyle(overflowBtn()).display === "none",
+      );
+
+      // Too narrow for all of them: the trailing ones leave first, so what is
+      // at the leading edge survives longest.
+      frame.style.width = "300px";
+      await settle();
+      const left = inBar();
+      check(
+        `a narrowed bar keeps the leading items (${left.join(", ") || "none"})`,
+        left.length > 0 &&
+          left.length < 5 &&
+          left[0] === "Find" &&
+          !left.includes("Nowhere"),
+      );
+      check(
+        "and the overflow button appears",
+        getComputedStyle(overflowBtn()).display !== "none",
+      );
+
+      pressBarButton(overflowBtn().querySelector("button"));
+      await settle();
+      const overflowMenu = [...document.querySelectorAll(".v-Menu")].find(
+        (menu) => getComputedStyle(menu).visibility !== "hidden",
+      );
+      check(
+        "pressing it drops a menu of exactly what left the bar",
+        !!overflowMenu &&
+          [...overflowMenu.querySelectorAll(".v-MenuItem")]
+            .map((line) => line.textContent.trim())
+            .join("|") ===
+            ["Find", "Delete", "Account", "Dismiss", "Nowhere"]
+              .filter((name) => !left.includes(name))
+              .join("|"),
+      );
+
+      // Choosing a line works the item it stands for, which is the whole point
+      // of moving an item rather than dropping it.
+      const line = overflowMenu?.querySelector(".v-MenuItem:not(.is-disabled)");
+      const chosen = line?.textContent.trim();
+      click(line);
+      await settle();
+      check(
+        `choosing "${chosen}" fires that item's action`,
+        app.textContent.includes(`bar=${chosen}`),
+      );
+      check(
+        "and the button comes back up with the menu",
+        !overflowBtn().querySelector("button").className.includes("is-active"),
+      );
+
+      frame.style.width = "";
+      await settle();
+      check(
+        "widened again, every item comes back to the bar",
+        inBar().length === 5 &&
+          getComputedStyle(overflowBtn()).display === "none",
+      );
+
       document.querySelector("#results").textContent = log.join("\n");
       document.title =
         failed === 0

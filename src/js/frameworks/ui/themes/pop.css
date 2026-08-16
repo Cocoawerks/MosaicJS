@@ -10,6 +10,23 @@
  * buys back the specificity a component's stylesheet gets from its scope class.
  */
 :root {
+    /* The face everything is set in. Source Sans 3 is what Mosaic is drawn in;
+       the rest of the stack is what a page falls back to when the application
+       has not loaded it (a `<link>` to it, as the KitchenSink page carries).
+       Declared as a variable so an application can put its own in front of it
+       by redeclaring one thing. */
+    --font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    /* Where a capital sits against the middle of a line box, for the face above.
+       A font's ascent and descent are not symmetric — Source Sans 3 carries
+       1.00em above the baseline and 0.41em below, against a 0.71em capital — so
+       text centred by its line box reads high, by (descent - ascent + cap) / 2.
+       This is that, and anything centring words against something else (a menu
+       line's icon) takes it back. A face with other metrics wants another
+       number, which is why it is stated beside the family rather than inside a
+       component. */
+    --label-cap-offset: 0.06em;
+
     --text-color: #292929;
     --accent-color: #5fa8b6;
     /* The strip above the toolbar (see the .v-TitleBar rule below). */
@@ -483,3 +500,4 @@ textarea,
 .v-Switch.checked.checked > .indicator:before {
     border-color: color-mix(in srgb, #4fa1b0, black 10%);
 }
+

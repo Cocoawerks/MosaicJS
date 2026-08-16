@@ -34,6 +34,14 @@ export default class Menu extends PopOver {
          * put there by hand.
          */
         submenu: {type: Boolean, default: false},
+        /**
+         * One more class for the panel, for a menu another component drops and
+         * has something to say about — a menu bar item squares the corners its
+         * menu shares with the item it hangs from. Stated here rather than
+         * written onto the element for the reason `submenu` is: a redraw would
+         * rub out anything put there by hand.
+         */
+        panelClass: {type: String},
     };
 
     constructor() {
@@ -308,7 +316,7 @@ export default class Menu extends PopOver {
     // --- drawing -------------------------------------------------------------
 
     panelClasses() {
-        return ["v-Menu", this.submenu ? "submenu" : null];
+        return ["v-Menu", this.submenu ? "submenu" : null, this.panelClass];
     }
 
     /** The panel is the menu, as it is in Java: the list inside it is plumbing. */

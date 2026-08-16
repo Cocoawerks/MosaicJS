@@ -1,0 +1,38 @@
+/*
+ * The bar itself, ported from GWT Mosaic:
+ * client/components/resources/toolbar/style.css.
+ *
+ * These rules match what ToolBar draws — the bar and the slot its overflow
+ * button sits in — so they are scoped to this module in the ordinary way. The
+ * items' own face is another module's drawing and lives in toolbar-item.css.
+ */
+.v-ToolBar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 7px;
+    box-sizing: border-box;
+    width: 100%;
+    border-bottom: 1px solid var(--default-border-color);
+    background-color: var(--toolbar-background);
+}
+
+/* A flexible gap: whatever follows it is pushed to the trailing edge. */
+.v-ToolBar-flex {
+    flex: 1 1 auto;
+}
+
+/* The trailing overflow ("»") button sits hard against the right edge. */
+.v-ToolBar-overflow {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+.v-ToolBar-overflow :global(.v-ToolBarItem.v-Button .icon svg) {
+    width: 20px;
+    height: 20px;
+    display: block;
+}

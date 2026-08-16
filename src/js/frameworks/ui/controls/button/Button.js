@@ -175,6 +175,17 @@ export default class Button extends Control {
         ];
     }
 
+    /**
+     * Drawn after the label, at the button's trailing edge. Nothing by default;
+     * a kind of button that carries something there — a menu bar item's chevron
+     * — says what here, the way a TextBase gives a field `drawPrefix` and
+     * `drawSuffix`. Drawn by the subclass, so the subclass's own sheet reaches
+     * it in the ordinary scoped way.
+     */
+    drawSuffix() {
+        return null;
+    }
+
     draw() {
         return (
             <button
@@ -187,6 +198,7 @@ export default class Button extends Control {
                 <div>
                     {this.hasIcon ? this.drawIcon() : null}
                     {this.iconOnly ? null : <span styleName="label">{this.text}</span>}
+                    {this.drawSuffix()}
                 </div>
             </button>
         );

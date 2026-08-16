@@ -88,7 +88,9 @@
 }
 
 .v-MenuItem .icon {
-    margin: 1px 12px 0 0;
+    /* Symmetric, so the flex line centres the icon on itself: a 1px top margin
+       alone (which is what this was) drops it half a pixel. */
+    margin: 0 12px 0 0;
     border: none;
     padding: 1px;
     background-color: transparent;
@@ -107,6 +109,16 @@
     margin-left: 0;
     user-select: none;
     font-size: 17px;
+    /* Not the menu's 12px, which is a line shorter than the text it holds — the
+       glyphs would spill out of their own box and be at the mercy of anything
+       that clips. */
+    line-height: normal;
+    /* Centred by its line box, a label reads high: a face's ascent and descent
+       are not symmetric, so the capitals sit above the middle of the line. This
+       puts them back on it, which is what lines the words up with the icon
+       beside them. The amount belongs to the face, so the theme states it. */
+    position: relative;
+    top: var(--label-cap-offset, 0);
 }
 
 .v-MenuItem.noIcon span {

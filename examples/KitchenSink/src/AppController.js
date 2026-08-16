@@ -73,6 +73,9 @@ export default class AppController {
     /** Which tab of the TabView is chosen. */
     this.tab = "0: Overview";
 
+    /** What was last worked in the title bar or the toolbar. */
+    this.bar = "nothing yet";
+
     /** The side the popover is asked to try first. */
     this.where = "bottom_center";
     /** @type {string} What the name field holds. */
@@ -535,6 +538,44 @@ export default class AppController {
   tabChosen(view, index, title) {
     this.tab = `${index}: ${title}`;
     this.note(`tab: ${title}`);
+  }
+
+  // --- the two bars ---------------------------------------------------------
+
+  /**
+   * A title bar button was pressed. A latching one reports its new state as
+   * well, since that is what it is there to show.
+   *
+   * @param {object} button The TitleBarButton.
+   */
+  barButtonClicked(button) {
+    this.bar = button.toggle
+      ? `${button.text} (${button.on ? "on" : "off"})`
+      : button.text;
+    this.note(`title bar: ${this.bar}`);
+  }
+
+  /**
+   * A toolbar item was worked — from the bar itself, or from the overflow menu,
+   * which fires the item's own action rather than one of its own.
+   *
+   * @param {object} item The ToolBarItem.
+   */
+  toolClicked(item) {
+    this.bar = item.text;
+    this.note(`toolbar: ${item.text}`);
+  }
+
+  /**
+   * A menu bar item's menu settled on a line. The item's action is what was
+   * chosen, not the press that dropped the menu.
+   *
+   * @param {object} item The MenuBarItem.
+   * @param {string} value The line that was chosen.
+   */
+  barMenuChose(item, value) {
+    this.bar = `${item.text}: ${value}`;
+    this.note(`menu bar: ${this.bar}`);
   }
 
   // --- the colour well ------------------------------------------------------

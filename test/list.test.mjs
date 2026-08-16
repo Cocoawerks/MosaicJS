@@ -205,3 +205,35 @@ test("the reach either side is what the markup asked for", () => {
   assert.equal(rows()[0].textContent, "96: Person 96");
   assert.equal(rows().length, 5 + 2 * (2 + 2));
 });
+
+test("scrolling reuses the rows already drawn rather than building them again", () => {
+  // A row is a slot, and the datum in it changing is a patch. Keyed by index it
+  // would not be: a window's indices all shift by one as it scrolls, so every
+  // row would read as a new one and the whole window would be rebuilt to move
+  // it by a single row.
+  const {view, rows} = list(ProgressiveListView, {itemHeight: "20", extension: "0", batch: "0"}, 500);
+
+  sized(view, {height: 100, scrollTop: 2000});
+  view.visibleRangeChanged();
+  const before = rows();
+
+  // Counted rather than timed: what costs is the building, and a scroll of one
+  // row should build one row's worth at most — not a window's.
+  let built = 0;
+  const create = document.createElement.bind(document);
+  document.createElement = (tag) => {
+    built++;
+    return create(tag);
+  };
+  view.scroller.scrollTop = 2020;
+  view.visibleRangeChanged();
+  document.createElement = create;
+
+  assert.equal(built, 0, "the row that left is the row that came back, filled in again");
+  assert.equal(rows()[0].textContent, "101: Person 101", "and it says what it now holds");
+  // The nodes stay where they are and the data moves through them, which is the
+  // whole of what a slot means. `ok` rather than `equal`: a failed comparison of
+  // two DOM nodes would try to print the difference between two whole trees.
+  assert.ok(rows()[0] === before[0], "the first row is the one that was there");
+  assert.ok(rows().at(-1) === before.at(-1), "and so is the last");
+});

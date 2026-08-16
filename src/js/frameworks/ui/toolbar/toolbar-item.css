@@ -1,0 +1,96 @@
+/*
+ * The toolbar item's face, ported from GWT Mosaic:
+ * client/components/resources/toolbar/item.css.
+ *
+ * Every selector here goes through `:global(...)`, as the tooltip's sheet does
+ * and for the same reason: a stylesheet is scoped to the module that imports
+ * it, and nothing on this page was drawn by that module. A ToolBarItem's
+ * element — and the row and label inside it — are Button's drawing, so a scoped
+ * selector would carry this module's hash and match nothing at all.
+ *
+ * That costs a class of specificity, and it has to be bought back. A scoped
+ * sheet carries its hash — `.v-Button.x1y2z3q` — which is what keeps a
+ * component level with the theme, whose every selector the build prefixes with
+ * `:root`, and with the button's own base sheet. Written global these rules
+ * would be a class light and would lose each tie: `.v-Button.noIcon` would
+ * put its 1px 20px back on an item that has no icon. So the item's own class
+ * stands in for the hash and is repeated once more than the rule needs —
+ * `.v-ToolBarItem.v-ToolBarItem.v-Button` where a scoped sheet would have
+ * written `.v-ToolBarItem.v-Button`.
+ *
+ * Compounded with `.v-Button` on top of that, so these rules win against the
+ * button's base sheet (its padding, its border, its `> div` row, its
+ * `span { flex: 1 }`) rather than against nothing at all.
+ */
+:global(.v-ToolBarItem.v-ToolBarItem.v-Button) {
+    display: inline-flex;
+    /* Never shrink: items keep their natural width so the toolbar reliably
+       overflows (scrollWidth > clientWidth) once they no longer fit, which is
+       how ToolBar detects what to move into the overflow menu. */
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 0;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    background-color: var(--toolbar-button-background, transparent);
+    color: var(--toolbar-button-foreground, var(--default-foreground-color));
+    fill: var(--toolbar-button-foreground, var(--default-foreground-color));
+    cursor: pointer;
+}
+
+/* Stack the icon above the label. */
+:global(.v-ToolBarItem.v-ToolBarItem.v-Button > div) {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    padding: 0;
+    gap: 7px;
+}
+
+:global(.v-ToolBarItem.v-ToolBarItem.v-Button > div > span) {
+    flex: none;
+    display: block;
+    font-size: 15px;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-align: center;
+}
+
+:global(.v-ToolBarItem.v-ToolBarItem.v-Button .icon) {
+    margin: 0;
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+}
+
+:global(.v-ToolBarItem.v-ToolBarItem.v-Button .icon svg) {
+    width: 24px;
+    height: 24px;
+    display: block;
+}
+
+/* Highlight on hover. */
+:global(.v-ToolBarItem.v-ToolBarItem.v-Button:not(.is-active):not(.is-disabled):hover) {
+    background-color: var(--toolbar-button-hover, rgba(0, 0, 0, 0.06));
+}
+
+/* Darken on press — the runtime adds `is-active` while the button is down. */
+:global(.v-ToolBarItem.v-ToolBarItem.v-Button.is-active) {
+    background-color: var(--toolbar-button-active, rgba(0, 0, 0, 0.12));
+}
+
+/* Disabled: dimmed, no hover or press wash, and the cursor says so. A disabled
+   Control also refuses the press, so the item cannot be worked either. */
+:global(.v-ToolBarItem.v-ToolBarItem.v-Button.is-disabled) {
+    opacity: var(--opacity-disable, 0.4);
+    cursor: not-allowed;
+    background-color: transparent;
+}
+
+/* The theme's focus ring, as `.v-Button:focus` has it. */
+:global(.v-ToolBarItem.v-ToolBarItem.v-Button:focus) {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 1px;
+}

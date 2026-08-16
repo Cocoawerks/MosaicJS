@@ -147,12 +147,20 @@ export default class ListView extends Component {
      * One row, drawn by the kind of component this list holds and wrapped in the
      * line the sheet lays out — `v-List-item` is the wrapper the Java version
      * puts that class on.
+     *
+     * No `key`. A key is what tells the runtime that the node at a position is
+     * not the node that was there before, and rows are the one case where that
+     * is never true: a row is a slot the list pours a datum into, and the datum
+     * at a slot changing is a patch, not a new row. Keyed by index it would be
+     * the opposite — a progressive list draws a window whose indices all shift
+     * by one as it scrolls, so every row would count as new and the whole window
+     * would be rebuilt for one row of movement.
      */
     drawItem(item, index, style = null) {
         const Item = this.itemType;
 
         return (
-            <div key={index} styleName="v-List-item" style={style} role="option">
+            <div styleName="v-List-item" style={style} role="option">
                 <Item
                     {...this.itemProps}
                     content={item}

@@ -17,7 +17,7 @@
     color 0.1s,
     opacity 0.1s;
     border-radius: 4px;
-    font-size: 13pt;
+    font-size: 12pt;
     padding: 1px 19px 1px 10px;
     color: var(--default-foreground-color);
     fill: var(--default-foreground-color);
@@ -36,7 +36,7 @@
 .v-Button span {
     flex: 1;
     pointer-events: none;
-    margin-bottom: 1px;
+    margin-top: 1px;
 }
 
 .v-Button.is-disabled {

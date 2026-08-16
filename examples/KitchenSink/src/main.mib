@@ -432,6 +432,54 @@
         <p styleName="values">tab={tab}</p>
     </section>
 
+    <section styleName="section">
+        <h2 styleName="heading">TitleBar and ToolBar</h2>
+        <p styleName="note">
+            The two strips a window is topped with. The title bar centres its title on
+            itself, whatever sits either side of it; the toolbar below stacks each item's
+            icon over its label, and when the strip is too narrow for all of them the
+            trailing ones move into the ("»") menu at its right — drag the window narrower
+            to watch them go. The two items at the left of the strip drop menus that meet its
+            bottom edge; with one open, moving the pointer to the other switches to it.
+        </p>
+
+        <div styleName="bars">
+            <TitleBar title="Untitled document">
+                <MenuBarItem slot="actions" text="File" showChevron action="barMenuChose">
+                    <MenuItem text="New" value="new"/>
+                    <MenuItem text="Open" value="open"/>
+                    <MenuItem separator="true"/>
+                    <MenuItem text="Close" value="close" enabled="false"/>
+                </MenuBarItem>
+                <MenuBarItem slot="actions" text="Edit" action="barMenuChose">
+                    <MenuItem text="Cut" value="cut"/>
+                    <MenuItem text="Paste" value="paste"/>
+                </MenuBarItem>
+                <TitleBarButton slot="actions" text="Back" icon="ks-bar-icon ks-icon-close"
+                                action="barButtonClicked"/>
+                <span styleName="pill">Saved</span>
+                <TitleBarButton slot="trailing" text="Ada" icon="ks-bar-icon ks-icon-user"
+                                toggle action="barButtonClicked"/>
+            </TitleBar>
+
+            <ToolBar outlet="tools">
+                <ToolBarItem text="Find" icon="ks-bar-icon ks-icon-search"
+                             action="toolClicked"/>
+                <ToolBarItem text="Delete" icon="ks-bar-icon ks-icon-trash"
+                             action="toolClicked"/>
+                <ToolBarItem text="Account" icon="ks-bar-icon ks-icon-user"
+                             action="toolClicked"/>
+                <ToolBarItem text="Dismiss" icon="ks-bar-icon ks-icon-close"
+                             action="toolClicked"/>
+                <ToolBarFlex/>
+                <ToolBarItem text="Nowhere" icon="ks-bar-icon ks-icon-close" enabled="false"
+                             action="toolClicked"/>
+            </ToolBar>
+        </div>
+
+        <p styleName="values">bar={bar}</p>
+    </section>
+
     <p styleName="last">Last action: {lastAction}</p>
 </div>
 
@@ -569,6 +617,41 @@
 
     :global(.ks-icon-close) {
         --ks-icon: url("data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2024%2024%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%20%3Cpath%20d%3D%22M6.29%207.7l10%2010c.39.39%201.02.39%201.41%200%20.39-.4.39-1.03%200-1.42l-10-10c-.4-.4-1.03-.4-1.42-.001%20-.4.39-.4%201.02%200%201.41Zm1.41%2010l10-10c.39-.4.39-1.03%200-1.42%20-.4-.4-1.03-.4-1.42%200l-10%2010c-.4.39-.4%201.02-.001%201.41%20.39.39%201.02.39%201.41%200Z%22%2F%3E%20%3C%2Fsvg%3E");
+    }
+
+    /* The two bars, framed so they read as the top of a window rather than as
+       two strips loose on the page. */
+    .bars {
+        width: 100%;
+        border: 1px solid var(--group-border-color);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    /* The save pill that sits beside the title — the kind of thing the Java
+       version's `status` slot held, and what a child naming no region is for. */
+    .pill {
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        background: rgba(127, 127, 127, 0.25);
+        white-space: nowrap;
+    }
+
+    /* Icons for the two bars. Same mask as the menu's, over the elements a
+       ToolBarItem and a TitleBarButton draw — both another module's, so this
+       page reaches them with `:global` as it does the menu lines. */
+    :global(.v-ToolBarItem .icon.ks-bar-icon),
+    :global(.v-TitleBarButton .icon.ks-bar-icon) {
+        background-color: currentColor;
+        -webkit-mask-image: var(--ks-icon);
+        mask-image: var(--ks-icon);
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
     }
 
     /* A list fills the box it is given: these are the boxes. */
