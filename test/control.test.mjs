@@ -6,13 +6,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const {mount, h} = await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
-const {Control} = await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
+const { mount, h } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
+const { Control } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /** A minimal control: everything below comes from the base class. */
 class Widget extends Control {
   draw() {
-    return h("button", { ...this.controlProps(), class: this.controlClasses().join(" ") }, "x");
+    return h(
+      "button",
+      { ...this.controlProps(), class: this.controlClasses().join(" ") },
+      "x",
+    );
   }
 }
 

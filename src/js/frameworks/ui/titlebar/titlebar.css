@@ -6,67 +6,67 @@
  * own `.v-TitleBar` rule.
  */
 .v-TitleBar {
-    /* min-width is measured and written at run time (see updateMinWidth) so the
+  /* min-width is measured and written at run time (see updateMinWidth) so the
        strip stops shrinking exactly where the centred title would meet a side
        region. */
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    height: 36px;
-    box-sizing: border-box;
-    width: 100%;
-    flex: 0 0 auto;
-    padding: 8px;
-    /* Anchors the three regions, none of which is laid out in flow, so the
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 36px;
+  box-sizing: border-box;
+  width: 100%;
+  flex: 0 0 auto;
+  padding: 8px;
+  /* Anchors the three regions, none of which is laid out in flow, so the
        title centres on the bar itself. */
-    position: relative;
+  position: relative;
 }
 
 /* Centred on the bar itself rather than on the room the side regions leave —
    they are all out of flow, and this is centred the same way. Its content is a
    row, so the title and anything beside it sit together. */
 .v-TitleBar-title {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    /* Capped so a long title is cut rather than widening the bar. Kept in step
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  /* Capped so a long title is cut rather than widening the bar. Kept in step
        with MAX_TITLE_WIDTH_PX, which stops this cap from expanding the bar. */
-    max-width: 300px;
-    min-width: 0;
+  max-width: 300px;
+  min-width: 0;
 }
 
 /* The title itself: one line, cut with an ellipsis when there is no room. */
 .v-TitleBar-label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .v-TitleBar-actions {
-    position: absolute;
-    left: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    gap: 4px;
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .v-TitleBar-trailing {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    gap: 4px;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }

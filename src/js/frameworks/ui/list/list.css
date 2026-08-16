@@ -6,121 +6,121 @@
  * reach a LoadingIndicator, which is another module's, through :global.
  */
 .v-List {
-    overflow: hidden;
-    /* A list fills the box it is given and scrolls inside it. The Java version
+  overflow: hidden;
+  /* A list fills the box it is given and scrolls inside it. The Java version
        leaves this to the layout panel it sits in and to ScrollPanel's own inline
        height; here the sheet says it, so a list in a plain div behaves the same:
        without it the scroller grows to its content and nothing is ever out of
        view — which, for a progressive list, means drawing every row. */
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .v-List.empty {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .v-List.empty .scroller {
-    /* Size to the message (not full height) so the column's justify-content
+  /* Size to the message (not full height) so the column's justify-content
        can center it vertically; align-items centers it horizontally. */
-    height: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .v-List.empty {
-    color: var(--list-empty-foreground);
-    font-size: 17px;
-    text-align: center;
+  color: var(--list-empty-foreground);
+  font-size: 17px;
+  text-align: center;
 }
 
 .v-List.empty .v-List-empty-text {
-    display: block;
+  display: block;
 }
 
 .v-List > div {
-    margin: 0;
+  margin: 0;
 }
 
 .v-List-item {
-    width: 100%;
-    box-sizing: border-box;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .v-List-item > * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 .v-List .scroller {
-    height: 100%;
-    /* The part that scrolls: it takes what is left of the list's height, and
+  height: 100%;
+  /* The part that scrolls: it takes what is left of the list's height, and
        `min-height: 0` is what lets a flex child be shorter than its content. */
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Loading state */
 .v-List.loading {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .v-List.loading .scroller {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /* Nothing to scroll while the spinner is up (ScrollPanel's inline
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Nothing to scroll while the spinner is up (ScrollPanel's inline
        overflow is cleared in setLoading). */
-    overflow: hidden;
+  overflow: hidden;
 }
 
 .v-List :global(.v-LoadingIndicator) {
-    padding: 0;
+  padding: 0;
 }
 
 .v-List :global(.v-LoadingIndicator-spinner) {
-    width: 29px;
-    height: 29px;
-    border-radius: 50%;
-    border: 4px solid var(--spinner-track);
-    border-top-color: var(--accent-color);
-    animation: v-list-spin 1s linear infinite;
-    margin: auto auto 16px;
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  border: 4px solid var(--spinner-track);
+  border-top-color: var(--accent-color);
+  animation: v-list-spin 1s linear infinite;
+  margin: auto auto 16px;
 }
 
 @keyframes v-list-spin {
-    to {
-        transform: rotate(360deg);
-    }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .v-List :global(.v-LoadingIndicator-message) {
-    font-size: 17px;
-    color: var(--text-color);
-    text-align: center;
+  font-size: 17px;
+  color: var(--text-color);
+  text-align: center;
 }
 
 /* A progressive list places its rows itself, in a box as tall as all of them. */
 .v-ProgressiveList .scroller {
-    overflow-y: auto;
+  overflow-y: auto;
 }
 
 .v-ProgressiveList-sizer {
-    position: relative;
-    width: 100%;
+  position: relative;
+  width: 100%;
 }
 
 /* The text a row falls back to when nothing was said about how to draw it. */
 .v-ListItem-text {
-    padding: 6px 10px;
+  padding: 6px 10px;
 }

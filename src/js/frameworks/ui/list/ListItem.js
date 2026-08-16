@@ -21,36 +21,36 @@
 //   <ListView outlet="people" emptyText="Nobody here">
 //       <PersonItem/>
 //   </ListView>
-import {Component} from "mosaic";
+import { Component } from "mosaic";
 
 import "./list.css";
 
 export default class ListItem extends Component {
-    static props = {
-        /** Where this row sits in the list. */
-        index: {type: Number, default: 0},
-    };
+  static props = {
+    /** Where this row sits in the list. */
+    index: { type: Number, default: 0 },
+  };
 
-    /** The datum this row is worth — whatever the list was given. */
-    get content() {
-        return this.get("content", null);
-    }
+  /** The datum this row is worth — whatever the list was given. */
+  get content() {
+    return this.get("content", null);
+  }
 
-    /** Everything the list holds, for a row that has to know its neighbours. */
-    get list() {
-        return this.get("list", []);
-    }
+  /** Everything the list holds, for a row that has to know its neighbours. */
+  get list() {
+    return this.get("list", []);
+  }
 
-    /** The list this row belongs to, handed down as it is drawn. */
-    get listView() {
-        return this.get("listView", null);
-    }
+  /** The list this row belongs to, handed down as it is drawn. */
+  get listView() {
+    return this.get("listView", null);
+  }
 
-    /**
-     * A row with nothing said about it reads as its datum does. A list worth
-     * looking at overrides this.
-     */
-    draw() {
-        return <div styleName="v-ListItem-text">{String(this.content ?? "")}</div>;
-    }
+  /**
+   * A row with nothing said about it reads as its datum does. A list worth
+   * looking at overrides this.
+   */
+  draw() {
+    return <div styleName="v-ListItem-text">{String(this.content ?? "")}</div>;
+  }
 }

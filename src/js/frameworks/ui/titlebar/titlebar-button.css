@@ -21,84 +21,90 @@
  * sheet is injected *after* the theme, so a tie went its way.
  */
 :global(.v-TitleBarButton.v-TitleBarButton.v-Button) {
-    display: inline-flex;
-    /* Its natural width, and the bar's full height: the regions are positioned
+  display: inline-flex;
+  /* Its natural width, and the bar's full height: the regions are positioned
        rather than laid out in flow, so the bar's padding does not hold the
        button in — matching its height to the bar's is what makes the item fill
        the strip edge to edge instead of floating in it, clipped. */
-    flex: 0 0 auto;
-    height: 36px;
-    min-height: 0;
-    /* No vertical padding or margin: the item is as tall as the bar, and the
+  flex: 0 0 auto;
+  height: 36px;
+  min-height: 0;
+  /* No vertical padding or margin: the item is as tall as the bar, and the
        region's align-items centres it. */
-    margin: 0;
-    padding: 0 8px;
-    border: none;
-    border-radius: 0;
-    /* Transparent by default; the theme sets the label colour and the hover and
+  margin: 0;
+  padding: 0 8px;
+  border: none;
+  border-radius: 0;
+  /* Transparent by default; the theme sets the label colour and the hover and
        press washes. */
-    background-color: transparent;
-    cursor: pointer;
+  background-color: transparent;
+  cursor: pointer;
 }
 
 /* Flat and see-through whatever the theme does to a push button: a gloss — a
    gradient plus an inset highlight — would otherwise show through as a raised
    face. Tripled so it outscores the theme's own doubled `.v-Button.v-Button`. */
 :global(.v-TitleBarButton.v-TitleBarButton.v-TitleBarButton.v-Button) {
-    background-image: none;
-    box-shadow: none;
+  background-image: none;
+  box-shadow: none;
 }
 
 /* Icon and label in a row, unlike the toolbar item's stacked layout. */
 :global(.v-TitleBarButton.v-TitleBarButton.v-Button > div) {
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    overflow: visible;
-    padding: 0;
-    gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  padding: 0;
+  gap: 6px;
 }
 
 :global(.v-TitleBarButton.v-TitleBarButton.v-Button > div > span) {
-    flex: none;
-    display: block;
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1;
-    white-space: nowrap;
-    margin-bottom: 0;
+  flex: none;
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  margin-bottom: 0;
 }
 
 /* Small enough to clear the bar's height with room to spare. */
 :global(.v-TitleBarButton.v-TitleBarButton.v-Button .icon) {
-    margin: 0;
-    width: 21px;
-    height: 21px;
-    font-size: 21px;
-    flex: 0 0 auto;
+  margin: 0;
+  width: 21px;
+  height: 21px;
+  font-size: 21px;
+  flex: 0 0 auto;
 }
 
 :global(.v-TitleBarButton.v-TitleBarButton.v-Button .icon svg) {
-    width: 21px;
-    height: 21px;
-    display: block;
+  width: 21px;
+  height: 21px;
+  display: block;
 }
 
 /* Hover and press keep the theme's gloss off; the washes themselves are the
    theme's, which states them at this weight and so still lands them. */
-:global(.v-TitleBarButton.v-TitleBarButton.v-TitleBarButton.v-Button:not(.is-active):not(.is-disabled):hover),
-:global(.v-TitleBarButton.v-TitleBarButton.v-TitleBarButton.v-Button.is-active) {
-    background-image: none;
-    box-shadow: none;
+:global(
+  .v-TitleBarButton.v-TitleBarButton.v-TitleBarButton.v-Button:not(
+      .is-active
+    ):not(.is-disabled):hover
+),
+:global(
+  .v-TitleBarButton.v-TitleBarButton.v-TitleBarButton.v-Button.is-active
+) {
+  background-image: none;
+  box-shadow: none;
 }
 
 :global(.v-TitleBarButton.v-TitleBarButton.v-Button.is-disabled) {
-    opacity: var(--opacity-disable, 0.4);
-    cursor: not-allowed;
-    background-color: transparent;
+  opacity: var(--opacity-disable, 0.4);
+  cursor: not-allowed;
+  background-color: transparent;
 }
 
 :global(.v-TitleBarButton.v-TitleBarButton.v-Button:focus) {
-    outline: 3px solid var(--focus-ring);
-    outline-offset: 1px;
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 1px;
 }

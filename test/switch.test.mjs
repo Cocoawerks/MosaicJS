@@ -6,12 +6,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const {mount} = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
-);
-const {Switch} = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
-);
+const { mount } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
+const { Switch } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /** Mount a switch and hand back its view, root element and indicator. */
 function open(props = {}) {
@@ -21,11 +19,16 @@ function open(props = {}) {
   return { host, view, el, indicator: el.childNodes[0] };
 }
 
-const classesOf = (el) => el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
+const classesOf = (el) =>
+  el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
 const click = (el) => el.dispatchEvent({ type: "click" });
 const keyDown = (el, key) => {
   let prevented = false;
-  el.dispatchEvent({ type: "keydown", key, preventDefault: () => (prevented = true) });
+  el.dispatchEvent({
+    type: "keydown",
+    key,
+    preventDefault: () => (prevented = true),
+  });
   return prevented;
 };
 
@@ -58,7 +61,10 @@ test("it is focusable and labelled by its own label", () => {
   const { el } = open({ text: "Wi-Fi" });
 
   assert.equal(el.getAttribute("tabindex"), "0");
-  assert.equal(el.getAttribute("aria-labelledby"), el.childNodes[1].getAttribute("id"));
+  assert.equal(
+    el.getAttribute("aria-labelledby"),
+    el.childNodes[1].getAttribute("id"),
+  );
 });
 
 test("clicking flips it, and clicking again flips it back", () => {
@@ -82,17 +88,30 @@ test("Enter and Space flip it, and the key is consumed", () => {
 
 test("the action fires with the new value when the user flips it", () => {
   const fired = [];
-  const { el, view } = open({ text: "x", action: (control, value) => fired.push([control, value]) });
+  const { el, view } = open({
+    text: "x",
+    action: (control, value) => fired.push([control, value]),
+  });
 
   click(el);
-  assert.deepEqual(fired.map((f) => f[1]), [true]);
+  assert.deepEqual(
+    fired.map((f) => f[1]),
+    [true],
+  );
   assert.equal(fired[0][0], view);
 
   view.value = false;
-  assert.deepEqual(fired.map((f) => f[1]), [true], "an assignment is not a flip by the user");
+  assert.deepEqual(
+    fired.map((f) => f[1]),
+    [true],
+    "an assignment is not a flip by the user",
+  );
 
   view.setValue(true, true);
-  assert.deepEqual(fired.map((f) => f[1]), [true, true]);
+  assert.deepEqual(
+    fired.map((f) => f[1]),
+    [true, true],
+  );
 });
 
 test("a disabled switch ignores the pointer and the keyboard", () => {

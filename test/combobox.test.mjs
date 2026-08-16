@@ -6,12 +6,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const {mount, h} = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
-);
-const {ComboBox, Option} = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
-);
+const { mount, h } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
+const { ComboBox, Option } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /** Mount a combo and hand back its view, root element and select. */
 function open(props = {}, children = []) {
@@ -26,7 +24,8 @@ const entries = (...pairs) =>
   pairs.map(([text, value, enabled]) => h(Option, { text, value, enabled }));
 
 // The scope class is left out: it says which module styled the element.
-const classesOf = (el) => el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
+const classesOf = (el) =>
+  el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
 
 test("draws the ported markup: div[role=listbox] > select + div.chevron", () => {
   const { el, select } = open({}, entries(["Red", "red"]));
@@ -40,7 +39,11 @@ test("draws the ported markup: div[role=listbox] > select + div.chevron", () => 
 
   const chevron = el.childNodes[1];
   assert.deepEqual(classesOf(chevron), ["chevron"]);
-  assert.equal(chevron.childNodes[0].tagName, "svg", "the icon is drawn, not fetched");
+  assert.equal(
+    chevron.childNodes[0].tagName,
+    "svg",
+    "the icon is drawn, not fetched",
+  );
 });
 
 test("child Options become the select's entries", () => {
@@ -59,7 +62,10 @@ test("an Option with no text reads as its value, like a bare <option>", () => {
 });
 
 test("a disabled Option says so, and an enabled one adds nothing", () => {
-  const { select } = open({}, entries(["Red", "red"], ["Green", "green", false]));
+  const { select } = open(
+    {},
+    entries(["Red", "red"], ["Green", "green", false]),
+  );
 
   assert.equal(select.childNodes[0].getAttribute("disabled"), null);
   assert.equal(select.childNodes[1].getAttribute("disabled"), "true");
@@ -85,7 +91,10 @@ test("children win over options — they are what the markup states", () => {
 });
 
 test("the value it was given is the select's", () => {
-  const { view, select } = open({ value: "green" }, entries(["Red", "red"], ["Green", "green"]));
+  const { view, select } = open(
+    { value: "green" },
+    entries(["Red", "red"], ["Green", "green"]),
+  );
 
   assert.equal(select.value, "green");
   assert.equal(view.value, "green");
@@ -117,7 +126,11 @@ test("assigning to value moves the select without firing the action", () => {
 
   view.value = "green";
   assert.equal(select.value, "green");
-  assert.deepEqual(fired, [], "an owner's own assignment is not a choice by the user");
+  assert.deepEqual(
+    fired,
+    [],
+    "an owner's own assignment is not a choice by the user",
+  );
 
   // setValue says explicitly whether it counts as one, as in Java.
   view.setValue("red", true);
@@ -146,7 +159,11 @@ test("a disabled combo says so and ignores a change", () => {
   assert.ok(classesOf(el).includes("is-disabled"));
   assert.equal(el.getAttribute("aria-disabled"), "true");
   assert.equal(select.getAttribute("disabled"), "true");
-  assert.equal(select.getAttribute("tabindex"), "-1", "and is out of the tab order");
+  assert.equal(
+    select.getAttribute("tabindex"),
+    "-1",
+    "and is out of the tab order",
+  );
 
   select.value = "green";
   select.dispatchEvent({ type: "change" });
@@ -154,7 +171,10 @@ test("a disabled combo says so and ignores a change", () => {
 });
 
 test("the control's attributes land on the select, where focus goes", () => {
-  const { select } = open({ name: "colour", controlId: "colour-field" }, entries(["Red", "red"]));
+  const { select } = open(
+    { name: "colour", controlId: "colour-field" },
+    entries(["Red", "red"]),
+  );
 
   assert.equal(select.getAttribute("name"), "colour");
   assert.equal(select.getAttribute("id"), "colour-field");
@@ -179,7 +199,9 @@ test("markup says false with a string, and it means false", () => {
 
   assert.equal(select.childNodes[1].getAttribute("disabled"), "true");
 
-  const combo = open({ enabled: "false" }, [h(Option, { text: "Red", value: "red" })]);
+  const combo = open({ enabled: "false" }, [
+    h(Option, { text: "Red", value: "red" }),
+  ]);
   assert.equal(combo.view.enabled, false);
   assert.equal(combo.select.getAttribute("disabled"), "true");
 
@@ -187,6 +209,8 @@ test("markup says false with a string, and it means false", () => {
   // makes it so: it emits the boolean, never an empty string. Only the two
   // words are read as booleans here, so an empty string stays the empty string
   // and a prop that is legitimately "" — a placeholder, a value — survives.
-  const bare = open({}, [h(Option, { text: "Red", value: "red", enabled: true })]);
+  const bare = open({}, [
+    h(Option, { text: "Red", value: "red", enabled: true }),
+  ]);
   assert.equal(bare.select.childNodes[0].getAttribute("disabled"), null);
 });

@@ -11,21 +11,21 @@
    SVG rather than on the SVG itself, which is also how the Java version puts
    it: an SVG element's className is an SVGAnimatedString, not a string. */
 .chevron {
-    flex: 0 0 auto;
-    width: 19px;
-    height: 19px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /* Pulled in so it reads as part of the item rather than a separate glyph. */
-    margin: 1px 0 0 -1px;
-    opacity: 0.7;
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Pulled in so it reads as part of the item rather than a separate glyph. */
+  margin: 1px 0 0 -1px;
+  opacity: 0.7;
 }
 
 .chevron svg {
-    width: 19px;
-    height: 19px;
-    display: block;
+  width: 19px;
+  height: 19px;
+  display: block;
 }
 
 /* The chevron inherits the item's colour and just brightens while the menu is
@@ -33,7 +33,7 @@
    state it carries is reached through :global; the chevron below it is this
    module's and takes the scope. */
 :global(.v-MenuBarItem.v-Button.is-active) .chevron {
-    opacity: 1;
+  opacity: 1;
 }
 
 /* The menu meets the item's bottom edge, so the corners it shares with the item
@@ -42,5 +42,5 @@
    carries one class more than the rules it has to outscore: `.v-PopOver.v-Menu`
    in the menu's own sheet, and `.v-PopOver` in the popover's. */
 :global(.v-MenuBarItem-menu.v-MenuBarItem-menu.v-Menu) {
-    border-radius: 0 0 8px 8px;
+  border-radius: 0 0 8px 8px;
 }

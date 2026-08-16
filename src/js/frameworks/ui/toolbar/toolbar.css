@@ -7,32 +7,32 @@
  * items' own face is another module's drawing and lives in toolbar-item.css.
  */
 .v-ToolBar {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 7px;
-    box-sizing: border-box;
-    width: 100%;
-    border-bottom: 1px solid var(--default-border-color);
-    background-color: var(--toolbar-background);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 7px;
+  box-sizing: border-box;
+  width: 100%;
+  border-bottom: 1px solid var(--default-border-color);
+  background-color: var(--toolbar-background);
 }
 
 /* A flexible gap: whatever follows it is pushed to the trailing edge. */
 .v-ToolBar-flex {
-    flex: 1 1 auto;
+  flex: 1 1 auto;
 }
 
 /* The trailing overflow ("»") button sits hard against the right edge. */
 .v-ToolBar-overflow {
-    display: flex;
-    align-items: center;
-    flex: 0 0 auto;
-    margin-left: auto;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .v-ToolBar-overflow :global(.v-ToolBarItem.v-Button .icon svg) {
-    width: 20px;
-    height: 20px;
-    display: block;
+  width: 20px;
+  height: 20px;
+  display: block;
 }

@@ -6,31 +6,31 @@
 //       <ColorWell color="#3584e4"/>
 //       <ColorWell color="#e01b24"/>
 //   </Box>
-import {Component} from "mosaic";
+import { Component } from "mosaic";
 
 import "./box.css";
 
 export default class Box extends Component {
-    static props = {
-        /** The heading. A box with none is drawn without one. */
-        title: {type: String, default: ""},
-    };
+  static props = {
+    /** The heading. A box with none is drawn without one. */
+    title: { type: String, default: "" },
+  };
 
-    draw() {
-        const title = this.title;
+  draw() {
+    const title = this.title;
 
-        return (
-            <div styleName="v-Box" role="group" aria-label={title || null}>
-                <span
-                    styleName="v-Box-title"
-                    style={{display: title ? null : "none"}}
-                    aria-hidden={title ? null : "true"}
-                >
-                    {title}
-                </span>
+    return (
+      <div styleName="v-Box" role="group" aria-label={title || null}>
+        <span
+          styleName="v-Box-title"
+          style={{ display: title ? null : "none" }}
+          aria-hidden={title ? null : "true"}
+        >
+          {title}
+        </span>
 
-                <div styleName="v-Box-content">{this.props.children}</div>
-            </div>
-        );
-    }
+        <div styleName="v-Box-content">{this.props.children}</div>
+      </div>
+    );
+  }
 }

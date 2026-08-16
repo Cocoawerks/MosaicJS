@@ -14,242 +14,242 @@
 
 /* OutlineView container */
 .v-OutlineView {
-    background-color: transparent;
-    box-sizing: border-box;
-    padding: 1px 0;
-    display: inline-block;
-    overflow: hidden;
-    outline: none;
-    width: fit-content;
+  background-color: transparent;
+  box-sizing: border-box;
+  padding: 1px 0;
+  display: inline-block;
+  overflow: hidden;
+  outline: none;
+  width: fit-content;
 }
 
 .v-OutlineView:focus {
-    outline: none;
-    border: none;
+  outline: none;
+  border: none;
 }
 
 .v-Outline-list {
-    list-style: none;
-    position: relative;
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-    overflow: hidden;
-    min-width: 150px;
+  list-style: none;
+  position: relative;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  min-width: 150px;
 }
 
 /* OutlineItem base */
 .v-OutlineItem {
-    box-sizing: border-box;
-    display: list-item;
-    margin: 0;
-    white-space: nowrap;
-    width: 100%;
-    cursor: default;
+  box-sizing: border-box;
+  display: list-item;
+  margin: 0;
+  white-space: nowrap;
+  width: 100%;
+  cursor: default;
 }
 
 /* OutlineItem content */
 .v-OutlineItem > .content {
-    width: 100%;
-    height: 32px;
-    padding: 0;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    box-sizing: border-box;
-    line-height: 32px;
-    user-select: none;
-    font-size: 16px;
-    color: var(--outline-foreground);
-    border-radius: 6px;
+  width: 100%;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  box-sizing: border-box;
+  line-height: 32px;
+  user-select: none;
+  font-size: 16px;
+  color: var(--outline-foreground);
+  border-radius: 6px;
 }
 
 .v-OutlineItem > .content:focus {
-    outline: none;
+  outline: none;
 }
 
 /* Icon */
 .v-OutlineItem > .content > .icon {
-    margin-right: 4px;
-    box-sizing: border-box;
-    fill: var(--outline-foreground);
-    color: var(--outline-foreground);
-    display: flex;
-    align-items: center;
+  margin-right: 4px;
+  box-sizing: border-box;
+  fill: var(--outline-foreground);
+  color: var(--outline-foreground);
+  display: flex;
+  align-items: center;
 }
 
 .v-OutlineItem > .content > .icon svg {
-    width: 24px;
-    height: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 /* Label */
 .v-OutlineItem > .content > span.label {
-    box-sizing: border-box;
-    flex: 1;
-    user-select: none;
-    overflow: hidden;
-    margin-top: 1px;
-    text-overflow: ellipsis;
+  box-sizing: border-box;
+  flex: 1;
+  user-select: none;
+  overflow: hidden;
+  margin-top: 1px;
+  text-overflow: ellipsis;
 }
 
 .v-OutlineItem > .content:focus > span.label,
 .v-OutlineItem > .content:focus > label {
-    border: 1px dotted var(--outline-focus-border);
+  border: 1px dotted var(--outline-focus-border);
 }
 
 /* Accessory */
 .v-OutlineItem > .content > .accessory {
-    margin: 1px 18px 1px 9px;
-    font-style: normal;
-    font-size: 21px;
-    box-sizing: border-box;
-    user-select: none;
+  margin: 1px 18px 1px 9px;
+  font-style: normal;
+  font-size: 21px;
+  box-sizing: border-box;
+  user-select: none;
 }
 
 /* Toggle button */
 .v-OutlineItem > .content > .toggle {
-    width: 28px;
-    height: 30px;
-    cursor: pointer;
-    position: relative;
-    letter-spacing: 0;
-    box-sizing: border-box;
-    user-select: none;
-    background-color: transparent;
-    visibility: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition-duration: 75ms;
-    transition-property: transform;
+  width: 28px;
+  height: 30px;
+  cursor: pointer;
+  position: relative;
+  letter-spacing: 0;
+  box-sizing: border-box;
+  user-select: none;
+  background-color: transparent;
+  visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition-duration: 75ms;
+  transition-property: transform;
 }
 
 .v-OutlineItem.expandable > .content > .toggle {
-    visibility: visible;
+  visibility: visible;
 }
 
 .v-OutlineItem.expandable > .content > .toggle svg {
-    width: 18px;
+  width: 18px;
 }
 
 .v-OutlineItem.expanded > .content > .toggle {
-    transform: rotate(90deg);
+  transform: rotate(90deg);
 }
 
 /* Collapse/expand container */
 .v-OutlineItem > .collapse {
-    height: 0;
-    overflow: hidden;
+  height: 0;
+  overflow: hidden;
 }
 
 .v-OutlineItem.expanded > .collapse {
-    height: fit-content;
+  height: fit-content;
 }
 
 /* Indentation levels */
 .v-OutlineItem > .content.level-0 {
-    padding-left: 0;
+  padding-left: 0;
 }
 
 .v-OutlineItem > .content.level-1 {
-    padding-left: 16px;
+  padding-left: 16px;
 }
 
 .v-OutlineItem > .content.level-2 {
-    padding-left: 31px;
+  padding-left: 31px;
 }
 
 .v-OutlineItem > .content.level-3 {
-    padding-left: 54px;
+  padding-left: 54px;
 }
 
 .v-OutlineItem > .content.level-4 {
-    padding-left: 77px;
+  padding-left: 77px;
 }
 
 .v-OutlineItem > .content.level-5 {
-    padding-left: 100px;
+  padding-left: 100px;
 }
 
 .v-OutlineItem > .content.level-6 {
-    padding-left: 123px;
+  padding-left: 123px;
 }
 
 .v-OutlineItem > .content.level-7 {
-    padding-left: 146px;
+  padding-left: 146px;
 }
 
 .v-OutlineItem > .content.level-8 {
-    padding-left: 169px;
+  padding-left: 169px;
 }
 
 .v-OutlineItem > .content.level-9 {
-    padding-left: 192px;
+  padding-left: 192px;
 }
 
 .v-OutlineItem > .content.level-10 {
-    padding-left: 215px;
+  padding-left: 215px;
 }
 
 .v-OutlineItem > .content.level-11 {
-    padding-left: 238px;
+  padding-left: 238px;
 }
 
 .v-OutlineItem > .content.level-12 {
-    padding-left: 261px;
+  padding-left: 261px;
 }
 
 .v-OutlineItem > .content.level-13 {
-    padding-left: 284px;
+  padding-left: 284px;
 }
 
 .v-OutlineItem > .content.level-14 {
-    padding-left: 312px;
+  padding-left: 312px;
 }
 
 .v-OutlineItem > .content.level-15 {
-    padding-left: 335px;
+  padding-left: 335px;
 }
 
 .v-OutlineItem > .content.level-16 {
-    padding-left: 358px;
+  padding-left: 358px;
 }
 
 .v-OutlineItem > .content.level-17 {
-    padding-left: 381px;
+  padding-left: 381px;
 }
 
 .v-OutlineItem > .content.level-18 {
-    padding-left: 399px;
+  padding-left: 399px;
 }
 
 .v-OutlineItem > .content.level-19 {
-    padding-left: 422px;
+  padding-left: 422px;
 }
 
 .v-OutlineItem > .content.level-20 {
-    padding-left: 445px;
+  padding-left: 445px;
 }
 
 /* Selection */
 .v-OutlineItem.selected > .content {
-    background-color: var(--accent-color);
-    color: var(--outline-selected-foreground);
+  background-color: var(--accent-color);
+  color: var(--outline-selected-foreground);
 }
 
 .v-OutlineItem.selected > .content > .icon {
-    color: var(--outline-selected-icon);
-    fill: var(--outline-selected-icon);
+  color: var(--outline-selected-icon);
+  fill: var(--outline-selected-icon);
 }
 
 .v-OutlineItem.selected > .content > .accessory,
 .v-OutlineItem.selected > .content > .toggle {
-    filter: brightness(0) invert(1);
+  filter: brightness(0) invert(1);
 }
 
 /* Hover */
 .v-OutlineItem:not(.selected) > .content:hover {
-    background-color: var(--outline-hover-background);
-    color: var(--outline-foreground);
+  background-color: var(--outline-hover-background);
+  color: var(--outline-foreground);
 }

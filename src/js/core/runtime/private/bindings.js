@@ -1,8 +1,8 @@
 // The registry behind `{path}` bindings: where they are recorded, how a path is
 // read off a controller, and how assigning to one gets back to the DOM.
 
-import {refresh} from "../refresh.js";
-import {observe} from "./observe.js";
+import { refresh } from "../refresh.js";
+import { observe } from "./observe.js";
 
 /**
  * Where a controller's live bindings are recorded (non-enumerable).
@@ -11,43 +11,43 @@ import {observe} from "./observe.js";
 export const BINDINGS = Symbol.for("mosaic.bindings");
 
 export function readPath(controller, path) {
-    let value = controller;
-    for (const key of path.split(".")) {
-        if (value === null || value === undefined) return undefined;
-        value = value[key];
-    }
-    return value;
+  let value = controller;
+  for (const key of path.split(".")) {
+    if (value === null || value === undefined) return undefined;
+    value = value[key];
+  }
+  return value;
 }
 
 /** Render a bound value the way a text node should show it. */
 export function display(value) {
-    return value === null || value === undefined ? "" : String(value);
+  return value === null || value === undefined ? "" : String(value);
 }
 
 export function attrValue(parts, controller) {
-    return parts
-        .map((p) =>
-            typeof p === "string" ? p : display(readPath(controller, p.path)),
-        )
-        .join("");
+  return parts
+    .map((p) =>
+      typeof p === "string" ? p : display(readPath(controller, p.path)),
+    )
+    .join("");
 }
 
 export function track(controller, entry) {
-    if (!Object.prototype.hasOwnProperty.call(controller, BINDINGS)) {
-        Object.defineProperty(controller, BINDINGS, {
-            value: [],
-            enumerable: false,
-        });
-    }
-    controller[BINDINGS].push(entry);
+  if (!Object.prototype.hasOwnProperty.call(controller, BINDINGS)) {
+    Object.defineProperty(controller, BINDINGS, {
+      value: [],
+      enumerable: false,
+    });
+  }
+  controller[BINDINGS].push(entry);
 
-    // Binding to `{count}` is what makes `count` worth watching, so this is where
-    // it becomes observable — nothing has to declare it, and a property nobody
-    // binds to stays an ordinary one.
-    const paths =
-        entry.kind === "text" ? [entry.path] : entry.parts.map((p) => p.path);
-    for (const path of paths) {
-        if (path)
-            observe(controller, path.split(".")[0], () => refresh(controller));
-    }
+  // Binding to `{count}` is what makes `count` worth watching, so this is where
+  // it becomes observable — nothing has to declare it, and a property nobody
+  // binds to stays an ordinary one.
+  const paths =
+    entry.kind === "text" ? [entry.path] : entry.parts.map((p) => p.path);
+  for (const path of paths) {
+    if (path)
+      observe(controller, path.split(".")[0], () => refresh(controller));
+  }
 }

@@ -5,34 +5,34 @@
  * every rule here is scoped to that one module.
  */
 .v-Box {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 7px;
-    padding: 14px 12px 12px 12px;
-    border: 1px solid var(--group-border-color, #bbb);
-    border-radius: 6px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 7px;
+  padding: 14px 12px 12px 12px;
+  border: 1px solid var(--group-border-color, #bbb);
+  border-radius: 6px;
 }
 
 /* Title straddles the top border, with a background patch masking the line
    behind it (NSBox / <fieldset> legend style). */
 .v-Box-title {
-    position: absolute;
-    top: 0;
-    left: 10px;
-    transform: translateY(-50%);
-    padding: 0 6px;
-    background: var(--light-view-background);
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--box-title-foreground);
+  position: absolute;
+  top: 0;
+  left: 10px;
+  transform: translateY(-50%);
+  padding: 0 6px;
+  background: var(--light-view-background);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--box-title-foreground);
 }
 
 .v-Box-content {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }

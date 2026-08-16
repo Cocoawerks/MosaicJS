@@ -9,12 +9,12 @@
 //
 // The bar's own sheet is imported here as well as by the bar: a stylesheet is
 // scoped to the module that imports it, and this gap is this module's drawing.
-import {Component} from "mosaic";
+import { Component } from "mosaic";
 
 import "./toolbar.css";
 
 export default class ToolBarFlex extends Component {
-    draw() {
-        return <div styleName="v-ToolBar-flex" aria-hidden="true"/>;
-    }
+  draw() {
+    return <div styleName="v-ToolBar-flex" aria-hidden="true" />;
+  }
 }

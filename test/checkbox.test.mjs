@@ -6,10 +6,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const {mount} = await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
-const {CheckBox} = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
-);
+const { mount } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
+const { CheckBox } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /** Mount a checkbox and hand back its view, root element and host. */
 function open(props = {}) {
@@ -20,11 +20,16 @@ function open(props = {}) {
 
 // The scope class is left out: it says which module styled the element, not
 // what the component put there. The compiler appends it last.
-const classesOf = (el) => el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
+const classesOf = (el) =>
+  el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
 const click = (el) => el.dispatchEvent({ type: "click" });
 const keyDown = (el, key) => {
   let defaultPrevented = false;
-  el.dispatchEvent({ type: "keydown", key, preventDefault: () => (defaultPrevented = true) });
+  el.dispatchEvent({
+    type: "keydown",
+    key,
+    preventDefault: () => (defaultPrevented = true),
+  });
   return defaultPrevented;
 };
 
@@ -84,7 +89,10 @@ test("clicking checks it, and clicking again unchecks it", () => {
   click(el);
   assert.equal(view.value, true);
   assert.equal(el.getAttribute("aria-checked"), "true");
-  assert.ok(classesOf(indicatorOf(el)).includes("checked"), "the indicator is marked");
+  assert.ok(
+    classesOf(indicatorOf(el)).includes("checked"),
+    "the indicator is marked",
+  );
   assert.ok(classesOf(checkOf(el)).includes("checked"), "and so is the check");
 
   click(el);
@@ -112,7 +120,10 @@ test("another key is left alone", () => {
 
 test("the action fires with the new value when the user changes it", () => {
   const fired = [];
-  const { el, view } = open({ text: "x", action: (control, value) => fired.push([control, value]) });
+  const { el, view } = open({
+    text: "x",
+    action: (control, value) => fired.push([control, value]),
+  });
 
   click(el);
   assert.equal(fired.length, 1);
@@ -120,7 +131,10 @@ test("the action fires with the new value when the user changes it", () => {
   assert.equal(fired[0][1], true, "with the value it now has");
 
   click(el);
-  assert.deepEqual(fired.map((f) => f[1]), [true, false]);
+  assert.deepEqual(
+    fired.map((f) => f[1]),
+    [true, false],
+  );
 });
 
 test("assigning to value updates the DOM without firing the action", () => {
@@ -129,7 +143,11 @@ test("assigning to value updates the DOM without firing the action", () => {
 
   view.value = true;
   assert.equal(el.getAttribute("aria-checked"), "true");
-  assert.deepEqual(fired, [], "an owner's own assignment is not a change by the user");
+  assert.deepEqual(
+    fired,
+    [],
+    "an owner's own assignment is not a change by the user",
+  );
 
   // setValue says explicitly whether it counts as one, as in Java.
   view.setValue(false, true);
@@ -138,7 +156,11 @@ test("assigning to value updates the DOM without firing the action", () => {
 
 test("setting the value it already has does nothing at all", () => {
   const fired = [];
-  const { view } = open({ text: "x", value: true, action: () => fired.push(1) });
+  const { view } = open({
+    text: "x",
+    value: true,
+    action: () => fired.push(1),
+  });
 
   view.setValue(true, true);
   assert.deepEqual(fired, []);
@@ -149,7 +171,11 @@ test("a disabled checkbox ignores the pointer and the keyboard", () => {
 
   assert.ok(classesOf(el).includes("is-disabled"));
   assert.equal(el.getAttribute("aria-disabled"), "true");
-  assert.equal(el.getAttribute("tabindex"), "-1", "and is out of the tab order");
+  assert.equal(
+    el.getAttribute("tabindex"),
+    "-1",
+    "and is out of the tab order",
+  );
 
   click(el);
   assert.equal(view.value, false);

@@ -7,23 +7,23 @@
  * before this runs.
  */
 export function attachTree(node) {
-    if (!node) return;
+  if (!node) return;
 
-    // Depth first: a parent's attached() can rely on its children being ready.
-    const children = node.childNodes ? [...node.childNodes] : [];
-    for (const child of children) attachTree(child);
+  // Depth first: a parent's attached() can rely on its children being ready.
+  const children = node.childNodes ? [...node.childNodes] : [];
+  for (const child of children) attachTree(child);
 
-    const view = node.__ibView;
-    if (view && !view.isAttached) {
-        view.isAttached = true;
-        // Anything assigned before it was on the page is drawn now: `redraw`
-        // could not patch a component whose nodes had nowhere to be.
-        if (view.redrawWanted) {
-            view.redrawWanted = false;
-            view.needsDisplay();
-        }
-        view.attached?.();
+  const view = node.__ibView;
+  if (view && !view.isAttached) {
+    view.isAttached = true;
+    // Anything assigned before it was on the page is drawn now: `redraw`
+    // could not patch a component whose nodes had nowhere to be.
+    if (view.redrawWanted) {
+      view.redrawWanted = false;
+      view.needsDisplay();
     }
+    view.attached?.();
+  }
 }
 
 /**
@@ -31,21 +31,21 @@ export function attachTree(node) {
  * Called before a node is removed, while its children can still be walked.
  */
 export function disposeTree(node) {
-    if (!node) return;
+  if (!node) return;
 
-    const view = node.__ibView;
-    if (view) {
-        node.__ibView = null;
-        node.__ibType = null;
-        view.destroy();
-    }
+  const view = node.__ibView;
+  if (view) {
+    node.__ibView = null;
+    node.__ibType = null;
+    view.destroy();
+  }
 
-    const children = node.childNodes ? [...node.childNodes] : [];
-    for (const child of children) disposeTree(child);
+  const children = node.childNodes ? [...node.childNodes] : [];
+  for (const child of children) disposeTree(child);
 }
 
 /** Remove a node from the document, releasing the components inside it. */
 export function discard(node) {
-    disposeTree(node);
-    node.remove();
+  disposeTree(node);
+  node.remove();
 }

@@ -9,115 +9,122 @@
  * no counterpart here.
  */
 .ccp-root {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px;
-    width: 256px;
-    user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  width: 256px;
+  user-select: none;
 }
 
 /* Preset palette grid. */
 .ccp-palette {
-    display: grid;
-    grid-auto-rows: 22px;
-    gap: 3px;
+  display: grid;
+  grid-auto-rows: 22px;
+  gap: 3px;
 }
 
 .ccp-swatch {
-    height: 22px;
-    cursor: pointer;
-    border-radius: 2px;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.24);
+  height: 22px;
+  cursor: pointer;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.24);
 }
 
 .ccp-swatch:hover {
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.24), 0 0 0 2px var(--focus-ring, #3f8ae2);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.24),
+    0 0 0 2px var(--focus-ring, #3f8ae2);
 }
 
 .ccp-custom {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* Saturation/value square + hue strip. */
 .ccp-pickers {
-    display: flex;
-    gap: 8px;
+  display: flex;
+  gap: 8px;
 }
 
 .ccp-sv {
-    width: 220px;
-    height: 160px;
-    cursor: crosshair;
-    border-radius: 4px;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+  width: 220px;
+  height: 160px;
+  cursor: crosshair;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
 .ccp-hue {
-    width: 28px;
-    height: 160px;
-    cursor: pointer;
-    border-radius: 4px;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+  width: 28px;
+  height: 160px;
+  cursor: pointer;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
 /* Opacity row. */
 .ccp-alpha-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* The slider and the field are components of their own: this sheet reaches
    what they drew through :global, since a scoped selector would ask for an
    element this module drew and these are theirs. */
 .ccp-alpha-row :global(.v-Slider) {
-    flex: 1;
+  flex: 1;
 }
 
 .ccp-alpha-value {
-    width: 42px;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
+  width: 42px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Preview + hex entry. */
 .ccp-footer {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .ccp-preview {
-    width: 34px;
-    height: 28px;
-    flex: 0 0 auto;
-    border-radius: 4px;
-    overflow: hidden;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
-    /* Checkerboard so alpha is visible behind the color layer. */
-    background-color: #f0f0f0;
-    background-image: linear-gradient(45deg, #c8c8c8 25%, transparent 25%),
+  width: 34px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  /* Checkerboard so alpha is visible behind the color layer. */
+  background-color: #f0f0f0;
+  background-image:
+    linear-gradient(45deg, #c8c8c8 25%, transparent 25%),
     linear-gradient(-45deg, #c8c8c8 25%, transparent 25%),
     linear-gradient(45deg, transparent 75%, #c8c8c8 75%),
     linear-gradient(-45deg, transparent 75%, #c8c8c8 75%);
-    background-size: 12px 12px;
-    background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  background-size: 12px 12px;
+  background-position:
+    0 0,
+    0 6px,
+    6px -6px,
+    -6px 0;
 }
 
 .ccp-preview-color {
-    width: 100%;
-    height: 100%;
+  width: 100%;
+  height: 100%;
 }
 
 .ccp-hash {
-    opacity: 0.7;
+  opacity: 0.7;
 }
 
 .ccp-footer :global(.v-Text) {
-    flex: 1;
+  flex: 1;
 }
 
 /* Color well: a Button whose body is a color swatch instead of a label. The
@@ -128,16 +135,16 @@
    this sheet reaches it through :global. The swatch inside it is the well's
    own, and is scoped here like anything else. */
 :global(.cw-well.v-Button) {
-    flex: 0 0 auto;
-    width: 64px;
-    min-width: 0;
-    padding: 2px 6px;
+  flex: 0 0 auto;
+  width: 64px;
+  min-width: 0;
+  padding: 2px 6px;
 }
 
 :global(.cw-well) .cw-swatch {
-    width: 100%;
-    margin: 0 3px;
-    height: 20px;
-    border-radius: 3px;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  margin: 0 3px;
+  height: 20px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
 }

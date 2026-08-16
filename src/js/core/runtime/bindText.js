@@ -5,5 +5,5 @@
  * value is read from the controller during render, and again on `refresh`.
  */
 export function bindText(controller, path) {
-    return {__ibBind: "text", controller, path};
+  return { __ibBind: "text", controller, path };
 }

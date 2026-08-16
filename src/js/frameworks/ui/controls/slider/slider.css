@@ -5,65 +5,65 @@
  * one the slider itself draws — track, filled range and handles alike.
  */
 .v-Slider {
-    display: block;
-    text-align: left;
-    overflow: visible;
-    border: none;
-    font-weight: normal;
-    font-size: 16px;
-    padding: 0;
-    touch-action: none;
-    user-select: none;
-    position: relative;
-    box-sizing: border-box;
-    min-width: 50px;
-    border-radius: 3px;
-    background: var(--slider-track-background);
-    border-color: var(--default-border-color);
+  display: block;
+  text-align: left;
+  overflow: visible;
+  border: none;
+  font-weight: normal;
+  font-size: 16px;
+  padding: 0;
+  touch-action: none;
+  user-select: none;
+  position: relative;
+  box-sizing: border-box;
+  min-width: 50px;
+  border-radius: 3px;
+  background: var(--slider-track-background);
+  border-color: var(--default-border-color);
 }
 
 .v-Slider.disabled,
 .v-Slider.is-disabled {
-    opacity: var(--opacity-disable);
+  opacity: var(--opacity-disable);
 }
 
 .v-Slider.vertical {
-    width: 6px;
-    min-width: 6px;
-    max-width: 6px;
+  width: 6px;
+  min-width: 6px;
+  max-width: 6px;
 }
 
 .v-Slider.horizontal {
-    height: 6px;
-    min-height: 6px;
-    max-height: 6px;
+  height: 6px;
+  min-height: 6px;
+  max-height: 6px;
 }
 
 .v-Slider .handle {
-    position: absolute;
-    display: block;
-    z-index: 0;
-    cursor: default;
-    border-radius: 50%;
-    padding: 0;
-    touch-action: none;
-    user-select: none;
-    margin: 0;
-    box-sizing: border-box;
-    /* The rim is the knob's own colour, not the border colour every other
+  position: absolute;
+  display: block;
+  z-index: 0;
+  cursor: default;
+  border-radius: 50%;
+  padding: 0;
+  touch-action: none;
+  user-select: none;
+  margin: 0;
+  box-sizing: border-box;
+  /* The rim is the knob's own colour, not the border colour every other
        control uses. A knob is the one thing here that sits *on* a filled track
        rather than on the surface, and a rim the value of the track is no rim at
        all where the two meet — which is the width of the knob, exactly where
        its edge is steepest and reads thinnest. Each theme names one dark enough
        to hold against its track as well as against the panel behind it. */
-    border: 1px solid var(--slider-knob-border, var(--default-border-color));
-    width: 20px;
-    height: 20px;
-    /* Close in under the knob rather than spread out from it. At 0 2px 4px the
+  border: 1px solid var(--slider-knob-border, var(--default-border-color));
+  width: 20px;
+  height: 20px;
+  /* Close in under the knob rather than spread out from it. At 0 2px 4px the
        shadow fell on the track just outside the rim, and a hairline with a soft
        dark band against it reads as one blurred edge instead of a line. */
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-    background: var(--slider-knob-background);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  background: var(--slider-knob-background);
 }
 
 /* The knob is focusable, so the browser rings it with its own black outline.
@@ -71,85 +71,86 @@
    same reason — and appears only once the knob actually has focus. */
 .v-Slider .handle:focus,
 .v-Slider .handle:focus-visible {
-    outline: none;
+  outline: none;
 }
 
 .v-Slider .handle.is-focused {
-    outline-offset: 1px;
-    outline: var(--focus-ring) solid 3px;
+  outline-offset: 1px;
+  outline: var(--focus-ring) solid 3px;
 }
 
 .v-Slider:not(.is-disabled) .handle:hover {
-    background: var(--slider-knob-hover);
+  background: var(--slider-knob-hover);
 }
 
 .v-Slider:not(.is-disabled) .handle.is-active {
-    background: var(--slider-knob-active);
-    border-color: var(--slider-knob-border, var(--default-border-color));
+  background: var(--slider-knob-active);
+  border-color: var(--slider-knob-border, var(--default-border-color));
 }
 
 .v-Slider.vertical .handle {
-    left: -5.5px;
-    margin-top: -8.5px;
-    top: 10px;
+  left: -5.5px;
+  margin-top: -8.5px;
+  top: 10px;
 }
 
 .v-Slider.horizontal .handle {
-    top: -8px;
-    margin-left: -10.5px;
-    left: 10px;
+  top: -8px;
+  margin-left: -10.5px;
+  left: 10px;
 }
 
 /* The filled part of the track. */
 .v-Slider .range {
-    border: none;
-    box-sizing: border-box;
-    position: absolute;
-    width: 100%;
-    border-radius: 3px;
-    background: var(--accent-color);
+  border: none;
+  box-sizing: border-box;
+  position: absolute;
+  width: 100%;
+  border-radius: 3px;
+  background: var(--accent-color);
 }
 
 .v-Slider.vertical .range {
-    width: 7px;
-    min-width: 7px;
-    max-width: 7px;
-    height: auto;
-    bottom: -1px;
+  width: 7px;
+  min-width: 7px;
+  max-width: 7px;
+  height: auto;
+  bottom: -1px;
 }
 
 .v-Slider.horizontal .range {
-    height: 7px;
-    min-height: 7px;
-    max-height: 7px;
-    width: auto;
-    top: -1px;
+  height: 7px;
+  min-height: 7px;
+  max-height: 7px;
+  width: auto;
+  top: -1px;
 }
 
 .v-Slider-tip {
-    box-sizing: border-box;
-    border-radius: 3px;
-    height: 28px;
-    min-width: 30px;
-    font-size: 13px;
-    text-align: center;
+  box-sizing: border-box;
+  border-radius: 3px;
+  height: 28px;
+  min-width: 30px;
+  font-size: 13px;
+  text-align: center;
 }
 
 .v-Slider-tip > div {
-    height: 28px;
-    text-align: center;
-    display: flex;
-    flex-direction: row;
-    align-content: center;
-    align-items: center;
-    justify-content: center;
-    padding: 3px;
-    min-width: 24px;
-    font-size: 14px;
-    background: #f0f0f0;
-    box-shadow: 0 0 0 1px rgba(16, 22, 26, 0.1),
+  height: 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: row;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  min-width: 24px;
+  font-size: 14px;
+  background: #f0f0f0;
+  box-shadow:
+    0 0 0 1px rgba(16, 22, 26, 0.1),
     0 2px 4px rgba(16, 22, 26, 0.2),
     0 8px 24px rgba(16, 22, 26, 0.2);
-    border-color: transparent;
-    color: #222;
+  border-color: transparent;
+  color: #222;
 }

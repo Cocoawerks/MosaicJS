@@ -6,12 +6,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const {mount} = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
-);
-const {TextField, TextFieldType, SearchField} = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
-);
+const { mount } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
+const { TextField, TextFieldType, SearchField } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /** Mount a field and hand back its view, box element and input. */
 function open(Type, props = {}) {
@@ -21,7 +19,8 @@ function open(Type, props = {}) {
   return { host, view, el, input: el.childNodes[0].childNodes[1] };
 }
 
-const classesOf = (el) => el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
+const classesOf = (el) =>
+  el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
 
 /** What the user does: type into the input, then let it say so. */
 function type(view, input, text) {
@@ -45,7 +44,11 @@ test("draws the ported markup: div.v-Text > div > i + input + i", () => {
   assert.ok(classesOf(row.childNodes[2]).includes("suffix"));
 
   assert.equal(input.getAttribute("placeholder"), "Name");
-  assert.equal(input.getAttribute("spellcheck"), "false", "off, as in the Java version");
+  assert.equal(
+    input.getAttribute("spellcheck"),
+    "false",
+    "off, as in the Java version",
+  );
   assert.equal(input.getAttribute("type"), "text");
 });
 
@@ -100,7 +103,11 @@ test("Enter is the action: the user saying they are done", () => {
   input.dispatchEvent({ type: "keypress", key: "Enter" });
 
   assert.deepEqual(fired, ["Mosaic"]);
-  assert.deepEqual(changed, ["Mosaic", "Mosaic"], "and the value is reported with it");
+  assert.deepEqual(
+    changed,
+    ["Mosaic", "Mosaic"],
+    "and the value is reported with it",
+  );
 
   input.dispatchEvent({ type: "keypress", key: "a" });
   assert.deepEqual(fired, ["Mosaic"], "another key is not the action");
@@ -108,7 +115,9 @@ test("Enter is the action: the user saying they are done", () => {
 
 test("assigning to value moves the input without reporting a change", () => {
   const changed = [];
-  const { view, input } = open(TextField, { changeAction: () => changed.push(1) });
+  const { view, input } = open(TextField, {
+    changeAction: () => changed.push(1),
+  });
 
   view.value = "set from outside";
   assert.equal(input.value, "set from outside");
@@ -123,7 +132,11 @@ test("focus is the input's, and the box says when it has it", () => {
 
   input.dispatchEvent({ type: "focus" });
   assert.ok(classesOf(el).includes("is-focused"));
-  assert.equal(view.focused, false, "the shim does not move focus on a bare event");
+  assert.equal(
+    view.focused,
+    false,
+    "the shim does not move focus on a bare event",
+  );
 
   input.dispatchEvent({ type: "blur" });
   assert.equal(classesOf(el).includes("is-focused"), false);
@@ -195,7 +208,11 @@ test("a search field draws its magnifier and its clear button", () => {
 
   const row = el.childNodes[0];
   assert.ok(classesOf(row.childNodes[0]).includes("search"));
-  assert.equal(row.childNodes[0].childNodes[0].tagName, "svg", "the icon is inlined");
+  assert.equal(
+    row.childNodes[0].childNodes[0].tagName,
+    "svg",
+    "the icon is inlined",
+  );
   assert.equal(input.getAttribute("placeholder"), "Search");
 
   const clear = row.childNodes[2];

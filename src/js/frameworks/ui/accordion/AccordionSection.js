@@ -7,7 +7,7 @@
 // That is the arrangement RadioGroup, OutlineView and Menu already use here; the
 // Java version keeps the state on the section, which is the same thing said the
 // other way round.
-import {Component} from "mosaic";
+import { Component } from "mosaic";
 
 import "./accordion.css";
 
@@ -19,82 +19,83 @@ import ChevronDown from "svg:chevron-down";
 let nextId = 0;
 
 export default class AccordionSection extends Component {
-    static props = {
-        /** The heading on the section's own line. */
-        title: {type: String, default: ""},
-        /** What the view reports when this section is opened or closed. */
-        value: {type: String, default: ""},
+  static props = {
+    /** The heading on the section's own line. */
+    title: { type: String, default: "" },
+    /** What the view reports when this section is opened or closed. */
+    value: { type: String, default: "" },
 
-        // --- what the view says ----------------------------------------------
+    // --- what the view says ----------------------------------------------
 
-        /** Whether it is open. */
-        expanded: {type: Boolean, default: false},
-    };
+    /** Whether it is open. */
+    expanded: { type: Boolean, default: false },
+  };
 
-    constructor() {
-        super();
+  constructor() {
+    super();
 
-        const id = ++nextId;
-        /** The header and what it opens name each other, so both need an id. */
-        this.titleId = `mosaic-accordion-title-${id}`;
-        this.contentId = `mosaic-accordion-content-${id}`;
-    }
+    const id = ++nextId;
+    /** The header and what it opens name each other, so both need an id. */
+    this.titleId = `mosaic-accordion-title-${id}`;
+    this.contentId = `mosaic-accordion-content-${id}`;
+  }
 
-    /** The view this section belongs to, handed down as it is drawn. */
-    get accordion() {
-        return this.get("accordion", null);
-    }
+  /** The view this section belongs to, handed down as it is drawn. */
+  get accordion() {
+    return this.get("accordion", null);
+  }
 
-    // --- behaviour -----------------------------------------------------------
+  // --- behaviour -----------------------------------------------------------
 
-    /** The header is what opens and shuts a section; its contents are not. */
-    click(event) {
-        if (!this.headerNode?.contains?.(event.target)) return;
-        this.accordion?.toggle(this.value);
-    }
+  /** The header is what opens and shuts a section; its contents are not. */
+  click(event) {
+    if (!this.headerNode?.contains?.(event.target)) return;
+    this.accordion?.toggle(this.value);
+  }
 
-    /**
-     * A press on the header must not take a selection with it — the Java
-     * version cancels the mousedown for the same reason.
-     */
-    pointerDown(event) {
-        if (this.headerNode?.contains?.(event.target)) event.preventDefault?.();
-    }
+  /**
+   * A press on the header must not take a selection with it — the Java
+   * version cancels the mousedown for the same reason.
+   */
+  pointerDown(event) {
+    if (this.headerNode?.contains?.(event.target)) event.preventDefault?.();
+  }
 
-    /** The space bar works the header, as it works a button. */
-    keyDown(event) {
-        if (event.key !== " " && event.key !== "Spacebar" && event.key !== "Enter") return;
-        if (!this.headerNode?.contains?.(event.target)) return;
-        event.preventDefault?.();
-        this.accordion?.toggle(this.value);
-    }
+  /** The space bar works the header, as it works a button. */
+  keyDown(event) {
+    if (event.key !== " " && event.key !== "Spacebar" && event.key !== "Enter")
+      return;
+    if (!this.headerNode?.contains?.(event.target)) return;
+    event.preventDefault?.();
+    this.accordion?.toggle(this.value);
+  }
 
-    // --- drawing -------------------------------------------------------------
+  // --- drawing -------------------------------------------------------------
 
-    draw() {
-        const expanded = this.expanded;
+  draw() {
+    const expanded = this.expanded;
 
-        return (
-            <li styleName={["v-accordionSection", expanded ? "expanded" : null]}>
-                <div
-                    styleName="header"
-                    ref={(el) => (this.headerNode = el)}
-                    role="button"
-                    tabindex="0"
-                    aria-expanded={String(expanded)}
-                    aria-labelledby={this.titleId}
-                    aria-controls={this.contentId}
-                >
-                    <span id={this.titleId}>{this.title}</span>
-                    <div styleName="accordion-state-icon" aria-hidden="true">
-                        <ChevronDown/>
-                    </div>
-                </div>
+    return (
+      <li styleName={["v-accordionSection", expanded ? "expanded" : null]}>
+        <div
+          styleName="header"
+          ref={(el) => (this.headerNode = el)}
+          role="button"
+          tabindex="0"
+          aria-expanded={String(expanded)}
+          aria-labelledby={this.titleId}
+          aria-controls={this.contentId}
+        >
+          <span id={this.titleId}>{this.title}</span>
+          <div styleName="accordion-state-icon" aria-hidden="true">
+            <ChevronDown />
+          </div>
+        </div>
 
-                <div styleName="form" id={this.contentId} role="region">
-                    {this.props.children}
-                </div>
-            </li>
-        );
-    }
+        <div styleName="form" id={this.contentId} role="region">
+          {this.props.children}
+        </div>
+      </li>
+    );
+  }
 }

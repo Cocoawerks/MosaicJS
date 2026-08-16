@@ -6,12 +6,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const {mount, h} = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
-);
-const {OutlineItem, OutlineView} = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
-);
+const { mount, h } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
+const { OutlineItem, OutlineView } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /** A row, with its own rows nested inside it the way markup does. */
 const item = (props, ...children) => h(OutlineItem, props, ...children);
@@ -27,18 +25,21 @@ const item = (props, ...children) => h(OutlineItem, props, ...children);
  */
 const tree = () => [
   item(
-    {text: "Mail", value: "mail"},
-    item({text: "Inbox", value: "inbox"}, item({text: "Work", value: "work"})),
-    item({text: "Sent", value: "sent"}),
+    { text: "Mail", value: "mail" },
+    item(
+      { text: "Inbox", value: "inbox" },
+      item({ text: "Work", value: "work" }),
+    ),
+    item({ text: "Sent", value: "sent" }),
   ),
-  item({text: "Files", value: "files"}),
+  item({ text: "Files", value: "files" }),
 ];
 
 /** Mount a view and hand back what a test needs to work it. */
 function open(props = {}, children = tree()) {
   const host = document.createElement("div");
-  const view = mount(OutlineView, host, {...props, children}).view;
-  return {host, view, el: host.childNodes[0]};
+  const view = mount(OutlineView, host, { ...props, children }).view;
+  return { host, view, el: host.childNodes[0] };
 }
 
 const classesOf = (el) =>
@@ -54,8 +55,10 @@ const visible = (el) =>
       for (let n = li.parentNode; n; n = n.parentNode) {
         if (n.getAttribute?.("class")?.includes("collapse")) {
           const owner = n.parentNode;
-          if (owner?.getAttribute?.("role") === "treeitem" &&
-              !classesOf(owner).includes("expanded")) {
+          if (
+            owner?.getAttribute?.("role") === "treeitem" &&
+            !classesOf(owner).includes("expanded")
+          ) {
             return false;
           }
         }
@@ -69,17 +72,21 @@ const toggleOf = (li) => contentOf(li).childNodes[0];
 const labelOf = (li) => contentOf(li).childNodes[2].textContent;
 const rowNamed = (el, text) => rows(el).find((li) => labelOf(li) === text);
 
-const click = (el) => el.dispatchEvent({type: "click"});
+const click = (el) => el.dispatchEvent({ type: "click" });
 const keyDown = (el, key) => {
   let prevented = false;
-  el.dispatchEvent({type: "keydown", key, preventDefault: () => (prevented = true)});
+  el.dispatchEvent({
+    type: "keydown",
+    key,
+    preventDefault: () => (prevented = true),
+  });
   return prevented;
 };
 
 // --- what it draws -----------------------------------------------------------
 
 test("draws the ported markup: div[role=tree] over li[role=treeitem]", () => {
-  const {el} = open();
+  const { el } = open();
 
   assert.equal(el.tagName, "div");
   assert.equal(el.getAttribute("role"), "tree");
@@ -97,29 +104,44 @@ test("draws the ported markup: div[role=tree] over li[role=treeitem]", () => {
 });
 
 test("a row states how deep it sits, which is what the sheet indents by", () => {
-  const {el} = open({}, tree());
+  const { el } = open({}, tree());
 
-  assert.deepEqual(classesOf(contentOf(rowNamed(el, "Mail"))), ["content", "level-0"]);
-  assert.deepEqual(classesOf(contentOf(rowNamed(el, "Inbox"))), ["content", "level-1"]);
-  assert.deepEqual(classesOf(contentOf(rowNamed(el, "Work"))), ["content", "level-2"]);
+  assert.deepEqual(classesOf(contentOf(rowNamed(el, "Mail"))), [
+    "content",
+    "level-0",
+  ]);
+  assert.deepEqual(classesOf(contentOf(rowNamed(el, "Inbox"))), [
+    "content",
+    "level-1",
+  ]);
+  assert.deepEqual(classesOf(contentOf(rowNamed(el, "Work"))), [
+    "content",
+    "level-2",
+  ]);
 });
 
 test("only a row with something under it is expandable", () => {
-  const {el} = open();
+  const { el } = open();
 
   assert.ok(classesOf(rowNamed(el, "Mail")).includes("expandable"));
   assert.equal(classesOf(rowNamed(el, "Files")).includes("expandable"), false);
 
   // And only an expandable row offers its chevron to a reader.
-  assert.equal(toggleOf(rowNamed(el, "Mail")).getAttribute("aria-hidden"), null);
-  assert.equal(toggleOf(rowNamed(el, "Files")).getAttribute("aria-hidden"), "true");
+  assert.equal(
+    toggleOf(rowNamed(el, "Mail")).getAttribute("aria-hidden"),
+    null,
+  );
+  assert.equal(
+    toggleOf(rowNamed(el, "Files")).getAttribute("aria-hidden"),
+    "true",
+  );
 });
 
 test("an icon is drawn from a class name or from a component", () => {
   const Svg = () => h("svg", {});
-  const {el} = open({}, [
-    item({text: "Font", value: "font", icon: "fa-inbox"}),
-    item({text: "Svg", value: "svg", icon: Svg}),
+  const { el } = open({}, [
+    item({ text: "Font", value: "font", icon: "fa-inbox" }),
+    item({ text: "Svg", value: "svg", icon: Svg }),
   ]);
 
   const iconOf = (name) => contentOf(rowNamed(el, name)).childNodes[1];
@@ -132,17 +154,17 @@ test("an icon is drawn from a class name or from a component", () => {
 test("everything starts shut, and the markup may say otherwise", () => {
   assert.deepEqual(visible(open().el), ["Mail", "Files"]);
 
-  const {el} = open({}, [
+  const { el } = open({}, [
     item(
-      {text: "Mail", value: "mail", expanded: "true"},
-      item({text: "Inbox", value: "inbox"}),
+      { text: "Mail", value: "mail", expanded: "true" },
+      item({ text: "Inbox", value: "inbox" }),
     ),
   ]);
   assert.deepEqual(visible(el), ["Mail", "Inbox"]);
 });
 
 test("clicking the chevron opens a row, and clicking it again shuts it", () => {
-  const {el, view} = open();
+  const { el, view } = open();
 
   click(toggleOf(rowNamed(el, "Mail")));
   assert.ok(view.isExpanded("mail"));
@@ -154,14 +176,14 @@ test("clicking the chevron opens a row, and clicking it again shuts it", () => {
 });
 
 test("and does not select the row it opened", () => {
-  const {el, view} = open();
+  const { el, view } = open();
 
   click(toggleOf(rowNamed(el, "Mail")));
   assert.equal(view.value, "");
 });
 
 test("expandAll opens every row that has one, collapseAll shuts them", () => {
-  const {el, view} = open();
+  const { el, view } = open();
 
   view.expandAll();
   assert.deepEqual(visible(el), ["Mail", "Inbox", "Work", "Sent", "Files"]);
@@ -173,7 +195,7 @@ test("expandAll opens every row that has one, collapseAll shuts them", () => {
 // --- what it selects ---------------------------------------------------------
 
 test("clicking a row selects it, and only it", () => {
-  const {el, view} = open();
+  const { el, view } = open();
   view.expandAll();
 
   click(rowNamed(el, "Sent"));
@@ -187,7 +209,7 @@ test("clicking a row selects it, and only it", () => {
 });
 
 test("a click on a nested row is not a click on the rows above it", () => {
-  const {el, view} = open();
+  const { el, view } = open();
   view.expandAll();
 
   click(rowNamed(el, "Work"));
@@ -196,7 +218,7 @@ test("a click on a nested row is not a click on the rows above it", () => {
 
 test("selecting fires the action; assigning to value does not", () => {
   const fired = [];
-  const {el, view} = open({action: (control, value) => fired.push(value)});
+  const { el, view } = open({ action: (control, value) => fired.push(value) });
   view.expandAll();
 
   click(rowNamed(el, "Inbox"));
@@ -208,9 +230,9 @@ test("selecting fires the action; assigning to value does not", () => {
 });
 
 test("the markup may say which row starts selected", () => {
-  const {el, view} = open({}, [
-    item({text: "Mail", value: "mail"}),
-    item({text: "Files", value: "files", selected: "true"}),
+  const { el, view } = open({}, [
+    item({ text: "Mail", value: "mail" }),
+    item({ text: "Files", value: "files", selected: "true" }),
   ]);
 
   assert.equal(view.value, "files");
@@ -218,7 +240,7 @@ test("the markup may say which row starts selected", () => {
 });
 
 test("the selected row is reported as the markup stated it", () => {
-  const {view} = open({value: "mail"});
+  const { view } = open({ value: "mail" });
 
   assert.equal(view.selectedItem.text, "Mail");
   assert.equal(view.selectedItem.level, 0);
@@ -227,7 +249,7 @@ test("the selected row is reported as the markup stated it", () => {
 // --- the keyboard ------------------------------------------------------------
 
 test("the arrows move through what can be seen, and stop at the ends", () => {
-  const {el, view} = open({value: "mail"});
+  const { el, view } = open({ value: "mail" });
 
   // Shut, so what is below Mail is Files and not Inbox.
   assert.ok(keyDown(el, "ArrowDown"));
@@ -244,7 +266,7 @@ test("the arrows move through what can be seen, and stop at the ends", () => {
 });
 
 test("and step into a row once it is open", () => {
-  const {el, view} = open({value: "mail"});
+  const { el, view } = open({ value: "mail" });
   view.setExpanded("mail", true);
 
   keyDown(el, "ArrowDown");
@@ -252,7 +274,7 @@ test("and step into a row once it is open", () => {
 });
 
 test("the space bar opens the selected row and shuts it again", () => {
-  const {el, view} = open({value: "mail"});
+  const { el, view } = open({ value: "mail" });
 
   assert.ok(keyDown(el, " "));
   assert.ok(view.isExpanded("mail"));
@@ -262,14 +284,14 @@ test("the space bar opens the selected row and shuts it again", () => {
 });
 
 test("a row with nothing under it has nothing to open", () => {
-  const {el, view} = open({value: "files"});
+  const { el, view } = open({ value: "files" });
 
   keyDown(el, " ");
   assert.equal(view.isExpanded("files"), false);
 });
 
 test("the tree itself is the tab stop, not any row in it", () => {
-  const {el} = open();
+  const { el } = open();
 
   // A tree is a Component and not a Control: it has no enabled state, and the
   // one tab stop is the tree, as OutlineView.ui.xml states it.

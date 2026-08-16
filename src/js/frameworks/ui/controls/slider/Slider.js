@@ -11,48 +11,50 @@ import AbstractSlider from "./AbstractSlider.js";
 import SliderHandle from "./SliderHandle.js";
 
 export default class Slider extends AbstractSlider {
-    /** One knob, which is the slider's whole value. */
-    createHandles() {
-        this.handles = [new SliderHandle(this)];
-        this.handle = this.handles[0];
-    }
+  /** One knob, which is the slider's whole value. */
+  createHandles() {
+    this.handles = [new SliderHandle(this)];
+    this.handle = this.handles[0];
+  }
 
-    readInitialValues() {
-        this.handle.value = this.constrain(Number(this.get("value", this.minValue)));
-    }
+  readInitialValues() {
+    this.handle.value = this.constrain(
+      Number(this.get("value", this.minValue)),
+    );
+  }
 
-    /** What the knob is worth, held inside the bounds. */
-    get value() {
-        return this.handle.value;
-    }
+  /** What the knob is worth, held inside the bounds. */
+  get value() {
+    return this.handle.value;
+  }
 
-    set value(value) {
-        this.setValue(value, false);
-    }
+  set value(value) {
+    this.setValue(value, false);
+  }
 
-    /**
-     * Move the knob, and say whether that counts as the user moving it.
-     *
-     * @param {number} value Where to put it.
-     * @param {boolean} [fireEvents] Whether to report the move.
-     */
-    setValue(value, fireEvents = false) {
-        this.handle.setValue(this.constrain(Number(value)), fireEvents);
-    }
+  /**
+   * Move the knob, and say whether that counts as the user moving it.
+   *
+   * @param {number} value Where to put it.
+   * @param {boolean} [fireEvents] Whether to report the move.
+   */
+  setValue(value, fireEvents = false) {
+    this.handle.setValue(this.constrain(Number(value)), fireEvents);
+  }
 
-    /** Hold a value between the slider's ends. */
-    constrain(value) {
-        return Math.max(this.minValue, Math.min(this.maxValue, value));
-    }
+  /** Hold a value between the slider's ends. */
+  constrain(value) {
+    return Math.max(this.minValue, Math.min(this.maxValue, value));
+  }
 
-    /** After a bound moved, the value may no longer be inside it. */
-    updateValue() {
-        this.handle.setValue(this.constrain(this.handle.value));
-        this.updateHandles();
-        this.updateAria();
-    }
+  /** After a bound moved, the value may no longer be inside it. */
+  updateValue() {
+    this.handle.setValue(this.constrain(this.handle.value));
+    this.updateHandles();
+    this.updateAria();
+  }
 
-    drawHandles() {
-        return this.drawHandle(this.handle, this.get("name", null) ?? "Value");
-    }
+  drawHandles() {
+    return this.drawHandle(this.handle, this.get("name", null) ?? "Value");
+  }
 }

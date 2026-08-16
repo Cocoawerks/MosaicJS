@@ -4,9 +4,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const { Component } = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
-);
+const { Component } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
 
 test("a declared setting reads as the type it was declared to be", () => {
   class Thing extends Component {
@@ -40,14 +39,21 @@ test("a declared setting reads as the type it was declared to be", () => {
 
 test("a subclass inherits its parent's settings and may narrow them", () => {
   class Base extends Component {
-    static props = { size: { type: Number, default: 1 }, on: { type: Boolean } };
+    static props = {
+      size: { type: Number, default: 1 },
+      on: { type: Boolean },
+    };
   }
   class Narrow extends Base {
     static props = { size: { type: Number, default: 9 } };
   }
   assert.equal(new Base().size, 1);
   assert.equal(new Narrow().size, 9);
-  assert.equal(new Narrow().on, undefined, "the parent's other settings come too");
+  assert.equal(
+    new Narrow().on,
+    undefined,
+    "the parent's other settings come too",
+  );
 });
 
 test("a hand-written accessor wins over the declared one", () => {
@@ -108,6 +114,9 @@ test("a setting may not take a name the component needs", () => {
   class Shadowed extends Component {
     static props = { size: { type: Number } };
   }
-  Object.defineProperty(Shadowed.prototype, "size", { value: 3, writable: true });
+  Object.defineProperty(Shadowed.prototype, "size", {
+    value: 3,
+    writable: true,
+  });
   assert.throws(() => new Shadowed(), /also a/);
 });

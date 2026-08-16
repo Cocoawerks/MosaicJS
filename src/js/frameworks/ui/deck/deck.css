@@ -4,8 +4,8 @@
  * what it means, which is the same arrangement every other component here uses.
  */
 .v-Deck {
-    width: 100%;
-    box-sizing: border-box;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /*
@@ -14,9 +14,9 @@
  * whatever was typed into it for when it comes back round.
  */
 .v-Deck-card {
-    display: none;
+  display: none;
 }
 
 .v-Deck-card.is-showing {
-    display: block;
+  display: block;
 }

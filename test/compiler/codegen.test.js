@@ -1,8 +1,8 @@
-import {expect, test} from "bun:test";
+import { expect, test } from "bun:test";
 
-import {generate} from "../../src/js/core/compiler/codegen.js";
-import {takeLineMarkers} from "../../src/js/core/compiler/js.js";
-import {parse} from "../../src/js/core/compiler/parser.js";
+import { generate } from "../../src/js/core/compiler/codegen.js";
+import { takeLineMarkers } from "../../src/js/core/compiler/js.js";
+import { parse } from "../../src/js/core/compiler/parser.js";
 
 function compile(src) {
   return generate(parse(src), {
@@ -24,7 +24,9 @@ test("static markup becomes h calls", () => {
 });
 
 test("props are kept as initializers", () => {
-  expect(compile("<p>hi</p>")).toContain("export default function App(props = {}) {");
+  expect(compile("<p>hi</p>")).toContain(
+    "export default function App(props = {}) {",
+  );
 });
 
 test("style is scoped and registered", () => {
@@ -32,43 +34,43 @@ test("style is scoped and registered", () => {
   // The stylesheet constant is namespaced so bundled modules cannot clash.
   expect(js).toContain("const CSS_App =");
   expect(js).toContain('addStyles("test123", CSS_App);');
-    expect(js).toContain(".a.test123");
-    // The scope is a class, so it joins the ones the markup already gave.
-    expect(js).toContain('class: "a test123"');
+  expect(js).toContain(".a.test123");
+  // The scope is a class, so it joins the ones the markup already gave.
+  expect(js).toContain('class: "a test123"');
 });
 
 test("the style block may sit anywhere in the file", () => {
-    // It is hoisted out of the markup, so its position is a matter of taste.
-    const at = (src) => compile(src);
-    for (const src of [
-        '<div styleName="a">x</div><style>.a{color:red}</style>',
-        '<style>.a{color:red}</style><div styleName="a">x</div>',
-        '<p>a</p><style>.a{color:red}</style><p>b</p>',
-        '<div styleName="a"><style>.a{color:red}</style><p>x</p></div>',
-    ]) {
-        expect(at(src)).toContain(".a.test123{color:red}");
-        // Hoisted, never rendered.
-        expect(at(src)).not.toContain('h("style"');
-    }
+  // It is hoisted out of the markup, so its position is a matter of taste.
+  const at = (src) => compile(src);
+  for (const src of [
+    '<div styleName="a">x</div><style>.a{color:red}</style>',
+    '<style>.a{color:red}</style><div styleName="a">x</div>',
+    "<p>a</p><style>.a{color:red}</style><p>b</p>",
+    '<div styleName="a"><style>.a{color:red}</style><p>x</p></div>',
+  ]) {
+    expect(at(src)).toContain(".a.test123{color:red}");
+    // Hoisted, never rendered.
+    expect(at(src)).not.toContain('h("style"');
+  }
 
-    // One per file, though.
-    rejects("<style>.a{c:1}</style><p>x</p><style>.b{c:2}</style>");
+  // One per file, though.
+  rejects("<style>.a{c:1}</style><p>x</p><style>.b{c:2}</style>");
 });
 
 test("no scope class without styles", () => {
-    expect(compile("<div></div>")).not.toContain("test123");
+  expect(compile("<div></div>")).not.toContain("test123");
 });
 
 test("outlet compiles to a this binding", () => {
-    const js = compile('<output outlet="value">0</output>');
+  const js = compile('<output outlet="value">0</output>');
   expect(js).toContain("ref: (__el) => { this.value = __el; }");
-    expect(js).not.toContain('"outlet"');
+  expect(js).not.toContain('"outlet"');
 });
 
 test("action binds a controller method", () => {
   const js = compile('<button action="increment">+</button>');
   expect(js).toContain("onclick: (...__a) => this.increment(...__a)");
-    expect(js).not.toContain('"action"');
+  expect(js).not.toContain('"action"');
 });
 
 test("action takes an explicit event", () => {
@@ -96,7 +98,9 @@ test("action binds several events", () => {
 });
 
 test("outlet and action coexist with attributes", () => {
-    const js = compile('<button styleName="a" outlet="button" action="step">x</button>');
+  const js = compile(
+    '<button styleName="a" outlet="button" action="step">x</button>',
+  );
   expect(js).toContain('class: "a"');
   expect(js).toContain("this.button = __el");
   expect(js).toContain("this.step(...__a)");
@@ -104,14 +108,14 @@ test("outlet and action coexist with attributes", () => {
 
 test("only the component declaration uses function", () => {
   // Anything nested would rebind `this` and break outlets and actions.
-    const js = compile('<button outlet="b" action="go">x</button>');
+  const js = compile('<button outlet="b" action="go">x</button>');
   expect(js.match(/function/g)).toHaveLength(1);
 });
 
 test("directives must be well formed", () => {
-    rejects("<p outlet={x}></p>");
-    rejects('<p outlet="not an ident"></p>');
-    rejects('<p outlet="a" outlet="b"></p>');
+  rejects("<p outlet={x}></p>");
+  rejects('<p outlet="not an ident"></p>');
+  rejects('<p outlet="a" outlet="b"></p>');
   rejects('<p action=""></p>');
   rejects('<p action="click:a click:b"></p>');
   rejects('<p action="click:not an ident"></p>');
@@ -119,12 +123,12 @@ test("directives must be well formed", () => {
 
 test("outlet and action names may not collide", () => {
   // The outlet would overwrite the controller method with a DOM node.
-    rejects('<b outlet="go" action="go">x</b>');
-    rejects('<b outlet="go"><i action="go">x</i></b>');
+  rejects('<b outlet="go" action="go">x</b>');
+  rejects('<b outlet="go"><i action="go">x</i></b>');
 });
 
 test("outlet names must be unique", () => {
-    rejects('<b outlet="a">x</b><i outlet="a">y</i>');
+  rejects('<b outlet="a">x</b><i outlet="a">y</i>');
 });
 
 test("view element renders a div with style name as class", () => {
@@ -134,13 +138,15 @@ test("view element renders a div with style name as class", () => {
 });
 
 test("view element is scoped like any dom element", () => {
-  expect(compile('<style>.a{color:red}</style><View styleName="a"></View>')).toContain(
-      'h("div", { class: "a test123" })',
-  );
+  expect(
+    compile('<style>.a{color:red}</style><View styleName="a"></View>'),
+  ).toContain('h("div", { class: "a test123" })');
 });
 
 test("view keeps directives and other attributes", () => {
-    const js = compile('<View styleName="a" id="root" outlet="box" action="go"></View>');
+  const js = compile(
+    '<View styleName="a" id="root" outlet="box" action="go"></View>',
+  );
   expect(js).toContain('class: "a"');
   expect(js).toContain('id: "root"');
   expect(js).toContain("this.box = __el");
@@ -166,7 +172,9 @@ test("style name is the only way to set a class", () => {
 
 test("components keep style name as a prop", () => {
   // A component's props are not DOM attributes, so the name stays as written.
-  expect(compile('<Card styleName="a"/>')).toContain('h(Card, { styleName: "a" })');
+  expect(compile('<Card styleName="a"/>')).toContain(
+    'h(Card, { styleName: "a" })',
+  );
 });
 
 test("component tags emit their imports", () => {
@@ -184,11 +192,15 @@ test("each component is imported once", () => {
 });
 
 test("components are referenced by identifier", () => {
-  expect(compile('<Card title="hi"><b>x</b></Card>')).toContain('h(Card, { title: "hi" }');
+  expect(compile('<Card title="hi"><b>x</b></Card>')).toContain(
+    'h(Card, { title: "hi" }',
+  );
 });
 
 test("components do not get the parent scope attribute", () => {
-  expect(compile("<style>.a{color:red}</style><Card><i>x</i></Card>")).toContain("h(Card, null");
+  expect(
+    compile("<style>.a{color:red}</style><Card><i>x</i></Card>"),
+  ).toContain("h(Card, null");
 });
 
 test("multiple roots wrap in fragment", () => {
@@ -196,7 +208,9 @@ test("multiple roots wrap in fragment", () => {
 });
 
 test("void elements need no close", () => {
-  expect(compile('<div><br><img src="x.png"></div>')).toContain('h("br", null)');
+  expect(compile('<div><br><img src="x.png"></div>')).toContain(
+    'h("br", null)',
+  );
 });
 
 test("text binding reads the controller", () => {
@@ -206,7 +220,9 @@ test("text binding reads the controller", () => {
 });
 
 test("binding accepts a dotted path", () => {
-  expect(compile("<p>{user.name}</p>")).toContain('bindText(this, "user.name")');
+  expect(compile("<p>{user.name}</p>")).toContain(
+    'bindText(this, "user.name")',
+  );
 });
 
 test("text binding mixes with literal text", () => {
@@ -242,26 +258,26 @@ test("bindings must be property paths not expressions", () => {
 });
 
 test("logic in the markup is still rejected", () => {
-    // Markup has no expression language, and no JavaScript of any kind.
+  // Markup has no expression language, and no JavaScript of any kind.
   rejects("{#if a}<p>x</p>{/if}");
   rejects("{#each xs as x}<p>x</p>{/each}");
 });
 
 test("a <script> block is rejected", () => {
-    // A .mib file is markup. JavaScript lives in a module beside it: a
-    // controller is that module's default export, and a component is its own
-    // file — which is also the only place either can be found.
-    expect(() => compile("<script>const n = 1;</script><p>{title}</p>")).toThrow(
-        /holds markup, not JavaScript/,
-    );
-    expect(() => compile("<p>x</p>\n<script>\n  export default class C {}\n</script>")).toThrow(
-        /move the <script> into a module beside it/,
-    );
+  // A .mib file is markup. JavaScript lives in a module beside it: a
+  // controller is that module's default export, and a component is its own
+  // file — which is also the only place either can be found.
+  expect(() => compile("<script>const n = 1;</script><p>{title}</p>")).toThrow(
+    /holds markup, not JavaScript/,
+  );
+  expect(() =>
+    compile("<p>x</p>\n<script>\n  export default class C {}\n</script>"),
+  ).toThrow(/move the <script> into a module beside it/);
 });
 
 test("a script tag is rejected wherever it appears", () => {
-    rejects("<div><script>a</script></div>");
-    rejects("<script src=\"x.js\"></script><p>x</p>");
+  rejects("<div><script>a</script></div>");
+  rejects('<script src="x.js"></script><p>x</p>');
 });
 
 test("unclosed tag is an error", () => {
@@ -269,31 +285,35 @@ test("unclosed tag is an error", () => {
 });
 
 test("a page with no markup is still a component", () => {
-    // What `mosaic init` writes: instructions in a comment and nothing else.
-    // It has to compile and mount, so a new app runs before a line is changed.
-    const js = compile("<!-- how to write a page -->\n");
-    expect(js).toContain("export default function App(props = {}) {");
-    expect(js).toContain("return null;");
-    expect(js).not.toContain("how to write a page");
+  // What `mosaic init` writes: instructions in a comment and nothing else.
+  // It has to compile and mount, so a new app runs before a line is changed.
+  const js = compile("<!-- how to write a page -->\n");
+  expect(js).toContain("export default function App(props = {}) {");
+  expect(js).toContain("return null;");
+  expect(js).not.toContain("how to write a page");
 });
 
 test("line markers map generated lines back to source", () => {
-  const [code, mappings] = takeLineMarkers(compile("<div>\n  <p>{count}</p>\n</div>"));
+  const [code, mappings] = takeLineMarkers(
+    compile("<div>\n  <p>{count}</p>\n</div>"),
+  );
   expect(code).not.toContain("/*@L");
   expect(mappings.length).toBeGreaterThan(0);
 });
 
 test("a component's prop cannot be bound", () => {
-    // A binding keeps this markup's own attribute up to date; a component is
-    // not markup, and what it does with `enabled` is its own. The outlet is
-    // how a controller reaches it.
-    expect(() => compile('<div><Card enabled="{on}"/></div>')).toThrow(
-        /a component's props are not bound/,
-    );
-    expect(() => compile('<div><Card title="hello {name}"/></div>')).toThrow(
-        /outlet="name"/,
-    );
+  // A binding keeps this markup's own attribute up to date; a component is
+  // not markup, and what it does with `enabled` is its own. The outlet is
+  // how a controller reaches it.
+  expect(() => compile('<div><Card enabled="{on}"/></div>')).toThrow(
+    /a component's props are not bound/,
+  );
+  expect(() => compile('<div><Card title="hello {name}"/></div>')).toThrow(
+    /outlet="name"/,
+  );
 
-    // The same attribute on an element is a binding, as it always was.
-    expect(compile('<div><p title="{on}">x</p></div>')).toContain("bindAttr(this,");
+  // The same attribute on an element is a binding, as it always was.
+  expect(compile('<div><p title="{on}">x</p></div>')).toContain(
+    "bindAttr(this,",
+  );
 });

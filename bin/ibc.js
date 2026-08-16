@@ -5,7 +5,7 @@
 // Bundling is Bun's job: compile to `--outdir`, then point `bun build` at the
 // entry module. See dev.sh.
 
-import {compileAll} from "../src/js/core/compiler/build.js";
+import { compileAll } from "../src/js/core/compiler/build.js";
 
 const USAGE = `usage: ibc --outdir dir <input.mib|input.js|input.jsx|dir>...
            [--outdir dir2 <more inputs>...]
@@ -48,7 +48,8 @@ function parseArgs(argv) {
       process.exit(0);
     } else if (a.startsWith("-")) throw new Error(`unknown flag \`${a}\``);
     else {
-      if (!outdir && !args.out) throw new Error("--outdir must come before the inputs it covers");
+      if (!outdir && !args.out)
+        throw new Error("--outdir must come before the inputs it covers");
       args.inputs.push([a, outdir]);
     }
   }
@@ -74,7 +75,9 @@ function main(argv) {
         name: args.name,
         sourcemap: args.sourcemap,
         out: args.out,
-        onFile: args.quiet ? undefined : (src, dest) => console.log(`${src} -> ${dest}`),
+        onFile: args.quiet
+          ? undefined
+          : (src, dest) => console.log(`${src} -> ${dest}`),
       },
     );
   } catch (e) {

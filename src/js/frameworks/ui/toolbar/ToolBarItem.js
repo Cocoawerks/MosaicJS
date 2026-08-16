@@ -20,44 +20,44 @@ import Button from "../controls/button/Button.js";
 import "./toolbar-item.css";
 
 export default class ToolBarItem extends Button {
-    static props = {
-        /**
-         * Whether the application has taken the item out of the bar. A hidden
-         * item takes no room and never reaches the overflow menu — it is not
-         * there at all, which is what distinguishes it from an overflowed one.
-         */
-        hidden: {type: Boolean, default: false},
-        /**
-         * Whether the bar has moved this item into its overflow menu. Set by
-         * the ToolBar as it reflows, and not something to write by hand.
-         */
-        overflowed: {type: Boolean, default: false},
-    };
-
-    /** Neither kind of absence is drawn. */
-    get isShowing() {
-        return !this.hidden && !this.overflowed;
-    }
-
-    // --- drawing -------------------------------------------------------------
-
-    buttonClasses() {
-        return ["v-ToolBarItem", ...super.buttonClasses()];
-    }
-
+  static props = {
     /**
-     * An absent item is left in the DOM and taken out of the layout, rather
-     * than dropped: the bar measures what it has, and an item that comes back
-     * from the overflow menu keeps whatever state it was holding.
+     * Whether the application has taken the item out of the bar. A hidden
+     * item takes no room and never reaches the overflow menu — it is not
+     * there at all, which is what distinguishes it from an overflowed one.
      */
-    draw() {
-        const drawn = super.draw();
-        return {
-            ...drawn,
-            props: {
-                ...drawn.props,
-                style: {...drawn.props.style, display: this.isShowing ? "" : "none"},
-            },
-        };
-    }
+    hidden: { type: Boolean, default: false },
+    /**
+     * Whether the bar has moved this item into its overflow menu. Set by
+     * the ToolBar as it reflows, and not something to write by hand.
+     */
+    overflowed: { type: Boolean, default: false },
+  };
+
+  /** Neither kind of absence is drawn. */
+  get isShowing() {
+    return !this.hidden && !this.overflowed;
+  }
+
+  // --- drawing -------------------------------------------------------------
+
+  buttonClasses() {
+    return ["v-ToolBarItem", ...super.buttonClasses()];
+  }
+
+  /**
+   * An absent item is left in the DOM and taken out of the layout, rather
+   * than dropped: the bar measures what it has, and an item that comes back
+   * from the overflow menu keeps whatever state it was holding.
+   */
+  draw() {
+    const drawn = super.draw();
+    return {
+      ...drawn,
+      props: {
+        ...drawn.props,
+        style: { ...drawn.props.style, display: this.isShowing ? "" : "none" },
+      },
+    };
+  }
 }

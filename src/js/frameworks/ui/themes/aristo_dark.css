@@ -15,14 +15,15 @@
    and the text is light. Kept variable-for-variable with the light sheet so the
    two can be diffed against each other. */
 :root {
-    /* The face everything is set in. Source Sans 3 is what Mosaic is drawn in;
+  /* The face everything is set in. Source Sans 3 is what Mosaic is drawn in;
        the rest of the stack is what a page falls back to when the application
        has not loaded it (a `<link>` to it, as the KitchenSink page carries).
        Declared as a variable so an application can put its own in front of it
        by redeclaring one thing. */
-    --font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-family:
+    "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-    /* Where a capital sits against the middle of a line box, for the face above.
+  /* Where a capital sits against the middle of a line box, for the face above.
        A font's ascent and descent are not symmetric — Source Sans 3 carries
        1.00em above the baseline and 0.41em below, against a 0.71em capital — so
        text centred by its line box reads high, by (descent - ascent + cap) / 2.
@@ -30,374 +31,373 @@
        line's icon) takes it back. A face with other metrics wants another
        number, which is why it is stated beside the family rather than inside a
        component. */
-    --label-cap-offset: 0.06em;
+  --label-cap-offset: 0.06em;
 
-
-    --text-color: #e8e8e8;
-    /* The list/menu selection blue — the same slate the default action wears. */
-    --accent-color: #577d91;
-    --opacity-disable: 0.45;
-    /* The focus halo: deeper than the light theme's pale sky, which glares
+  --text-color: #e8e8e8;
+  /* The list/menu selection blue — the same slate the default action wears. */
+  --accent-color: #577d91;
+  --opacity-disable: 0.45;
+  /* The focus halo: deeper than the light theme's pale sky, which glares
          against dark surfaces. */
-    --focus-ring: #3f6c96;
+  --focus-ring: #3f6c96;
 
-    /* Text insertion caret. */
-    --caret-color: var(--accent-color);
+  /* Text insertion caret. */
+  --caret-color: var(--accent-color);
 
-    /* Hyperlinks — lighter than the accent so they carry as text. */
-    --link-color: #8fb2e2;
-    --link-color-hover: #a9c6ee;
-    --link-color-active: #749bd0;
+  /* Hyperlinks — lighter than the accent so they carry as text. */
+  --link-color: #8fb2e2;
+  --link-color-hover: #a9c6ee;
+  --link-color-active: #749bd0;
 
-    /* The band behind highlighted text. */
-    --text-selection-background: #476288;
+  /* The band behind highlighted text. */
+  --text-selection-background: #476288;
 
-    /* Zebra striping: the tint every other row of a list takes. */
-    --alternate-row-color: #222222;
+  /* Zebra striping: the tint every other row of a list takes. */
+  --alternate-row-color: #222222;
 
-    /* The workspace a view's content sits on — the page behind a view's content. */
-    --view-background: #333333;
+  /* The workspace a view's content sits on — the page behind a view's content. */
+  --view-background: #333333;
 
-    /* A panel sitting on the workspace — a card, a list frame, a tile —
+  /* A panel sitting on the workspace — a card, a list frame, a tile —
          a step above the workspace, so a panel on it still reads as raised. */
-    --light-view-background: #4f4f4f;
+  --light-view-background: #4f4f4f;
 
-    /* The counterpart: a step below the #333333 workspace — a well, a gutter, anything meant to sit
+  /* The counterpart: a step below the #333333 workspace — a well, a gutter, anything meant to sit
          under it rather than on it. */
-    --dark-view-background: #262628;
+  --dark-view-background: #262628;
 
-    /* Overlay washes: on dark surfaces a control lightens rather than darkens
+  /* Overlay washes: on dark surfaces a control lightens rather than darkens
          (see the light themes, where these are blacks). */
-    --wash-hover: rgba(255, 255, 255, 0.1);
-    --wash-press: rgba(255, 255, 255, 0.16);
-    --wash-on: rgba(255, 255, 255, 0.22);
-    --wash-on-press: rgba(255, 255, 255, 0.3);
+  --wash-hover: rgba(255, 255, 255, 0.1);
+  --wash-press: rgba(255, 255, 255, 0.16);
+  --wash-on: rgba(255, 255, 255, 0.22);
+  --wash-on-press: rgba(255, 255, 255, 0.3);
 
-    /* Placeholder / hint text. */
-    --placeholder-color: #7e7e84;
+  /* Placeholder / hint text. */
+  --placeholder-color: #7e7e84;
 
-    /** intent colors — uniform construction:
+  /** intent colors — uniform construction:
           hover  = bg mixed with 12% white
           active = bg mixed with 18% black
           border = bg mixed with 25% black
        */
 
-    /* DEFAULT Intent — the push-button face, a step above the window surface so
+  /* DEFAULT Intent — the push-button face, a step above the window surface so
          a button reads as raised out of it. */
-    --default-background-color: #46464b;
-    --default-background-color-hover: #515157;
-    --default-background-color-active: #3a3a3e;
-    --default-border-color: #26262a;
-    --default-foreground-color: var(--text-color);
+  --default-background-color: #46464b;
+  --default-background-color-hover: #515157;
+  --default-background-color-active: #3a3a3e;
+  --default-border-color: #26262a;
+  --default-foreground-color: var(--text-color);
 
-    /* What a selected control draws on its face: a checkmark, a radio's dot, a
+  /* What a selected control draws on its face: a checkmark, a radio's dot, a
          selected tab's label. The face itself stays the pale blue, so the mark
          stays the deep navy its light twin uses. */
-    --selected-mark-color: #1d3b4c;
+  --selected-mark-color: #1d3b4c;
 
-    /* The tick in a checked box and the dot in a selected radio — dark, since
+  /* The tick in a checked box and the dot in a selected radio — dark, since
          they sit on the pale checked face. */
-    --checked-mark-color: #284e64;
+  --checked-mark-color: #284e64;
 
-    /* An on switch — a shade deeper than the default button face. */
-    --switch-checked-background: #6f9cb4;
+  /* An on switch — a shade deeper than the default button face. */
+  --switch-checked-background: #6f9cb4;
 
-    /* The strip above the toolbar. */
-    --titlebar-background-color: #373042db;
-    --titlebar-border-color: #211f26;
+  /* The strip above the toolbar. */
+  --titlebar-background-color: #373042db;
+  --titlebar-border-color: #211f26;
 
-    /* The travelling part of a loading spinner. */
-    --loading-indicator-background: #6ea9c4;
+  /* The travelling part of a loading spinner. */
+  --loading-indicator-background: #6ea9c4;
 
-    /* The tab bar's sliding selection pill. */
-    --tab-indicator-background: #8fc0d8;
+  /* The tab bar's sliding selection pill. */
+  --tab-indicator-background: #8fc0d8;
 
-    /* Selected rows take the accent, so their text goes light. */
-    /* What marks a thing as chosen — a menu item, a page in the print
+  /* Selected rows take the accent, so their text goes light. */
+  /* What marks a thing as chosen — a menu item, a page in the print
          preview, a word in the clue list, a grid tile: the focus ring's blue — the accent is too close to the surfaces here to mark
          a selection on them. */
-    --selection-color: var(--focus-ring);
+  --selection-color: var(--focus-ring);
 
-    --selection-foreground: #ffffff;
+  --selection-foreground: #ffffff;
 
-    /* PRIMARY Intent — the default button: a muted sky, a step down from the tab
+  /* PRIMARY Intent — the default button: a muted sky, a step down from the tab
          indicator's, with dark text. Deep enough to sit on the dark surfaces
          without glowing, light enough to keep a dark label. */
-    --primary-background-color: #82b4ce;
-    --primary-background-color-hover: #93c3db;
-    --primary-background-color-active: #5f8ea6;
-    /* The face mixed with 25% black, as the construction above says. It was
+  --primary-background-color: #82b4ce;
+  --primary-background-color-hover: #93c3db;
+  --primary-background-color-active: #5f8ea6;
+  /* The face mixed with 25% black, as the construction above says. It was
          #14262f — near-black, the value the foreground below wears — which drew
          a hard rim around every pale face this theme has: a ticked checkbox, a
          selected radio, a primary button. */
-    --primary-border-color: #62879b;
-    --primary-foreground-color: #11242e;
+  --primary-border-color: #62879b;
+  --primary-foreground-color: #11242e;
 
-    /* DANGER Intent */
-    --danger-background-color: #cc5f5f;
-    --danger-background-color-hover: color-mix(
-            in srgb,
-            var(--danger-background-color),
-            white 12%
-    );
-    --danger-background-color-active: color-mix(
-            in srgb,
-            var(--danger-background-color),
-            black 18%
-    );
-    --danger-border-color: color-mix(
-            in srgb,
-            var(--danger-background-color),
-            black 25%
-    );
-    --danger-foreground-color: #ffffff;
+  /* DANGER Intent */
+  --danger-background-color: #cc5f5f;
+  --danger-background-color-hover: color-mix(
+    in srgb,
+    var(--danger-background-color),
+    white 12%
+  );
+  --danger-background-color-active: color-mix(
+    in srgb,
+    var(--danger-background-color),
+    black 18%
+  );
+  --danger-border-color: color-mix(
+    in srgb,
+    var(--danger-background-color),
+    black 25%
+  );
+  --danger-foreground-color: #ffffff;
 
-    /* SUCCESS Intent */
-    --success-background-color: #629566;
-    --success-background-color-hover: color-mix(
-            in srgb,
-            var(--success-background-color),
-            white 12%
-    );
-    --success-background-color-active: color-mix(
-            in srgb,
-            var(--success-background-color),
-            black 18%
-    );
-    --success-border-color: color-mix(
-            in srgb,
-            var(--success-background-color),
-            black 25%
-    );
-    --success-foreground-color: #ffffff;
+  /* SUCCESS Intent */
+  --success-background-color: #629566;
+  --success-background-color-hover: color-mix(
+    in srgb,
+    var(--success-background-color),
+    white 12%
+  );
+  --success-background-color-active: color-mix(
+    in srgb,
+    var(--success-background-color),
+    black 18%
+  );
+  --success-border-color: color-mix(
+    in srgb,
+    var(--success-background-color),
+    black 25%
+  );
+  --success-foreground-color: #ffffff;
 
-    /* WARNING Intent */
-    --warning-background-color: #d18f36;
-    --warning-background-color-hover: color-mix(
-            in srgb,
-            var(--warning-background-color),
-            white 12%
-    );
-    --warning-background-color-active: color-mix(
-            in srgb,
-            var(--warning-background-color),
-            black 18%
-    );
-    --warning-border-color: color-mix(
-            in srgb,
-            var(--warning-background-color),
-            black 25%
-    );
-    --warning-foreground-color: #241503;
+  /* WARNING Intent */
+  --warning-background-color: #d18f36;
+  --warning-background-color-hover: color-mix(
+    in srgb,
+    var(--warning-background-color),
+    white 12%
+  );
+  --warning-background-color-active: color-mix(
+    in srgb,
+    var(--warning-background-color),
+    black 18%
+  );
+  --warning-border-color: color-mix(
+    in srgb,
+    var(--warning-background-color),
+    black 25%
+  );
+  --warning-foreground-color: #241503;
 
-    /* INFO Intent */
-    --info-background-color: #85b2cb;
-    --info-background-color-hover: color-mix(
-            in srgb,
-            var(--info-background-color),
-            white 12%
-    );
-    --info-background-color-active: color-mix(
-            in srgb,
-            var(--info-background-color),
-            black 18%
-    );
-    --info-border-color: color-mix(
-            in srgb,
-            var(--info-background-color),
-            black 25%
-    );
-    --info-foreground-color: #10242e;
+  /* INFO Intent */
+  --info-background-color: #85b2cb;
+  --info-background-color-hover: color-mix(
+    in srgb,
+    var(--info-background-color),
+    white 12%
+  );
+  --info-background-color-active: color-mix(
+    in srgb,
+    var(--info-background-color),
+    black 18%
+  );
+  --info-border-color: color-mix(
+    in srgb,
+    var(--info-background-color),
+    black 25%
+  );
+  --info-foreground-color: #10242e;
 
-    /* INVERSE Intent — inverted in turn: the light slab on a dark theme. */
-    --inverse-background-color: #e6e6e6;
-    --inverse-background-color-hover: #f2f2f2;
-    --inverse-background-color-active: #cfcfcf;
-    --inverse-border-color: #b4b4b4;
-    --inverse-foreground-color: #232326;
+  /* INVERSE Intent — inverted in turn: the light slab on a dark theme. */
+  --inverse-background-color: #e6e6e6;
+  --inverse-background-color-hover: #f2f2f2;
+  --inverse-background-color-active: #cfcfcf;
+  --inverse-border-color: #b4b4b4;
+  --inverse-foreground-color: #232326;
 
-    /* Toolbar — plain dark grey with light text, flat. Its buttons are
+  /* Toolbar — plain dark grey with light text, flat. Its buttons are
          transparent and lighten under the pointer rather than darken. */
-    --toolbar-background: #3d3d3d;
+  --toolbar-background: #3d3d3d;
 
-    /* A grouping box's frame — near-black, so the frame reads as a cut rather than a drawn line. Also worn by anything framed to match
+  /* A grouping box's frame — near-black, so the frame reads as a cut rather than a drawn line. Also worn by anything framed to match
          one, e.g. the clue dialog's word list. */
-    --group-border-color: color(srgb 1 1 1 / 0.46);
+  --group-border-color: color(srgb 1 1 1 / 0.46);
 
-    /* The split panel's divider face — a couple of steps up the ramp, so it separates from the panes. */
-    --splitter-background: #38383c;
+  /* The split panel's divider face — a couple of steps up the ramp, so it separates from the panes. */
+  --splitter-background: #38383c;
 
-    /* The cell-marker icons' square face and the heavy bar drawn on its edge. */
-    --marker-cell-face: #33333a;
-    --marker-bar-color: #c8c8c8;
-    --toolbar-foreground: var(--text-color);
-    --toolbar-button-background: transparent;
-    --toolbar-button-border: transparent;
-    /* A step below the body text: on the dark strip, glyphs at full --text-color
+  /* The cell-marker icons' square face and the heavy bar drawn on its edge. */
+  --marker-cell-face: #33333a;
+  --marker-bar-color: #c8c8c8;
+  --toolbar-foreground: var(--text-color);
+  --toolbar-button-background: transparent;
+  --toolbar-button-border: transparent;
+  /* A step below the body text: on the dark strip, glyphs at full --text-color
          glare, and the toolbar reads as a row of white marks. */
-    --toolbar-button-foreground: #b8b8b8;
+  --toolbar-button-foreground: #b8b8b8;
 
-    /* Resting glyph in a segmented toggle group (bold/italic/underline) — bright enough to read on the dark pill. */
-    --segmented-glyph: #f0f0f0;
+  /* Resting glyph in a segmented toggle group (bold/italic/underline) — bright enough to read on the dark pill. */
+  --segmented-glyph: #f0f0f0;
 
-    /* Its hovered / latched glyph — a step brighter than the resting one. */
-    --segmented-glyph-on: #ffffff;
+  /* Its hovered / latched glyph — a step brighter than the resting one. */
+  --segmented-glyph-on: #ffffff;
 
-    /* Its latched face. The wash alone barely lifts off the button here, so the
+  /* Its latched face. The wash alone barely lifts off the button here, so the
          on state gets an explicit, clearly lighter fill. */
-    --segmented-on-background: #6b6b73;
-    --segmented-on-press-background: #7a7a83;
-    --toolbar-button-hover: rgba(255, 255, 255, 0.08);
-    --toolbar-button-active: rgba(255, 255, 255, 0.16);
+  --segmented-on-background: #6b6b73;
+  --segmented-on-press-background: #7a7a83;
+  --toolbar-button-hover: rgba(255, 255, 255, 0.08);
+  --toolbar-button-active: rgba(255, 255, 255, 0.16);
 
-    --navbar-separator: #26262a;
+  --navbar-separator: #26262a;
 
-    /* Popover surface — a step above the window behind it. The callout triangle
+  /* Popover surface — a step above the window behind it. The callout triangle
          reads the same pair, so it always matches the box it points out of. */
-    --popover-background: #38383c;
-    --popover-border: #17171a;
+  --popover-background: #38383c;
+  --popover-border: #17171a;
 
-    /* Tooltip — lighter than the surface it floats over, the reverse of the
+  /* Tooltip — lighter than the surface it floats over, the reverse of the
          light theme's dark chip. */
-    --tooltip-background: #eaeaea;
-    --tooltip-foreground: #222225;
+  --tooltip-background: #eaeaea;
+  --tooltip-foreground: #222225;
 
-    /* Dialog — a window on a dark desktop: the shadow does less work here, so
+  /* Dialog — a window on a dark desktop: the shadow does less work here, so
          the frame carries more of the separation. */
-    --dialog-border: #17171a;
-    --dialog-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.65), 0 2px 8px -2px rgba(0, 0, 0, 0.5);
-    --dialog-backdrop: rgba(0, 0, 0, 0.55);
-    --dialog-header-background: #3a3a3f;
-    --dialog-header-foreground: var(--text-color);
-    --dialog-header-border: #202024;
-    /* The catch-light along the top edge of a title bar — a whisper here, where
+  --dialog-border: #17171a;
+  --dialog-shadow:
+    0 16px 36px -10px rgba(0, 0, 0, 0.65), 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --dialog-backdrop: rgba(0, 0, 0, 0.55);
+  --dialog-header-background: #3a3a3f;
+  --dialog-header-foreground: var(--text-color);
+  --dialog-header-border: #202024;
+  /* The catch-light along the top edge of a title bar — a whisper here, where
          a white line would read as a seam. */
-    --dialog-header-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    --dialog-header-title-weight: 700;
-    --dialog-header-title-align: center;
-    /* Close button: a grey dot with a light glyph, as in the light theme. */
-    --dialog-close-background: #5a5a60;
-    --dialog-close-foreground: #f0f0f0;
-    --dialog-close-hover: #6a6a71;
-    --dialog-close-active: #4a4a4f;
+  --dialog-header-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --dialog-header-title-weight: 700;
+  --dialog-header-title-align: center;
+  /* Close button: a grey dot with a light glyph, as in the light theme. */
+  --dialog-close-background: #5a5a60;
+  --dialog-close-foreground: #f0f0f0;
+  --dialog-close-hover: #6a6a71;
+  --dialog-close-active: #4a4a4f;
 
-    /* Wizard step navigation — the source-list sidebar. */
-    --sidebar-background-gradient-start: #35353a;
-    --sidebar-background-gradient-end: #2c2c30;
-    --wizard-nav-border: #26262a;
-    --wizard-step-color: #a0a0a6;
-    --wizard-step-disabled-color: #6d6d73;
-    --wizard-step-bullet-background: #5a5a60;
-    /* The current step's bullet, sitting on the highlighted row below. */
-    --wizard-step-current-bullet: #5b7d8e;
-    --wizard-step-bullet-foreground: #f0f0f0;
-    --wizard-step-connector: #5a5a60;
-    --wizard-step-completed: #7cae80;
-    --wizard-step-current-color: #9cc8de;
+  /* Wizard step navigation — the source-list sidebar. */
+  --sidebar-background-gradient-start: #35353a;
+  --sidebar-background-gradient-end: #2c2c30;
+  --wizard-nav-border: #26262a;
+  --wizard-step-color: #a0a0a6;
+  --wizard-step-disabled-color: #6d6d73;
+  --wizard-step-bullet-background: #5a5a60;
+  /* The current step's bullet, sitting on the highlighted row below. */
+  --wizard-step-current-bullet: #5b7d8e;
+  --wizard-step-bullet-foreground: #f0f0f0;
+  --wizard-step-connector: #5a5a60;
+  --wizard-step-completed: #7cae80;
+  --wizard-step-current-color: #9cc8de;
 
-    /* ── Component colours ───────────────────────────────────────────────
+  /* ── Component colours ───────────────────────────────────────────────
          What each part is painted with, named for the part rather than for a
          place on a palette. The values were the ramp entries these replaced. */
-    --navitem-active-foreground: #2b2b2e;
-    --accordion-divider: #38383c;
-    --accordion-header-foreground: #d8d8d8;
-    --accordion-header-hover: #313134;
-    --box-title-background: #2b2b2e;
-    --box-title-foreground: #d8d8d8;
-    --checkbox-check-color: #313134;
-    --checkbox-indicator-background: #313134;
-    --combobox-background: #313134;
-    --dialog-background: #2b2b2e;
-    --error-color: #cc5f5f;
-    --field-background: #313134;
-    --field-disabled-foreground: #4d4d52;
-    --field-error-border: #e09b9b;
-    --field-invalid-background: #8f2f2f;
-    --field-invalid-border: #b34444;
-    --field-placeholder-foreground: #f2f2f2;
-    --hrline-background: #2b2b2e;
-    --hrline-foreground: #9b9ba1;
-    --hrline-rule: #4d4d52;
-    --list-empty-foreground: #d8d8d8;
-    --menu-active-background: #414146;
-    --menu-active-foreground: #c4c4c4;
-    --menu-background: #313134;
-    --menu-foreground: #ababab;
-    --outline-focus-border: #38383c;
-    --outline-foreground: #c4c4c4;
-    --outline-hover-background: #38383c;
-    --outline-selected-foreground: #2b2b2e;
-    --outline-selected-icon: #c4c4c4;
-    --progressbar-track: #414146;
-    --radio-indicator-background: #313134;
-    --radio-mark-color: #313134;
-    --search-icon-fill: #c4c4c4;
-    --slider-knob-border: #8a8a92;
-    --slider-knob-active: #38383c;
-    --slider-knob-background: #2b2b2e;
-    --slider-knob-hover: #313134;
-    --slider-track-background: #414146;
-    --snackbar-danger-background: #cc5f5f;
-    --snackbar-danger-border: #b34444;
-    --snackbar-divider: #414146;
-    --snackbar-foreground: #2b2b2e;
-    --spinbutton-field-background: #2b2b2e;
-    --spinner-mask: #2b2b2e;
-    --spinner-track: #414146;
-    --splitter-hover: #9b9ba1;
-    --success-color: #4e7c52;
-    --switch-knob-background: #2b2b2e;
-    --switch-track-background: #414146;
-    --tab-selected-foreground: #ababab;
-    --tab-separator-color: #4f4f4f;
-    --tabbar-background: #38383c;
-    --wizard-buttons-border: #414146;
-    --secondary-foreground: #d8d8d8;
-    --list-divider: #414146;
-    --badge-background: #414146;
-    --badge-foreground: #d8d8d8;
+  --navitem-active-foreground: #2b2b2e;
+  --accordion-divider: #38383c;
+  --accordion-header-foreground: #d8d8d8;
+  --accordion-header-hover: #313134;
+  --box-title-background: #2b2b2e;
+  --box-title-foreground: #d8d8d8;
+  --checkbox-check-color: #313134;
+  --checkbox-indicator-background: #313134;
+  --combobox-background: #313134;
+  --dialog-background: #2b2b2e;
+  --error-color: #cc5f5f;
+  --field-background: #313134;
+  --field-disabled-foreground: #4d4d52;
+  --field-error-border: #e09b9b;
+  --field-invalid-background: #8f2f2f;
+  --field-invalid-border: #b34444;
+  --field-placeholder-foreground: #f2f2f2;
+  --hrline-background: #2b2b2e;
+  --hrline-foreground: #9b9ba1;
+  --hrline-rule: #4d4d52;
+  --list-empty-foreground: #d8d8d8;
+  --menu-active-background: #414146;
+  --menu-active-foreground: #c4c4c4;
+  --menu-background: #313134;
+  --menu-foreground: #ababab;
+  --outline-focus-border: #38383c;
+  --outline-foreground: #c4c4c4;
+  --outline-hover-background: #38383c;
+  --outline-selected-foreground: #2b2b2e;
+  --outline-selected-icon: #c4c4c4;
+  --progressbar-track: #414146;
+  --radio-indicator-background: #313134;
+  --radio-mark-color: #313134;
+  --search-icon-fill: #c4c4c4;
+  --slider-knob-border: #8a8a92;
+  --slider-knob-active: #38383c;
+  --slider-knob-background: #2b2b2e;
+  --slider-knob-hover: #313134;
+  --slider-track-background: #414146;
+  --snackbar-danger-background: #cc5f5f;
+  --snackbar-danger-border: #b34444;
+  --snackbar-divider: #414146;
+  --snackbar-foreground: #2b2b2e;
+  --spinbutton-field-background: #2b2b2e;
+  --spinner-mask: #2b2b2e;
+  --spinner-track: #414146;
+  --splitter-hover: #9b9ba1;
+  --success-color: #4e7c52;
+  --switch-knob-background: #2b2b2e;
+  --switch-track-background: #414146;
+  --tab-selected-foreground: #ababab;
+  --tab-separator-color: #4f4f4f;
+  --tabbar-background: #38383c;
+  --wizard-buttons-border: #414146;
+  --secondary-foreground: #d8d8d8;
+  --list-divider: #414146;
+  --badge-background: #414146;
+  --badge-foreground: #d8d8d8;
 }
-
 
 /* Hyperlinks. */
 a {
-    color: var(--link-color);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    cursor: pointer;
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
 }
 
 a:hover {
-    color: var(--link-color-hover);
+  color: var(--link-color-hover);
 }
 
 a:active {
-    color: var(--link-color-active);
+  color: var(--link-color-active);
 }
 
 a:focus-visible {
-    outline: 3px solid var(--focus-ring);
-    outline-offset: 1px;
-    border-radius: 3px;
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 1px;
+  border-radius: 3px;
 }
 
 /* Ordinary hairline caret — no stroke fattening. */
 input,
 textarea,
 [contenteditable] {
-    caret-color: var(--caret-color);
+  caret-color: var(--caret-color);
 }
 
 /* Highlighted text: its own blue rather than the accent, which is bright enough
    to fight the text sitting on it. */
 ::selection {
-    background-color: var(--text-selection-background);
-    color: #ffffff;
+  background-color: var(--text-selection-background);
+  color: #ffffff;
 }
 
 ::-moz-selection {
-    background-color: var(--text-selection-background);
-    color: #ffffff;
+  background-color: var(--text-selection-background);
+  color: #ffffff;
 }
 
 /* ---------------------------------------------------------------------------
@@ -418,16 +418,16 @@ textarea,
    as plastic. A single hairline highlight along the top edge is all the relief
    they get. */
 .v-Button.v-Button {
-    background-image: none;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background-image: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* Pressed: still flat. The darker active fill carries the press; the inset
    shadow just seats it. */
 .v-Button.v-Button:active,
 .v-Button.v-Button.is-active {
-    background-image: none;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  background-image: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* The bright intents are flat. They're the only light faces in the theme, and
@@ -436,8 +436,8 @@ textarea,
 .v-Button.v-Button.primary,
 .v-Button.v-Button.inverse,
 .v-Button.v-Button.danger {
-    background-image: none;
-    box-shadow: none;
+  background-image: none;
+  box-shadow: none;
 }
 
 /* Pressed as well — the neutral button's inverted break would otherwise apply
@@ -448,13 +448,13 @@ textarea,
 .v-Button.v-Button.inverse.is-active,
 .v-Button.v-Button.danger:active,
 .v-Button.v-Button.danger.is-active {
-    background-image: none;
-    box-shadow: none;
+  background-image: none;
+  box-shadow: none;
 }
 
 .v-Button.v-Button.is-disabled {
-    background-image: none;
-    box-shadow: none;
+  background-image: none;
+  box-shadow: none;
 }
 
 /* A ticked checkbox is the default button: the same deep blue face, with the
@@ -462,16 +462,16 @@ textarea,
    the *tab* indicator's pale face still needs, which would vanish here. */
 .v-CheckBox > .indicator.checked.checked,
 .v-Radio > .indicator.checked.checked {
-    background: var(--primary-background-color);
-    border-color: var(--primary-border-color);
+  background: var(--primary-background-color);
+  border-color: var(--primary-border-color);
 }
 
 .v-CheckBox > .indicator.checked .check {
-    border-color: var(--checked-mark-color);
+  border-color: var(--checked-mark-color);
 }
 
 .v-Radio > .indicator.checked.checked:before {
-    background: var(--checked-mark-color);
+  background: var(--checked-mark-color);
 }
 
 /* An unchecked box, radio or switch is a dark well, a step below the surface it
@@ -479,76 +479,76 @@ textarea,
    something to read against. */
 .v-CheckBox > .indicator,
 .v-Radio > .indicator {
-    background: #3d3d3d;
-    /* A step lighter than anything it sits on, so the well has an edge. It was
+  background: #3d3d3d;
+  /* A step lighter than anything it sits on, so the well has an edge. It was
          #4d4d52, which is the panel colour (--light-view-background, #4f4f4f) to
          within two points — a rim the same value as the surface behind it is no
          rim at all, and the box read as a bare face. */
-    border-color: #6e6e75;
+  border-color: #6e6e75;
 }
 
 .v-Switch .indicator {
-    background: #353535;
-    border-color: #4d4d52;
+  background: #353535;
+  border-color: #4d4d52;
 }
 
 .v-Slider.v-Slider {
-    background: #dddddd;
-    border-color: #4d4d52;
+  background: #dddddd;
+  border-color: #4d4d52;
 }
 
 /* The knob stays light against that darker track. */
 .v-Switch .indicator:before {
-    background: #d8d8d8;
-    border-color: #4d4d52;
+  background: #d8d8d8;
+  border-color: #4d4d52;
 }
 
 .v-Switch.checked.checked > .indicator {
-    background-color: var(
-            --switch-checked-background,
-            var(--primary-background-color)
-    );
-    border-color: color-mix(
-            in srgb,
-            var(--switch-checked-background, var(--primary-background-color)),
-            white 15%
-    );
+  background-color: var(
+    --switch-checked-background,
+    var(--primary-background-color)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--switch-checked-background, var(--primary-background-color)),
+    white 15%
+  );
 }
 
 .v-Switch.checked.checked > .indicator:before {
-    background: #ffffff;
-    border-color: color-mix(
-            in srgb,
-            var(--switch-checked-background, var(--primary-background-color)),
-            black 15%
-    );
+  background: #ffffff;
+  border-color: color-mix(
+    in srgb,
+    var(--switch-checked-background, var(--primary-background-color)),
+    black 15%
+  );
 }
 
 /* Toolbar: flat, on a hairline base. */
 .v-ToolBar.v-ToolBar {
-    background-image: none;
-    border-bottom: 1px solid #202024;
+  background-image: none;
+  border-bottom: 1px solid #202024;
 }
 
 /* Its buttons stay flat as well — the gloss above is for push buttons. */
 .v-ToolBar .v-Button.v-Button {
-    background-image: none;
-    box-shadow: none;
+  background-image: none;
+  box-shadow: none;
 }
 
 /* The search field is a text field with a magnifier in it, so it takes the same
    well — otherwise it keeps the component sheet's white and glares. */
 .v-Search.v-Search,
 .v-Search.v-Search input {
-    background-color: #3b3b3f;
-    color: #ffffff;
+  background-color: #3b3b3f;
+  color: #ffffff;
 }
 
 /* A message box's text is a bare HTML widget, which Mosaic doesn't colour — it
    would keep the browser's black on the dark dialog face. */
 .v-Dialog.message-box main,
 .v-Dialog.message-box main .gwt-HTML {
-    color: #ffffff;
+  color: #ffffff;
 }
 
 /* Its glyphs sit below the text they flank — the magnifier and the reset X are
@@ -559,7 +559,7 @@ textarea,
 .v-Search.v-Search button.Search-reset,
 .v-Search.v-Search button.Search-reset > i,
 .v-Search.v-Search button.Search-reset > i svg {
-    fill: #bbbbbb;
+  fill: #bbbbbb;
 }
 
 /* Fields are recessed: a shade below the surface around them, with the shadow
@@ -567,10 +567,11 @@ textarea,
    dark just fills the top of the field with black. */
 .v-Text.v-Text,
 .v-TextView.v-TextView {
-    background-color: #3b3b3f;
-    border-color: #2c2c2c;
-    color: #ffffff;
-    box-shadow: inset 0 2px 4px -1px rgba(0, 0, 0, 0.28),
+  background-color: #3b3b3f;
+  border-color: #2c2c2c;
+  color: #ffffff;
+  box-shadow:
+    inset 0 2px 4px -1px rgba(0, 0, 0, 0.28),
     inset 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
 
@@ -579,7 +580,7 @@ textarea,
    middle of the widget. Scoped under .v-SpinButton to outscore that rule. */
 .v-SpinButton .v-Text.v-Text,
 .v-SpinButton .v-Text.v-Text.is-focused {
-    box-shadow: none;
+  box-shadow: none;
 }
 
 /* What the user types, white against the well — the inputs carry their own
@@ -593,13 +594,14 @@ textarea,
 .gwt-PasswordTextBox,
 .gwt-SuggestBox,
 .gwt-Label {
-    color: #ffffff;
+  color: #ffffff;
 }
 
 /* Focus is the same pale halo, which carries further on dark. */
 .v-Text.v-Text.is-focused,
 .v-TextView.v-TextView.is-focused {
-    box-shadow: inset 0 2px 4px -1px rgba(0, 0, 0, 0.25),
+  box-shadow:
+    inset 0 2px 4px -1px rgba(0, 0, 0, 0.25),
     0 0 5px 1px rgba(63, 108, 150, 0.85);
 }
 
@@ -607,28 +609,28 @@ textarea,
    so the round dot reads as dished. */
 .v-Dialog header button.close.close,
 .v-Drawer .header button.close.close {
-    background-image: radial-gradient(
-            circle at 50% 50%,
-            rgba(0, 0, 0, 0.28),
-            rgba(0, 0, 0, 0.1) 55%,
-            rgba(0, 0, 0, 0) 100%
-    );
-    box-shadow: none;
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    rgba(0, 0, 0, 0.28),
+    rgba(0, 0, 0, 0.1) 55%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  box-shadow: none;
 }
 
 /* The current step wears a deep blue rather than the pale primary face — the
    sidebar it sits in is dark, and the primary reads as a lit strip across it.
    Doubled .is-current to outscore the component's own rule. */
 .v-Wizard-dialog .v-WizNavItem.is-current.is-current {
-    background: #234768;
-    color: #f0f0f0;
+  background: #234768;
+  color: #f0f0f0;
 }
 
 /* Window title bar: flat. */
 .v-Dialog header {
-    background-image: none;
-    border-left: none;
-    border-right: none;
+  background-image: none;
+  border-left: none;
+  border-right: none;
 }
 
 /* ---- Drawer / TitleBar -------------------------------------------------- */
@@ -636,95 +638,95 @@ textarea,
 /* The side panel: a dark surface with a hairline against the page and a shadow
    deep enough to separate them. */
 .v-Drawer {
-    background: #2b2b2e;
-    border-left: 1px solid #17171a;
-    box-shadow: -2px 0 12px rgba(0, 0, 0, 0.45);
+  background: #2b2b2e;
+  border-left: 1px solid #17171a;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.45);
 }
 
 .v-Drawer .header {
-    background-color: var(--dialog-header-background);
-    border-bottom: 1px solid var(--dialog-header-border);
-    color: var(--dialog-header-foreground);
-    box-shadow: var(--dialog-header-highlight, none);
+  background-color: var(--dialog-header-background);
+  border-bottom: 1px solid var(--dialog-header-border);
+  color: var(--dialog-header-foreground);
+  box-shadow: var(--dialog-header-highlight, none);
 }
 
 .v-Drawer .title {
-    font-weight: var(--dialog-header-title-weight);
-    text-align: var(--dialog-header-title-align);
+  font-weight: var(--dialog-header-title-weight);
+  text-align: var(--dialog-header-title-align);
 }
 
 /* Its close button reads from the same variables as a dialog's. */
 .v-Drawer .header button.close {
-    background-color: var(--dialog-close-background);
+  background-color: var(--dialog-close-background);
 }
 
 .v-Drawer .header button.close .icon {
-    fill: var(--dialog-close-foreground);
+  fill: var(--dialog-close-foreground);
 }
 
 .v-Drawer .header button.close:not(.is-active):not(.is-disabled):hover {
-    background-color: var(--dialog-close-hover);
+  background-color: var(--dialog-close-hover);
 }
 
 .v-Drawer .header button.close.active {
-    background-color: var(--dialog-close-active);
+  background-color: var(--dialog-close-active);
 }
 
 /* The strip above the toolbar. */
 .v-TitleBar {
-    background-color: var(--titlebar-background-color);
-    color: var(--toolbar-foreground);
-    border-bottom: 1px solid var(--titlebar-border-color);
+  background-color: var(--titlebar-background-color);
+  color: var(--toolbar-foreground);
+  border-bottom: 1px solid var(--titlebar-border-color);
 }
 
 /* Its buttons stay transparent. On a dark bar hovering lightens, while an item
    held on — a menu bar item with its menu down — darkens, so "open" reads as
    pressed into the bar. */
 .v-TitleBarButton.v-Button {
-    color: #e7e2f0;
-    fill: #e7e2f0;
+  color: #e7e2f0;
+  fill: #e7e2f0;
 }
 
 .v-TitleBarButton.v-TitleBarButton.v-Button:not(.is-active):not(
     .is-disabled
   ):hover {
-    background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .v-TitleBarButton.v-TitleBarButton.v-Button.is-active {
-    background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.3);
 }
 
 /* ---- Tabs ---------------------------------------------------------------- */
 
 .v-TabBar.v-TabBar {
-    border-radius: 10px;
-    height: 36px;
-    min-height: 36px;
-    overflow: hidden;
-    background: #38383c;
+  border-radius: 10px;
+  height: 36px;
+  min-height: 36px;
+  overflow: hidden;
+  background: #38383c;
 }
 
 /* No margin, so a tab (and the indicator tracking it) runs the full height of
    the bar and butts against its neighbour. */
 .v-TabButton.v-TabButton {
-    margin: 0;
-    border-radius: 0;
-    padding: 0;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #c4c4c4;
+  margin: 0;
+  border-radius: 0;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c4c4c4;
 }
 
 .v-TabBar-indicator.v-TabBar-indicator {
-    border-radius: 0;
+  border-radius: 0;
 }
 
 /* The selected tab's label, on that indicator. */
 .v-TabButton.v-TabButton.is-selected {
-    color: var(--selected-mark-color);
+  color: var(--selected-mark-color);
 }
 
 /* A checkbox's (and radio's) label — the component leaves it to inherit, which
@@ -733,109 +735,106 @@ textarea,
 .v-CheckBox > label,
 .v-Radio > span,
 .v-Radio > label {
-    color: #ffffff;
+  color: #ffffff;
 }
 
 /** checkbox **/
 
 .v-CheckBox .check.checked {
-    margin-left: 10px;
-    margin-top: -4px;
+  margin-left: 10px;
+  margin-top: -4px;
 }
 
 .v-CheckBox .check {
-    transform: rotate(45deg) translate(-4px);
-    height: 17px;
-    width: 7px;
-    border-bottom-width: 4px;
-    border-right-width: 4px;
-    border-color: var(--checked-mark-color);
+  transform: rotate(45deg) translate(-4px);
+  height: 17px;
+  width: 7px;
+  border-bottom-width: 4px;
+  border-right-width: 4px;
+  border-color: var(--checked-mark-color);
 }
 
 /* The combo box's select is its own element, so it doesn't inherit the field
    colours above. Lighter than a text field's well: it's a button you pull a list
    from, not something you type into. */
 .v-ComboBox.v-ComboBox select {
-    background-color: #3a3a3f;
-    color: #ffffff;
+  background-color: #3a3a3f;
+  color: #ffffff;
 }
 
 .v-ComboBox.v-ComboBox {
-    border-color: #26262a;
+  border-color: #26262a;
 }
 
 /* ---- Menu ---------------------------------------------------------------- */
 
 /* The menu is a raised surface here, a step above the window behind it. */
 .v-Menu.v-Menu {
-    background-color: #38383c;
-    border-color: #17171a;
+  background-color: #38383c;
+  border-color: #17171a;
 }
 
 /* The item under the pointer (or the keyboard) takes the accent. */
 .v-MenuItem.v-MenuItem.active {
-    background-color: var(--selection-color);
-    color: #ffffff;
+  background-color: var(--selection-color);
+  color: #ffffff;
 }
 
 .v-MenuItem.v-MenuItem.active .icon,
 .v-MenuItem.v-MenuItem.active label {
-    color: #ffffff;
-    fill: #ffffff;
+  color: #ffffff;
+  fill: #ffffff;
 }
 
 .v-MenuItem label {
-    color: var(--text-color);
+  color: var(--text-color);
 }
 
 /* The filled part of the track wears the default action's face. Doubled to
    outscore the component's own .v-Slider .range, which sets the accent through
    the `background` shorthand. */
 .v-Slider.v-Slider .range {
-    background-color: var(--primary-background-color);
+  background-color: var(--primary-background-color);
 }
 
-
 .v-OutlineItem > .content > .toggle svg {
-    fill: var(--outline-foreground);
+  fill: var(--outline-foreground);
 }
 
 /* Selection */
 .v-OutlineItem.selected > .content {
-    background-color: var(--primary-background-color);
+  background-color: var(--primary-background-color);
 }
-
 
 .v-OutlineItem.selected > .content > .accessory,
 .v-OutlineItem.selected > .content > .toggle,
 .v-OutlineItem.selected > .content > .toggle svg {
-    filter: unset;
-    fill: var(--outline-selected-foreground);
+  filter: unset;
+  fill: var(--outline-selected-foreground);
 }
 
-
 .v-Slider.v-Slider .handle {
-    background: #4c4c50;
+  background: #4c4c50;
 }
 
 .v-Slider.v-Slider:not(.is-disabled) .handle:hover {
-    background: #57575c;
+  background: #57575c;
 }
 
 .v-Slider.v-Slider:not(.is-disabled) .handle.is-active {
-    background: #414146;
+  background: #414146;
 }
 
 .v-PopOver.v-PopOver {
-    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.55);
 }
 
 .v-Search.v-Text {
-    border-radius: 36px;
+  border-radius: 36px;
 }
 
 .v-Search.v-Text input {
-    border-radius: 36px;
+  border-radius: 36px;
 }
 
 /* ---- Combo box ----------------------------------------------------------- */
@@ -846,19 +845,19 @@ textarea,
    same colour as a checkbox's tick, which is what that face is designed to
    carry. */
 .v-ComboBox.v-ComboBox .chevron {
-    /* Pulled out over the control's own 1px border on three sides, so the tab's
+  /* Pulled out over the control's own 1px border on three sides, so the tab's
          primary border replaces the grey one rather than sitting inside it. */
-    top: -1px;
-    right: -1px;
-    width: 30px;
-    box-sizing: border-box;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--primary-background-color);
-    /* No gloss: this theme's buttons are flat, and the tab follows them. */
-    background-image: none;
-    border: 1px solid var(--primary-border-color);
-    border-radius: 0 0.3em 0.3em 0;
+  top: -1px;
+  right: -1px;
+  width: 30px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-background-color);
+  /* No gloss: this theme's buttons are flat, and the tab follows them. */
+  background-image: none;
+  border: 1px solid var(--primary-border-color);
+  border-radius: 0 0.3em 0.3em 0;
 }
 
 /* Pressed: the trigger takes the primary button's pressed face, so the tab reacts
@@ -869,21 +868,21 @@ textarea,
    you press, so it answers the pointer the way that button does. Dropped while
    the press is held, so the pressed face isn't fighting the hover one. */
 .v-ComboBox.v-ComboBox:not(.is-disabled):hover:not(:active) .chevron {
-    background-color: var(--primary-background-color-hover);
+  background-color: var(--primary-background-color-hover);
 }
 
 .v-ComboBox.v-ComboBox:not(.is-disabled):active .chevron {
-    background: var(--primary-background-color-active);
-    border-color: var(--primary-border-color);
+  background: var(--primary-background-color-active);
+  border-color: var(--primary-border-color);
 }
 
 .v-ComboBox.v-ComboBox .chevron svg {
-    width: 23px;
-    height: 23px;
-    margin: auto;
-    padding-top: 1px;
-    color: var(--checked-mark-color);
-    fill: var(--checked-mark-color);
+  width: 23px;
+  height: 23px;
+  margin: auto;
+  padding-top: 1px;
+  color: var(--checked-mark-color);
+  fill: var(--checked-mark-color);
 }
 
 /* The ring goes round the whole control, trigger included. The component draws it
@@ -893,20 +892,20 @@ textarea,
 .v-ComboBox.v-ComboBox select:focus,
 .v-ComboBox.v-ComboBox:focus,
 .v-ComboBox.v-ComboBox.focused {
-    outline: none;
+  outline: none;
 }
 
 /* Keyboard focus only: :focus-visible is the browser's own judgement of that, so
    tabbing to the control rings it and clicking it doesn't. :has puts the ring on
    the root, since the <select> that takes focus stops at the field. */
 .v-ComboBox.v-ComboBox:has(select:focus-visible) {
-    outline: var(--focus-ring) solid 3px;
-    outline-offset: 1px;
+  outline: var(--focus-ring) solid 3px;
+  outline-offset: 1px;
 }
 
 /* Room for the trigger, so a long option doesn't run under it. */
 .v-ComboBox.v-ComboBox select {
-    padding-right: 38px;
+  padding-right: 38px;
 }
 
 /* A detail button is a flat card, not a push button: the theme's gloss reads as
@@ -914,9 +913,9 @@ textarea,
    surface of its own. Three classes, to outscore both the app's
    .v-DetailButton.v-Button and the .v-Button.v-Button gloss above. */
 .v-DetailButton.v-DetailButton.v-Button {
-    background-image: none;
-    background-color: #38383b;
-    box-shadow: none;
+  background-image: none;
+  background-color: #38383b;
+  box-shadow: none;
 }
 
 /* Hover and press step up from that face rather than down: the app's washes are
@@ -924,11 +923,11 @@ textarea,
 .v-DetailButton.v-DetailButton.v-Button:not(.is-active):not(
     .is-disabled
   ):hover {
-    background-color: #45454a;
+  background-color: #45454a;
 }
 
 .v-DetailButton.v-DetailButton.v-Button.is-active {
-    background-color: #4e4e54;
+  background-color: #4e4e54;
 }
 
 /* ---- Color chooser ------------------------------------------------------- */
@@ -941,13 +940,13 @@ textarea,
 .ccp-root .ccp-hash,
 .ccp-root label,
 .ccp-root .gwt-Label {
-    color: #ffffff;
+  color: #ffffff;
 }
 
 /* The "#" is dimmed by opacity, which on a dark surface reads as grey mud —
    full strength, and let it be the same white as the field beside it. */
 .ccp-root .ccp-hash {
-    opacity: 1;
+  opacity: 1;
 }
 
 /* ---- Snackbar ------------------------------------------------------------ */
@@ -955,21 +954,22 @@ textarea,
 /* A small window rather than a coloured slab: the theme's own surface, hairline
    and shadow, with light text. */
 .v-SnackBar.v-SnackBar {
-    border-radius: 6px;
-    border: 1px solid #17171a;
-    background-color: #38383c;
-    color: var(--text-color);
-    box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.6),
+  border-radius: 6px;
+  border: 1px solid #17171a;
+  background-color: #38383c;
+  color: var(--text-color);
+  box-shadow:
+    0 6px 18px -6px rgba(0, 0, 0, 0.6),
     0 1px 3px -1px rgba(0, 0, 0, 0.4);
-    opacity: 1;
-    padding: 6px 8px;
+  opacity: 1;
+  padding: 6px 8px;
 }
 
 /* Intent shows as a tint of the surface, not as a saturated fill — mixed toward
    black here rather than toward white. */
 .v-SnackBar.v-SnackBar.intent,
 .v-SnackBar.v-SnackBar.intent > .v-SnackBar-content {
-    color: var(--text-color);
+  color: var(--text-color);
 }
 
 .v-SnackBar.intent .v-SnackBar-content *,
@@ -979,80 +979,79 @@ textarea,
 .v-SnackBar.warning .v-SnackBar-content *,
 .v-SnackBar.info .v-SnackBar-content *,
 .v-SnackBar.inverse .v-SnackBar-content * {
-    filter: none;
+  filter: none;
 }
 
 .v-SnackBar.v-SnackBar.primary {
-    background-color: color-mix(
-            in srgb,
-            var(--primary-background-color),
-            black 72%
-    );
-    border-color: color-mix(in srgb, var(--primary-background-color), black 55%);
+  background-color: color-mix(
+    in srgb,
+    var(--primary-background-color),
+    black 72%
+  );
+  border-color: color-mix(in srgb, var(--primary-background-color), black 55%);
 }
 
 .v-SnackBar.v-SnackBar.danger {
-    background-color: color-mix(in srgb, #cc5f5f, black 68%);
-    border-color: color-mix(in srgb, #cc5f5f, black 45%);
+  background-color: color-mix(in srgb, #cc5f5f, black 68%);
+  border-color: color-mix(in srgb, #cc5f5f, black 45%);
 }
 
 .v-SnackBar.v-SnackBar.success {
-    background-color: color-mix(in srgb, #7cae80, black 70%);
-    border-color: color-mix(in srgb, #7cae80, black 48%);
+  background-color: color-mix(in srgb, #7cae80, black 70%);
+  border-color: color-mix(in srgb, #7cae80, black 48%);
 }
 
 .v-SnackBar.v-SnackBar.warning {
-    background-color: color-mix(in srgb, #d18f36, black 70%);
-    border-color: color-mix(in srgb, #d18f36, black 45%);
+  background-color: color-mix(in srgb, #d18f36, black 70%);
+  border-color: color-mix(in srgb, #d18f36, black 45%);
 }
 
 .v-SnackBar.v-SnackBar.info {
-    background-color: color-mix(in srgb, #85b2cb, black 70%);
-    border-color: color-mix(in srgb, #85b2cb, black 48%);
+  background-color: color-mix(in srgb, #85b2cb, black 70%);
+  border-color: color-mix(in srgb, #85b2cb, black 48%);
 }
 
 /* The one intent that goes light, so it takes dark content. */
 .v-SnackBar.v-SnackBar.inverse {
-    background-color: var(--inverse-background-color);
-    border-color: var(--inverse-border-color);
+  background-color: var(--inverse-background-color);
+  border-color: var(--inverse-border-color);
 }
 
 .v-SnackBar.v-SnackBar.inverse,
 .v-SnackBar.v-SnackBar.inverse > .v-SnackBar-content {
-    color: var(--inverse-foreground-color);
+  color: var(--inverse-foreground-color);
 }
 
 .v-SnackBar.v-SnackBar.intent .v-SnackBar-content > div .icon svg {
-    fill: currentColor;
+  fill: currentColor;
 }
 
 /* Close button: light on the tinted surfaces, dark on the inverse one, with a
    plain wash under the pointer either way. */
 .v-SnackBar.v-SnackBar.intent .v-Button.close {
-    color: var(--text-color);
-    fill: var(--text-color);
+  color: var(--text-color);
+  fill: var(--text-color);
 }
 
 .v-SnackBar.v-SnackBar.inverse .v-Button.close {
-    color: var(--inverse-foreground-color);
-    fill: var(--inverse-foreground-color);
+  color: var(--inverse-foreground-color);
+  fill: var(--inverse-foreground-color);
 }
 
 .v-SnackBar.v-SnackBar.intent
-.v-Button.close:not(.is-active):not(.is-disabled):hover {
-    background-color: rgba(255, 255, 255, 0.1);
+  .v-Button.close:not(.is-active):not(.is-disabled):hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .v-SnackBar.v-SnackBar.intent .v-Button.close.is-active {
-    background-color: rgba(255, 255, 255, 0.18);
+  background-color: rgba(255, 255, 255, 0.18);
 }
 
 .v-SnackBar.v-SnackBar.inverse
-.v-Button.close:not(.is-active):not(.is-disabled):hover {
-    background-color: rgba(0, 0, 0, 0.08);
+  .v-Button.close:not(.is-active):not(.is-disabled):hover {
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 .v-SnackBar.v-SnackBar.inverse .v-Button.close.is-active {
-    background-color: rgba(0, 0, 0, 0.16);
+  background-color: rgba(0, 0, 0, 0.16);
 }
-

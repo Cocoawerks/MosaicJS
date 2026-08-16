@@ -1758,7 +1758,8 @@
       const separatedBar = section("TabView").querySelector(".v-TabBar");
       const separatedTabs = [...separatedBar.querySelectorAll(".v-TabButton")];
       const lineOn = (el) => getComputedStyle(el).borderRightColor;
-      const clear = (colour) => colour === "rgba(0, 0, 0, 0)" || colour === "transparent";
+      const clear = (colour) =>
+        colour === "rgba(0, 0, 0, 0)" || colour === "transparent";
 
       check(
         "every tab but the last carries a line on its right",
@@ -1767,8 +1768,9 @@
       );
       check(
         "and the tabs are all the same width as each other",
-        new Set(separatedTabs.map((t) => Math.round(t.getBoundingClientRect().width)))
-          .size === 1,
+        new Set(
+          separatedTabs.map((t) => Math.round(t.getBoundingClientRect().width)),
+        ).size === 1,
       );
 
       // --- switching themes ---------------------------------------------------
@@ -2187,7 +2189,9 @@
       );
 
       // With one open the bar is one control: the pointer alone switches.
-      barItems[1].dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
+      barItems[1].dispatchEvent(
+        new PointerEvent("pointerenter", { bubbles: true }),
+      );
       await settle();
       check(
         "moving the pointer to its neighbour switches menus without a press",
@@ -2208,7 +2212,9 @@
       // A toolbar item stacks: its label sits below its icon, not beside it.
       const findItem = tools()[0];
       const findIcon = findItem.querySelector(".icon").getBoundingClientRect();
-      const findLabel = findItem.querySelector(".label").getBoundingClientRect();
+      const findLabel = findItem
+        .querySelector(".label")
+        .getBoundingClientRect();
       check(
         "a toolbar item stacks its label under its icon",
         findLabel.top >= findIcon.bottom - 1 &&

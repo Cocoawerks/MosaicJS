@@ -14,116 +14,116 @@
  * module drew for the rules beneath it to have anything to hang from.
  */
 .v-SpinButton {
-    box-sizing: border-box;
-    width: 128px;
-    height: 34px;
-    border-radius: 3px;
-    border: 1px solid var(--default-border-color);
+  box-sizing: border-box;
+  width: 128px;
+  height: 34px;
+  border-radius: 3px;
+  border: 1px solid var(--default-border-color);
 }
 
 .v-SpinButton > div {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    height: 100%;
-    width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 100%;
+  width: 100%;
 }
 
 .v-SpinButton.disabled,
 .v-SpinButton.is-disabled {
-    /* Fades the whole control — text field, buttons and border — together. */
-    opacity: var(--opacity-disable);
+  /* Fades the whole control — text field, buttons and border — together. */
+  opacity: var(--opacity-disable);
 }
 
 .v-SpinButton .v-SpinButton-Text {
-    width: 50px;
-    height: 100%;
-    flex: 1;
-    padding: 0;
-    background: var(--spinbutton-field-background);
-    border-radius: 3px 0 0 3px;
+  width: 50px;
+  height: 100%;
+  flex: 1;
+  padding: 0;
+  background: var(--spinbutton-field-background);
+  border-radius: 3px 0 0 3px;
 }
 
 /* The field inside it gives up its own frame: the spin button draws the box. */
 .v-SpinButton .v-SpinButton-Text :global(.v-Text) {
-    height: 100%;
-    border-color: transparent;
-    box-shadow: none;
-    border: none;
-    outline: none;
-    border-radius: 3px 0 0 3px;
-    background: transparent;
-    min-height: 0;
-    padding: 0;
+  height: 100%;
+  border-color: transparent;
+  box-shadow: none;
+  border: none;
+  outline: none;
+  border-radius: 3px 0 0 3px;
+  background: transparent;
+  min-height: 0;
+  padding: 0;
 }
 
 /* A spin button's field has no icon slots to keep the text off the edge, so it
    takes the padding directly. */
 .v-SpinButton .v-SpinButton-Text :global(.icon) {
-    display: none;
+  display: none;
 }
 
 .v-SpinButton .v-SpinButton-Text :global(.v-Text-input) {
-    box-shadow: none;
-    border: none;
-    outline: none;
-    font-size: 15px;
-    text-align: left;
-    padding-left: 5px;
+  box-shadow: none;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  text-align: left;
+  padding-left: 5px;
 }
 
 .v-SpinButton .SpinButton-btns {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    width: 50%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 50%;
 }
 
 .v-SpinButton .SpinButton-btns .up,
 .v-SpinButton .SpinButton-btns .down {
-    height: 100%;
-    width: 50%;
-    display: flex;
+  height: 100%;
+  width: 50%;
+  display: flex;
 }
 
 .v-SpinButton .SpinButton-btns :global(.v-Button) {
-    height: 100%;
-    width: 100%;
-    min-width: 28px;
-    margin: 0;
-    border: none;
-    box-shadow: none;
-    border-radius: 0;
-    outline: none;
-    border-left: 1px solid var(--default-border-color);
+  height: 100%;
+  width: 100%;
+  min-width: 28px;
+  margin: 0;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  outline: none;
+  border-left: 1px solid var(--default-border-color);
 }
 
 .v-SpinButton .SpinButton-btns .up :global(.v-Button) {
-    border-radius: 0 2px 2px 0;
+  border-radius: 0 2px 2px 0;
 }
 
 .v-SpinButton .SpinButton-btns .down :global(.v-Button) {
-    border-radius: 0;
+  border-radius: 0;
 }
 
 .v-SpinButton .SpinButton-btns :global(.v-Button .icon svg) {
-    height: 24px;
-    width: 24px;
-    fill: var(--search-icon-fill);
+  height: 24px;
+  width: 24px;
+  fill: var(--search-icon-fill);
 }
 
 .v-SpinButton .SpinButton-btns .down :global(.v-Button .icon svg) {
-    height: 22px;
-    width: 22px;
+  height: 22px;
+  width: 22px;
 }
 
 .v-SpinButton.is-focused {
-    outline-offset: 2px;
-    outline: var(--focus-ring) solid 3px;
+  outline-offset: 2px;
+  outline: var(--focus-ring) solid 3px;
 }
 
 .v-SpinButton.invalid {
-    outline: 0.2rem solid var(--error-color);
+  outline: 0.2rem solid var(--error-color);
 }

@@ -16,7 +16,7 @@ import Button from "../controls/button/Button.js";
 import "./titlebar-button.css";
 
 export default class TitleBarButton extends Button {
-    buttonClasses() {
-        return ["v-TitleBarButton", ...super.buttonClasses()];
-    }
+  buttonClasses() {
+    return ["v-TitleBarButton", ...super.buttonClasses()];
+  }
 }

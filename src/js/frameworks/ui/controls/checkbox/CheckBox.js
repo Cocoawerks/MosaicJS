@@ -13,76 +13,76 @@ import "./checkbox.css";
 const ACTIVATION_KEYS = new Set(["Enter", " ", "Spacebar"]);
 
 export default class CheckBox extends ToggleControl {
-    // --- value ---------------------------------------------------------------
+  // --- value ---------------------------------------------------------------
 
-    /** Checked or not. `HasValue<Boolean>` in Java. */
-    get value() {
-        return this.get("value", false);
-    }
+  /** Checked or not. `HasValue<Boolean>` in Java. */
+  get value() {
+    return this.get("value", false);
+  }
 
-    set value(value) {
-        this.setValue(value, false);
-    }
+  set value(value) {
+    this.setValue(value, false);
+  }
 
-    /**
-     * Set the value, and say whether that counts as the user changing it.
-     *
-     * `setValue(v, true)` fires the action, as ValueChangeEvent + ActionEvent
-     * do in Java; assigning to `value` does not, which is what lets an owner
-     * put the control into a state without hearing about its own assignment.
-     */
-    setValue(value, fireEvents = false) {
-        const next = this.bool(value);
-        if (this.value === next) return;
+  /**
+   * Set the value, and say whether that counts as the user changing it.
+   *
+   * `setValue(v, true)` fires the action, as ValueChangeEvent + ActionEvent
+   * do in Java; assigning to `value` does not, which is what lets an owner
+   * put the control into a state without hearing about its own assignment.
+   */
+  setValue(value, fireEvents = false) {
+    const next = this.bool(value);
+    if (this.value === next) return;
 
-        this.set("value", next);
-        if (fireEvents) this.fireAction(next);
-    }
+    this.set("value", next);
+    if (fireEvents) this.fireAction(next);
+  }
 
-    /** Flip it, as a click or an activation key does. */
-    toggle() {
-        this.setValue(!this.value, true);
-    }
+  /** Flip it, as a click or an activation key does. */
+  toggle() {
+    this.setValue(!this.value, true);
+  }
 
-    // --- behaviour -----------------------------------------------------------
-    // Each method is named after the DOM event it handles, so the base class
-    // binds it automatically; the markup declares no handlers.
+  // --- behaviour -----------------------------------------------------------
+  // Each method is named after the DOM event it handles, so the base class
+  // binds it automatically; the markup declares no handlers.
 
-    /** Pointer down must not move focus or start a selection — onPointerDown. */
-    pointerDown(event) {
-        event.preventDefault?.();
-    }
+  /** Pointer down must not move focus or start a selection — onPointerDown. */
+  pointerDown(event) {
+    event.preventDefault?.();
+  }
 
-    click() {
-        if (!this.enabled) return;
-        this.toggle();
-    }
+  click() {
+    if (!this.enabled) return;
+    this.toggle();
+  }
 
-    keyDown(event) {
-        if (!this.enabled) return;
-        if (!ACTIVATION_KEYS.has(event.key)) return;
-        event.preventDefault?.();
-        this.toggle();
-    }
+  keyDown(event) {
+    if (!this.enabled) return;
+    if (!ACTIVATION_KEYS.has(event.key)) return;
+    event.preventDefault?.();
+    this.toggle();
+  }
 
-    // --- drawing -------------------------------------------------------------
+  // --- drawing -------------------------------------------------------------
 
-    draw() {
-        const checked = this.value;
+  draw() {
+    const checked = this.value;
 
-        return (
-            <div
-                {...this.controlProps()}
-                styleName={["v-CheckBox", ...this.controlClasses()]}
-                role="checkbox"
-                aria-checked={String(checked)}
-                aria-labelledby={this.labelId}
-            >
-                <span id={this.labelId}>{this.text}</span>
-                <div styleName={["indicator", checked ? "checked" : null]}>
-                    <div styleName={["check", checked ? "checked" : null]}/>
-                </div>
-            </div>
-        );
-    }
+    return (
+      <div
+        {...this.controlProps()}
+        styleName={["v-CheckBox", ...this.controlClasses()]}
+        role="checkbox"
+        aria-checked={String(checked)}
+        aria-labelledby={this.labelId}
+      >
+        <span id={this.labelId}>{this.text}</span>
+        <div styleName={["indicator", checked ? "checked" : null]}>
+          <div styleName={["check", checked ? "checked" : null]} />
+        </div>
+      </div>
+    );
+  }
 }

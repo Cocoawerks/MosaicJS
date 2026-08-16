@@ -7,125 +7,125 @@
  * being written to after the fact — `.is-open` is that state.
  */
 .v-PopOver {
-    z-index: 100;
-    position: fixed;
-    box-sizing: border-box;
-    width: fit-content;
-    height: fit-content;
-    margin: 0;
-    top: 0;
-    left: 0;
-    overflow: visible;
-    display: block;
-    visibility: hidden;
-    border-radius: 8px;
-    padding: 5px;
-    /* Black with alpha rather than a grey halo, which fogs against a dark
+  z-index: 100;
+  position: fixed;
+  box-sizing: border-box;
+  width: fit-content;
+  height: fit-content;
+  margin: 0;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  display: block;
+  visibility: hidden;
+  border-radius: 8px;
+  padding: 5px;
+  /* Black with alpha rather than a grey halo, which fogs against a dark
        backdrop. Over black the shadow disappears and the light border below is
        what separates the popover from it — so no outer ring is needed, and none
        is used: one would show as a stripe outside the border on a light page. */
-    box-shadow: 0 3px 13px rgba(0, 0, 0, 0.4);
-    /* Surface and edge come from one pair of variables so the callout triangle
+  box-shadow: 0 3px 13px rgba(0, 0, 0, 0.4);
+  /* Surface and edge come from one pair of variables so the callout triangle
        below can't drift from the box it points out of. */
-    background: var(--popover-background);
-    /* A step lighter than a control's border, and the edge that shows when the
+  background: var(--popover-background);
+  /* A step lighter than a control's border, and the edge that shows when the
        popover is over something dark. */
-    border: 1px solid var(--popover-border);
-    outline: none;
+  border: 1px solid var(--popover-border);
+  outline: none;
 }
 
 .v-PopOver.is-open {
-    visibility: visible;
+  visibility: visible;
 }
 
 .PopOver-callout {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    display: block;
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 
 .PopOver-callout-none {
-    display: none;
+  display: none;
 }
 
 .PopOver-callout--t {
-    top: 100%;
-    margin-top: -4px;
+  top: 100%;
+  margin-top: -4px;
 }
 
 .PopOver-callout--r {
-    right: 100%;
-    margin-right: -5px;
+  right: 100%;
+  margin-right: -5px;
 }
 
 .PopOver-callout--b {
-    bottom: 100%;
-    margin-bottom: -5px;
+  bottom: 100%;
+  margin-bottom: -5px;
 }
 
 .PopOver-callout--l {
-    left: 100%;
-    margin-left: -5px;
+  left: 100%;
+  margin-left: -5px;
 }
 
 .PopOver-callout--left {
-    left: 10px;
+  left: 10px;
 }
 
 .PopOver-callout--center {
-    left: 50%;
-    margin-left: -6px;
+  left: 50%;
+  margin-left: -6px;
 }
 
 .PopOver-callout--right {
-    right: 10px;
+  right: 10px;
 }
 
 .PopOver-callout--top {
-    top: 10px;
+  top: 10px;
 }
 
 .PopOver-callout--middle {
-    top: 50%;
-    margin-top: -6px;
+  top: 50%;
+  margin-top: -6px;
 }
 
 .PopOver-callout--bottom {
-    bottom: 10px;
+  bottom: 10px;
 }
 
 .PopOver-triangle {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 12px;
-    height: 12px;
-    border-style: solid;
-    border-width: 1px 1px 0 0;
-    background: var(--popover-background);
-    border-color: var(--popover-border);
-    z-index: -1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-style: solid;
+  border-width: 1px 1px 0 0;
+  background: var(--popover-background);
+  border-color: var(--popover-border);
+  z-index: -1;
 }
 
 .PopOver-triangle-none {
-    display: none;
+  display: none;
 }
 
 .PopOver-triangle--t {
-    transform: rotate(135deg);
-    top: -1.5px;
+  transform: rotate(135deg);
+  top: -1.5px;
 }
 
 .PopOver-triangle--r {
-    transform: rotate(-135deg);
+  transform: rotate(-135deg);
 }
 
 .PopOver-triangle--b {
-    transform: rotate(-45deg);
+  transform: rotate(-45deg);
 }
 
 .PopOver-triangle--l {
-    transform: rotate(45deg);
-    left: -1px;
+  transform: rotate(45deg);
+  left: -1px;
 }

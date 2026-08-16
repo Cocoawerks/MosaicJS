@@ -11,24 +11,24 @@ import SnackBar from "./SnackBar.js";
 import "./snackbar.css";
 
 export default class Toast extends SnackBar {
-    static props = {
-        /** The line it says. */
-        text: {type: String, default: ""},
-        /** A toast has no close button: it takes itself away. */
-        userClosable: {type: Boolean, default: false},
-    };
+  static props = {
+    /** The line it says. */
+    text: { type: String, default: "" },
+    /** A toast has no close button: it takes itself away. */
+    userClosable: { type: Boolean, default: false },
+  };
 
-    barClasses() {
-        return [...super.barClasses(), "v-Toast"];
-    }
+  barClasses() {
+    return [...super.barClasses(), "v-Toast"];
+  }
 
-    /** The line, and whatever else it was given after it. */
-    drawContent() {
-        return (
-            <>
-                <span>{this.text}</span>
-                {this.props.children}
-            </>
-        );
-    }
+  /** The line, and whatever else it was given after it. */
+  drawContent() {
+    return (
+      <>
+        <span>{this.text}</span>
+        {this.props.children}
+      </>
+    );
+  }
 }

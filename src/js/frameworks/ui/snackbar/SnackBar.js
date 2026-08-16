@@ -15,9 +15,9 @@
 //
 // and the page shows one with `this.bars.show(<SavedBar/>)`. For a line of text
 // and nothing else there is Toast, which is this with the text drawn for it.
-import {Component} from "mosaic";
+import { Component } from "mosaic";
 
-import Button, {Intent} from "../controls/button/Button.js";
+import Button, { Intent } from "../controls/button/Button.js";
 import Close from "svg:close";
 import "./snackbar.css";
 
@@ -30,9 +30,9 @@ import "./snackbar.css";
  *   exit    — fading out, its place still held until it goes
  */
 export const SnackBarAnimationState = Object.freeze({
-    ENTER: "v-SnackBar-enter",
-    APPEAR: "v-SnackBar-appear",
-    EXIT: "v-SnackBar-exit",
+  ENTER: "v-SnackBar-enter",
+  APPEAR: "v-SnackBar-appear",
+  EXIT: "v-SnackBar-exit",
 });
 
 /** How long the fade out is given before the bar is taken off the page. */
@@ -42,197 +42,197 @@ const EXIT_DURATION = 400;
 const DEFAULT_LIFESPAN = 5;
 
 export default class SnackBar extends Component {
-    static props = {
-        /** One of Intent, which decides the face it wears. */
-        intent: {type: String, default: Intent.DEFAULT},
-        /**
-         * How long it stays, in seconds. A bar with a lifespan of -1 stays
-         * until something closes it — the user, or the application.
-         */
-        lifespan: {type: Number, default: DEFAULT_LIFESPAN},
-        /** Whether it carries a close button. */
-        userClosable: {type: Boolean, default: true},
-        /** A font-icon class name, or an icon component, drawn before what it says. */
-        icon: {type: String},
-        /**
-         * Called when the bar has gone, whichever closed it. `CloseEvent` in
-         * Java, which a subclass here hears through {@link SnackBar#reportClose}.
-         */
-        action: {type: Function},
-    };
+  static props = {
+    /** One of Intent, which decides the face it wears. */
+    intent: { type: String, default: Intent.DEFAULT },
+    /**
+     * How long it stays, in seconds. A bar with a lifespan of -1 stays
+     * until something closes it — the user, or the application.
+     */
+    lifespan: { type: Number, default: DEFAULT_LIFESPAN },
+    /** Whether it carries a close button. */
+    userClosable: { type: Boolean, default: true },
+    /** A font-icon class name, or an icon component, drawn before what it says. */
+    icon: { type: String },
+    /**
+     * Called when the bar has gone, whichever closed it. `CloseEvent` in
+     * Java, which a subclass here hears through {@link SnackBar#reportClose}.
+     */
+    action: { type: Function },
+  };
 
-    constructor() {
-        super();
-
-        /**
-         * Where it is in its coming and going. A field the bar draws rather than
-         * a class set on the node: a class put on by hand is wiped by the next
-         * redraw, and a bar redraws whenever what it says changes.
-         */
-        this.animation = null;
-
-        /** The manager that put it up, which is where it goes back to. */
-        this.manager = null;
-
-        /** Whether it has already begun to go, so it only goes once. */
-        this.closing = false;
-    }
-
-    // --- how long it stays ---------------------------------------------------
+  constructor() {
+    super();
 
     /**
-     * Start the clock, or stop it. Called when the bar lands on the page —
-     * `onAttach` in Java — and again by anything that changes its lifespan.
-     *
-     * @param {number} [seconds] How long it has left; its own lifespan by default.
+     * Where it is in its coming and going. A field the bar draws rather than
+     * a class set on the node: a class put on by hand is wiped by the next
+     * redraw, and a bar redraws whenever what it says changes.
      */
-    setLifespan(seconds = this.lifespan) {
-        clearTimeout(this.lifeTimer);
-        this.lifeTimer = null;
-        if (seconds < 0) return;
+    this.animation = null;
 
-        this.lifeTimer = setTimeout(() => {
-            this.lifeTimer = null;
-            this.close();
-        }, seconds * 1000);
+    /** The manager that put it up, which is where it goes back to. */
+    this.manager = null;
+
+    /** Whether it has already begun to go, so it only goes once. */
+    this.closing = false;
+  }
+
+  // --- how long it stays ---------------------------------------------------
+
+  /**
+   * Start the clock, or stop it. Called when the bar lands on the page —
+   * `onAttach` in Java — and again by anything that changes its lifespan.
+   *
+   * @param {number} [seconds] How long it has left; its own lifespan by default.
+   */
+  setLifespan(seconds = this.lifespan) {
+    clearTimeout(this.lifeTimer);
+    this.lifeTimer = null;
+    if (seconds < 0) return;
+
+    this.lifeTimer = setTimeout(() => {
+      this.lifeTimer = null;
+      this.close();
+    }, seconds * 1000);
+  }
+
+  attached() {
+    this.setLifespan();
+  }
+
+  detached() {
+    clearTimeout(this.lifeTimer);
+    clearTimeout(this.exitTimer);
+    this.lifeTimer = null;
+    this.exitTimer = null;
+  }
+
+  // --- coming and going ----------------------------------------------------
+
+  /** Draw the bar in one of the states above. The manager decides which. */
+  setAnimation(state) {
+    if (this.animation === state) return;
+    this.animation = state;
+    this.needsDisplay();
+  }
+
+  /**
+   * Take the bar away. It fades first unless there is to be no animation, in
+   * which case it goes at once — what the manager was told, or what a caller
+   * asks for here.
+   *
+   * @param {boolean} [noAnimation] Whether to go without fading.
+   */
+  close(noAnimation = !(this.manager?.allowsAnimation ?? true)) {
+    if (this.closing) return;
+    this.closing = true;
+
+    clearTimeout(this.lifeTimer);
+    this.lifeTimer = null;
+
+    if (noAnimation) {
+      this.finishClosing();
+      return;
     }
 
-    attached() {
-        this.setLifespan();
+    this.setAnimation(SnackBarAnimationState.EXIT);
+    this.exitTimer = setTimeout(() => {
+      this.exitTimer = null;
+      this.finishClosing();
+    }, EXIT_DURATION);
+  }
+
+  /** Off the page, and say so. */
+  finishClosing() {
+    this.manager?.remove(this.self);
+    this.reportClose();
+  }
+
+  /**
+   * Say the bar has gone. A hook of its own rather than the action alone, so a
+   * subclass can hear it without taking the action away from an application —
+   * the same arrangement PopOver has for opening.
+   */
+  reportClose() {
+    this.props.action?.(this.self);
+  }
+
+  // --- drawing -------------------------------------------------------------
+
+  /**
+   * The classes the bar wears. `intent` is carried as well as the intent's own
+   * name, which is what the sheet's shared intent rules are written against —
+   * `buildClassName()` in Java.
+   */
+  barClasses() {
+    return [
+      "v-SnackBar",
+      this.intent !== Intent.DEFAULT ? "intent" : null,
+      this.intent !== Intent.DEFAULT ? this.intent : null,
+      this.animation,
+    ];
+  }
+
+  /** An icon may be a class name or a component, as a Button's may. */
+  drawIcon() {
+    const icon = this.icon;
+    if (!icon) return null;
+
+    if (typeof icon === "function") {
+      const Glyph = icon;
+      return (
+        <div styleName="icon" aria-hidden="true">
+          <Glyph />
+        </div>
+      );
     }
+    return <div styleName={["icon", icon]} aria-hidden="true" />;
+  }
 
-    detached() {
-        clearTimeout(this.lifeTimer);
-        clearTimeout(this.exitTimer);
-        this.lifeTimer = null;
-        this.exitTimer = null;
-    }
+  /** What the bar says, and the icon before it: `contentLayer` in the template. */
+  drawContentLayer() {
+    return (
+      <div>
+        {this.drawIcon()}
+        {this.drawContent()}
+      </div>
+    );
+  }
 
-    // --- coming and going ----------------------------------------------------
+  /** What the bar says. A plain SnackBar says whatever it was given. */
+  drawContent() {
+    return this.props.children;
+  }
 
-    /** Draw the bar in one of the states above. The manager decides which. */
-    setAnimation(state) {
-        if (this.animation === state) return;
-        this.animation = state;
-        this.needsDisplay();
-    }
+  /**
+   * A bar that is not user-closable is drawn without the button rather than
+   * with a hidden one: nothing is left for the keyboard or a screen reader to
+   * find, and the row does not keep its place.
+   */
+  drawClose() {
+    if (!this.userClosable) return null;
 
-    /**
-     * Take the bar away. It fades first unless there is to be no animation, in
-     * which case it goes at once — what the manager was told, or what a caller
-     * asks for here.
-     *
-     * @param {boolean} [noAnimation] Whether to go without fading.
-     */
-    close(noAnimation = !(this.manager?.allowsAnimation ?? true)) {
-        if (this.closing) return;
-        this.closing = true;
+    return (
+      <CloseButton
+        iconOnly="true"
+        icon={Close}
+        tooltip="Close"
+        onPress={() => this.close()}
+      />
+    );
+  }
 
-        clearTimeout(this.lifeTimer);
-        this.lifeTimer = null;
-
-        if (noAnimation) {
-            this.finishClosing();
-            return;
-        }
-
-        this.setAnimation(SnackBarAnimationState.EXIT);
-        this.exitTimer = setTimeout(() => {
-            this.exitTimer = null;
-            this.finishClosing();
-        }, EXIT_DURATION);
-    }
-
-    /** Off the page, and say so. */
-    finishClosing() {
-        this.manager?.remove(this.self);
-        this.reportClose();
-    }
-
-    /**
-     * Say the bar has gone. A hook of its own rather than the action alone, so a
-     * subclass can hear it without taking the action away from an application —
-     * the same arrangement PopOver has for opening.
-     */
-    reportClose() {
-        this.props.action?.(this.self);
-    }
-
-    // --- drawing -------------------------------------------------------------
-
-    /**
-     * The classes the bar wears. `intent` is carried as well as the intent's own
-     * name, which is what the sheet's shared intent rules are written against —
-     * `buildClassName()` in Java.
-     */
-    barClasses() {
-        return [
-            "v-SnackBar",
-            this.intent !== Intent.DEFAULT ? "intent" : null,
-            this.intent !== Intent.DEFAULT ? this.intent : null,
-            this.animation,
-        ];
-    }
-
-    /** An icon may be a class name or a component, as a Button's may. */
-    drawIcon() {
-        const icon = this.icon;
-        if (!icon) return null;
-
-        if (typeof icon === "function") {
-            const Glyph = icon;
-            return (
-                <div styleName="icon" aria-hidden="true">
-                    <Glyph/>
-                </div>
-            );
-        }
-        return <div styleName={["icon", icon]} aria-hidden="true"/>;
-    }
-
-    /** What the bar says, and the icon before it: `contentLayer` in the template. */
-    drawContentLayer() {
-        return (
-            <div>
-                {this.drawIcon()}
-                {this.drawContent()}
-            </div>
-        );
-    }
-
-    /** What the bar says. A plain SnackBar says whatever it was given. */
-    drawContent() {
-        return this.props.children;
-    }
-
-    /**
-     * A bar that is not user-closable is drawn without the button rather than
-     * with a hidden one: nothing is left for the keyboard or a screen reader to
-     * find, and the row does not keep its place.
-     */
-    drawClose() {
-        if (!this.userClosable) return null;
-
-        return (
-            <CloseButton
-                iconOnly="true"
-                icon={Close}
-                tooltip="Close"
-                onPress={() => this.close()}
-            />
-        );
-    }
-
-    draw() {
-        return (
-            <div styleName={this.barClasses()} role="status" aria-live="polite">
-                <div styleName="v-SnackBar-content">
-                    {this.drawContentLayer()}
-                    {this.drawClose()}
-                </div>
-            </div>
-        );
-    }
+  draw() {
+    return (
+      <div styleName={this.barClasses()} role="status" aria-live="polite">
+        <div styleName="v-SnackBar-content">
+          {this.drawContentLayer()}
+          {this.drawClose()}
+        </div>
+      </div>
+    );
+  }
 }
 
 /**
@@ -244,16 +244,16 @@ export default class SnackBar extends Component {
  * is what a Button's own class list is for.
  */
 class CloseButton extends Button {
-    buttonClasses() {
-        return [...super.buttonClasses(), "close"];
-    }
+  buttonClasses() {
+    return [...super.buttonClasses(), "close"];
+  }
 
-    /**
-     * `action` is what a page names in markup, and takes a method name there;
-     * `onPress` is what the bar hands it in JavaScript — the same arrangement
-     * the colour chooser has with its panel.
-     */
-    fireAction(...args) {
-        this.props.onPress?.(this.self, ...args);
-    }
+  /**
+   * `action` is what a page names in markup, and takes a method name there;
+   * `onPress` is what the bar hands it in JavaScript — the same arrangement
+   * the colour chooser has with its panel.
+   */
+  fireAction(...args) {
+    this.props.onPress?.(this.self, ...args);
+  }
 }

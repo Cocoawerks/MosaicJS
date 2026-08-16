@@ -6,34 +6,41 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const {mount, h} = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
-);
-const {Radio, RadioGroup} = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
-);
+const { mount, h } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
+const { Radio, RadioGroup } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /** The options a group is given, the way markup nests them. */
 const options = (...specs) =>
   specs.map(([text, value, enabled]) => h(Radio, { text, value, enabled }));
 
 /** Mount a group and hand back its view, list element and options. */
-function open(props = {}, children = options(["Small", "small"], ["Medium", "medium"])) {
+function open(
+  props = {},
+  children = options(["Small", "small"], ["Medium", "medium"]),
+) {
   const host = document.createElement("div");
   const view = mount(RadioGroup, host, { ...props, children }).view;
   const el = host.childNodes[0];
   return { host, view, el, items: [...el.childNodes] };
 }
 
-const classesOf = (el) => el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
+const classesOf = (el) =>
+  el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
 const click = (el) => el.dispatchEvent({ type: "click" });
 const keyDown = (el, key) => {
   let prevented = false;
-  el.dispatchEvent({ type: "keydown", key, preventDefault: () => (prevented = true) });
+  el.dispatchEvent({
+    type: "keydown",
+    key,
+    preventDefault: () => (prevented = true),
+  });
   return prevented;
 };
 const indicatorOf = (item) => item.childNodes[0];
-const chosen = (items) => items.findIndex((i) => i.getAttribute("aria-checked") === "true");
+const chosen = (items) =>
+  items.findIndex((i) => i.getAttribute("aria-checked") === "true");
 
 test("draws the ported markup: ul[role=radiogroup] > li[role=radio]", () => {
   const { el, items } = open();
@@ -126,7 +133,11 @@ test("the arrow keys move the choice, and stop at the ends", () => {
 test("the arrow keys skip a disabled option rather than landing on it", () => {
   const { el, view } = open(
     { value: "small" },
-    options(["Small", "small"], ["Medium", "medium", false], ["Large", "large"]),
+    options(
+      ["Small", "small"],
+      ["Medium", "medium", false],
+      ["Large", "large"],
+    ),
   );
 
   keyDown(el, "ArrowDown");
@@ -151,7 +162,10 @@ test("disabling the group disables every option", () => {
 
   assert.ok(classesOf(el).includes("is-disabled"));
   assert.ok(items.every((i) => classesOf(i).includes("is-disabled")));
-  assert.ok(items.every((i) => i.getAttribute("tabindex") === "-1"), "and out of the tab order");
+  assert.ok(
+    items.every((i) => i.getAttribute("tabindex") === "-1"),
+    "and out of the tab order",
+  );
 
   click(items[1]);
   assert.equal(view.value, "small");

@@ -1,30 +1,30 @@
 // Drawing a component's tree, and recognising a component class.
-import {coerceProps} from "../coerce.js";
-import {Component} from "../Component.js";
-import {render} from "../render.js";
-import {observe, recordReads, stateKeys} from "./observe.js";
+import { coerceProps } from "../coerce.js";
+import { Component } from "../Component.js";
+import { render } from "../render.js";
+import { observe, recordReads, stateKeys } from "./observe.js";
 
 export function drawInto(view, props) {
-    view.props = props ? coerceProps(props) : view.props;
+  view.props = props ? coerceProps(props) : view.props;
 
-    // A drawn view declares no bindings — `draw()` simply reads what it needs.
-    // Recording those reads is the equivalent of a `{path}` in markup: every
-    // property the drawing depended on becomes one that redraws it when it
-    // changes, so `needsDisplay()` is only for what this cannot see.
-    const {result: vnode, reads} = recordReads(view, (self) =>
-        view.draw.call(self, view.props),
-    );
-    for (const key of stateKeys(view, reads)) {
-        observe(view, key, () => view.needsDisplay());
-    }
+  // A drawn view declares no bindings — `draw()` simply reads what it needs.
+  // Recording those reads is the equivalent of a `{path}` in markup: every
+  // property the drawing depended on becomes one that redraws it when it
+  // changes, so `needsDisplay()` is only for what this cannot see.
+  const { result: vnode, reads } = recordReads(view, (self) =>
+    view.draw.call(self, view.props),
+  );
+  for (const key of stateKeys(view, reads)) {
+    observe(view, key, () => view.needsDisplay());
+  }
 
-    const dom = render(vnode, view);
-    const nodes = dom instanceof DocumentFragment ? [...dom.childNodes] : [dom];
-    view.nodes = nodes;
-    view.node = nodes[0] ?? null;
-    view.vtree = vnode;
-    view.bindEvents();
-    return dom;
+  const dom = render(vnode, view);
+  const nodes = dom instanceof DocumentFragment ? [...dom.childNodes] : [dom];
+  view.nodes = nodes;
+  view.node = nodes[0] ?? null;
+  view.vtree = vnode;
+  view.bindEvents();
+  return dom;
 }
 
 /**
@@ -37,9 +37,9 @@ export function drawInto(view, props) {
  * reached a second copy of the base still draws correctly.
  */
 export function isComponentClass(type) {
-    if (typeof type !== "function") return false;
-    return (
-        type.prototype instanceof Component ||
-        typeof type.prototype?.draw === "function"
-    );
+  if (typeof type !== "function") return false;
+  return (
+    type.prototype instanceof Component ||
+    typeof type.prototype?.draw === "function"
+  );
 }

@@ -7,21 +7,21 @@
  * and the control is a div with role="checkbox" that takes focus itself.
  */
 .v-CheckBox {
-    position: relative;
-    min-height: 20px;
-    text-transform: none;
-    width: fit-content;
-    line-height: 23px;
-    display: inline-block;
-    padding: 0 2px 1px 22px;
-    overflow: visible;
+  position: relative;
+  min-height: 20px;
+  text-transform: none;
+  width: fit-content;
+  line-height: 23px;
+  display: inline-block;
+  padding: 0 2px 1px 22px;
+  overflow: visible;
 }
 
 .v-CheckBox > span {
-    cursor: default;
-    display: block;
-    margin-left: 5px;
-    margin-top: 2px;
+  cursor: default;
+  display: block;
+  margin-left: 5px;
+  margin-top: 2px;
 }
 
 /* The root alone, as the radio and the combo box do: opacity applies to the
@@ -29,59 +29,59 @@
    twice and left them at a quarter rather than a half. */
 .v-CheckBox.disabled,
 .v-CheckBox.is-disabled {
-    cursor: default;
-    opacity: var(--opacity-disable);
+  cursor: default;
+  opacity: var(--opacity-disable);
 }
 
 .v-CheckBox:focus {
-    border: none;
-    outline: none;
+  border: none;
+  outline: none;
 }
 
 .v-CheckBox:focus > .indicator {
-    outline-offset: 2px;
-    outline: var(--focus-ring) solid 3px;
+  outline-offset: 2px;
+  outline: var(--focus-ring) solid 3px;
 }
 
 .v-CheckBox > .indicator {
-    position: absolute;
-    top: 2px;
-    left: 0;
-    margin: 0;
-    border: 2px solid var(--default-border-color);
-    background-clip: padding-box;
-    cursor: default;
-    width: 18px;
-    height: 18px;
-    line-height: 16px;
-    border-radius: 3px;
-    -webkit-font-smoothing: antialiased;
-    z-index: 0;
-    overflow: visible;
-    transition: background-color 50ms ease-in-out;
-    background: var(--checkbox-indicator-background);
+  position: absolute;
+  top: 2px;
+  left: 0;
+  margin: 0;
+  border: 2px solid var(--default-border-color);
+  background-clip: padding-box;
+  cursor: default;
+  width: 18px;
+  height: 18px;
+  line-height: 16px;
+  border-radius: 3px;
+  -webkit-font-smoothing: antialiased;
+  z-index: 0;
+  overflow: visible;
+  transition: background-color 50ms ease-in-out;
+  background: var(--checkbox-indicator-background);
 }
 
 .v-CheckBox > .indicator.checked {
-    border-color: color-mix(in srgb, var(--accent-color), black 5%);
-    background: var(--accent-color);
+  border-color: color-mix(in srgb, var(--accent-color), black 5%);
+  background: var(--accent-color);
 }
 
 .v-CheckBox .check {
-    transform: rotate(45deg) translate(-4px);
-    height: 12px;
-    width: 5px;
-    border-top-width: 0;
-    border-left-width: 0;
-    border-bottom-width: 3px;
-    border-right-width: 3px;
-    border-style: solid;
-    display: none;
-    border-color: var(--checkbox-check-color);
+  transform: rotate(45deg) translate(-4px);
+  height: 12px;
+  width: 5px;
+  border-top-width: 0;
+  border-left-width: 0;
+  border-bottom-width: 3px;
+  border-right-width: 3px;
+  border-style: solid;
+  display: none;
+  border-color: var(--checkbox-check-color);
 }
 
 .v-CheckBox .check.checked {
-    display: inline-block;
-    margin-left: 8px;
-    margin-top: 2px;
+  display: inline-block;
+  margin-left: 8px;
+  margin-top: 2px;
 }

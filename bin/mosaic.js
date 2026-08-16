@@ -25,11 +25,11 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import {fileURLToPath} from "node:url";
+import { fileURLToPath } from "node:url";
 
-import {compileAll} from "../src/js/core/compiler/build.js";
-import {componentName} from "../src/js/core/compiler/compile.js";
-import {scope as scopeCss} from "../src/js/core/compiler/css.js";
+import { compileAll } from "../src/js/core/compiler/build.js";
+import { componentName } from "../src/js/core/compiler/compile.js";
+import { scope as scopeCss } from "../src/js/core/compiler/css.js";
 
 const CONFIG = "info.json";
 
@@ -49,22 +49,24 @@ const CONFIG = "info.json";
  *   3. This file's own checkout, which is the case when running from source.
  */
 function mosaicHome() {
-    if (process.env.MOSAIC_HOME) return path.resolve(process.env.MOSAIC_HOME);
+  if (process.env.MOSAIC_HOME) return path.resolve(process.env.MOSAIC_HOME);
 
-    // Replaced at build time by `make install`; absent when running from source.
-    const installed = typeof MOSAIC_INSTALLED_HOME === "string" ? MOSAIC_INSTALLED_HOME : null;
-    if (installed) return installed;
+  // Replaced at build time by `make install`; absent when running from source.
+  const installed =
+    typeof MOSAIC_INSTALLED_HOME === "string" ? MOSAIC_INSTALLED_HOME : null;
+  if (installed) return installed;
 
-    return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 }
 
 const HOME = mosaicHome();
 
 /** How `HOME` was arrived at, for an error message that can be acted on. */
 function homeSource() {
-    if (process.env.MOSAIC_HOME) return "where MOSAIC_HOME points";
-    if (typeof MOSAIC_INSTALLED_HOME === "string") return "where this mosaic was installed";
-    return "this mosaic's own directory";
+  if (process.env.MOSAIC_HOME) return "where MOSAIC_HOME points";
+  if (typeof MOSAIC_INSTALLED_HOME === "string")
+    return "where this mosaic was installed";
+  return "this mosaic's own directory";
 }
 const ENTRY = "main.js";
 /** Where an application's own modules live, relative to its directory. */
@@ -79,11 +81,11 @@ const THEME_MODULE = "theme.js";
 const ICONS = `${THEMES}/icons`;
 
 const DEFAULTS = {
-    runtime: path.join(HOME, "src/js/core/runtime/mosaic.js"),
+  runtime: path.join(HOME, "src/js/core/runtime/mosaic.js"),
   // The tree the runtime lives in, copied into each app's build so the
   // application directory is genuinely self-contained: a compiled module can
   // reach the runtime without climbing out of the app it belongs to.
-    runtimeRoot: path.join(HOME, "src/js/core"),
+  runtimeRoot: path.join(HOME, "src/js/core"),
   // What compiled code imports the runtime as. A bare specifier, resolved
   // through the copy `mosaic` vendors into the build.
   runtimeSpecifier: "mosaic",
@@ -91,29 +93,29 @@ const DEFAULTS = {
   // build. Each app gets its own copy: only the bundle is served, so the cost
   // is build output, and the app directory stays self-contained.
   libraries: [],
-    // Component libraries that ship as part of the runtime package, imported by
-    // name: `import {Button} from "mosaic/frameworks/ui"`. Each is
-    // `{name, input}` — a source tree compiled into the vendored package under
-    // `frameworks/<name>/`, where the subpath export points at the index the
-    // build generates for it.
-    frameworks: [{name: "ui", input: path.join(HOME, "src/js/frameworks/ui")}],
-    // Which of a framework's `themes/` its components are built against — the
-    // stylesheet of custom properties they read. One name for the whole build:
-    // the theme is the application's, not a component's.
-    theme: "aristo",
-    // Themes to carry besides the one worn, so a page can switch at run time.
-    // Each one named is in the bundle: an application that never switches
-    // should leave this alone and pay for one stylesheet.
-    themes: [],
-    // What this application is and who wrote it. Both are carried into the
-    // package the build vendors, so what was built says so itself.
-    version: "0.0.0",
-    author: "",
-    // Both relative to the application directory, not the project root.
-    main_file: `${SRC}/${ENTRY}`,
+  // Component libraries that ship as part of the runtime package, imported by
+  // name: `import {Button} from "mosaic/frameworks/ui"`. Each is
+  // `{name, input}` — a source tree compiled into the vendored package under
+  // `frameworks/<name>/`, where the subpath export points at the index the
+  // build generates for it.
+  frameworks: [{ name: "ui", input: path.join(HOME, "src/js/frameworks/ui") }],
+  // Which of a framework's `themes/` its components are built against — the
+  // stylesheet of custom properties they read. One name for the whole build:
+  // the theme is the application's, not a component's.
+  theme: "aristo",
+  // Themes to carry besides the one worn, so a page can switch at run time.
+  // Each one named is in the bundle: an application that never switches
+  // should leave this alone and pay for one stylesheet.
+  themes: [],
+  // What this application is and who wrote it. Both are carried into the
+  // package the build vendors, so what was built says so itself.
+  version: "0.0.0",
+  author: "",
+  // Both relative to the application directory, not the project root.
+  main_file: `${SRC}/${ENTRY}`,
   outdir: "build",
-    // The page `check` opens. Mosaic's own, unless an application names one.
-    check: path.join(HOME, "test/browser-check.html"),
+  // The page `check` opens. Mosaic's own, unless an application names one.
+  check: path.join(HOME, "test/browser-check.html"),
 };
 
 const USAGE = `usage: mosaic <command> [dir] [options]
@@ -187,9 +189,9 @@ function loadConfig(from) {
     for (const [key, value] of Object.entries(data)) {
       if (PATH_KEYS.includes(key)) config[key] = path.resolve(dir, value);
       else if (key === "libraries" || key === "frameworks") {
-          config[key] = value.map((entry) => ({
-              ...entry,
-              input: path.resolve(dir, entry.input),
+        config[key] = value.map((entry) => ({
+          ...entry,
+          input: path.resolve(dir, entry.input),
         }));
       } else config[key] = value;
     }
@@ -202,16 +204,21 @@ function scaffold(name) {
   const component = componentName(name);
 
   return {
-      // The application's configuration. Every key a project-level info.json
-      // declares is inherited; what is set here overrides it.
-      "info.json":
-          JSON.stringify(
-              {app_name: name, version: "0.1.0", author: "", main_file: `${SRC}/${ENTRY}`},
-              null,
-              2,
-          ) + "\n",
+    // The application's configuration. Every key a project-level info.json
+    // declares is inherited; what is set here overrides it.
+    "info.json":
+      JSON.stringify(
+        {
+          app_name: name,
+          version: "0.1.0",
+          author: "",
+          main_file: `${SRC}/${ENTRY}`,
+        },
+        null,
+        2,
+      ) + "\n",
 
-      [`${SRC}/main.mib`]: `<!-- ${name} — the page.
+    [`${SRC}/main.mib`]: `<!-- ${name} — the page.
 
      The markup itself has no logic and no JavaScript: everything dynamic is a
      binding to the controller, which is AppController.js beside this file.
@@ -236,7 +243,7 @@ function scaffold(name) {
      Nothing renders until there is markup here. -->
 `,
 
-      [`${SRC}/AppController.js`]: `// The controller behind main.mib: the page's state, the values its {bindings}
+    [`${SRC}/AppController.js`]: `// The controller behind main.mib: the page's state, the values its {bindings}
 // read, and the methods its actions fire.
 //
 // A controller is a plain object — it extends nothing and the runtime asks
@@ -248,7 +255,7 @@ export default class AppController {
 }
 `,
 
-      [`${SRC}/${ENTRY}`]: `// ${name} — the application bootstrap, and the entry mosaic bundles.
+    [`${SRC}/${ENTRY}`]: `// ${name} — the application bootstrap, and the entry mosaic bundles.
 //
 // \`main.mib\` is this module's page: it sits beside this file, so the compiler
 // compiles it and registers it as the application's page — there is nothing to
@@ -304,15 +311,17 @@ function init(name) {
   const files = scaffold(name);
 
   // Never write over an application that is already there.
-  const existing = Object.keys(files).filter((f) => fs.existsSync(path.join(dir, f)));
+  const existing = Object.keys(files).filter((f) =>
+    fs.existsSync(path.join(dir, f)),
+  );
   if (existing.length > 0) {
     throw new Error(`${dir} already has ${existing.join(", ")}`);
   }
 
   for (const [file, content] of Object.entries(files)) {
-      const target = path.join(dir, file);
-      fs.mkdirSync(path.dirname(target), {recursive: true});
-      fs.writeFileSync(target, content);
+    const target = path.join(dir, file);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, content);
   }
 
   console.log(`created ${dir}`);
@@ -331,22 +340,22 @@ function init(name) {
  * says what the application is made of.
  */
 function resolveApp(arg) {
-    const dir = path.resolve(arg ?? ".");
+  const dir = path.resolve(arg ?? ".");
 
-    if (!fs.existsSync(dir)) throw new Error(`no such directory: ${dir}`);
-    if (!fs.statSync(dir).isDirectory()) {
-        throw new Error(
-            `${dir} is a file — a command takes the application's directory, ` +
-            `and \`main_file\` in its ${CONFIG} names the bootstrap`,
-        );
-    }
-    if (!fs.existsSync(path.join(dir, CONFIG))) {
+  if (!fs.existsSync(dir)) throw new Error(`no such directory: ${dir}`);
+  if (!fs.statSync(dir).isDirectory()) {
     throw new Error(
-        `${dir} has no ${CONFIG} — run mosaic in an application directory, ` +
+      `${dir} is a file — a command takes the application's directory, ` +
+        `and \`main_file\` in its ${CONFIG} names the bootstrap`,
+    );
+  }
+  if (!fs.existsSync(path.join(dir, CONFIG))) {
+    throw new Error(
+      `${dir} has no ${CONFIG} — run mosaic in an application directory, ` +
         `or name one`,
     );
   }
-    return dir;
+  return dir;
 }
 
 function parseArgs(argv) {
@@ -354,29 +363,30 @@ function parseArgs(argv) {
     command: null,
     entry: null,
     port: 3000,
-      page: null,
+    page: null,
     open: true,
-      watch: true,
+    watch: true,
     sourcemap: true,
     quiet: false,
-      // The compiled modules the bundle was built from. They are intermediate:
-      // the page loads the bundle and nothing else. `check` keeps them because
-      // its page loads them unbundled, which is how the runtime is tested
-      // against a real build with no bundler in the way.
-      keepModules: false,
-      // Off by default: a build is read while it is being worked on, and the
-      // bundle is the thing you open when something looks wrong.
-      minify: false,
+    // The compiled modules the bundle was built from. They are intermediate:
+    // the page loads the bundle and nothing else. `check` keeps them because
+    // its page loads them unbundled, which is how the runtime is tested
+    // against a real build with no bundler in the way.
+    keepModules: false,
+    // Off by default: a build is read while it is being worked on, and the
+    // bundle is the thing you open when something looks wrong.
+    minify: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--port") {
       args.port = Number(argv[++i]);
-      if (!Number.isInteger(args.port)) throw new Error("`--port` needs a number");
+      if (!Number.isInteger(args.port))
+        throw new Error("`--port` needs a number");
     } else if (a === "--page") {
-        args.page = argv[++i];
-        if (!args.page) throw new Error("`--page` needs a path");
+      args.page = argv[++i];
+      if (!args.page) throw new Error("`--page` needs a path");
     } else if (a === "--no-open") args.open = false;
     else if (a === "--no-watch") args.watch = false;
     else if (a === "--no-sourcemap") args.sourcemap = false;
@@ -396,7 +406,8 @@ function parseArgs(argv) {
   if (!["init", "compile", "dev", "check", "clean"].includes(args.command)) {
     throw new Error(`unknown command \`${args.command}\``);
   }
-  if (args.command === "init" && !args.entry) throw new Error("`init` needs a name");
+  if (args.command === "init" && !args.entry)
+    throw new Error("`init` needs a name");
   return args;
 }
 
@@ -408,20 +419,22 @@ function parseArgs(argv) {
  */
 function layout(config, source) {
   const outdir = path.join(source, config.outdir);
-    const main = path.join(source, config.main_file);
+  const main = path.join(source, config.main_file);
 
-    if (!fs.existsSync(main)) {
-        throw new Error(`${CONFIG} names main_file "${config.main_file}", which is not in ${source}`);
-    }
+  if (!fs.existsSync(main)) {
+    throw new Error(
+      `${CONFIG} names main_file "${config.main_file}", which is not in ${source}`,
+    );
+  }
 
   return {
     source,
     name: path.basename(source),
     outdir,
-      // The bootstrap keeps its place in the tree, so `src/main.js` compiles to
-      // `build/src/main.js`. The bundle sits at the top of the build either way:
-      // it is what the page loads, and has no source position to keep.
-      entry: path.join(outdir, path.relative(source, main)),
+    // The bootstrap keeps its place in the tree, so `src/main.js` compiles to
+    // `build/src/main.js`. The bundle sits at the top of the build either way:
+    // it is what the page loads, and has no source position to keep.
+    entry: path.join(outdir, path.relative(source, main)),
     outfile: path.join(outdir, "app.js"),
   };
 }
@@ -445,72 +458,74 @@ function vendorRuntime(config, app) {
     throw new Error(`runtime ${runtime} is not inside runtimeRoot ${root}`);
   }
 
-    // The runtime is read from disk, so an installed mosaic that cannot find the
-    // tree it was installed with can say so in those terms — rather than failing
-    // on a path nobody wrote, somewhere inside the executable.
-    if (!fs.existsSync(root)) {
-        throw new Error(
-            `mosaic cannot find its runtime at ${root}.\n` +
-            `    It looked in ${HOME}, which is ${homeSource()}.\n` +
-            `    Reinstall with \`make install\`, or set MOSAIC_HOME to a mosaic checkout.`,
-        );
-    }
+  // The runtime is read from disk, so an installed mosaic that cannot find the
+  // tree it was installed with can say so in those terms — rather than failing
+  // on a path nobody wrote, somewhere inside the executable.
+  if (!fs.existsSync(root)) {
+    throw new Error(
+      `mosaic cannot find its runtime at ${root}.\n` +
+        `    It looked in ${HOME}, which is ${homeSource()}.\n` +
+        `    Reinstall with \`make install\`, or set MOSAIC_HOME to a mosaic checkout.`,
+    );
+  }
 
   const name = config.runtimeSpecifier;
   const dest = path.join(app.outdir, "node_modules", name);
   const main = "./" + path.relative(root, runtime).split(path.sep).join("/");
 
   // The compiler is not part of the runtime and has no business being served.
-    // Framework sources are left out too: they are compiled into this package
-    // rather than copied, so the only copy of a component is the compiled one.
-    const skipped = new Set([
-        path.resolve(root, "compiler"),
-        ...config.frameworks.map((f) => f.input),
-    ]);
+  // Framework sources are left out too: they are compiled into this package
+  // rather than copied, so the only copy of a component is the compiled one.
+  const skipped = new Set([
+    path.resolve(root, "compiler"),
+    ...config.frameworks.map((f) => f.input),
+  ]);
   fs.cpSync(root, dest, {
     recursive: true,
-      filter: (src) => !skipped.has(path.resolve(src)),
+    filter: (src) => !skipped.has(path.resolve(src)),
   });
 
-    // A framework is reached as `mosaic/frameworks/<name>`, through the index the
-    // build writes for it. Declaring the subpaths one by one — rather than a
-    // `./frameworks/*` pattern — keeps the package honest about what it has.
-    const exports = {".": main};
-    for (const framework of config.frameworks) {
-        exports[`./${FRAMEWORKS}/${framework.name}`] = `./${FRAMEWORKS}/${framework.name}/index.js`;
-        // And each component by its own path within the framework, which is how
-        // compiled markup names one: a `<Button/>` asks for Button and should
-        // bring in Button, not the index that names every component there is.
-        exports[`./${FRAMEWORKS}/${framework.name}/*`] = `./${FRAMEWORKS}/${framework.name}/*`;
-    }
+  // A framework is reached as `mosaic/frameworks/<name>`, through the index the
+  // build writes for it. Declaring the subpaths one by one — rather than a
+  // `./frameworks/*` pattern — keeps the package honest about what it has.
+  const exports = { ".": main };
+  for (const framework of config.frameworks) {
+    exports[`./${FRAMEWORKS}/${framework.name}`] =
+      `./${FRAMEWORKS}/${framework.name}/index.js`;
+    // And each component by its own path within the framework, which is how
+    // compiled markup names one: a `<Button/>` asks for Button and should
+    // bring in Button, not the index that names every component there is.
+    exports[`./${FRAMEWORKS}/${framework.name}/*`] =
+      `./${FRAMEWORKS}/${framework.name}/*`;
+  }
 
   fs.writeFileSync(
     path.join(dest, "package.json"),
-      JSON.stringify(
-          {
-              name,
-              version: config.version,
-              ...(config.author ? {author: config.author} : {}),
-              type: "module",
-              main,
-              exports,
-              // A component's module injects its stylesheet when it loads,
-              // which reads as a side effect and stops a bundler dropping a
-              // component nothing uses. The stylesheet is only wanted by the
-              // component, so dropping the two together is right: saying so
-              // here is what lets an application carry only what it imports.
-              //
-              // A theme is the exception. It is nobody's component and every
-              // component's colours, so it is named here as the one thing whose
-              // side effect — writing the stylesheet into the document — must
-              // survive an application that never mentions it.
-              sideEffects: [`./${FRAMEWORKS}/*/theme.js`],
-          },
-          null,
-          2,
-      ) + "\n",
+    JSON.stringify(
+      {
+        name,
+        version: config.version,
+        ...(config.author ? { author: config.author } : {}),
+        type: "module",
+        main,
+        exports,
+        // A component's module injects its stylesheet when it loads,
+        // which reads as a side effect and stops a bundler dropping a
+        // component nothing uses. The stylesheet is only wanted by the
+        // component, so dropping the two together is right: saying so
+        // here is what lets an application carry only what it imports.
+        //
+        // A theme is the exception. It is nobody's component and every
+        // component's colours, so it is named here as the one thing whose
+        // side effect — writing the stylesheet into the document — must
+        // survive an application that never mentions it.
+        sideEffects: [`./${FRAMEWORKS}/*/theme.js`],
+      },
+      null,
+      2,
+    ) + "\n",
   );
-    return {specifier: name, main: path.join(dest, main), dest};
+  return { specifier: name, main: path.join(dest, main), dest };
 }
 
 /**
@@ -519,25 +534,30 @@ function vendorRuntime(config, app) {
  * are imported by.
  */
 function frameworkSources(config, app) {
-    const root = path.join(app.outdir, "node_modules", config.runtimeSpecifier, FRAMEWORKS);
+  const root = path.join(
+    app.outdir,
+    "node_modules",
+    config.runtimeSpecifier,
+    FRAMEWORKS,
+  );
 
-    return config.frameworks.map((framework) => ({
-        name: framework.name,
-        input: framework.input,
-        outdir: path.join(root, framework.name),
-        specifier: `${config.runtimeSpecifier}/${FRAMEWORKS}/${framework.name}`,
-        themes: path.join(framework.input, THEMES),
-    }));
+  return config.frameworks.map((framework) => ({
+    name: framework.name,
+    input: framework.input,
+    outdir: path.join(root, framework.name),
+    specifier: `${config.runtimeSpecifier}/${FRAMEWORKS}/${framework.name}`,
+    themes: path.join(framework.input, THEMES),
+  }));
 }
 
 /** The themes a framework offers: every stylesheet in its `themes/`. */
 function themeNames(framework) {
-    if (!fs.existsSync(framework.themes)) return [];
-    return fs
-        .readdirSync(framework.themes)
-        .filter((file) => path.extname(file) === ".css")
-        .map((file) => path.basename(file, ".css"))
-        .sort();
+  if (!fs.existsSync(framework.themes)) return [];
+  return fs
+    .readdirSync(framework.themes)
+    .filter((file) => path.extname(file) === ".css")
+    .map((file) => path.basename(file, ".css"))
+    .sort();
 }
 
 /**
@@ -554,50 +574,50 @@ function themeNames(framework) {
  * `:global(...)` the compiler would have.
  */
 function writeFrameworkTheme(config, framework, options = {}) {
-    const available = themeNames(framework);
-    if (available.length === 0) return null;
+  const available = themeNames(framework);
+  if (available.length === 0) return null;
 
-    const chosen = config.theme;
-    if (!chosen) return null;
+  const chosen = config.theme;
+  if (!chosen) return null;
 
-    // What the build carries. One theme is the usual case and costs one
-    // stylesheet; naming more in `themes` is what lets a page switch between
-    // them at run time, and each one named is in the bundle whether it is worn
-    // or not.
-    const bundled = [...new Set([chosen, ...(config.themes ?? [])])];
-    for (const name of bundled) {
-        if (!available.includes(name)) {
-            throw new Error(
-                `${CONFIG} names theme "${name}", which ${framework.name} does not have — ` +
-                `it offers ${available.join(", ")}`,
-            );
-        }
+  // What the build carries. One theme is the usual case and costs one
+  // stylesheet; naming more in `themes` is what lets a page switch between
+  // them at run time, and each one named is in the bundle whether it is worn
+  // or not.
+  const bundled = [...new Set([chosen, ...(config.themes ?? [])])];
+  for (const name of bundled) {
+    if (!available.includes(name)) {
+      throw new Error(
+        `${CONFIG} names theme "${name}", which ${framework.name} does not have — ` +
+          `it offers ${available.join(", ")}`,
+      );
     }
+  }
 
-    // Unscoped — a theme's selectors mean what they say — but prefixed with
-    // `:root`, which buys back the specificity a component's stylesheet gets
-    // from its scope class. Without it a theme could restyle nothing a
-    // component had an opinion about.
-    const sheets = bundled.map((name) => [
-        name,
-        scopeCss(
-            fs.readFileSync(path.join(framework.themes, `${name}.css`), "utf8"),
-            "",
-            ":root",
-            {minify: options.minify},
-        ).trimEnd(),
-    ]);
+  // Unscoped — a theme's selectors mean what they say — but prefixed with
+  // `:root`, which buys back the specificity a component's stylesheet gets
+  // from its scope class. Without it a theme could restyle nothing a
+  // component had an opinion about.
+  const sheets = bundled.map((name) => [
+    name,
+    scopeCss(
+      fs.readFileSync(path.join(framework.themes, `${name}.css`), "utf8"),
+      "",
+      ":root",
+      { minify: options.minify },
+    ).trimEnd(),
+  ]);
 
-    const module = path.join(framework.outdir, THEME_MODULE);
-    const entries = sheets
-        .map(([name, css]) => `  ${JSON.stringify(name)}: ${JSON.stringify(css)},`)
-        .join("\n");
+  const module = path.join(framework.outdir, THEME_MODULE);
+  const entries = sheets
+    .map(([name, css]) => `  ${JSON.stringify(name)}: ${JSON.stringify(css)},`)
+    .join("\n");
 
-    // One <style> element, rewritten rather than added to: a theme replaces the
-    // one before it, so switching cannot leave two of them fighting. It is
-    // appended when this module is imported, which the index does last — so the
-    // theme sits after the stylesheets it restyles.
-    const source = `// ${framework.name} — generated by mosaic from ${CONFIG}.
+  // One <style> element, rewritten rather than added to: a theme replaces the
+  // one before it, so switching cannot leave two of them fighting. It is
+  // appended when this module is imported, which the index does last — so the
+  // theme sits after the stylesheets it restyles.
+  const source = `// ${framework.name} — generated by mosaic from ${CONFIG}.
 //
 // The themes this build carries, and how one is worn. \`theme\` names the one
 // the page starts in; \`setTheme\` swaps it, which is a stylesheet swap and
@@ -632,9 +652,9 @@ export function setTheme(name) {
 setTheme(theme);
 `;
 
-    fs.mkdirSync(path.dirname(module), {recursive: true});
-    fs.writeFileSync(module, source);
-    return {name: chosen, module, bundled};
+  fs.mkdirSync(path.dirname(module), { recursive: true });
+  fs.writeFileSync(module, source);
+  return { name: chosen, module, bundled };
 }
 
 /**
@@ -652,15 +672,15 @@ setTheme(theme);
  * @returns {boolean} Whether the application reaches into it.
  */
 function usesFramework(framework, written, own) {
-    const theirs = new Set(own);
+  const theirs = new Set(own);
 
-    return written.some((module) => {
-        if (theirs.has(module)) return false;
-        // The specifier as an import would write it: `"mosaic/frameworks/ui"`
-        // for the index, and `"mosaic/frameworks/ui/…"` for a component reached
-        // by its own path, which is how a compiled tag names one.
-        return fs.readFileSync(module, "utf8").includes(`"${framework.specifier}`);
-    });
+  return written.some((module) => {
+    if (theirs.has(module)) return false;
+    // The specifier as an import would write it: `"mosaic/frameworks/ui"`
+    // for the index, and `"mosaic/frameworks/ui/…"` for a component reached
+    // by its own path, which is how a compiled tag names one.
+    return fs.readFileSync(module, "utf8").includes(`"${framework.specifier}`);
+  });
 }
 
 /**
@@ -683,23 +703,23 @@ function usesFramework(framework, written, own) {
  * @param {string[]} specifiers The theme modules to import, one per framework.
  */
 function linkThemes(app, specifiers) {
-    if (specifiers.length === 0) return;
+  if (specifiers.length === 0) return;
 
-    const imports = specifiers
-        .map((specifier) => `import ${JSON.stringify(specifier)};`)
-        .join("\n");
+  const imports = specifiers
+    .map((specifier) => `import ${JSON.stringify(specifier)};`)
+    .join("\n");
 
-    // Written last, not first. Imports are evaluated in the order they are
-    // written, and a theme has to be worn after the stylesheets it restyles:
-    // two rules of equal weight are settled by which came later. Linking it at
-    // the top of the bootstrap puts its <style> element before every
-    // component's, and the theme loses every argument it was meant to win.
-    const source = fs.readFileSync(app.entry, "utf8");
-    fs.writeFileSync(
-        app.entry,
-        `${source.trimEnd()}\n\n// The theme ${CONFIG} named, linked in by mosaic: a theme is the\n` +
-            `// application's, and nothing imports it by hand.\n${imports}\n`,
-    );
+  // Written last, not first. Imports are evaluated in the order they are
+  // written, and a theme has to be worn after the stylesheets it restyles:
+  // two rules of equal weight are settled by which came later. Linking it at
+  // the top of the bootstrap puts its <style> element before every
+  // component's, and the theme loses every argument it was meant to win.
+  const source = fs.readFileSync(app.entry, "utf8");
+  fs.writeFileSync(
+    app.entry,
+    `${source.trimEnd()}\n\n// The theme ${CONFIG} named, linked in by mosaic: a theme is the\n` +
+      `// application's, and nothing imports it by hand.\n${imports}\n`,
+  );
 }
 
 /**
@@ -712,35 +732,43 @@ function linkThemes(app, specifiers) {
  * and `ButtonState` are as much part of the framework as `Button` is.
  */
 function writeFrameworkIndex(framework, modules, theme) {
-    const lines = [
-        `// ${framework.name} — generated by mosaic. What "${framework.specifier}" exports.`,
-        "",
-    ];
+  const lines = [
+    `// ${framework.name} — generated by mosaic. What "${framework.specifier}" exports.`,
+    "",
+  ];
 
-    for (const module of [...modules].sort()) {
-        const specifier = "./" + path.relative(framework.outdir, module).split(path.sep).join("/");
-        const name = componentName(path.basename(module, path.extname(module)));
-        const source = fs.readFileSync(module, "utf8");
+  for (const module of [...modules].sort()) {
+    const specifier =
+      "./" + path.relative(framework.outdir, module).split(path.sep).join("/");
+    const name = componentName(path.basename(module, path.extname(module)));
+    const source = fs.readFileSync(module, "utf8");
 
-        if (/^\s*export\s+default\b/m.test(source)) {
-            lines.push(`export {default as ${name}} from ${JSON.stringify(specifier)};`);
-        }
-        lines.push(`export * from ${JSON.stringify(specifier)};`);
+    if (/^\s*export\s+default\b/m.test(source)) {
+      lines.push(
+        `export {default as ${name}} from ${JSON.stringify(specifier)};`,
+      );
     }
+    lines.push(`export * from ${JSON.stringify(specifier)};`);
+  }
 
-    // Last, so the theme's rules land after the stylesheets they restyle: two
-    // rules of equal weight are settled by which came later, and a theme is
-    // meant to win. It is what `ensureInjectedAtStart()` arranges from the
-    // other end in the Java original.
-    if (theme) {
-        lines.push("", `// The "${theme.name}" theme, which ${CONFIG} chose, and the`);
-        lines.push(`// others this build carries: \`setTheme\` swaps between them.`);
-        lines.push(`export {theme, themes, setTheme} from "./theme.js";`);
-    }
+  // Last, so the theme's rules land after the stylesheets they restyle: two
+  // rules of equal weight are settled by which came later, and a theme is
+  // meant to win. It is what `ensureInjectedAtStart()` arranges from the
+  // other end in the Java original.
+  if (theme) {
+    lines.push(
+      "",
+      `// The "${theme.name}" theme, which ${CONFIG} chose, and the`,
+    );
+    lines.push(
+      `// others this build carries: \`setTheme\` swaps between them.`,
+    );
+    lines.push(`export {theme, themes, setTheme} from "./theme.js";`);
+  }
 
-    const index = path.join(framework.outdir, "index.js");
-    fs.writeFileSync(index, lines.join("\n") + "\n");
-    return index;
+  const index = path.join(framework.outdir, "index.js");
+  fs.writeFileSync(index, lines.join("\n") + "\n");
+  return index;
 }
 
 /**
@@ -783,12 +811,16 @@ async function compile(config, app, args) {
   const log = args.quiet ? () => {} : (...a) => console.log(...a);
   const relative = (p) => path.relative(config.root, p) || ".";
 
-    const frameworks = frameworkSources(config, app);
+  const frameworks = frameworkSources(config, app);
   const sources = [
-      // A framework compiles into the vendored package, and its components are
-      // imported by the name that package exports them under rather than by a
-      // path — `mosaic/frameworks/ui`, wherever the importing module sits.
-      ...frameworks.map((f) => ({input: f.input, outdir: f.outdir, specifier: f.specifier})),
+    // A framework compiles into the vendored package, and its components are
+    // imported by the name that package exports them under rather than by a
+    // path — `mosaic/frameworks/ui`, wherever the importing module sits.
+    ...frameworks.map((f) => ({
+      input: f.input,
+      outdir: f.outdir,
+      specifier: f.specifier,
+    })),
     ...librarySources(config, app),
     { input: relative(app.source), outdir: app.outdir },
   ];
@@ -802,42 +834,50 @@ async function compile(config, app, args) {
   // path leaves the two racing, and what goes missing is the file written last
   // — the bundle.
   wipe(app.outdir);
-    const vendored = vendorRuntime(config, app);
+  const vendored = vendorRuntime(config, app);
 
   log(`==> compiling ${relative(app.source)}`);
   const written = compileAll(sources, {
-      runtime: vendored.specifier,
-      // Where `import X from "svg:name"` looks: the application's own icons
-      // first, so an app can replace one the framework ships.
-      icons: iconDirs(config, app),
+    runtime: vendored.specifier,
+    // Where `import X from "svg:name"` looks: the application's own icons
+    // first, so an app can replace one the framework ships.
+    icons: iconDirs(config, app),
     sourcemap: args.sourcemap,
     // A stylesheet rides into the bundle as a string, where the bundler's own
     // minifier cannot see its comments. The compiler drops them instead.
     minify: args.minify,
-    onFile: args.quiet ? undefined : (src, dest) => log(`    ${src} -> ${dest}`),
+    onFile: args.quiet
+      ? undefined
+      : (src, dest) => log(`    ${src} -> ${dest}`),
   });
   log(`    ${written.length} modules`);
 
-    // Each framework's index is written from what actually compiled into it, so
-    // adding a component to the tree is all it takes to export one.
-    const themes = [];
-    for (const framework of frameworks) {
-        const modules = written.filter(
-            (dest) => path.resolve(dest).startsWith(path.resolve(framework.outdir) + path.sep),
-        );
-        const theme = writeFrameworkTheme(config, framework, {minify: args.minify});
-        const index = writeFrameworkIndex(framework, modules, theme);
-        const themed = theme
-            ? `, ${theme.name} theme` +
-              (theme.bundled.length > 1 ? ` (+${theme.bundled.length - 1} to switch to)` : "")
-            : "";
-        log(`    ${framework.specifier} -> ${index}  (${modules.length} modules${themed})`);
-        if (theme && usesFramework(framework, written, modules)) {
-            themes.push(`${framework.specifier}/${THEME_MODULE}`);
-        }
+  // Each framework's index is written from what actually compiled into it, so
+  // adding a component to the tree is all it takes to export one.
+  const themes = [];
+  for (const framework of frameworks) {
+    const modules = written.filter((dest) =>
+      path.resolve(dest).startsWith(path.resolve(framework.outdir) + path.sep),
+    );
+    const theme = writeFrameworkTheme(config, framework, {
+      minify: args.minify,
+    });
+    const index = writeFrameworkIndex(framework, modules, theme);
+    const themed = theme
+      ? `, ${theme.name} theme` +
+        (theme.bundled.length > 1
+          ? ` (+${theme.bundled.length - 1} to switch to)`
+          : "")
+      : "";
+    log(
+      `    ${framework.specifier} -> ${index}  (${modules.length} modules${themed})`,
+    );
+    if (theme && usesFramework(framework, written, modules)) {
+      themes.push(`${framework.specifier}/${THEME_MODULE}`);
     }
+  }
 
-    linkThemes(app, themes);
+  linkThemes(app, themes);
 
   log("==> bundling");
   // `throw: false`: a thrown build carries only "Bundle failed", and the
@@ -846,10 +886,10 @@ async function compile(config, app, args) {
     entrypoints: [app.entry],
     sourcemap: args.sourcemap ? "linked" : "none",
     target: "browser",
-      // What is served is the bundle, so this is the one place minifying
-      // belongs: the compiled modules stay readable, and a source map still
-      // leads back to the `.mib` a name came from.
-      minify: args.minify,
+    // What is served is the bundle, so this is the one place minifying
+    // belongs: the compiled modules stay readable, and a source map still
+    // leads back to the `.mib` a name came from.
+    minify: args.minify,
     throw: false,
   });
   if (!result.success) {
@@ -873,12 +913,14 @@ async function compile(config, app, args) {
   await writeBundle(result.outputs, app);
 
   const bytes = fs.statSync(app.outfile).size;
-    log(`    ${app.outfile}  ${(bytes / 1024).toFixed(1)} KB${args.minify ? ", minified" : ""}`);
+  log(
+    `    ${app.outfile}  ${(bytes / 1024).toFixed(1)} KB${args.minify ? ", minified" : ""}`,
+  );
 
-    if (!(args.keepModules || args.command === "check")) {
-        const removed = pruneModules(app);
-        if (removed > 0) log(`    ${removed} intermediate modules removed`);
-    }
+  if (!(args.keepModules || args.command === "check")) {
+    const removed = pruneModules(app);
+    if (removed > 0) log(`    ${removed} intermediate modules removed`);
+  }
 }
 
 /**
@@ -898,12 +940,17 @@ async function writeBundle(outputs, app) {
           ? `${path.basename(app.outfile)}.map`
           : path.basename(output.path);
 
-    fs.writeFileSync(path.join(dir, name), Buffer.from(await output.arrayBuffer()));
+    fs.writeFileSync(
+      path.join(dir, name),
+      Buffer.from(await output.arrayBuffer()),
+    );
     if (output.kind === "entry-point") wroteBundle = true;
   }
 
   if (!wroteBundle || !fs.existsSync(app.outfile)) {
-    throw new Error(`the bundle is missing at ${app.outfile} — the build produced none`);
+    throw new Error(
+      `the bundle is missing at ${app.outfile} — the build produced none`,
+    );
   }
 }
 
@@ -934,23 +981,25 @@ function wipe(dir) {
  * debuggable with nothing beside it.
  */
 function pruneModules(app) {
-    const keep = new Set([app.outfile, `${app.outfile}.map`].map((p) => path.resolve(p)));
+  const keep = new Set(
+    [app.outfile, `${app.outfile}.map`].map((p) => path.resolve(p)),
+  );
 
-    let removed = 0;
-    const walk = (dir) => {
-        for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
-            const full = path.join(dir, entry.name);
-            if (entry.isDirectory()) {
-                walk(full);
-                if (fs.readdirSync(full).length === 0) fs.rmdirSync(full);
-            } else if (!keep.has(path.resolve(full))) {
-                fs.rmSync(full);
-                removed++;
-            }
-        }
-    };
-    walk(app.outdir);
-    return removed;
+  let removed = 0;
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        if (fs.readdirSync(full).length === 0) fs.rmdirSync(full);
+      } else if (!keep.has(path.resolve(full))) {
+        fs.rmSync(full);
+        removed++;
+      }
+    }
+  };
+  walk(app.outdir);
+  return removed;
 }
 
 const CONTENT_TYPES = {
@@ -960,7 +1009,7 @@ const CONTENT_TYPES = {
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".map": "application/json; charset=utf-8",
-    ".mib": "text/plain; charset=utf-8",
+  ".mib": "text/plain; charset=utf-8",
   ".svg": "image/svg+xml",
 };
 
@@ -1021,7 +1070,8 @@ function serve(root, port, onResult = null) {
       }
 
       const file = Bun.file(target);
-      if (!(await file.exists())) return new Response("not found", { status: 404 });
+      if (!(await file.exists()))
+        return new Response("not found", { status: 404 });
 
       const type = CONTENT_TYPES[path.extname(target)];
       const headers = {
@@ -1037,7 +1087,9 @@ function serve(root, port, onResult = null) {
       // have one, and a check page that ends at its last <script> would
       // otherwise be served without a way to report.
       if (onResult && path.extname(target) === ".html") {
-        return new Response((await file.text()) + `\n${REPORTER}\n`, { headers });
+        return new Response((await file.text()) + `\n${REPORTER}\n`, {
+          headers,
+        });
       }
 
       return new Response(file, { headers });
@@ -1052,12 +1104,18 @@ function serve(root, port, onResult = null) {
  * @returns {boolean} Whether anything was found to open it with.
  */
 function open(url) {
-    for (const cmd of ["xdg-open", "open", "chromium", "google-chrome", "firefox"]) {
-        if (!Bun.which(cmd)) continue;
-        Bun.spawn([cmd, url], {stdout: "ignore", stderr: "ignore"});
-        return true;
-    }
-    return false;
+  for (const cmd of [
+    "xdg-open",
+    "open",
+    "chromium",
+    "google-chrome",
+    "firefox",
+  ]) {
+    if (!Bun.which(cmd)) continue;
+    Bun.spawn([cmd, url], { stdout: "ignore", stderr: "ignore" });
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -1069,60 +1127,71 @@ function open(url) {
  * bundle took to load.
  */
 async function check(page, root, port, reported) {
-    const browser = ["chromium", "chromium-browser", "google-chrome", "brave"].find((b) =>
-        Bun.which(b),
-    );
-    if (!browser) throw new Error("no chromium-like browser found");
+  const browser = [
+    "chromium",
+    "chromium-browser",
+    "google-chrome",
+    "brave",
+  ].find((b) => Bun.which(b));
+  if (!browser) throw new Error("no chromium-like browser found");
 
-    const url = `http://127.0.0.1:${port}/${path.relative(root, page).split(path.sep).join("/")}`;
+  const url = `http://127.0.0.1:${port}/${path.relative(root, page).split(path.sep).join("/")}`;
 
-    // A profile of its own, thrown away afterwards. The server takes whatever
-    // port it is given, so a run can land on one a previous run used — and a
-    // browser that kept its cache would answer from what that other run
-    // served, which is a build ago.
-    const profile = fs.mkdtempSync(path.join(os.tmpdir(), "mosaic-check-"));
+  // A profile of its own, thrown away afterwards. The server takes whatever
+  // port it is given, so a run can land on one a previous run used — and a
+  // browser that kept its cache would answer from what that other run
+  // served, which is a build ago.
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), "mosaic-check-"));
 
-    const proc = Bun.spawn(
-        [browser, "--headless", "--no-sandbox", "--disable-gpu",
-            `--user-data-dir=${profile}`, "--disk-cache-size=1", url],
-        {stdout: "ignore", stderr: "ignore"},
-    );
+  const proc = Bun.spawn(
+    [
+      browser,
+      "--headless",
+      "--no-sandbox",
+      "--disable-gpu",
+      `--user-data-dir=${profile}`,
+      "--disk-cache-size=1",
+      url,
+    ],
+    { stdout: "ignore", stderr: "ignore" },
+  );
 
-    // The page says when it is done, and this waits for it to say so. Asking
-    // the browser for the DOM at a moment of its choosing was the alternative,
-    // and it read a page whose bundle was still loading as a page whose every
-    // check had failed.
-    let result;
-    try {
-        result = await Promise.race([reported, Bun.sleep(60000).then(() => null)]);
-    } finally {
-        proc.kill();
-        fs.rmSync(profile, {recursive: true, force: true});
-    }
+  // The page says when it is done, and this waits for it to say so. Asking
+  // the browser for the DOM at a moment of its choosing was the alternative,
+  // and it read a page whose bundle was still loading as a page whose every
+  // check had failed.
+  let result;
+  try {
+    result = await Promise.race([reported, Bun.sleep(60000).then(() => null)]);
+  } finally {
+    proc.kill();
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
 
-    if (!result) {
-        console.error(`==> browser check never reported back — open ${url}`);
-        return 1;
-    }
-
-    if (process.env.MOSAIC_RAW) console.error("RAW:", JSON.stringify(result).slice(0, 1200));
-    for (const line of (result.results ?? "").split("\n")) {
-        if (/^\s*(PASS|FAIL|ERROR)/.test(line)) console.log(line.trim());
-    }
-
-    // The verdict is the page's own, taken from the title it set.
-    const title = result.title ?? "";
-    if (title.includes("verdict PASS")) {
-        console.log("==> browser check PASSED");
-        return 0;
-    }
-    if (title.includes("verdict FAIL")) {
-        console.error(`==> browser check FAILED: ${title}`);
-        return 1;
-    }
-    console.error(`==> browser check did not finish (title: ${title || "none"})`);
-    console.error(`    the page threw before reporting; open ${url}`);
+  if (!result) {
+    console.error(`==> browser check never reported back — open ${url}`);
     return 1;
+  }
+
+  if (process.env.MOSAIC_RAW)
+    console.error("RAW:", JSON.stringify(result).slice(0, 1200));
+  for (const line of (result.results ?? "").split("\n")) {
+    if (/^\s*(PASS|FAIL|ERROR)/.test(line)) console.log(line.trim());
+  }
+
+  // The verdict is the page's own, taken from the title it set.
+  const title = result.title ?? "";
+  if (title.includes("verdict PASS")) {
+    console.log("==> browser check PASSED");
+    return 0;
+  }
+  if (title.includes("verdict FAIL")) {
+    console.error(`==> browser check FAILED: ${title}`);
+    return 1;
+  }
+  console.error(`==> browser check did not finish (title: ${title || "none"})`);
+  console.error(`    the page threw before reporting; open ${url}`);
+  return 1;
 }
 
 /**
@@ -1137,64 +1206,66 @@ async function check(page, root, port, reported) {
  * a finished rebuild is live at the next reload with nothing to restart.
  */
 function watchSources(config, app, args) {
-    const roots = [
-        app.source,
-        config.runtimeRoot,
-        ...config.frameworks.map((f) => f.input),
-        ...config.libraries.map((lib) => lib.input),
-    ];
+  const roots = [
+    app.source,
+    config.runtimeRoot,
+    ...config.frameworks.map((f) => f.input),
+    ...config.libraries.map((lib) => lib.input),
+  ];
 
-    // A tree already covered by an ancestor is watched twice otherwise.
-    const covered = (dir) =>
-        roots.some((other) => other !== dir && dir.startsWith(other + path.sep));
-    const watched = [...new Set(roots)].filter((dir) => fs.existsSync(dir) && !covered(dir));
+  // A tree already covered by an ancestor is watched twice otherwise.
+  const covered = (dir) =>
+    roots.some((other) => other !== dir && dir.startsWith(other + path.sep));
+  const watched = [...new Set(roots)].filter(
+    (dir) => fs.existsSync(dir) && !covered(dir),
+  );
 
-    const outdir = path.resolve(app.outdir);
-    const ignored = (root, file) => {
-        if (!file) return true;
-        const full = path.resolve(root, file);
-        // Editors write backups and swap files beside the real one.
-        if (path.basename(file).startsWith(".") || file.endsWith("~")) return true;
-        return full === outdir || full.startsWith(outdir + path.sep);
-    };
+  const outdir = path.resolve(app.outdir);
+  const ignored = (root, file) => {
+    if (!file) return true;
+    const full = path.resolve(root, file);
+    // Editors write backups and swap files beside the real one.
+    if (path.basename(file).startsWith(".") || file.endsWith("~")) return true;
+    return full === outdir || full.startsWith(outdir + path.sep);
+  };
 
-    let timer = null;
-    let building = false;
-    let pending = false;
+  let timer = null;
+  let building = false;
+  let pending = false;
 
-    const rebuild = async () => {
-        if (building) {
-            pending = true;
-            return;
-        }
-        building = true;
-        const started = Date.now();
-        try {
-            await compile(config, app, {...args, quiet: true});
-            console.log(`    rebuilt in ${Date.now() - started}ms`);
-        } catch (e) {
-            // A broken source is the normal case while editing: report it and keep
-            // watching, rather than taking the server down with it.
-            report(e);
-        } finally {
-            building = false;
-            if (pending) {
-                pending = false;
-                rebuild();
-            }
-        }
-    };
-
-    for (const root of watched) {
-        fs.watch(root, {recursive: true}, (event, file) => {
-            if (ignored(root, file)) return;
-            // One edit can arrive as several events; wait for the flurry to stop.
-            clearTimeout(timer);
-            timer = setTimeout(rebuild, 60);
-        });
+  const rebuild = async () => {
+    if (building) {
+      pending = true;
+      return;
     }
+    building = true;
+    const started = Date.now();
+    try {
+      await compile(config, app, { ...args, quiet: true });
+      console.log(`    rebuilt in ${Date.now() - started}ms`);
+    } catch (e) {
+      // A broken source is the normal case while editing: report it and keep
+      // watching, rather than taking the server down with it.
+      report(e);
+    } finally {
+      building = false;
+      if (pending) {
+        pending = false;
+        rebuild();
+      }
+    }
+  };
 
-    return watched;
+  for (const root of watched) {
+    fs.watch(root, { recursive: true }, (event, file) => {
+      if (ignored(root, file)) return;
+      // One edit can arrive as several events; wait for the flurry to stop.
+      clearTimeout(timer);
+      timer = setTimeout(rebuild, 60);
+    });
+  }
+
+  return watched;
 }
 
 async function main(argv) {
@@ -1203,16 +1274,16 @@ async function main(argv) {
   let app;
   try {
     args = parseArgs(argv);
-      // `init` creates the application the other commands need, so it runs
-      // before any of them is resolved.
+    // `init` creates the application the other commands need, so it runs
+    // before any of them is resolved.
     if (args.command === "init") return init(args.entry);
-      const source = resolveApp(args.entry);
-      config = loadConfig(source);
-      // Paths in the config are relative to the config that declared them, and
-      // are absolute by now; the application's directory is where the rest of a
-      // run is anchored.
+    const source = resolveApp(args.entry);
+    config = loadConfig(source);
+    // Paths in the config are relative to the config that declared them, and
+    // are absolute by now; the application's directory is where the rest of a
+    // run is anchored.
     process.chdir(config.root);
-      app = layout(config, source);
+    app = layout(config, source);
   } catch (e) {
     console.error(`mosaic: ${e.message}\n\n${USAGE}`);
     return 1;
@@ -1237,53 +1308,54 @@ async function main(argv) {
 
   if (args.command === "compile") return 0;
 
-    // `dev` serves the application directory, so a page can only reach what
-    // ships with the app. A check page is a test *of* an application, and reads
-    // the build it produced, so it is served from far enough up to see both.
-    let checkPage = null;
-    let checkRoot = null;
-    try {
-        if (args.command === "check") {
-            checkPage = args.page ? path.resolve(args.page) : config.check;
-            if (!fs.existsSync(checkPage)) throw new Error(`no check page at ${checkPage}`);
-            const inApp = !path.relative(app.source, checkPage).startsWith("..");
-            const bothInHome =
-                !path.relative(HOME, checkPage).startsWith("..") &&
-                !path.relative(HOME, app.source).startsWith("..");
+  // `dev` serves the application directory, so a page can only reach what
+  // ships with the app. A check page is a test *of* an application, and reads
+  // the build it produced, so it is served from far enough up to see both.
+  let checkPage = null;
+  let checkRoot = null;
+  try {
+    if (args.command === "check") {
+      checkPage = args.page ? path.resolve(args.page) : config.check;
+      if (!fs.existsSync(checkPage))
+        throw new Error(`no check page at ${checkPage}`);
+      const inApp = !path.relative(app.source, checkPage).startsWith("..");
+      const bothInHome =
+        !path.relative(HOME, checkPage).startsWith("..") &&
+        !path.relative(HOME, app.source).startsWith("..");
 
-            // The root is served for the length of the run, so it has to be a place
-            // that holds both by design: the application itself, or the checkout when
-            // this is mosaic testing one of its own examples. Anything else — most
-            // often mosaic's built-in page against an application installed elsewhere
-            // — would mean serving whatever directory happens to contain them both.
-            if (!inApp && !bothInHome) {
-                throw new Error(
-                    `check page ${checkPage} is not part of ${app.source}.\n` +
-                    `    Name a page inside the application with \`--page\`, or with ` +
-                    `"check" in its ${CONFIG}.`,
-                );
-            }
-            checkRoot = inApp ? app.source : HOME;
-        }
-    } catch (e) {
-        report(e);
-        return 1;
+      // The root is served for the length of the run, so it has to be a place
+      // that holds both by design: the application itself, or the checkout when
+      // this is mosaic testing one of its own examples. Anything else — most
+      // often mosaic's built-in page against an application installed elsewhere
+      // — would mean serving whatever directory happens to contain them both.
+      if (!inApp && !bothInHome) {
+        throw new Error(
+          `check page ${checkPage} is not part of ${app.source}.\n` +
+            `    Name a page inside the application with \`--page\`, or with ` +
+            `"check" in its ${CONFIG}.`,
+        );
+      }
+      checkRoot = inApp ? app.source : HOME;
     }
+  } catch (e) {
+    report(e);
+    return 1;
+  }
 
-    // The checked page posts its verdict back through the server; this is what
-    // `check` waits for, so a run finishes when the page is finished.
-    let reportResult;
-    const reported = new Promise((resolve) => (reportResult = resolve));
+  // The checked page posts its verdict back through the server; this is what
+  // `check` waits for, so a run finishes when the page is finished.
+  let reportResult;
+  const reported = new Promise((resolve) => (reportResult = resolve));
 
-    const server =
-        args.command === "check"
-            ? serve(checkRoot, 0, reportResult)
-            : serve(app.source, args.port);
+  const server =
+    args.command === "check"
+      ? serve(checkRoot, 0, reportResult)
+      : serve(app.source, args.port);
 
   if (args.command === "check") {
     let code;
     try {
-        code = await check(checkPage, checkRoot, server.port, reported);
+      code = await check(checkPage, checkRoot, server.port, reported);
     } catch (e) {
       report(e);
       code = 1;
@@ -1294,10 +1366,12 @@ async function main(argv) {
 
   const url = `http://localhost:${server.port}/`;
   console.log(`==> serving ${url}`);
-    if (args.watch) {
-        const watched = watchSources(config, app, args);
-        console.log(`    watching ${watched.map((d) => path.relative(config.root, d) || ".").join(", ")}`);
-    }
+  if (args.watch) {
+    const watched = watchSources(config, app, args);
+    console.log(
+      `    watching ${watched.map((d) => path.relative(config.root, d) || ".").join(", ")}`,
+    );
+  }
   console.log("    Ctrl-C to stop");
   if (args.open) open(url);
 

@@ -10,76 +10,76 @@ import CloseCircle from "svg:close-circle";
 import "./search.css";
 
 export default class SearchField extends TextBase {
-    /** "Search", unless the application words it differently. */
-    get placeholder() {
-        return this.get("placeholder", "Search");
-    }
+  /** "Search", unless the application words it differently. */
+  get placeholder() {
+    return this.get("placeholder", "Search");
+  }
 
-    set placeholder(value) {
-        this.set("placeholder", value);
-    }
+  set placeholder(value) {
+    this.set("placeholder", value);
+  }
 
-    /** What the clear button reports to `action="cancel:method"`. */
-    fireCancel() {
-        const control = this.self;
-        control.props.cancelAction?.(control);
-    }
+  /** What the clear button reports to `action="cancel:method"`. */
+  fireCancel() {
+    const control = this.self;
+    control.props.cancelAction?.(control);
+  }
 
-    /**
-     * Empty the field, put the cursor back in it and say so. The value change
-     * is reported as the user's, because clearing is something they did.
-     */
-    clear() {
-        this.setValue("", true);
-        this.setFocus(true);
-        this.fireCancel();
-    }
+  /**
+   * Empty the field, put the cursor back in it and say so. The value change
+   * is reported as the user's, because clearing is something they did.
+   */
+  clear() {
+    this.setValue("", true);
+    this.setFocus(true);
+    this.fireCancel();
+  }
 
-    // --- drawing -------------------------------------------------------------
-    //
-    // The box and the input are TextBase's; what a search field adds is the
-    // magnifier before the text and the button that empties it after.
+  // --- drawing -------------------------------------------------------------
+  //
+  // The box and the input are TextBase's; what a search field adds is the
+  // magnifier before the text and the button that empties it after.
 
-    get role() {
-        return "searchbox";
-    }
+  get role() {
+    return "searchbox";
+  }
 
-    boxClasses() {
-        return ["v-Search", ...super.boxClasses()];
-    }
+  boxClasses() {
+    return ["v-Search", ...super.boxClasses()];
+  }
 
-    drawPrefix() {
-        return (
-            <i styleName="search">
-                <Magnifier aria-hidden="true"/>
-            </i>
-        );
-    }
+  drawPrefix() {
+    return (
+      <i styleName="search">
+        <Magnifier aria-hidden="true" />
+      </i>
+    );
+  }
 
-    drawSuffix() {
-        // Nothing to clear while the field is empty, so the button is not there
-        // to be reached — by a pointer or by a screen reader.
-        const empty = this.value === "";
+  drawSuffix() {
+    // Nothing to clear while the field is empty, so the button is not there
+    // to be reached — by a pointer or by a screen reader.
+    const empty = this.value === "";
 
-        return (
-            <button
-                styleName="Search-reset"
-                type="button"
-                aria-label="Clear search"
-                aria-hidden={empty ? "true" : "false"}
-                style={{display: empty ? "none" : "block"}}
-                tabindex={empty ? "-1" : "0"}
-                onclick={() => this.clear()}
-                onmousedown={(event) => event.preventDefault?.()}
-            >
-                <i>
-                    <CloseCircle aria-hidden="true"/>
-                </i>
-            </button>
-        );
-    }
+    return (
+      <button
+        styleName="Search-reset"
+        type="button"
+        aria-label="Clear search"
+        aria-hidden={empty ? "true" : "false"}
+        style={{ display: empty ? "none" : "block" }}
+        tabindex={empty ? "-1" : "0"}
+        onclick={() => this.clear()}
+        onmousedown={(event) => event.preventDefault?.()}
+      >
+        <i>
+          <CloseCircle aria-hidden="true" />
+        </i>
+      </button>
+    );
+  }
 
-    inputExtras() {
-        return {"aria-label": "Search"};
-    }
+  inputExtras() {
+    return { "aria-label": "Search" };
+  }
 }

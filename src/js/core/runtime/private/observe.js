@@ -27,27 +27,27 @@ const OBSERVED = Symbol.for("mosaic.observed");
  * would mean a draw scheduling its own redraw.
  */
 const INTERNAL = new Set([
-    "props",
-    "nodes",
-    "node",
-    "vtree",
-    "listeners",
-    "controller",
-    "isAttached",
-    "children",
-    "parent",
-    "view",
-    "root",
+  "props",
+  "nodes",
+  "node",
+  "vtree",
+  "listeners",
+  "controller",
+  "isAttached",
+  "children",
+  "parent",
+  "view",
+  "root",
 ]);
 
 function notifiers(target) {
-    if (!Object.prototype.hasOwnProperty.call(target, OBSERVED)) {
-        Object.defineProperty(target, OBSERVED, {
-            value: new Map(),
-            enumerable: false,
-        });
-    }
-    return target[OBSERVED];
+  if (!Object.prototype.hasOwnProperty.call(target, OBSERVED)) {
+    Object.defineProperty(target, OBSERVED, {
+      value: new Map(),
+      enumerable: false,
+    });
+  }
+  return target[OBSERVED];
 }
 
 /**
@@ -56,54 +56,54 @@ function notifiers(target) {
  * the property keeps whatever value it already had.
  */
 export function observe(target, key, notify) {
-    if (!target || (typeof target !== "object" && typeof target !== "function"))
-        return;
+  if (!target || (typeof target !== "object" && typeof target !== "function"))
+    return;
 
-    const watched = notifiers(target);
-    const existing = watched.get(key);
-    if (existing) {
-        existing.add(notify);
-        return;
-    }
+  const watched = notifiers(target);
+  const existing = watched.get(key);
+  if (existing) {
+    existing.add(notify);
+    return;
+  }
 
-    const callbacks = new Set([notify]);
-    watched.set(key, callbacks);
+  const callbacks = new Set([notify]);
+  watched.set(key, callbacks);
 
-    const descriptor = Object.getOwnPropertyDescriptor(target, key);
+  const descriptor = Object.getOwnPropertyDescriptor(target, key);
 
-    // An accessor already there stays in charge of the value; observation only
-    // wraps its setter, so a computed property keeps computing.
-    if (descriptor && !("value" in descriptor)) {
-        if (!descriptor.set) return;
-        const inner = descriptor.set;
-        Object.defineProperty(target, key, {
-            get: descriptor.get,
-            set(value) {
-                inner.call(this, value);
-                for (const callback of [...callbacks]) callback();
-            },
-            enumerable: descriptor.enumerable,
-            configurable: true,
-        });
-        return;
-    }
-
-    if (descriptor && !descriptor.configurable) return;
-
-    let value = descriptor ? descriptor.value : target[key];
-
+  // An accessor already there stays in charge of the value; observation only
+  // wraps its setter, so a computed property keeps computing.
+  if (descriptor && !("value" in descriptor)) {
+    if (!descriptor.set) return;
+    const inner = descriptor.set;
     Object.defineProperty(target, key, {
-        get() {
-            return value;
-        },
-        set(next) {
-            if (Object.is(value, next)) return;
-            value = next;
-            for (const callback of [...callbacks]) callback();
-        },
-        enumerable: descriptor ? descriptor.enumerable : true,
-        configurable: true,
+      get: descriptor.get,
+      set(value) {
+        inner.call(this, value);
+        for (const callback of [...callbacks]) callback();
+      },
+      enumerable: descriptor.enumerable,
+      configurable: true,
     });
+    return;
+  }
+
+  if (descriptor && !descriptor.configurable) return;
+
+  let value = descriptor ? descriptor.value : target[key];
+
+  Object.defineProperty(target, key, {
+    get() {
+      return value;
+    },
+    set(next) {
+      if (Object.is(value, next)) return;
+      value = next;
+      for (const callback of [...callbacks]) callback();
+    },
+    enumerable: descriptor ? descriptor.enumerable : true,
+    configurable: true,
+  });
 }
 
 /**
@@ -114,23 +114,23 @@ export function observe(target, key, notify) {
  * derived from others records what it derived from rather than only itself.
  */
 export function recordReads(target, body) {
-    const reads = new Set();
+  const reads = new Set();
 
-    const self = new Proxy(target, {
-        get(object, key, receiver) {
-            if (key === SELF) return object;
-            if (typeof key === "string") reads.add(key);
-            return Reflect.get(object, key, receiver);
-        },
-        // Writes belong to the object, not to the proxy: a handler closed over
-        // `this` during a draw must assign to the component itself.
-        set(object, key, value) {
-            return Reflect.set(object, key, value, object);
-        },
-    });
+  const self = new Proxy(target, {
+    get(object, key, receiver) {
+      if (key === SELF) return object;
+      if (typeof key === "string") reads.add(key);
+      return Reflect.get(object, key, receiver);
+    },
+    // Writes belong to the object, not to the proxy: a handler closed over
+    // `this` during a draw must assign to the component itself.
+    set(object, key, value) {
+      return Reflect.set(object, key, value, object);
+    },
+  });
 
-    const result = body(self);
-    return {result, reads};
+  const result = body(self);
+  return { result, reads };
 }
 
 /**
@@ -140,14 +140,14 @@ export function recordReads(target, body) {
  * derives from is watched instead.
  */
 export function stateKeys(target, reads) {
-    const keys = [];
-    for (const key of reads) {
-        if (INTERNAL.has(key)) continue;
-        const descriptor = Object.getOwnPropertyDescriptor(target, key);
-        if (!descriptor) continue;
-        if (!("value" in descriptor)) continue;
-        if (typeof descriptor.value === "function") continue;
-        keys.push(key);
-    }
-    return keys;
+  const keys = [];
+  for (const key of reads) {
+    if (INTERNAL.has(key)) continue;
+    const descriptor = Object.getOwnPropertyDescriptor(target, key);
+    if (!descriptor) continue;
+    if (!("value" in descriptor)) continue;
+    if (typeof descriptor.value === "function") continue;
+    keys.push(key);
+  }
+  return keys;
 }

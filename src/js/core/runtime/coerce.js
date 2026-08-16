@@ -19,9 +19,9 @@
  * @returns {*} The value, with "true" and "false" as booleans.
  */
 export function coerceValue(value) {
-    if (value === "true") return true;
-    if (value === "false") return false;
-    return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return value;
 }
 
 /**
@@ -35,14 +35,14 @@ export function coerceValue(value) {
  * @returns {object} The props, coerced.
  */
 export function coerceProps(props) {
-    if (!props) return props;
+  if (!props) return props;
 
-    let coerced = null;
-    for (const name in props) {
-        const value = props[name];
-        if (value !== "true" && value !== "false") continue;
-        coerced ??= {...props};
-        coerced[name] = value === "true";
-    }
-    return coerced ?? props;
+  let coerced = null;
+  for (const name in props) {
+    const value = props[name];
+    if (value !== "true" && value !== "false") continue;
+    coerced ??= { ...props };
+    coerced[name] = value === "true";
+  }
+  return coerced ?? props;
 }

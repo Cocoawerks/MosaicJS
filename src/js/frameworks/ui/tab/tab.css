@@ -9,12 +9,12 @@
  * about it — the Java sheet's `.v-TabBody` — reaches it through :global.
  */
 .v-TabBar {
-    position: relative;
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    background: var(--tabbar-background);
-    border-radius: 14px;
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  background: var(--tabbar-background);
+  border-radius: 14px;
 }
 
 /* Sliding selection pill, positioned by the view (TabView#movePill) to
@@ -24,37 +24,41 @@
    resize, a programmatic selectTab call) leaves "no-anim" on to jump
    instead — see TabView#movePill. */
 .v-TabBar-indicator {
-    position: absolute;
-    z-index: 0;
-    /* Falls back to the face every other selected control takes (checkbox,
+  position: absolute;
+  z-index: 0;
+  /* Falls back to the face every other selected control takes (checkbox,
        radio, switch, slider range) unless a theme names its own. */
-    background: var(--tab-indicator-background,
-    var(--switch-checked-background, var(--primary-background-color)));
-    /* Full bar height: positionIndicator sets left/top/width from the selected
+  background: var(
+    --tab-indicator-background,
+    var(--switch-checked-background, var(--primary-background-color))
+  );
+  /* Full bar height: positionIndicator sets left/top/width from the selected
        tab but not height, so it has to come from here or the pill collapses. */
-    height: 100%;
-    border-radius: 12px;
-    transition: left 200ms ease, width 200ms ease;
+  height: 100%;
+  border-radius: 12px;
+  transition:
+    left 200ms ease,
+    width 200ms ease;
 }
 
 .v-TabBar-indicator.no-anim {
-    transition: none;
+  transition: none;
 }
 
 .v-TabButton {
-    position: relative;
-    z-index: 1;
-    flex: 1;
-    text-align: center;
-    cursor: pointer;
-    padding: 4px;
-    margin: 5px 5px 6px;
-    background: transparent;
-    border-radius: 12px;
-    display: block;
-    color: #656666;
-    user-select: none;
-    box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+  padding: 4px;
+  margin: 5px 5px 6px;
+  background: transparent;
+  border-radius: 12px;
+  display: block;
+  color: #656666;
+  user-select: none;
+  box-sizing: border-box;
 }
 
 /* A line between one tab and the next, and none after the last. The tabs are
@@ -64,31 +68,31 @@
    only some of them had would leave that one a pixel wider than the rest, since
    the bar shares out what is left after borders. */
 .v-TabButton {
-    border-right: 1px solid transparent;
+  border-right: 1px solid transparent;
 }
 
 .v-TabButton:not(:last-child) {
-    border-right-color: var(--tab-separator-color, var(--group-border-color));
+  border-right-color: var(--tab-separator-color, var(--group-border-color));
 }
 
 .v-TabButton.is-selected {
-    font-weight: bold;
-    color: var(--tab-selected-foreground);
-    cursor: default;
+  font-weight: bold;
+  color: var(--tab-selected-foreground);
+  cursor: default;
 }
 
 .v-TabBar:focus {
-    outline: none;
+  outline: none;
 }
 
 .v-TabBar:focus .v-TabButton.is-selected {
-    outline: 3px solid var(--focus-ring);
-    outline-offset: 2px;
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .v-TabPanel :global(.v-Deck) {
-    width: 100%;
-    box-sizing: border-box;
-    border-top: none;
-    border-radius: 9px;
+  width: 100%;
+  box-sizing: border-box;
+  border-top: none;
+  border-radius: 9px;
 }

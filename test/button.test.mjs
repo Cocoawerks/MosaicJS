@@ -6,12 +6,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const {mount} = await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
-const {
-  Button,
-  Intent,
-  ButtonState
-} = await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
+const { mount } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
+const { Button, Intent, ButtonState } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /** Mount a button and hand back its view, root element and host. */
 function open(props = {}) {
@@ -23,8 +21,10 @@ function open(props = {}) {
 // The scope class is left out: it says which module styled the element, not
 // what the component put there. The compiler appends it last, which is how it
 // is picked out now that it is a bare hash.
-const classesOf = (el) => el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
-const press = (el, event = {}) => el.dispatchEvent({ type: "pointerdown", button: 0, ...event });
+const classesOf = (el) =>
+  el.getAttribute("class").split(" ").filter(Boolean).slice(0, -1);
+const press = (el, event = {}) =>
+  el.dispatchEvent({ type: "pointerdown", button: 0, ...event });
 const release = (el) => el.dispatchEvent({ type: "pointerup" });
 const click = (el) => el.dispatchEvent({ type: "click" });
 
@@ -98,7 +98,11 @@ test("the action fires once per activation, and never twice for a toggle", () =>
   assert.equal(fired, 1, "momentary: fires on click");
 
   fired = 0;
-  const toggle = open({ text: "Bold", toggle: true, action: () => (fired += 1) });
+  const toggle = open({
+    text: "Bold",
+    toggle: true,
+    action: () => (fired += 1),
+  });
   press(toggle.el);
   release(toggle.el);
   click(toggle.el);
@@ -121,7 +125,11 @@ test("Enter and Space activate, other keys do not", () => {
 
 test("a disabled button neither activates nor fires", () => {
   let fired = 0;
-  const { el, view } = open({ text: "Go", enabled: false, action: () => (fired += 1) });
+  const { el, view } = open({
+    text: "Go",
+    enabled: false,
+    action: () => (fired += 1),
+  });
 
   assert.ok(classesOf(el).includes("is-disabled"));
   assert.equal(el.getAttribute("aria-disabled"), "true");

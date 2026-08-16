@@ -5,61 +5,62 @@
  * one the bar itself draws.
  */
 .v-ProgressBar {
-    height: 7px;
-    width: 100%;
-    position: relative;
-    border-radius: 40px;
-    overflow: hidden;
-    border: none;
-    outline: none;
-    background: var(--progressbar-track);
-    border-color: var(--default-border-color);
+  height: 7px;
+  width: 100%;
+  position: relative;
+  border-radius: 40px;
+  overflow: hidden;
+  border: none;
+  outline: none;
+  background: var(--progressbar-track);
+  border-color: var(--default-border-color);
 }
 
 .v-ProgressBar > div {
-    height: 7px;
-    position: absolute;
-    left: -1px;
-    box-sizing: border-box;
-    border: none;
-    border-radius: 40px;
-    width: 0;
-    outline: none;
-    /* The same fill the slider's range takes, so a filled track reads the same
+  height: 7px;
+  position: absolute;
+  left: -1px;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 40px;
+  width: 0;
+  outline: none;
+  /* The same fill the slider's range takes, so a filled track reads the same
        in both controls. */
-    background: var(--switch-checked-background, var(--primary-background-color));
+  background: var(--switch-checked-background, var(--primary-background-color));
 }
 
 .v-ProgressBar.disabled,
 .v-ProgressBar.is-disabled {
-    opacity: 0.7;
+  opacity: 0.7;
 }
 
 .v-ProgressBar.complete > div,
 .v-ProgressBar.progress > div {
-    border: 1px solid var(--switch-checked-background, var(--primary-background-color));
+  border: 1px solid
+    var(--switch-checked-background, var(--primary-background-color));
 }
 
 .v-ProgressBar.progress > div {
-    border-right: none;
+  border-right: none;
 }
 
 .v-ProgressBar.indeterminate > div {
-    width: 100%;
-    height: 7px;
-    border-radius: 60px;
-    animation: indeterminateAnimation 1.5s infinite linear;
-    transform-origin: 0 50%;
+  width: 100%;
+  height: 7px;
+  border-radius: 60px;
+  animation: indeterminateAnimation 1.5s infinite linear;
+  transform-origin: 0 50%;
 }
 
 @keyframes indeterminateAnimation {
-    0% {
-        transform: translateX(0) scaleX(0);
-    }
-    30% {
-        transform: translateX(0) scaleX(0.4);
-    }
-    100% {
-        transform: translateX(100%) scaleX(0.5);
-    }
+  0% {
+    transform: translateX(0) scaleX(0);
+  }
+  30% {
+    transform: translateX(0) scaleX(0.4);
+  }
+  100% {
+    transform: translateX(100%) scaleX(0.5);
+  }
 }
