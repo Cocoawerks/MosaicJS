@@ -1,0 +1,329 @@
+<!doctype html>
+<!-- The app's own browser check: `mosaic check examples/Splitter`.
+
+     It loads the bundle exactly as index.html does — nothing here imports a
+     module — and then drives the page the way a person would, so what is
+     checked is the shipped application and not a reconstruction of it.
+
+     A split panel is layout, and layout is the one thing the unit tests cannot
+     see: they run against a DOM with no boxes in it. This is where the panes
+     are actually measured. -->
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..700;1,300..700&amp;display=swap"
+    />
+    <title>Splitter browser check</title>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <pre id="results"></pre>
+
+    <script type="module" src="build/app.js"></script>
+
+    <script type="module">
+      const log = [];
+      let failed = 0;
+      const check = (name, cond) => {
+        log.push(`${cond ? "PASS" : "FAIL"}  ${name}`);
+        if (!cond) failed++;
+        // Written as they go: a page that stops halfway still says how far it got.
+        document.querySelector("#results").textContent = log.join("\n");
+      };
+
+      window.addEventListener("unhandledrejection", (e) => {
+        document.querySelector("#results").textContent =
+          log.join("\n") + `\nERROR  ${e.reason?.message ?? e.reason}`;
+        document.title = "verdict FAIL (threw)";
+      });
+
+      window.addEventListener("error", (e) => {
+        document.querySelector("#results").textContent =
+          log.join("\n") + `\nERROR  ${e.message}`;
+        document.title = "verdict FAIL (threw)";
+      });
+
+      const app = document.querySelector("#app");
+      const settle = () => new Promise((r) => requestAnimationFrame(r));
+
+      // The bundle mounts on load; wait for the page to be there.
+      for (let i = 0; i < 60 && !app.querySelector(".v-SplitPanel"); i++) {
+        await new Promise((r) => setTimeout(r, 16));
+      }
+
+      const panels = () => [...app.querySelectorAll(".v-SplitPanel")];
+      const outer = () => panels()[0];
+      const inner = () => panels()[1];
+      const panesOf = (panel) => [...panel.children];
+      const width = (el) => Math.round(el.getBoundingClientRect().width);
+      const height = (el) => Math.round(el.getBoundingClientRect().height);
+      const status = () => app.querySelector("footer").textContent;
+      const labelled = (text) =>
+        [...app.querySelectorAll(".v-Button")].find(
+          (b) => b.textContent.trim() === text,
+        );
+
+      /**
+       * Drag a divider, as a pointer would. The component takes the pointer on
+       * the way down, so the move and the up are sent to the divider itself
+       * rather than to whatever is under the cursor.
+       */
+      const dragBy = async (divider, dx, dy) => {
+        const box = divider.getBoundingClientRect();
+        const from = {
+          clientX: Math.round(box.left + box.width / 2),
+          clientY: Math.round(box.top + box.height / 2),
+        };
+        const event = (type, extra) =>
+          divider.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              pointerId: 1,
+              button: 0,
+              isPrimary: true,
+              ...extra,
+            }),
+          );
+
+        event("pointerdown", from);
+        event("pointermove", {
+          clientX: from.clientX + dx,
+          clientY: from.clientY + dy,
+        });
+        event("pointerup", {
+          clientX: from.clientX + dx,
+          clientY: from.clientY + dy,
+        });
+        await settle();
+      };
+
+      // --- it drew ------------------------------------------------------------
+
+      check("the page mounted", app.querySelector("h1") !== null);
+      check("both panels drew", panels().length === 2);
+      check(
+        "the outer one divides the window across, the inner one down",
+        outer().className.includes("row") &&
+          inner().className.includes("column"),
+      );
+
+      const [sidebar, outerDivider, content] = panesOf(outer());
+      check(
+        "each is two panes with a divider between them",
+        panesOf(outer()).length === 3 &&
+          outerDivider.className.includes("v-SplitDivider"),
+      );
+      check(
+        "a child went into the pane its slot named",
+        sidebar.querySelector("nav") !== null &&
+          content.querySelector(".v-SplitPanel") !== null,
+      );
+      check(
+        "the divider says what it is to a reader",
+        outerDivider.getAttribute("role") === "separator" &&
+          outerDivider.getAttribute("aria-orientation") === "vertical",
+      );
+
+      // --- the panes are laid out ---------------------------------------------
+
+      check(
+        `the sidebar is the length the markup asked for (${width(sidebar)}px)`,
+        width(sidebar) === 220,
+      );
+      check(
+        "and the content pane takes everything else",
+        width(content) ===
+          width(outer()) - width(sidebar) - width(outerDivider),
+      );
+      check(
+        `the divider is as thick as it was told (${width(outerDivider)}px)`,
+        width(outerDivider) === 13,
+      );
+      check(
+        "the panel fills the room it was given",
+        height(outer()) > 200 &&
+          height(outer()) === height(app.querySelector(".v-SplitPanel").parentElement),
+      );
+
+      const [list, innerDivider, preview] = panesOf(inner());
+      check(
+        `the preview keeps its height, the list takes the rest (${height(preview)}px)`,
+        height(preview) === 240 &&
+          height(list) ===
+            height(inner()) - height(preview) - height(innerDivider),
+      );
+
+      // --- dragging -----------------------------------------------------------
+
+      const wasWide = width(sidebar);
+      await dragBy(outerDivider, 60, 0);
+      check(
+        `dragging the divider right widens the sidebar (${wasWide} → ${width(sidebar)}px)`,
+        width(sidebar) === wasWide + 60,
+      );
+      check(
+        "and the content pane gives up exactly that much",
+        width(content) ===
+          width(outer()) - width(sidebar) - width(outerDivider),
+      );
+      check(
+        "the page is told the length it settled on",
+        status().includes(`sidebar=${width(sidebar)}px`),
+      );
+
+      await dragBy(outerDivider, -60, 0);
+      check("dragging back narrows it again", width(sidebar) === wasWide);
+
+      // The bounds the markup gave it: 140 to 380.
+      await dragBy(outerDivider, 900, 0);
+      check(
+        `a drag past the end stops at the longest it may be (${width(sidebar)}px)`,
+        width(sidebar) === 380,
+      );
+      await dragBy(outerDivider, -900, 0);
+      check(
+        `and at the shortest (${width(sidebar)}px)`,
+        width(sidebar) === 140,
+      );
+      await dragBy(outerDivider, 80, 0);
+
+      // The inner panel is sized down the screen, and is its own panel: dragging
+      // it must leave the outer one alone.
+      const wasWideAgain = width(sidebar);
+      const wasTall = height(preview);
+      await dragBy(innerDivider, 0, -50);
+      check(
+        `dragging the inner divider up makes the preview taller (${wasTall} → ${height(preview)}px)`,
+        height(preview) === wasTall + 50,
+      );
+      check(
+        "across it counts for nothing, and the outer panel is untouched",
+        width(sidebar) === wasWideAgain,
+      );
+      check(
+        "which the page reports separately",
+        status().includes(`preview=${height(preview)}px`),
+      );
+
+      // --- shutting a pane away -----------------------------------------------
+
+      labelled("Hide the sidebar").click();
+      await settle();
+      check("the button shuts the sidebar away", width(sidebar) === 0);
+      check(
+        "and the divider goes with it, leaving no trace",
+        width(outerDivider) === 0,
+      );
+      check(
+        "so the content pane has the whole window",
+        width(content) === width(outer()),
+      );
+      check(
+        "the button now offers to bring it back",
+        labelled("Show the sidebar") !== undefined,
+      );
+
+      labelled("Show the sidebar").click();
+      await settle();
+      check(
+        `bringing it back puts it where the reader left it (${width(sidebar)}px)`,
+        width(sidebar) === wasWideAgain,
+      );
+
+      // --- laid out the other way ---------------------------------------------
+
+      labelled("Lay it out the other way").click();
+      await settle();
+      check(
+        "the panel turns on its side",
+        outer().className.includes("column") &&
+          !outer().className.includes("row"),
+      );
+      check(
+        `and the sidebar keeps its length, down the screen now (${height(sidebar)}px)`,
+        height(sidebar) === wasWideAgain && width(sidebar) === width(outer()),
+      );
+      check(
+        "the divider turns with it",
+        height(outerDivider) === 13 &&
+          outerDivider.getAttribute("aria-orientation") === "horizontal",
+      );
+
+      await dragBy(outerDivider, 0, 40);
+      check(
+        `and follows the pointer down the screen (${height(sidebar)}px)`,
+        height(sidebar) === wasWideAgain + 40,
+      );
+
+      labelled("Put it back side by side").click();
+      await settle();
+      check("and back again", outer().className.includes("row"));
+
+      // --- a hairline ---------------------------------------------------------
+
+      const thickness = app.querySelector("#thickness-combo");
+      thickness.value = "1";
+      thickness.dispatchEvent(new Event("change", { bubbles: true }));
+      await settle();
+
+      check(
+        `a hairline divider is one pixel of it (${width(outerDivider)}px)`,
+        width(outerDivider) === 1,
+      );
+      check(
+        "which drops the sash, since there is nothing to take hold of",
+        outerDivider.className.includes("thin") &&
+          getComputedStyle(outerDivider.querySelector("b")).display === "none",
+      );
+      check(
+        "and the panes take back the room it gave up",
+        width(content) === width(outer()) - width(sidebar) - 1,
+      );
+
+      const thinWidth = width(sidebar);
+      await dragBy(outerDivider, 25, 0);
+      check(
+        `a hairline drags like any other divider (${thinWidth} → ${width(sidebar)}px)`,
+        width(sidebar) === thinWidth + 25,
+      );
+
+      // --- the themes ---------------------------------------------------------
+
+      const themeCombo = app.querySelector("#theme-combo");
+      const wearTheme = (name) => {
+        themeCombo.value = name;
+        themeCombo.dispatchEvent(new Event("change", { bubbles: true }));
+      };
+
+      thickness.value = "13";
+      thickness.dispatchEvent(new Event("change", { bubbles: true }));
+      await settle();
+
+      for (const name of ["aristo", "aristo_dark", "pop"]) {
+        wearTheme(name);
+        await settle();
+        const paint = getComputedStyle(outerDivider);
+        check(
+          `${name} paints the divider (${paint.backgroundColor})`,
+          paint.backgroundColor !== "rgba(0, 0, 0, 0)" &&
+            paint.borderLeftWidth === "1px",
+        );
+      }
+      wearTheme("aristo");
+      await settle();
+
+      document.querySelector("#results").textContent = log.join("\n");
+      document.title =
+        failed === 0
+          ? `verdict PASS (${log.length} checks)`
+          : `verdict FAIL (${failed} of ${log.length})`;
+    </script>
+  </body>
+</html>

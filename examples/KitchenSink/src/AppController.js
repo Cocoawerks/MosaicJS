@@ -1,4 +1,13 @@
-import { setTheme, theme, Tooltip } from "mosaic/frameworks/ui";
+import {
+  Intent,
+  setTheme,
+  SnackBarManager,
+  SnackBarPosition,
+  theme,
+  Tooltip,
+} from "mosaic/frameworks/ui";
+
+import UndoBar from "./UndoBar.js";
 
 /**
  * The controller behind `main.mib`: what the page binds to, and what drives
@@ -51,6 +60,21 @@ export default class AppController {
 
     /** What the popover last reported back. */
     this.picked = "";
+
+    /** What the settings dialog last saved. */
+    this.saved = "nothing yet";
+
+    /** How many snackbars are up, and which corner they stack against. */
+    this.barCount = "0";
+    this.barWhere = "bottom_right";
+
+    /**
+     * What puts a bar on the page and stacks it with whatever else is up. One
+     * per application: a bar never adds itself, and nothing else on the page
+     * needs to know where they go. It puts nothing on the document until the
+     * first bar is shown.
+     */
+    this.bars = new SnackBarManager(SnackBarPosition.BOTTOM_RIGHT);
 
     /** The colour the well holds, as it reads. */
     this.wellColour = "#3584E4";
@@ -624,6 +648,108 @@ export default class AppController {
       this.note(`colour picked: ${colour}`);
     };
     this.colours.show(this.colourButton);
+  }
+
+  // --- the dialog -----------------------------------------------------------
+
+  /**
+   * Show the settings dialog.
+   *
+   * `this.settingsDialog` is the dialog's own controller — an outlet on a page
+   * that has one hands that over rather than the element it drew — so this says
+   * what the page has to say to it, and nothing about what is inside it. A
+   * dialog is modal, so it needs nothing to hang from.
+   */
+  showSettings() {
+    this.settingsDialog.onSave = (name) => {
+      this.saved = name || "(nothing)";
+      this.note(`settings saved: ${this.saved}`);
+    };
+    this.settingsDialog.show();
+  }
+
+  // --- the snackbars --------------------------------------------------------
+
+  /**
+   * Show a line of text and let it take itself away — the common case, and the
+   * whole of what a Toast is.
+   *
+   * @param {string} text What it says.
+   * @param {string} [intent] One of Intent, which decides the face it wears.
+   */
+  toast(text, intent = Intent.DEFAULT) {
+    // `action` on a bar is what it fires once it has gone, so the count below
+    // follows the bars themselves rather than the presses that made them.
+    this.bars.toast(text, intent, { action: () => this.countBars() });
+    this.countBars();
+    this.note(`toast: ${text}`);
+  }
+
+  saySomething() {
+    this.toast("Something happened");
+  }
+
+  saySaved() {
+    this.toast("Everything was saved", Intent.SUCCESS);
+  }
+
+  sayCareful() {
+    this.toast("That might not be what you meant", Intent.WARNING);
+  }
+
+  sayFailed() {
+    this.toast("That did not work", Intent.DANGER);
+  }
+
+  /**
+   * Show the application's own bar — a SnackBar rather than a Toast, because it
+   * holds more than a line of text and waits to be answered.
+   *
+   * What it says back comes through hooks rather than `action`: `action` names
+   * a method in markup, so a caller working in JavaScript passes a function
+   * under a name of its own. UndoBar.js says the same at more length.
+   */
+  showUndoBar() {
+    this.bars.show(
+      <UndoBar
+        text="Message moved to the bin"
+        onUndo={() => this.note("brought it back")}
+        onClosed={() => this.countBars()}
+      />,
+    );
+    this.countBars();
+    this.note("a bar that waits to be answered");
+  }
+
+  /**
+   * Which corner the stack is pinned to. A manager's position is fixed when it
+   * is made, so choosing another means another manager — the bars already up
+   * go with the old one.
+   *
+   * @param {object} combo The ComboBox that changed.
+   * @param {string} value One of SnackBarPosition.
+   */
+  barPositionChanged(combo, value) {
+    this.bars.dispose();
+    this.bars = new SnackBarManager(value);
+    this.barWhere = value;
+    this.countBars();
+    this.note(`snackbars: ${value}`);
+  }
+
+  /** Close everything that is up. Each bar goes the way it would have gone. */
+  closeAllBars() {
+    this.bars.closeAll();
+    this.countBars();
+    this.note("closed every bar");
+  }
+
+  /**
+   * Say how many are up. Read after the fact rather than counted here: a bar
+   * closing fades before it goes, so the manager is the only thing that knows.
+   */
+  countBars() {
+    this.barCount = String(this.bars.count);
   }
 
   /**

@@ -1,0 +1,4 @@
+/* The bar's own spacing: the line, then the button clear of it. */
+.text {
+  margin-right: 0.75rem;
+}

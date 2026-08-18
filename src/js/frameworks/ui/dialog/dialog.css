@@ -1,0 +1,288 @@
+/*
+ * Ported from GWT Mosaic: client/components/resources/dialogbox/style.css.
+ *
+ * The dialog's own chrome — the box, its header, main and footer — is drawn by
+ * DialogBox and carries this sheet's scope in the ordinary way. Two things do
+ * not, and are reached through `:global(...)`:
+ *
+ *   - the close button, whose element Button draws and which therefore carries
+ *     Button's scope, not this one's (the same arrangement the snackbar's X has);
+ *   - whatever a caller puts in `main` and `footer`, which is drawn by that
+ *     caller's own `.mib` and carries its scope.
+ *
+ * The shared page mask is appended to the body by DialogMask rather than drawn,
+ * so it is `:global` for a third reason: nothing scopes it at all.
+ */
+.v-Dialog {
+  border: 1px solid var(--dialog-border);
+  outline: none;
+  padding: 0;
+  box-shadow: var(--dialog-shadow);
+  border-radius: 9px;
+  width: 600px;
+  height: fit-content;
+  /* Never taller than the viewport, so there is something for main to give way
+     against: with no bound the dialog just grows and nothing scrolls. */
+  max-height: calc(100dvh - 2rem);
+  /* And never wider. A dialog asking for more would overflow the document and
+     put a horizontal scrollbar on the page — which reflows everything behind
+     it, and takes it away again on close. That is what made the view behind
+     bounce as the dialog opened. */
+  max-width: calc(100vw - 2rem);
+  /* Laid out only while it is up. The UA hides a closed `<dialog>` for us, but
+     the `display` below is what a shown one needs and it would override that —
+     leaving a closed dialog still boxed in the middle of the page: invisible at
+     opacity 0, and taking every press meant for what is behind it. The Java
+     version never met this, because it took the dialog off the page as it
+     closed; this one is drawn where its markup sits and stays there.
+
+     `display` is in the transition list below with allow-discrete, so the box
+     is kept until the fade has finished rather than cut out from under it. */
+  display: none;
+  flex-direction: column;
+  /* Visible so a popover or tooltip hosted in the dialog is not clipped; the
+     inner wrapper does the rounded-corner clipping instead. */
+  overflow: visible;
+  background-color: var(--dialog-background);
+  /* Centred by auto margins against inset:0 — the free space is split evenly,
+     and once max-height leaves none the dialog simply sits at the top. A
+     translate of (100dvh - 100%) / 2 resolves the 100% against the dialog's
+     *own* height, so anything changing that height after it opened (content
+     arriving, fonts loading, a canvas sizing) moved it — which is what made a
+     large dialog appear to shake. */
+  inset: 0;
+  margin: auto;
+  /* The closed state, and the transition that reaches it. Declared here rather
+     than only on `.is-open` so it runs both ways; display and overlay are
+     discrete, and allow-discrete keeps the dialog rendered (and in the top
+     layer) until the fade finishes instead of vanishing on close.
+
+     Written against `.is-open` — the state the component draws — rather than
+     the `[open]` attribute the UA writes. Style resolution and the attribute do
+     not agree while a discrete transition is in flight: a closed dialog was
+     still being matched by `[open]` and still taking presses. What the
+     component drew is what it is, which is the arrangement PopOver uses too. */
+  opacity: 0;
+  transition-property: opacity, display, overlay;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+  transition-behavior: allow-discrete;
+}
+
+/* A flex column, so the wrapper below can take the leftover height without a
+   percentage — a percentage height against this fit-content box is indefinite,
+   resolves to auto, and lets main size to its content (which is why nothing
+   scrolled). */
+.v-Dialog.is-open {
+  display: flex;
+  opacity: 1;
+}
+
+/* A dialog that is not up takes no presses, whatever its `display` says.
+   Belt and braces to the `display: none` above, and the guarantee that actually
+   matters: `display` is transitioned discretely, so it stays `flex` for the
+   length of the fade — and a fade that stalls (a page that is not being
+   painted, a browser that throttles the frames it runs on) would leave the box
+   there for good, invisible in the middle of the page and swallowing every
+   press meant for what is behind it. `pointer-events` is not transitioned, so
+   this applies the moment the dialog closes and cannot be left half-done. */
+.v-Dialog:not(.is-open) {
+  pointer-events: none;
+}
+
+/* The measuring pass. A `<dialog>` has no boxes until it is open, so it cannot
+   be sized while hidden the ordinary way — it is opened, laid out invisibly
+   here, and revealed a frame later (see DialogBox.show). Painting nothing while
+   still taking part in layout is what visibility gives; transition:none keeps
+   the fade from starting until the geometry has settled, so the dialog does not
+   appear at one size and jump to another. */
+.v-Dialog.is-measuring {
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: none;
+}
+
+/* The state it fades in from, kept at the top level rather than nested inside
+   the rule above: a parser without CSS Nesting hits an error *inside* a style
+   rule, consumes to the inner block's closing brace, and then trips over the
+   outer one — dropping later rules until it resynchronises. Safari did exactly
+   that. At the top level an unsupported at-rule is skipped cleanly. */
+@starting-style {
+  .v-Dialog.is-open {
+    opacity: 0;
+  }
+}
+
+.v-Dialog::backdrop {
+  background: var(--dialog-backdrop);
+  backdrop-filter: blur(1px);
+  /* The backdrop fades with the dialog rather than cutting out under it. */
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+}
+
+@starting-style {
+  .v-Dialog.is-open::backdrop {
+    opacity: 0;
+  }
+}
+
+/* Dimmed by the shared mask instead, so this dialog's own backdrop stays clear
+   — one dim over one dialog. */
+.v-Dialog.v-Dialog--no-mask::backdrop {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+/* The single shared page mask, put on the body by DialogMask so exactly one dim
+   shows and it can linger from one dialog to the next. It sits below the
+   dialogs, which are in the top layer, and is purely visual — their own
+   backdrops still take the presses. */
+:global(.v-Dialog-mask) {
+  position: fixed;
+  inset: 0;
+  background: var(--dialog-backdrop);
+  backdrop-filter: blur(1px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease;
+  z-index: 100;
+}
+
+:global(.v-Dialog-mask.is-visible) {
+  opacity: 1;
+}
+
+/* Packed to its content rather than the standard width. */
+.v-Dialog.v-Dialog--auto {
+  width: fit-content;
+  height: fit-content;
+}
+
+/* With height: fit-content above, the wrapper's height/min-height of 100%
+   resolve against an indefinite parent. Safari treats that as 0, collapsing the
+   flex:1 main so the dialog has no height. Let the content say instead. */
+.v-Dialog.v-Dialog--auto > div {
+  height: auto;
+  min-height: 0;
+}
+
+.v-Dialog > div {
+  width: 100%;
+  /* Takes the dialog's height, whatever it resolved to. */
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* The rounded-corner clipping happens here; the dialog element itself stays
+     overflow:visible so a tooltip can escape it. */
+  overflow: hidden;
+}
+
+/* Header and footer keep their height whatever the content does — only main
+   gives way, so a dialog too tall for its box scrolls its content rather than
+   squeezing its chrome out. */
+.v-Dialog header {
+  border-radius: 8px 8px 0 0;
+  height: 52px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px;
+  user-select: none;
+  box-sizing: border-box;
+  border-left: 1px solid var(--dialog-header-border);
+  border-right: 1px solid var(--dialog-header-border);
+  background-color: var(--dialog-header-background);
+  border-bottom: 1px solid var(--dialog-header-border);
+  color: var(--dialog-header-foreground);
+  box-shadow: var(--dialog-header-highlight, none);
+}
+
+.v-Dialog header h2 {
+  font-size: 21px;
+  font-weight: var(--dialog-header-title-weight);
+  text-align: var(--dialog-header-title-align);
+  flex: 1;
+  margin: 4px 0 0 6px;
+}
+
+/* A title made editable in place, for a dialog that renames what it is about. */
+.v-Dialog header h2[contenteditable] {
+  flex: 0 1 auto;
+  width: fit-content;
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  padding: 0 5px;
+  border-radius: 4px;
+  outline: none;
+  cursor: text;
+}
+
+.v-Dialog header h2[contenteditable]:focus {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* --- the close button ------------------------------------------------------
+   Its element is Button's, and carries Button's scope rather than this sheet's. */
+
+.v-Dialog header :global(.v-Button.close) {
+  width: 25px;
+  height: 25px;
+  border-radius: 50px;
+  border: none;
+  min-width: unset;
+  min-height: unset;
+  background-color: var(--dialog-close-background);
+}
+
+.v-Dialog header :global(.v-Button.close .icon) {
+  fill: var(--dialog-close-foreground);
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.v-Dialog header :global(.v-Button.close .icon svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.v-Dialog header :global(.v-Button.close:not(.is-active):not(.is-disabled):hover) {
+  background-color: var(--dialog-close-hover);
+}
+
+.v-Dialog header :global(.v-Button.close.is-active) {
+  background-color: var(--dialog-close-active);
+}
+
+/* Takes the room left over, and no more: min-height:0 lets it shrink below its
+   content's size (a flex item will not, by default), which is what lets the
+   content overflow inside it instead of pushing the footer out of the dialog. */
+.v-Dialog main {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* A little more room under the buttons than a caller's own footer padding
+   gives, so they do not sit hard against the bottom edge. */
+.v-Dialog footer {
+  height: auto;
+  flex: 0 0 auto;
+  padding-bottom: 3px;
+}
+
+/* Footer buttons are one size across every dialog: a shared minimum, so a
+   Cancel/Save pair renders the same width whatever the labels. A dialog should
+   not set per-button widths down here. The buttons are the caller's, hence
+   `:global`. */
+.v-Dialog footer :global(.v-Button) {
+  min-width: 110px;
+}

@@ -502,3 +502,141 @@ textarea,
 .v-Switch.checked.checked > .indicator:before {
   border-color: color-mix(in srgb, #4fa1b0, black 10%);
 }
+
+/* ---- Snackbar ------------------------------------------------------------ */
+
+/*
+ * Without these a bar falls back to the component sheet's defaults, which are
+ * the `--default-*` variables — the face of a push button. In Pop that is
+ * #f6f4f2 with a #d8d4d1 hairline, which on Pop's white workspace is a pale
+ * shape on a pale page: a notification that has to be looked for.
+ *
+ * Same treatment the Aristo themes give it, in Pop's own terms: a small window
+ * rather than a coloured slab, warm rather than grey, and flat — Pop's controls
+ * carry no gloss, so its bars carry none either, and its 3px corners rather
+ * than the 6px the Aristo bars round to.
+ */
+.v-SnackBar.v-SnackBar {
+  border-radius: 3px;
+  border: 1px solid var(--default-border-color);
+  /* The surface Pop already puts over its pages, so a bar and a dialog are
+     made of the same thing. */
+  background-color: var(--dialog-background);
+  color: var(--text-color);
+  /* Flatter than Aristo's, and warm rather than neutral: Pop's blacks are
+     browns, and a grey shadow under a warm surface reads as dirt. */
+  box-shadow:
+    0 4px 12px -5px rgba(58, 52, 49, 0.35),
+    0 1px 2px -1px rgba(58, 52, 49, 0.25);
+  /* Solid, not the component sheet's 0.97. Said as the variable that sheet
+     reads, not as `opacity` — that property is the fade's, and a theme setting
+     it stops a bar fading out at all. */
+  --snackbar-opacity: 1;
+  padding: 6px 8px;
+}
+
+/* Intent shows as a tint of the surface rather than a saturated fill. Pop's
+   intent colours are bright — #82bf8c, #ffad00, #6acad8 — and none of them
+   carries the near-white text the component sheet would put on them: white on
+   Pop's warning amber is under 2:1. Tinted, the bar keeps Pop's dark text and
+   the colour still says which kind of thing happened. */
+.v-SnackBar.v-SnackBar.intent,
+.v-SnackBar.v-SnackBar.intent > .v-SnackBar-content {
+  color: var(--text-color);
+}
+
+/* The component lifts content on a saturated bar to rescue light text from it.
+   There is no saturated bar here, so the lift only washes Pop's warm tints out. */
+.v-SnackBar.intent .v-SnackBar-content *,
+.v-SnackBar.primary .v-SnackBar-content *,
+.v-SnackBar.danger .v-SnackBar-content *,
+.v-SnackBar.success .v-SnackBar-content *,
+.v-SnackBar.warning .v-SnackBar-content *,
+.v-SnackBar.info .v-SnackBar-content * {
+  filter: none;
+}
+
+/* Each tint is the theme's own intent colour, so a bar agrees with the button
+   that raised it. How far toward white differs per colour rather than being one
+   number: they are nothing like equally light to begin with — Pop's success is
+   a deep #2d893d, its warning a bright #ffad00 — and an even mix would leave
+   some bars muddy and others barely there. */
+.v-SnackBar.v-SnackBar.primary {
+  background-color: color-mix(
+    in srgb,
+    var(--primary-background-color),
+    white 62%
+  );
+  border-color: color-mix(in srgb, var(--primary-background-color), white 30%);
+}
+
+.v-SnackBar.v-SnackBar.danger {
+  background-color: color-mix(
+    in srgb,
+    var(--danger-background-color),
+    white 70%
+  );
+  border-color: color-mix(in srgb, var(--danger-background-color), white 42%);
+}
+
+.v-SnackBar.v-SnackBar.success {
+  background-color: color-mix(
+    in srgb,
+    var(--success-background-color),
+    white 78%
+  );
+  border-color: color-mix(in srgb, var(--success-background-color), white 52%);
+}
+
+.v-SnackBar.v-SnackBar.warning {
+  background-color: color-mix(
+    in srgb,
+    var(--warning-background-color),
+    white 68%
+  );
+  border-color: color-mix(in srgb, var(--warning-background-color), white 38%);
+}
+
+.v-SnackBar.v-SnackBar.info {
+  background-color: color-mix(in srgb, var(--info-background-color), white 64%);
+  border-color: color-mix(in srgb, var(--info-background-color), white 32%);
+}
+
+/* The one intent that stays dark, so it keeps light content — Pop's inverse is
+   the brown its title bar and dialog headers are made of. */
+.v-SnackBar.v-SnackBar.inverse {
+  background-color: var(--inverse-background-color);
+  border-color: var(--inverse-border-color);
+}
+
+.v-SnackBar.v-SnackBar.inverse,
+.v-SnackBar.v-SnackBar.inverse > .v-SnackBar-content {
+  color: var(--inverse-foreground-color);
+}
+
+/* The icon takes whatever the text is, which is the one thing carrying the
+   intent's own colour on a tinted bar. */
+.v-SnackBar.v-SnackBar.intent .v-SnackBar-content > div .icon svg {
+  fill: currentColor;
+}
+
+/* Close button: dark on the tinted surfaces, light on the inverse one, and
+   Pop's own washes under the pointer rather than a colour of its own. */
+.v-SnackBar.v-SnackBar.intent .v-Button.close {
+  color: var(--text-color);
+  fill: var(--text-color);
+}
+
+.v-SnackBar.v-SnackBar.inverse .v-Button.close {
+  color: var(--inverse-foreground-color);
+  fill: var(--inverse-foreground-color);
+}
+
+.v-SnackBar.v-SnackBar.intent
+  .v-Button.close:not(.is-active):not(.is-disabled):hover {
+  background-color: var(--wash-hover);
+}
+
+.v-SnackBar.v-SnackBar.intent .v-Button.close.is-active {
+  background-color: var(--wash-press);
+}

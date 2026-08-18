@@ -14,6 +14,10 @@ const NESTED_AT_RULES = [
   "@container",
   "@layer",
   "@scope",
+  // The state an element transitions *from* the first time it is rendered.
+  // Its body holds style rules like any other, and a dialog's fade-in is
+  // written with it — see dialog.css.
+  "@starting-style",
 ];
 
 const WS = new Set([" ", "\t", "\n", "\r", "\f", "\v"]);

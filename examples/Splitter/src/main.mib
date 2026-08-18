@@ -1,0 +1,289 @@
+<!-- Splitter: what SplitPanel is for, which is a window divided into panes the
+     reader can size.
+
+     Two panels, one inside the other. The outer one divides the window down the
+     middle — a sidebar that keeps its width while the rest takes what is left.
+     The inner one divides that remainder across, so the list keeps the room and
+     the preview under it stays the height it was put at.
+
+     Which pane keeps its length is `flex`: it names the pane that stretches, so
+     the *other* one is the one whose length the divider changes. -->
+
+<div styleName="app">
+    <header styleName="bar">
+        <h1 styleName="title">{title}</h1>
+
+        <span styleName="spacer"></span>
+
+        <Button text="Hide the sidebar" outlet="collapseButton"
+                action="toggleSidebar"/>
+        <Button text="Lay it out the other way" outlet="orientationButton"
+                action="toggleOrientation"/>
+
+        <label styleName="label" for="thickness-combo">Divider</label>
+        <ComboBox controlId="thickness-combo" outlet="thicknessCombo"
+                  action="thicknessChanged" value="13">
+            <Option text="A grip (13px)" value="13"/>
+            <Option text="A hairline (1px)" value="1"/>
+        </ComboBox>
+
+        <label styleName="label" for="theme-combo">Theme</label>
+        <ComboBox controlId="theme-combo" outlet="themeCombo" action="themeChanged">
+            <Option text="Aristo" value="aristo"/>
+            <Option text="Aristo Dark" value="aristo_dark"/>
+            <Option text="Pop" value="pop"/>
+        </ComboBox>
+    </header>
+
+    <div styleName="body">
+        <!-- The sidebar keeps its width: the content pane is the one that
+             stretches, so the sidebar is the pane the divider sizes. It is
+             held between 140 and 380, so a drag cannot squeeze it away or
+             let it eat the window. -->
+        <SplitPanel outlet="sidebarSplit" orientation="horizontal"
+                    flex="bottom_right" staticPaneLength="220"
+                    minStaticPaneLength="140" maxStaticPaneLength="380"
+                    action="sidebarResized">
+
+            <nav slot="topLeft" styleName="sidebar">
+                <h2 styleName="heading">Folders</h2>
+                <ul styleName="folders">
+                    <li styleName="folder is-current">Inbox <span styleName="count">24</span></li>
+                    <li styleName="folder">Starred <span styleName="count">3</span></li>
+                    <li styleName="folder">Sent</li>
+                    <li styleName="folder">Drafts <span styleName="count">1</span></li>
+                    <li styleName="folder">Archive</li>
+                    <li styleName="folder">Bin</li>
+                </ul>
+
+                <h2 styleName="heading">Tags</h2>
+                <ul styleName="folders">
+                    <li styleName="folder">Work</li>
+                    <li styleName="folder">Receipts</li>
+                    <li styleName="folder">Travel</li>
+                </ul>
+            </nav>
+
+            <div slot="bottomRight" styleName="content">
+                <!-- And inside it, the same thing the other way up: the list
+                     stretches, so the preview under it is what the divider
+                     sizes. -->
+                <SplitPanel outlet="previewSplit" orientation="vertical"
+                            flex="top_left" staticPaneLength="240"
+                            minStaticPaneLength="80" action="previewResized">
+
+                    <div slot="topLeft" styleName="list">
+                        <h2 styleName="heading">Inbox</h2>
+                        <ol styleName="messages">
+                            <li styleName="message is-current">
+                                <span styleName="from">Ada Lovelace</span>
+                                <span styleName="subject">The engine weaves algebraic patterns</span>
+                            </li>
+                            <li styleName="message">
+                                <span styleName="from">Grace Hopper</span>
+                                <span styleName="subject">About that moth in relay 70</span>
+                            </li>
+                            <li styleName="message">
+                                <span styleName="from">Alan Turing</span>
+                                <span styleName="subject">On computable numbers — a draft</span>
+                            </li>
+                            <li styleName="message">
+                                <span styleName="from">Katherine Johnson</span>
+                                <span styleName="subject">Checked the figures again</span>
+                            </li>
+                            <li styleName="message">
+                                <span styleName="from">Margaret Hamilton</span>
+                                <span styleName="subject">Priority display, 1202</span>
+                            </li>
+                            <li styleName="message">
+                                <span styleName="from">Barbara Liskov</span>
+                                <span styleName="subject">A note on substitution</span>
+                            </li>
+                            <li styleName="message">
+                                <span styleName="from">Radia Perlman</span>
+                                <span styleName="subject">Spanning trees, and why</span>
+                            </li>
+                            <li styleName="message">
+                                <span styleName="from">Frances Allen</span>
+                                <span styleName="subject">The optimiser is ready</span>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <article slot="bottomRight" styleName="preview">
+                        <h2 styleName="heading">The engine weaves algebraic patterns</h2>
+                        <p styleName="meta">Ada Lovelace — to me</p>
+                        <p>
+                            The Analytical Engine weaves algebraic patterns just as the
+                            Jacquard loom weaves flowers and leaves. Drag the line above
+                            this pane to give the note more room, or the one down the
+                            middle to widen the folders.
+                        </p>
+                        <p>
+                            Each pane scrolls what it holds rather than pushing the window
+                            wider, which is what lets the divider keep moving once a pane
+                            is full.
+                        </p>
+                    </article>
+                </SplitPanel>
+            </div>
+        </SplitPanel>
+    </div>
+
+    <footer styleName="status">
+        sidebar={sidebarWidth}px preview={previewHeight}px — {note}
+    </footer>
+</div>
+
+<style>
+    /* The application fills the window: a split panel divides the room it is
+       given, so it needs to be given some. */
+    :global(html),
+    :global(body) {
+        height: 100%;
+        margin: 0;
+    }
+
+    :global(body) {
+        font-family: var(--font-family);
+        color: var(--text-color);
+        background: var(--view-background);
+    }
+
+    :global(#app) {
+        height: 100%;
+    }
+
+    .app {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    /* The bar and the status line keep their height; the panes take the rest. */
+    .bar {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem 0.9rem;
+        border-bottom: 1px solid var(--default-border-color);
+        background: var(--light-view-background);
+    }
+
+    .title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+    }
+
+    .spacer {
+        flex: 1;
+    }
+
+    .label {
+        font-size: 0.85rem;
+        color: var(--secondary-foreground, var(--text-color));
+    }
+
+    /* min-height: 0 is what lets the panes shrink inside this column — a flex
+       item will not go below its content otherwise, and the panels would grow
+       the page instead of scrolling inside themselves. */
+    .body {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .sidebar {
+        padding: 0.75rem 0.9rem;
+        background: var(--dark-view-background);
+        height: 100%;
+        box-sizing: border-box;
+    }
+
+    .content {
+        height: 100%;
+    }
+
+    .list,
+    .preview {
+        padding: 0.75rem 1rem;
+        box-sizing: border-box;
+    }
+
+    .preview {
+        background: var(--light-view-background);
+    }
+
+    .heading {
+        margin: 0 0 0.5rem;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--secondary-foreground, var(--text-color));
+    }
+
+    .folders,
+    .messages {
+        list-style: none;
+        margin: 0 0 1.2rem;
+        padding: 0;
+    }
+
+    .folder {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.3rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.92rem;
+        white-space: nowrap;
+    }
+
+    .count {
+        color: var(--secondary-foreground, var(--text-color));
+        font-variant-numeric: tabular-nums;
+    }
+
+    .message {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        padding: 0.4rem 0.5rem;
+        border-radius: 4px;
+        border-bottom: 1px solid var(--default-border-color);
+    }
+
+    .from {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .subject {
+        font-size: 0.88rem;
+        color: var(--secondary-foreground, var(--text-color));
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .is-current {
+        background: var(--accent-color);
+        color: #ffffff;
+    }
+
+    .is-current .count,
+    .is-current .subject {
+        color: rgba(255, 255, 255, 0.85);
+    }
+
+    .status {
+        flex: 0 0 auto;
+        padding: 0.4rem 0.9rem;
+        border-top: 1px solid var(--default-border-color);
+        background: var(--light-view-background);
+        font-family: ui-monospace, monospace;
+        font-size: 0.8rem;
+        color: var(--secondary-foreground, var(--text-color));
+    }
+</style>

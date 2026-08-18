@@ -183,11 +183,19 @@ function patch(parent, dom, oldV, newV, controller) {
   }
 }
 
-/** Children are matched by position; a `key` prop guards against reordering. */
+/**
+ * Children are matched by position, unless any of them carries a `key` — then
+ * they are matched by that instead. See {@link patchKeyedChildren} for why.
+ */
 function patchChildren(parent, oldChildren = [], newChildren = [], controller) {
   const olds = flatten(oldChildren);
   const news = flatten(newChildren);
   const nodes = [...parent.childNodes];
+
+  if (anyKeyed(olds) || anyKeyed(news)) {
+    patchKeyedChildren(parent, olds, news, nodes, controller);
+    return;
+  }
 
   const count = Math.max(olds.length, news.length);
   for (let i = 0; i < count; i++) {
@@ -205,6 +213,109 @@ function patchChildren(parent, oldChildren = [], newChildren = [], controller) {
     }
     patch(parent, node, oldV, newV, controller);
   }
+}
+
+/** The key a vnode was drawn with, or undefined for one drawn without. */
+function keyOf(vnode) {
+  if (vnode == null || typeof vnode !== "object") return undefined;
+  return vnode.props?.key;
+}
+
+function anyKeyed(children) {
+  return children.some((child) => keyOf(child) !== undefined);
+}
+
+/**
+ * Match children by their key rather than by where they sit.
+ *
+ * What this is for is a list that loses one from the middle. Matched by
+ * position, every child after the gone one is patched against its neighbour's
+ * vnode — and since a differing key makes two vnodes different kinds, each is
+ * torn down and built again. The DOM survives that, but nothing else does: a
+ * child that is a component gets a *new instance*, so whatever it was holding
+ * goes with the old one. A snackbar's remaining bars had their timers restarted
+ * and the references their manager held went stale; a list row would lose the
+ * same way.
+ *
+ * Keyed, a child is found by name wherever it was, patched in place, and moved
+ * if the order changed. Its instance and its state come through untouched.
+ *
+ * Children drawn without a key are still matched among themselves by position,
+ * so a list of keyed rows beside a heading that has none behaves as it always
+ * did.
+ */
+function patchKeyedChildren(parent, olds, news, nodes, controller) {
+  const byKey = new Map();
+  const unkeyed = [];
+
+  for (let i = 0; i < olds.length; i++) {
+    const entry = { vnode: olds[i], node: nodes[i] };
+    const key = keyOf(olds[i]);
+    // First one wins: two children under one key is the caller's mistake, and
+    // the second is treated as new rather than stealing the first's node.
+    if (key === undefined) unkeyed.push(entry);
+    else if (!byKey.has(key)) byKey.set(key, entry);
+  }
+
+  const reused = new Set();
+  let unkeyedAt = 0;
+  // The node the next child goes after; null while nothing has been placed, so
+  // the first one goes to the front.
+  let after = null;
+
+  for (const newV of news) {
+    if (newV === undefined) continue;
+
+    const key = keyOf(newV);
+    let match;
+    if (key === undefined) {
+      match = unkeyed[unkeyedAt++];
+    } else {
+      match = byKey.get(key);
+      byKey.delete(key);
+    }
+
+    let node;
+    if (match?.node && sameKind(match.vnode, newV)) {
+      reused.add(match);
+      node = patch(parent, match.node, match.vnode, newV, controller);
+    } else {
+      // No counterpart, or one too different to patch into: draw it fresh. A
+      // match that cannot be patched is left to be discarded with the rest.
+      node = render(newV, controller, nsOf(parent));
+    }
+
+    after = placeAfter(parent, node, after);
+  }
+
+  // Whatever no new child claimed is gone from the drawing, so it goes from
+  // the document.
+  for (const entry of byKey.values()) if (entry.node) discard(entry.node);
+  for (const entry of unkeyed) {
+    if (!reused.has(entry) && entry.node) discard(entry.node);
+  }
+}
+
+/**
+ * Put `node` directly after `after` — or at the front when there is nothing to
+ * follow — and say what the next child should follow in turn.
+ *
+ * A fragment is emptied into the parent as it is inserted, so what it put there
+ * is taken down first: after the insertion the fragment itself holds nothing,
+ * and the last of its children is what the next one follows.
+ */
+function placeAfter(parent, node, after) {
+  const inserted =
+    node?.nodeType === Node.DOCUMENT_FRAGMENT_NODE
+      ? [...node.childNodes]
+      : [node];
+
+  const before = after ? after.nextSibling : (parent.childNodes[0] ?? null);
+  // Already where it belongs: moving it would take it out of the document and
+  // put it back, which is a detach and re-attach for everything beneath it.
+  if (node !== before) parent.insertBefore(node, before ?? null);
+
+  return inserted[inserted.length - 1] ?? after;
 }
 
 /** Add, update and remove props, undoing anything the previous draw set. */

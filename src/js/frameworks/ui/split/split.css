@@ -1,0 +1,118 @@
+/*
+ * Ported from GWT Mosaic: client/components/resources/splitpanel/style.css.
+ *
+ * The class names are the Java version's, and all three themes already carry
+ * `--splitter-background` and `--splitter-hover` for them.
+ *
+ * One shape differs. The Java version sizes the application's own widgets — it
+ * writes `flex`, `width` and `height` onto whatever was put in each pane. Here
+ * each pane is a wrapper the panel draws, and that is what gets sized: a
+ * component sizes what it drew, and an application's markup is left as it was
+ * written. `.v-SplitPanel > *` in the original therefore becomes the two panes
+ * and the divider, which is what it always meant.
+ */
+.v-SplitPanel {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  display: flex;
+}
+
+.v-SplitPanel.row {
+  flex-direction: row;
+}
+
+.v-SplitPanel.column {
+  flex-direction: column;
+}
+
+/* A pane scrolls its own content rather than pushing the panel wider, and may
+   be shrunk below what it holds — a flex item refuses to by default, which is
+   what would stop the divider moving once a pane was full. */
+.v-SplitPanel-pane {
+  overflow: auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* --- the divider ---------------------------------------------------------- */
+
+.v-SplitDivider {
+  z-index: 10;
+  display: flex;
+  min-height: 1px;
+  min-width: 0;
+  box-sizing: border-box;
+  position: relative;
+  pointer-events: all;
+  overflow: visible;
+  background: var(--splitter-background, #fff) none;
+  /* It never scrolls: the rule above is the panes', and a divider that took it
+     would show a scrollbar in place of its sash. */
+  flex: none;
+}
+
+.v-SplitPanel.row > .v-SplitDivider {
+  cursor: col-resize;
+  border-left: 1px solid var(--default-border-color, #e1e3e5);
+  border-right: 1px solid var(--default-border-color, #e1e3e5);
+}
+
+.v-SplitPanel.row > .v-SplitDivider.thin {
+  border-right-width: 0;
+}
+
+.v-SplitPanel.column > .v-SplitDivider {
+  cursor: ns-resize;
+  border-top: 1px solid var(--default-border-color, #e1e3e5);
+  border-bottom: 1px solid var(--default-border-color, #e1e3e5);
+}
+
+.v-SplitPanel.column > .v-SplitDivider.thin {
+  border-bottom: none;
+}
+
+/* A divider that cannot be dragged says so: no grab cursor over a panel whose
+   pane has nowhere to go. `pointer-events: none` is written by the component. */
+.v-SplitDivider.static {
+  cursor: default;
+}
+
+/* The sash — a fixed grey in every theme: it has to read against both a white
+   divider and a dark one, and the ramp moves out from under it. */
+.v-SplitDivider .v-Sash {
+  border-radius: 50%;
+  position: absolute;
+  background: #c8c8c8;
+  display: block;
+}
+
+.v-SplitDivider.thin .v-Sash {
+  display: none;
+}
+
+/* A hairline has no sash to find, so it lights up under the pointer instead. */
+.v-SplitDivider.thin:after {
+  background: var(--splitter-hover);
+  bottom: 0;
+  content: "";
+  left: 0;
+  opacity: 0;
+  position: absolute;
+  width: 2px;
+  top: 0;
+  transition: opacity 0.25s 0.15s;
+}
+
+.v-SplitDivider.thin:not(.is-active):hover:after {
+  opacity: 1;
+}
+
+/* Shut: the divider goes with the pane, so nothing is left of either. */
+.v-SplitPanel.collapsed > .v-SplitDivider {
+  width: 0;
+  height: 0;
+  border: 0;
+  overflow: hidden;
+}

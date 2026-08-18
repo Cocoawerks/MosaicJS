@@ -807,7 +807,10 @@ input,
   box-shadow:
     0 6px 16px -6px rgba(0, 0, 0, 0.3),
     0 1px 3px -1px rgba(0, 0, 0, 0.18);
-  opacity: 1;
+  /* Solid, not the component sheet's 0.97. Said as the variable that
+     sheet reads, not as `opacity` — that property is the fade's, and a
+     theme setting it stops a bar fading out at all. */
+  --snackbar-opacity: 1;
   padding: 6px 8px;
 }
 

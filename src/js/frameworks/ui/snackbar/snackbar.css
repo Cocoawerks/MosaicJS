@@ -68,7 +68,13 @@
   margin: 10px auto;
   border-radius: 4px;
   pointer-events: all;
-  opacity: 0.97;
+  /* How solid a bar sits, which a theme may say for itself — as a variable
+     rather than by restyling `opacity`, because opacity is what the fade below
+     moves. A theme that set the property instead would land after this sheet at
+     the same weight and win, pinning the bar at full strength: the fade would
+     run its 200ms with nothing to see, and the bar would simply vanish at the
+     end of it. Which is what both Aristo themes did. */
+  opacity: var(--snackbar-opacity, 0.97);
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -102,10 +108,15 @@
   transition-delay: 0ms;
 }
 
+/* Going. The duration is `EXIT_DURATION` in SnackBar.js, which is what waits
+   for this before taking the bar off the page — the two have to say the same
+   thing, or the bar is pulled out from under its own fade. Quicker than the
+   half second the Java version faded for, so a press on the close button looks
+   answered at once rather than lingering. */
 .v-SnackBar.v-SnackBar-exit {
   opacity: 0;
   transition-property: opacity;
-  transition-duration: 500ms;
+  transition-duration: 200ms;
   pointer-events: none;
 }
 

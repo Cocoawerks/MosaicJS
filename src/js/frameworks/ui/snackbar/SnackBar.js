@@ -35,8 +35,21 @@ export const SnackBarAnimationState = Object.freeze({
   EXIT: "v-SnackBar-exit",
 });
 
-/** How long the fade out is given before the bar is taken off the page. */
-const EXIT_DURATION = 400;
+/**
+ * How long the fade out is given before the bar is taken off the page.
+ *
+ * It has to match the `transition-duration` on `.v-SnackBar-exit` in
+ * snackbar.css: shorter and the bar is pulled out from under its own fade —
+ * which is what the Java version did, taking it away at 400ms through a 500ms
+ * fade, so it vanished while still a fifth visible.
+ *
+ * Shorter than the Java version's half second, too. That length reads as a
+ * gentle exit for a bar going by itself, but the same fade after a press on the
+ * close button reads as the press not having landed: a dismissal should look
+ * answered at once. What it costs is a little of the fade's softness, which is
+ * worth less than the button feeling dead.
+ */
+const EXIT_DURATION = 200;
 
 /** How long a bar stays, in seconds, unless it is told otherwise. */
 const DEFAULT_LIFESPAN = 5;

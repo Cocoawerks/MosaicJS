@@ -203,6 +203,20 @@ test("an animated bar is placed off screen and then told to come in", async () =
   bars.dispose();
 });
 
+/**
+ * How long the sheet fades a bar out for, read from the stylesheet the
+ * framework injected. The bar is taken off the page by a timer in SnackBar.js,
+ * and the two have to say the same thing — see below.
+ */
+function exitDuration() {
+  const sheets = document.head.childNodes.map((n) => n.textContent).join("\n");
+  const match = /\.v-SnackBar-exit[^{]*\{[^}]*transition-duration:\s*(\d+)ms/.exec(
+    sheets,
+  );
+  assert.ok(match, "the sheet states how long a bar fades for");
+  return Number(match[1]);
+}
+
 test("and it fades before it goes, keeping its place until it has", async () => {
   const bars = manager(SnackBarPosition.BOTTOM_RIGHT, { animated: true });
   bars.toast("Saved", "default", { lifespan: "-1" });
@@ -212,10 +226,35 @@ test("and it fades before it goes, keeping its place until it has", async () => 
   assert.ok(classesOf(barsOn(bars)[0]).includes("v-SnackBar-exit"));
   assert.equal(bars.count, 1, "still on the page while it fades");
 
-  await wait(460);
+  await wait(exitDuration() + 60);
   assert.equal(bars.count, 0);
 
   bars.dispose();
+});
+
+test("it is not pulled out from under its own fade", async () => {
+  const fade = exitDuration();
+  const bars = manager(SnackBarPosition.BOTTOM_RIGHT, { animated: true });
+  bars.toast("Saved", "default", { lifespan: "-1" });
+  await wait(60);
+
+  bars.bars[0].view.close();
+
+  // Still there most of the way through the fade. The Java version took its
+  // bars away at 400ms through a 500ms fade, so one vanished while still a
+  // fifth visible; what keeps that from coming back is these two numbers
+  // agreeing, and only a test can see that they do.
+  await wait(Math.max(0, fade - 60));
+  assert.equal(bars.count, 1, "gone before the fade it was given had finished");
+
+  bars.dispose();
+});
+
+test("a dismissal is answered promptly", async () => {
+  // Long enough to be a fade, short enough that a press on the close button
+  // does not read as having missed.
+  const fade = exitDuration();
+  assert.ok(fade >= 100 && fade <= 250, `a ${fade}ms fade after a press`);
 });
 
 test("closing twice closes it once", async () => {
@@ -229,4 +268,46 @@ test("closing twice closes it once", async () => {
   assert.deepEqual(closed, ["gone"]);
 
   bars.dispose();
+});
+
+// --- several bars at once ----------------------------------------------------
+//
+// A bar leaving redraws the layer's whole list. What keeps the others intact is
+// that the layer draws them keyed, so the patcher finds each by name rather
+// than by where it sat — without that, every bar after the one that went was
+// rebuilt: a new component, a restarted lifespan, and a manager left holding a
+// reference to the instance that had been replaced.
+
+test("a bar leaving does not disturb the bars around it", async () => {
+  const bars = manager();
+  bars.toast("one");
+  bars.toast("two");
+  bars.toast("three");
+  await wait(0);
+
+  const [first, second, third] = bars.bars.map((entry) => entry.view);
+
+  first.close(true);
+  await wait(0);
+
+  assert.equal(bars.count, 2);
+  // The same two components, not rebuilt copies of them.
+  assert.deepEqual(
+    bars.bars.map((entry) => entry.view),
+    [second, third],
+  );
+});
+
+test("closing them all leaves none behind", async () => {
+  const bars = manager();
+  bars.toast("one");
+  bars.toast("two");
+  bars.toast("three");
+  await wait(0);
+
+  bars.closeAll();
+  await wait(500);
+
+  assert.equal(bars.count, 0);
+  assert.equal(barsOn(bars).length, 0);
 });

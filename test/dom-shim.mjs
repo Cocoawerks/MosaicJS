@@ -74,7 +74,28 @@ class N {
   }
 }
 
-class Text extends N {
+/**
+ * A node that holds no children — text and comments. The browser refuses to
+ * append to one (HierarchyRequestError), and so does this: a runtime bug that
+ * reaches for the wrong parent has to fail here too, or it only shows up in a
+ * browser. One did, patching a fragment's children into the comment standing
+ * in for an absent sibling.
+ */
+class Leaf extends N {
+  appendChild() {
+    throw new TypeError(
+      `appendChild on a ${this.constructor.name.toLowerCase()} node: it holds no children`,
+    );
+  }
+
+  insertBefore() {
+    throw new TypeError(
+      `insertBefore on a ${this.constructor.name.toLowerCase()} node: it holds no children`,
+    );
+  }
+}
+
+class Text extends Leaf {
   nodeType = N.TEXT_NODE;
 
   constructor(data) {
@@ -226,6 +247,11 @@ class Element extends N {
     }
   }
 
+  /** Press it, as `HTMLElement.click()` does — the event bubbles like any other. */
+  click() {
+    this.dispatchEvent({ type: "click" });
+  }
+
   focus() {
     if (document.activeElement === this) return;
     document.activeElement?.blur();
@@ -290,13 +316,20 @@ class Element extends N {
 }
 
 /**
- * Supports `tag`, `.class`, `[attr]` and any of them together — all the tests
- * need, and all the components ask of `closest()`.
+ * Supports `tag`, `.class`, `[attr]`, `:not(...)` and any of them together —
+ * all the tests need, and all the components ask of `closest()`.
  */
 function matches(el, sel) {
-  const m = /^([a-z0-9-]+)?((?:\.[\w-]+)*)?(?:\[([^\]=]+)\])?$/i.exec(
-    sel.trim(),
-  );
+  // `:not(...)` is peeled off first and checked as its own selector, so the
+  // part left is the plain compound the regex below understands. A dialog
+  // looks for `.v-Button.primary:not(.is-disabled)`.
+  let rest = sel.trim();
+  for (const negation of rest.matchAll(/:not\(([^)]*)\)/g)) {
+    if (matches(el, negation[1])) return false;
+  }
+  rest = rest.replace(/:not\([^)]*\)/g, "");
+
+  const m = /^([a-z0-9-]+)?((?:\.[\w-]+)*)?(?:\[([^\]=]+)\])?$/i.exec(rest);
   if (!m) return false;
   const [, tag, classes, attr] = m;
   if (tag && el.tagName !== tag) return false;

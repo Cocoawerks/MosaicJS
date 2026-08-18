@@ -21,6 +21,7 @@ import "./dom-shim.mjs";
 const {
   mount,
   h,
+  Fragment,
   refresh,
   Component,
   MosaicApplication,
@@ -1218,4 +1219,208 @@ test("what is assigned to a component before it is on the page is still drawn", 
   );
 
   assert.equal(host.textContent, "7");
+});
+
+// --- keyed children ----------------------------------------------------------
+//
+// Children are matched by position unless they carry a `key`. What keys are for
+// is a list that loses one from the middle: matched by position, every child
+// after the gone one would be patched against its neighbour's vnode and, since
+// a differing key makes two vnodes different kinds, torn down and built again.
+// A child that is a component would come back as a new instance, and whatever
+// it was holding would go with the old one.
+
+/** A component that counts how many of it have ever been built. */
+class Counted extends Component {
+  static built = 0;
+
+  constructor(controller) {
+    super(controller);
+    this.serial = ++Counted.built;
+  }
+
+  draw() {
+    return h("li", {}, String(this.props.label ?? ""));
+  }
+}
+
+/** A list of keyed rows, drawn from whatever `rows` the controller holds. */
+class KeyedList extends Component {
+  constructor() {
+    super();
+    this.rows = [];
+  }
+
+  draw() {
+    return h(
+      "ul",
+      {},
+      this.rows.map((row) => h(Counted, { key: row, label: row })),
+    );
+  }
+}
+
+/** Mount one, and give back the ways of asking what it did. */
+function keyedList(rows) {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+
+  const view = mount(KeyedList, host, {}).view;
+  view.rows = rows;
+  view.needsDisplay();
+
+  const list = () => host.childNodes[0];
+  return {
+    view,
+    labels: () => [...list().childNodes].map((n) => n.textContent),
+    // The instance behind each row, which is what a rebuild would replace.
+    instances: () => [...list().childNodes].map((n) => n.__ibView),
+    nodes: () => [...list().childNodes],
+  };
+}
+
+test("a keyed row taken from the middle leaves the rest as they were", () => {
+  const list = keyedList(["a", "b", "c"]);
+  const before = list.instances();
+  const nodes = list.nodes();
+
+  list.view.rows = ["a", "c"];
+  list.view.needsDisplay();
+
+  assert.deepEqual(list.labels(), ["a", "c"]);
+  // The same components, and the same DOM: neither was rebuilt.
+  assert.deepEqual(list.instances(), [before[0], before[2]]);
+  assert.deepEqual(list.nodes(), [nodes[0], nodes[2]]);
+});
+
+test("a keyed row taken from the front leaves the rest as they were", () => {
+  const list = keyedList(["a", "b", "c"]);
+  const before = list.instances();
+
+  list.view.rows = ["b", "c"];
+  list.view.needsDisplay();
+
+  assert.deepEqual(list.labels(), ["b", "c"]);
+  assert.deepEqual(list.instances(), [before[1], before[2]]);
+});
+
+test("reordering keyed rows moves them rather than rebuilding them", () => {
+  const list = keyedList(["a", "b", "c"]);
+  const before = list.instances();
+
+  list.view.rows = ["c", "a", "b"];
+  list.view.needsDisplay();
+
+  assert.deepEqual(list.labels(), ["c", "a", "b"]);
+  assert.deepEqual(list.instances(), [before[2], before[0], before[1]]);
+});
+
+test("a keyed row added to the middle builds only itself", () => {
+  const list = keyedList(["a", "c"]);
+  const before = list.instances();
+  const built = Counted.built;
+
+  list.view.rows = ["a", "b", "c"];
+  list.view.needsDisplay();
+
+  assert.deepEqual(list.labels(), ["a", "b", "c"]);
+  assert.equal(Counted.built, built + 1);
+  assert.equal(list.instances()[0], before[0]);
+  assert.equal(list.instances()[2], before[1]);
+});
+
+test("emptying a keyed list takes every row off the page", () => {
+  const list = keyedList(["a", "b", "c"]);
+
+  list.view.rows = [];
+  list.view.needsDisplay();
+
+  assert.deepEqual(list.labels(), []);
+});
+
+test("children with no key are still matched by where they sit", () => {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+
+  class Mixed extends Component {
+    constructor() {
+      super();
+      this.rows = ["a", "b"];
+    }
+
+    // A heading with no key beside rows that have one — the ordinary shape of
+    // a list with something above it.
+    draw() {
+      return h(
+        "div",
+        {},
+        h("h2", {}, "Heading"),
+        this.rows.map((row) => h("span", { key: row }, row)),
+      );
+    }
+  }
+
+  const view = mount(Mixed, host, {}).view;
+  const texts = () =>
+    [...host.childNodes[0].childNodes].map((n) => n.textContent);
+  assert.deepEqual(texts(), ["Heading", "a", "b"]);
+
+  view.rows = ["b"];
+  view.needsDisplay();
+  assert.deepEqual(texts(), ["Heading", "b"]);
+});
+
+// --- fragments among siblings ------------------------------------------------
+
+test("a fragment beside a blank sibling redraws without reaching for the wrong node", () => {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+
+  // The shape a snackbar draws: an icon that may be absent, then content that
+  // is a fragment. A fragment left whole would be one child standing for the
+  // two nodes it drew, so the patch would line the fragment up against the
+  // node before it — a comment, or a text node — and try to append there.
+  class Bar extends Component {
+    constructor() {
+      super();
+      this.label = "one";
+      this.icon = null;
+    }
+
+    draw() {
+      return h(
+        "div",
+        {},
+        this.icon,
+        h(Fragment, null, h("span", {}, this.label), h("b", {}, "!")),
+      );
+    }
+  }
+
+  const view = mount(Bar, host, {}).view;
+  const drawn = () =>
+    [...host.childNodes[0].childNodes].map((n) => n.textContent);
+
+  assert.deepEqual(drawn(), ["one", "!"]);
+
+  view.label = "two";
+  view.needsDisplay();
+  assert.deepEqual(drawn(), ["two", "!"]);
+});
+
+test("a fragment's children are levelled into the list around it", () => {
+  const vnode = h(
+    "div",
+    {},
+    h("i", {}, "before"),
+    h(Fragment, null, h("span", {}, "a"), h("span", {}, "b")),
+    h("i", {}, "after"),
+  );
+
+  // Four children, not three: what the fragment holds belongs to the div, so
+  // the list has one entry per node the div will end up with.
+  assert.deepEqual(
+    vnode.children.map((c) => c.type),
+    ["i", "span", "span", "i"],
+  );
 });

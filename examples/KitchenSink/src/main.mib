@@ -217,6 +217,72 @@
     </section>
 
     <section styleName="section">
+        <h2 styleName="heading">DialogBox</h2>
+        <p styleName="note">
+            A native dialog, modal: the page behind it is shut out until it is
+            answered. This one is an application's own — SettingsDialog.mib holds its
+            markup and SettingsDialogController.js beside it holds its behaviour, the
+            same pairing the popover above has. Escape and the X both close it, and
+            both are asked first: type in the field and the dialog refuses once
+            before letting go. Enter presses Save, the way Return submits a form.
+        </p>
+
+        <div styleName="row centred">
+            <Button text="Settings…" outlet="settingsButton" action="showSettings"/>
+        </div>
+
+        <SettingsDialog outlet="settingsDialog"/>
+
+        <p styleName="values">saved={saved}</p>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">SnackBar and Toast</h2>
+        <p styleName="note">
+            A bar that appears over the page to say something happened, and takes
+            itself away again. A Toast is the common case — one line of text, no
+            close button, gone in a few seconds. A SnackBar is the general one: it
+            holds whatever it is given, so it can carry a button and wait to be
+            answered. A bar never puts itself up; the page shows it through a
+            SnackBarManager, which stacks it with whatever else is already there.
+        </p>
+
+        <div styleName="row centred">
+            <Button text="Say something" action="saySomething"/>
+            <Button text="Saved" intent="success" action="saySaved"/>
+            <Button text="Careful" intent="warning" action="sayCareful"/>
+            <Button text="That failed" intent="danger" action="sayFailed"/>
+        </div>
+
+        <p styleName="note">
+            The bar below is the application's own: UndoBar.js, a SnackBar that
+            says what it holds and carries the button that answers it. It stays
+            until it is answered rather than going on its own, which is the whole
+            difference between a SnackBar and a Toast.
+        </p>
+
+        <div styleName="row centred">
+            <Button text="Delete a message" action="showUndoBar"/>
+
+            <!-- Which corner the stack is pinned to. The newest bar sits nearest
+                 that edge: at the top of a top stack, the end of a bottom one. -->
+            <ComboBox outlet="barPositionCombo" action="barPositionChanged"
+                      value="bottom_right">
+                <Option text="Bottom right" value="bottom_right"/>
+                <Option text="Bottom center" value="bottom_center"/>
+                <Option text="Bottom left" value="bottom_left"/>
+                <Option text="Top right" value="top_right"/>
+                <Option text="Top center" value="top_center"/>
+                <Option text="Top left" value="top_left"/>
+            </ComboBox>
+
+            <Button text="Close them all" action="closeAllBars"/>
+        </div>
+
+        <p styleName="values">bars={barCount} where={barWhere}</p>
+    </section>
+
+    <section styleName="section">
         <h2 styleName="heading">ColorWell</h2>
         <p styleName="note">
             A button whose face is the colour it holds. Pressing it opens a colour

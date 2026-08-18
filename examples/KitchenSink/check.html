@@ -1138,6 +1138,323 @@
       );
       chooseWhere("bottom_center");
 
+      // --- DialogBox ----------------------------------------------------------
+      // A dialog of the application's own: SettingsDialog.mib with
+      // SettingsDialogController.js beside it, which the compiler pairs with it.
+      const dlgBox = section("DialogBox");
+      const dlgButton = dlgBox.querySelector(".v-Button");
+      const dialog = app.querySelector("dialog.v-Dialog");
+      const mask = () => document.querySelector(".v-Dialog-mask");
+      const dlgOpen = () => dialog.hasAttribute("open");
+      const footerButton = (text) =>
+        [...dialog.querySelectorAll("footer .v-Button")].find(
+          (b) => b.textContent.trim() === text,
+        );
+      // The reveal is a timer and then a frame, as it is in the Java version;
+      // the close is a 200ms fade the dialog is kept laid out for. Both are
+      // waited on rather than slept through — how long either takes is the
+      // browser's business, and a fixed delay is a race against it.
+      const until = async (cond, ms = 2000) => {
+        const end = performance.now() + ms;
+        while (!cond() && performance.now() < end)
+          await new Promise((r) => requestAnimationFrame(r));
+        return cond();
+      };
+      const shown = () =>
+        until(() => !dialog.className.includes("is-measuring"));
+      // What matters once it is closed is that it takes no presses. Asked of
+      // `pointer-events` rather than `display`: display is transitioned
+      // discretely, so it stays laid out for the length of the fade, and a fade
+      // the browser never runs would leave it that way.
+      const inert = () =>
+        until(() => getComputedStyle(dialog).pointerEvents === "none");
+
+      check("the dialog drew, from the page's own .mib", dialog !== null);
+      check("it starts closed", !dlgOpen());
+      check(
+        "with its own markup's title in the header",
+        dialog.querySelector("header h2").textContent === "Settings",
+      );
+      check(
+        "and the three regions the port draws",
+        dialog.querySelector("header") !== null &&
+          dialog.querySelector("main") !== null &&
+          dialog.querySelector("footer") !== null,
+      );
+      check(
+        "a child naming no slot went into main",
+        dialog.querySelector("main p") !== null,
+      );
+      check(
+        "and slot=footer put the buttons in the footer",
+        footerButton("Cancel") !== undefined &&
+          footerButton("Save") !== undefined,
+      );
+      check("no mask is up until one is asked for", mask() === null);
+
+      dlgButton.scrollIntoView({ block: "center" });
+      dlgButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await shown();
+
+      check("the page's button shows it", dlgOpen());
+      check(
+        "in the top layer, over everything the page drew",
+        dialog.matches(":modal"),
+      );
+      check(
+        "the shared mask dims what is behind it",
+        mask() !== null && mask().className.includes("is-visible"),
+      );
+      check(
+        "and the dialog's own backdrop is left clear, so nothing dims twice",
+        dialog.className.includes("v-Dialog--no-mask"),
+      );
+      check(
+        "the close button takes first focus",
+        document.activeElement === dialog.querySelector("header .v-Button.close"),
+      );
+      check(
+        "the theme paints its header",
+        getComputedStyle(dialog.querySelector("header")).backgroundColor !==
+          "rgba(0, 0, 0, 0)",
+      );
+      check(
+        "it packed to its content rather than the standard width",
+        dialog.className.includes("v-Dialog--auto"),
+      );
+      check(
+        "the footer's buttons are one size, whatever their labels",
+        footerButton("Cancel").getBoundingClientRect().width ===
+          footerButton("Save").getBoundingClientRect().width,
+      );
+
+      // Nothing typed, so the approver has nothing to warn about.
+      dialog.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      await until(() => !dlgOpen());
+      check("Escape closes a dialog with nothing in it", !dlgOpen());
+      check(
+        "and the mask goes with it",
+        await until(() => !mask().className.includes("is-visible")),
+      );
+      // A closed dialog stays in the page — it is drawn where its markup sits
+      // rather than added and removed. So it has to stop being a box: one still
+      // laid out is invisible at opacity 0 and takes every press meant for what
+      // is behind it, which is the middle of the page.
+      check("a closed dialog takes no presses", await inert());
+      const middle = document.elementFromPoint(
+        Math.round(window.innerWidth / 2),
+        Math.round(window.innerHeight / 2),
+      );
+      check(
+        `so the middle of the page takes presses again (${middle?.tagName.toLowerCase()})`,
+        middle !== null && !dialog.contains(middle) && middle !== dialog,
+      );
+
+      // Something typed: the dialog's own controller refuses the first close.
+      dlgButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await shown();
+      const nameInput = dialog.querySelector("main input");
+      nameInput.value = "Ada";
+      nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+      footerButton("Cancel").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      await new Promise((r) => setTimeout(r, 250));
+      check("a close is put to the dialog's approver, which can refuse", dlgOpen());
+      check(
+        "which says why, in its own words",
+        dialog.textContent.includes("close again to discard"),
+      );
+
+      footerButton("Cancel").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      await until(() => !dlgOpen());
+      check("and lets the second one through", !dlgOpen());
+      check(
+        "a refused close told the page nothing",
+        app.textContent.includes("saved=nothing yet"),
+      );
+
+      // Enter presses the primary button, the way Return submits a form.
+      dlgButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await shown();
+      const named = dialog.querySelector("main input");
+      named.value = "Grace";
+      named.dispatchEvent(new Event("input", { bubbles: true }));
+      dialog.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+      await until(() => !dlgOpen());
+      check("Enter presses the primary button", !dlgOpen());
+      check(
+        "which saved, and told the page in the page's own words",
+        app.textContent.includes("saved=Grace") &&
+          last().includes("settings saved: Grace"),
+      );
+      // And the page is left usable, whichever way the dialog was dismissed.
+      check("the dialog is out of the way again", await inert());
+      const centre = document.elementFromPoint(
+        Math.round(window.innerWidth / 2),
+        Math.round(window.innerHeight / 2),
+      );
+      check(
+        `nothing invisible is left over the page (${centre?.tagName.toLowerCase()})`,
+        centre !== null && !dialog.contains(centre) && centre !== dialog,
+      );
+
+      // --- SnackBar and Toast --------------------------------------------------
+      // Bars live on a layer the manager mounts on the body, not inside #app.
+      const snackBox = section("SnackBar and Toast");
+      const snackButton = (text) =>
+        [...snackBox.querySelectorAll(".v-Button")].find(
+          (b) => b.textContent.trim() === text,
+        );
+      const barLayer = () => document.querySelector(".v-SnackBar-container");
+      const barsShowing = () =>
+        barLayer() ? [...barLayer().querySelectorAll(".v-SnackBar")] : [];
+      const barsSettled = () =>
+        until(() =>
+          barsShowing().every((b) => b.className.includes("v-SnackBar-appear")),
+        );
+
+      check("no layer exists until a bar is shown", barLayer() === null);
+
+      snackBox.scrollIntoView({ block: "center" });
+      snackButton("Say something").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      check("showing one puts the layer on the page", barLayer() !== null);
+      check("with the bar on it", barsShowing().length === 1);
+      check(
+        "which is a Toast: a line of text, and no close button",
+        barsShowing()[0].className.includes("v-Toast") &&
+          barsShowing()[0].querySelector(".v-Button.close") === null,
+      );
+      check(
+        "the page counted it",
+        app.textContent.includes("bars=1") &&
+          last().includes("toast: Something happened"),
+      );
+      check(
+        "it comes in rather than appearing",
+        barsShowing()[0].className.includes("v-SnackBar-enter") ||
+          barsShowing()[0].className.includes("v-SnackBar-appear"),
+      );
+      check("and settles where it belongs", await barsSettled());
+
+      // The stack is pinned to a corner, and the newest bar sits nearest it.
+      check(
+        "the layer is pinned to the corner the manager was made with",
+        barLayer().className.includes("bottom") &&
+          barLayer().className.includes("right"),
+      );
+
+      snackButton("That failed").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      await barsSettled();
+      check("a second bar stacks with the first", barsShowing().length === 2);
+      check(
+        "each wearing the intent it was given",
+        barsShowing()[0].className.includes("intent") === false ||
+          barsShowing()[1].className.includes("danger"),
+      );
+      check(
+        "the theme paints the intent",
+        getComputedStyle(barsShowing()[1]).backgroundColor !== "rgba(0, 0, 0, 0)",
+      );
+
+      // The application's own bar: a SnackBar rather than a Toast, so it holds
+      // a button and waits to be answered.
+      snackButton("Delete a message").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      await barsSettled();
+      const ownBar = barsShowing().find((b) => !b.className.includes("v-Toast"));
+      check("the application's own bar drew", ownBar !== undefined);
+      check(
+        "holding what it was given, and a close button",
+        ownBar.textContent.includes("Message moved to the bin") &&
+          ownBar.querySelector(".v-Button.close") !== null,
+      );
+      const undoButton = [...ownBar.querySelectorAll(".v-Button")].find(
+        (b) => b.textContent.trim() === "Undo",
+      );
+      check("and the button that answers it", undoButton !== undefined);
+
+      // It has to actually fade on its way out. The fade moves `opacity`, and a
+      // theme rule setting that property lands after the component's sheet at
+      // the same weight and wins — which both Aristo themes did, pinning the
+      // bar at full strength so it sat there for the whole fade and then
+      // vanished. Nothing but a real browser resolves a cascade, so this is the
+      // only place it shows.
+      const barOpacity = () => Number(getComputedStyle(ownBar).opacity);
+      const solid = barOpacity();
+      check(`a bar at rest is solid (opacity ${solid})`, solid > 0.9);
+
+      const wasUp = barsShowing().length;
+      undoButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      check(
+        "pressing it reaches the page",
+        last().includes("brought it back"),
+      );
+      check(
+        "and the bar fades rather than vanishing",
+        await until(() => barOpacity() < solid - 0.15, 400),
+      );
+      check(
+        "and the bar goes",
+        await until(() => barsShowing().length === wasUp - 1),
+      );
+      check(
+        "which the page counted",
+        app.textContent.includes(`bars=${wasUp - 1}`),
+      );
+
+      // Another corner means another manager: a manager's position is fixed
+      // when it is made, so the bars already up go with the old one.
+      const barCorner = snackBox.querySelector("select");
+      barCorner.value = "top_center";
+      barCorner.dispatchEvent(new Event("change", { bubbles: true }));
+      check(
+        "choosing another corner reaches the controller",
+        last().includes("snackbars: top_center") &&
+          app.textContent.includes("where=top_center"),
+      );
+
+      snackButton("Saved").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      await barsSettled();
+      check(
+        "and the next bar stacks against it",
+        barLayer().className.includes("top") &&
+          barLayer().className.includes("left") &&
+          barLayer().className.includes("right"),
+      );
+
+      snackButton("Careful").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      await barsSettled();
+      check("bars stack up", barsShowing().length === 2);
+
+      snackButton("Close them all").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      check(
+        "closing them all empties the layer",
+        await until(() => barsShowing().length === 0),
+      );
+      check(
+        "and the page counted down to none",
+        await until(() => app.textContent.includes("bars=0")),
+      );
+
       // --- ColorWell ------------------------------------------------------------
       const wellBox = section("ColorWell");
       const well = wellBox.querySelector(".cw-well");
@@ -2050,6 +2367,90 @@
         "with white on it",
         getComputedStyle(successButton).color === "rgb(255, 255, 255)",
       );
+
+      // --- pop's snackbars ----------------------------------------------------
+      // Pop states no snackbar rules of its own, so its bars used to fall back
+      // to the component sheet's `--default-*` — the face of a push button,
+      // #f6f4f2 on Pop's white page. A notification that has to be looked for.
+      /**
+       * The three channels of a colour, 0-255. Two forms turn up: `rgb(...)`,
+       * which the browser gives for a plain colour, and `color(srgb r g b)`,
+       * which is what a `color-mix()` resolves to — and states its channels as
+       * fractions rather than bytes.
+       */
+      const channels = (colour) => {
+        const scale = colour.trim().startsWith("color(") ? 255 : 1;
+        return colour
+          .match(/[\d.]+/g)
+          .slice(0, 3)
+          .map((n) => Number(n) * scale);
+      };
+      const luminance = (colour) => {
+        const [r, g, b] = channels(colour).map((v) => {
+          const c = v / 255;
+          return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+      /** WCAG contrast, which is what "legible" can be asked as a number. */
+      const contrast = (a, b) => {
+        const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+        return (hi + 0.05) / (lo + 0.05);
+      };
+
+      const snackSection = section("SnackBar and Toast");
+      const barsOnScreen = () => [
+        ...document.querySelectorAll(".v-SnackBar-container .v-SnackBar"),
+      ];
+      /**
+       * Press one of the section's buttons and give back the bar it raised —
+       * the one that was not there before, rather than the last in the list: a
+       * stack pinned to the top puts its newest bar first, and this runs with
+       * the corner left wherever the checks above set it.
+       */
+      const popBar = (label) => {
+        const before = barsOnScreen();
+        [...snackSection.querySelectorAll(".v-Button")]
+          .find((b) => b.textContent.trim() === label)
+          .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        return barsOnScreen().find((bar) => !before.includes(bar));
+      };
+
+      for (const [label, kind] of [
+        ["Say something", "plain"],
+        ["Saved", "success"],
+        ["Careful", "warning"],
+        ["That failed", "danger"],
+      ]) {
+        const bar = popBar(label);
+        const style = getComputedStyle(bar);
+        const ratio = contrast(style.color, style.backgroundColor);
+        check(
+          `pop's ${kind} bar reads against its own surface (${ratio.toFixed(1)}:1, ${style.backgroundColor})`,
+          ratio >= 4.5,
+        );
+      }
+
+      // And the bar has to be findable on the page it floats over: Pop's
+      // workspace is white, so a near-white bar with a pale hairline is not.
+      const popPlain = popBar("Say something");
+      const popStyle = getComputedStyle(popPlain);
+      const behindBar = getComputedStyle(app.querySelector("section"))
+        .backgroundColor;
+      check(
+        `pop's bar is set off from the page behind it (bar ${popStyle.backgroundColor}, page ${behindBar})`,
+        popStyle.boxShadow !== "none" &&
+          contrast(popStyle.borderTopColor, popStyle.backgroundColor) > 1.1,
+      );
+      check(
+        "and is solid rather than the component sheet's 0.97",
+        Number(popStyle.opacity) === 1,
+      );
+
+      [...snackSection.querySelectorAll(".v-Button")]
+        .find((b) => b.textContent.trim() === "Close them all")
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await settle();
 
       wear("aristo");
       await settle();
