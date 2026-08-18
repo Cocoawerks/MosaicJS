@@ -1,20 +1,24 @@
-// SplitPanel, ported from GWT Mosaic (client/components/SplitPanel.java, with
+// SplitView, ported from GWT Mosaic (client/components/SplitPanel.java, with
 // SplitDivider.java and the SplitDivider.ui.xml it binds): two panes with a
 // draggable divider between them.
+//
+// Named for what the framework calls things that hold a view apiece —
+// ListView, OutlineView, TabView, DeckView — rather than for the Java class,
+// which is SplitPanel. References to that name below are to the Java file.
 //
 // One pane is elastic and takes whatever room is left; the other is the static
 // one, and its length is what the divider changes. `flex` says which is which —
 // a sidebar is a static pane on the left with the content flexing beside it:
 //
-//   <SplitPanel orientation="horizontal" flex="bottom_right"
-//               staticPaneLength="220" minStaticPaneLength="120"
-//               maxStaticPaneLength="400" outlet="split">
+//   <SplitView orientation="horizontal" flex="bottom_right"
+//              staticPaneLength="220" minStaticPaneLength="120"
+//              maxStaticPaneLength="400" outlet="split">
 //       <nav slot="topLeft">…the sidebar…</nav>
 //       <section slot="bottomRight">…the content…</section>
-//   </SplitPanel>
+//   </SplitView>
 //
 // The Java version takes its two panes as `@UiChild` slots. There are no slots
-// here, so a child says which pane it belongs to and the panel reads it — the
+// here, so a child says which pane it belongs to and the view reads it — the
 // arrangement TitleBar, DialogBox and MenuItem are read by. A child that names
 // neither goes in the top-left pane, which is the one a single child means.
 import { Component } from "mosaic";
@@ -25,7 +29,7 @@ import "./split.css";
 export { Orientation };
 
 /** Which pane is elastic — `SplitPanelFlex.java`, whose names these are. */
-export const SplitPanelFlex = Object.freeze({
+export const SplitViewFlex = Object.freeze({
   /** The top or left pane stretches; the other one's length is set. */
   TOP_LEFT: "top_left",
   /** The bottom or right pane stretches. */
@@ -75,12 +79,12 @@ function releasePointer(element, pointerId) {
   }
 }
 
-export default class SplitPanel extends Component {
+export default class SplitView extends Component {
   static props = {
     /** Which way the panes sit — one of Orientation. */
     orientation: { type: String, default: Orientation.HORIZONTAL },
-    /** Which pane stretches — one of SplitPanelFlex. */
-    flex: { type: String, default: SplitPanelFlex.TOP_LEFT },
+    /** Which pane stretches — one of SplitViewFlex. */
+    flex: { type: String, default: SplitViewFlex.TOP_LEFT },
     /** How thick the divider is, in pixels. */
     dividerThickness: { type: Number, default: DEFAULT_THICKNESS },
     /**
@@ -107,7 +111,7 @@ export default class SplitPanel extends Component {
      * changes: assigning a setting repaints, and a drag assigns every frame —
      * which would redraw both panes, and everything an application put in
      * them, per frame. The length is written to the panes instead; see
-     * {@link SplitPanel#layout}.
+     * {@link SplitView#layout}.
      */
     this.assignedLength = null;
 
@@ -203,7 +207,7 @@ export default class SplitPanel extends Component {
 
   /** Whether the top-left pane is the elastic one. */
   get flexesTopLeft() {
-    return this.flex !== SplitPanelFlex.BOTTOM_RIGHT;
+    return this.flex !== SplitViewFlex.BOTTOM_RIGHT;
   }
 
   /**
@@ -211,7 +215,7 @@ export default class SplitPanel extends Component {
    *
    * Written to the elements rather than drawn, for the reason `length` is a
    * field — a drag would otherwise redraw everything in both panes per frame.
-   * The panes are the panel's own wrappers, so nothing here reaches into what
+   * The panes are the view's own wrappers, so nothing here reaches into what
    * an application put inside them.
    */
   layout() {
@@ -314,7 +318,7 @@ export default class SplitPanel extends Component {
   }
 
   /**
-   * The children belonging to one pane. `"topLeft"` is the default, so a panel
+   * The children belonging to one pane. `"topLeft"` is the default, so a view
    * given one child puts it in the pane that comes first.
    */
   slot(name) {
@@ -325,9 +329,9 @@ export default class SplitPanel extends Component {
 
   // --- drawing ---------------------------------------------------------------
 
-  panelClasses() {
+  viewClasses() {
     return [
-      "v-SplitPanel",
+      "v-SplitView",
       this.horizontal ? "row" : "column",
       this.collapsed ? "collapsed" : null,
     ];
@@ -342,7 +346,7 @@ export default class SplitPanel extends Component {
 
   /**
    * The divider's own size, and the sash's within it. Drawn rather than
-   * written: unlike the panes' lengths these change only when the panel is
+   * written: unlike the panes' lengths these change only when the view is
    * told something, never during a drag.
    */
   dividerStyle() {
@@ -368,9 +372,9 @@ export default class SplitPanel extends Component {
 
   draw() {
     return (
-      <div styleName={this.panelClasses()}>
+      <div styleName={this.viewClasses()}>
         <div
-          styleName="v-SplitPanel-pane"
+          styleName="v-SplitView-pane"
           ref={(node) => (this.topLeftNode = node)}
         >
           {this.slot("topLeft")}
@@ -391,7 +395,7 @@ export default class SplitPanel extends Component {
         </div>
 
         <div
-          styleName="v-SplitPanel-pane"
+          styleName="v-SplitView-pane"
           ref={(node) => (this.bottomRightNode = node)}
         >
           {this.slot("bottomRight")}

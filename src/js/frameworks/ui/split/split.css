@@ -6,12 +6,12 @@
  *
  * One shape differs. The Java version sizes the application's own widgets — it
  * writes `flex`, `width` and `height` onto whatever was put in each pane. Here
- * each pane is a wrapper the panel draws, and that is what gets sized: a
+ * each pane is a wrapper the view draws, and that is what gets sized: a
  * component sizes what it drew, and an application's markup is left as it was
- * written. `.v-SplitPanel > *` in the original therefore becomes the two panes
+ * written. `.v-SplitView > *` in the original therefore becomes the two panes
  * and the divider, which is what it always meant.
  */
-.v-SplitPanel {
+.v-SplitView {
   overflow: hidden;
   width: 100%;
   height: 100%;
@@ -19,18 +19,18 @@
   display: flex;
 }
 
-.v-SplitPanel.row {
+.v-SplitView.row {
   flex-direction: row;
 }
 
-.v-SplitPanel.column {
+.v-SplitView.column {
   flex-direction: column;
 }
 
-/* A pane scrolls its own content rather than pushing the panel wider, and may
+/* A pane scrolls its own content rather than pushing the view wider, and may
    be shrunk below what it holds — a flex item refuses to by default, which is
    what would stop the divider moving once a pane was full. */
-.v-SplitPanel-pane {
+.v-SplitView-pane {
   overflow: auto;
   min-width: 0;
   min-height: 0;
@@ -53,27 +53,27 @@
   flex: none;
 }
 
-.v-SplitPanel.row > .v-SplitDivider {
+.v-SplitView.row > .v-SplitDivider {
   cursor: col-resize;
   border-left: 1px solid var(--default-border-color, #e1e3e5);
   border-right: 1px solid var(--default-border-color, #e1e3e5);
 }
 
-.v-SplitPanel.row > .v-SplitDivider.thin {
+.v-SplitView.row > .v-SplitDivider.thin {
   border-right-width: 0;
 }
 
-.v-SplitPanel.column > .v-SplitDivider {
+.v-SplitView.column > .v-SplitDivider {
   cursor: ns-resize;
   border-top: 1px solid var(--default-border-color, #e1e3e5);
   border-bottom: 1px solid var(--default-border-color, #e1e3e5);
 }
 
-.v-SplitPanel.column > .v-SplitDivider.thin {
+.v-SplitView.column > .v-SplitDivider.thin {
   border-bottom: none;
 }
 
-/* A divider that cannot be dragged says so: no grab cursor over a panel whose
+/* A divider that cannot be dragged says so: no grab cursor over a view whose
    pane has nowhere to go. `pointer-events: none` is written by the component. */
 .v-SplitDivider.static {
   cursor: default;
@@ -110,7 +110,7 @@
 }
 
 /* Shut: the divider goes with the pane, so nothing is left of either. */
-.v-SplitPanel.collapsed > .v-SplitDivider {
+.v-SplitView.collapsed > .v-SplitDivider {
   width: 0;
   height: 0;
   border: 0;

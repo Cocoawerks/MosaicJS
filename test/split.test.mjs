@@ -1,4 +1,4 @@
-// SplitPanel, ported from GWT Mosaic.
+// SplitView, ported from GWT Mosaic.
 // Build first: `mosaic compile examples/Counter_component --keep-modules` — these
 // tests import the compiled modules themselves, which a plain compile prunes
 // once they are in the bundle.
@@ -13,7 +13,7 @@ import "./dom-shim.mjs";
 const { mount, h } = await import(
   "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
 );
-const { SplitPanel, SplitPanelFlex, Orientation } = await import(
+const { SplitView, SplitViewFlex, Orientation } = await import(
   "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
 );
 
@@ -22,7 +22,7 @@ function make(props = {}) {
   const host = document.createElement("div");
   document.body.appendChild(host);
 
-  const view = mount(SplitPanel, host, {
+  const view = mount(SplitView, host, {
     ...props,
     children: [
       h("nav", { slot: "topLeft" }, "sidebar"),
@@ -67,10 +67,10 @@ function drag(panel, { dx = 0, dy = 0 } = {}) {
 test("draws the ported markup: two panes with a divider between them", () => {
   const { el, topLeft, divider, bottomRight } = make();
 
-  assert.deepEqual(classesOf(el), ["v-SplitPanel", "row"]);
-  assert.ok(classesOf(topLeft).includes("v-SplitPanel-pane"));
+  assert.deepEqual(classesOf(el), ["v-SplitView", "row"]);
+  assert.ok(classesOf(topLeft).includes("v-SplitView-pane"));
   assert.ok(classesOf(divider).includes("v-SplitDivider"));
-  assert.ok(classesOf(bottomRight).includes("v-SplitPanel-pane"));
+  assert.ok(classesOf(bottomRight).includes("v-SplitView-pane"));
 
   assert.equal(topLeft.childNodes[0].tagName, "nav");
   assert.equal(bottomRight.childNodes[0].tagName, "section");
@@ -82,7 +82,7 @@ test("a child naming no pane goes in the one that comes first", () => {
   document.body.appendChild(host);
   const el = host.childNodes[0] ?? null;
 
-  mount(SplitPanel, host, { children: [h("p", {}, "alone")] });
+  mount(SplitView, host, { children: [h("p", {}, "alone")] });
   const panes = host.childNodes[0].childNodes;
   assert.equal(panes[0].childNodes[0].tagName, "p");
   assert.equal(panes[2].childNodes.length, 0);
@@ -90,9 +90,9 @@ test("a child naming no pane goes in the one that comes first", () => {
 });
 
 test("the orientation says which way the panes sit", () => {
-  assert.deepEqual(classesOf(make().el), ["v-SplitPanel", "row"]);
+  assert.deepEqual(classesOf(make().el), ["v-SplitView", "row"]);
   assert.deepEqual(classesOf(make({ orientation: Orientation.VERTICAL }).el), [
-    "v-SplitPanel",
+    "v-SplitView",
     "column",
   ]);
 });
@@ -126,7 +126,7 @@ test("the static pane is the one that does not flex", () => {
 
 test("and the other way round when the other pane flexes", () => {
   const { topLeft, bottomRight } = make({
-    flex: SplitPanelFlex.BOTTOM_RIGHT,
+    flex: SplitViewFlex.BOTTOM_RIGHT,
     staticPaneLength: "180",
   });
 
@@ -160,7 +160,7 @@ test("dragging the divider changes the static pane's length", () => {
 
 test("which way it runs follows whichever pane flexes", () => {
   const panel = make({
-    flex: SplitPanelFlex.BOTTOM_RIGHT,
+    flex: SplitViewFlex.BOTTOM_RIGHT,
     staticPaneLength: "200",
   });
 
@@ -172,7 +172,7 @@ test("which way it runs follows whichever pane flexes", () => {
 test("a panel stacked the other way follows the pointer down the screen", () => {
   const panel = make({
     orientation: Orientation.VERTICAL,
-    flex: SplitPanelFlex.BOTTOM_RIGHT,
+    flex: SplitViewFlex.BOTTOM_RIGHT,
     staticPaneLength: "100",
   });
 

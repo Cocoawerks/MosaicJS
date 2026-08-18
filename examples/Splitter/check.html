@@ -5,7 +5,7 @@
      module — and then drives the page the way a person would, so what is
      checked is the shipped application and not a reconstruction of it.
 
-     A split panel is layout, and layout is the one thing the unit tests cannot
+     A split view is layout, and layout is the one thing the unit tests cannot
      see: they run against a DOM with no boxes in it. This is where the panes
      are actually measured. -->
 
@@ -53,14 +53,14 @@
       const settle = () => new Promise((r) => requestAnimationFrame(r));
 
       // The bundle mounts on load; wait for the page to be there.
-      for (let i = 0; i < 60 && !app.querySelector(".v-SplitPanel"); i++) {
+      for (let i = 0; i < 60 && !app.querySelector(".v-SplitView"); i++) {
         await new Promise((r) => setTimeout(r, 16));
       }
 
-      const panels = () => [...app.querySelectorAll(".v-SplitPanel")];
-      const outer = () => panels()[0];
-      const inner = () => panels()[1];
-      const panesOf = (panel) => [...panel.children];
+      const views = () => [...app.querySelectorAll(".v-SplitView")];
+      const outer = () => views()[0];
+      const inner = () => views()[1];
+      const panesOf = (view) => [...view.children];
       const width = (el) => Math.round(el.getBoundingClientRect().width);
       const height = (el) => Math.round(el.getBoundingClientRect().height);
       const status = () => app.querySelector("footer").textContent;
@@ -107,7 +107,7 @@
       // --- it drew ------------------------------------------------------------
 
       check("the page mounted", app.querySelector("h1") !== null);
-      check("both panels drew", panels().length === 2);
+      check("both views drew", views().length === 2);
       check(
         "the outer one divides the window across, the inner one down",
         outer().className.includes("row") &&
@@ -123,7 +123,7 @@
       check(
         "a child went into the pane its slot named",
         sidebar.querySelector("nav") !== null &&
-          content.querySelector(".v-SplitPanel") !== null,
+          content.querySelector(".v-SplitView") !== null,
       );
       check(
         "the divider says what it is to a reader",
@@ -147,9 +147,9 @@
         width(outerDivider) === 13,
       );
       check(
-        "the panel fills the room it was given",
+        "the view fills the room it was given",
         height(outer()) > 200 &&
-          height(outer()) === height(app.querySelector(".v-SplitPanel").parentElement),
+          height(outer()) === height(app.querySelector(".v-SplitView").parentElement),
       );
 
       const [list, innerDivider, preview] = panesOf(inner());
@@ -194,7 +194,7 @@
       );
       await dragBy(outerDivider, 80, 0);
 
-      // The inner panel is sized down the screen, and is its own panel: dragging
+      // The inner view is sized down the screen, and is its own view: dragging
       // it must leave the outer one alone.
       const wasWideAgain = width(sidebar);
       const wasTall = height(preview);
@@ -204,7 +204,7 @@
         height(preview) === wasTall + 50,
       );
       check(
-        "across it counts for nothing, and the outer panel is untouched",
+        "across it counts for nothing, and the outer view is untouched",
         width(sidebar) === wasWideAgain,
       );
       check(
@@ -242,7 +242,7 @@
       labelled("Lay it out the other way").click();
       await settle();
       check(
-        "the panel turns on its side",
+        "the view turns on its side",
         outer().className.includes("column") &&
           !outer().className.includes("row"),
       );

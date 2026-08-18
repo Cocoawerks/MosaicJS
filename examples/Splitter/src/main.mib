@@ -1,7 +1,7 @@
-<!-- Splitter: what SplitPanel is for, which is a window divided into panes the
+<!-- Splitter: what SplitView is for, which is a window divided into panes the
      reader can size.
 
-     Two panels, one inside the other. The outer one divides the window down the
+     Two split views, one inside the other. The outer one divides the window down the
      middle — a sidebar that keeps its width while the rest takes what is left.
      The inner one divides that remainder across, so the list keeps the room and
      the preview under it stays the height it was put at.
@@ -40,7 +40,7 @@
              stretches, so the sidebar is the pane the divider sizes. It is
              held between 140 and 380, so a drag cannot squeeze it away or
              let it eat the window. -->
-        <SplitPanel outlet="sidebarSplit" orientation="horizontal"
+        <SplitView outlet="sidebarSplit" orientation="horizontal"
                     flex="bottom_right" staticPaneLength="220"
                     minStaticPaneLength="140" maxStaticPaneLength="380"
                     action="sidebarResized">
@@ -68,7 +68,7 @@
                 <!-- And inside it, the same thing the other way up: the list
                      stretches, so the preview under it is what the divider
                      sizes. -->
-                <SplitPanel outlet="previewSplit" orientation="vertical"
+                <SplitView outlet="previewSplit" orientation="vertical"
                             flex="top_left" staticPaneLength="240"
                             minStaticPaneLength="80" action="previewResized">
 
@@ -125,9 +125,9 @@
                             is full.
                         </p>
                     </article>
-                </SplitPanel>
+                </SplitView>
             </div>
-        </SplitPanel>
+        </SplitView>
     </div>
 
     <footer styleName="status">
@@ -136,7 +136,7 @@
 </div>
 
 <style>
-    /* The application fills the window: a split panel divides the room it is
+    /* The application fills the window: a split view divides the room it is
        given, so it needs to be given some. */
     :global(html),
     :global(body) {
@@ -188,7 +188,7 @@
     }
 
     /* min-height: 0 is what lets the panes shrink inside this column — a flex
-       item will not go below its content otherwise, and the panels would grow
+       item will not go below its content otherwise, and the views would grow
        the page instead of scrolling inside themselves. */
     .body {
         flex: 1 1 auto;
