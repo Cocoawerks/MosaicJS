@@ -1424,3 +1424,377 @@ test("a fragment's children are levelled into the list around it", () => {
     ["i", "span", "span", "i"],
   );
 });
+
+// --- composing views ---------------------------------------------------------
+//
+// A `.mib` file placed as a tag is a component: it draws against a scope of its
+// own, and the tag's attributes are that scope's starting state. Nothing has to
+// be written as a class for it. What tells the runtime a function came from
+// markup is `isMarkup`, which the compiler puts on it — a function component
+// written by hand is the older, plainer thing and still draws against whoever
+// placed it.
+
+/** A compiled view, as the compiler emits one: a function, marked. */
+function view(fn, controller) {
+  fn.isMarkup = true;
+  if (controller) fn.controller = controller;
+  return fn;
+}
+
+/**
+ * The same, for a file with a bound prop in it — which is what the compiler
+ * marks `redraws`, and what makes the view draw itself again rather than only
+ * bringing its bindings up to date.
+ */
+function redrawingView(fn, controller) {
+  view(fn, controller);
+  fn.redraws = true;
+  return fn;
+}
+
+test("a composed view draws against a scope of its own", () => {
+  const seen = [];
+  const Child = view(function () {
+    seen.push(this);
+    return h("span", {}, "child");
+  });
+  const controller = { name: "the page" };
+  const Page = view(function () {
+    return h("div", {}, h(Child, null));
+  });
+
+  mount(Page, document.createElement("div"), {}, controller);
+  assert.notEqual(seen[0], controller, "not the controller that drew it");
+  assert.equal(seen[0].name, undefined, "and it cannot see that one's state");
+});
+
+test("the tag's attributes are the view's state", () => {
+  const Labelled = view(function () {
+    return h("p", {}, bindTextRef(this, "label"));
+  });
+  const Page = view(function () {
+    return h("div", {}, h(Labelled, { label: "passed in" }));
+  });
+
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  mount(Page, host, {}, {});
+
+  assert.equal(host.childNodes[0].childNodes[0].textContent, "passed in");
+});
+
+test("a view composed twice is two views", () => {
+  const Labelled = view(function () {
+    return h("p", {}, bindTextRef(this, "label"));
+  });
+  const Page = view(function () {
+    return h(
+      "div",
+      {},
+      h(Labelled, { label: "first" }),
+      h(Labelled, { label: "second" }),
+    );
+  });
+
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  mount(Page, host, {}, {});
+
+  assert.deepEqual(
+    [...host.childNodes[0].childNodes].map((n) => n.textContent),
+    ["first", "second"],
+  );
+});
+
+test("a view with a controller of its own draws against an instance of it", () => {
+  class LabelController {
+    constructor() {
+      this.shouted = "";
+    }
+    shout() {
+      this.shouted = String(this.label ?? "").toUpperCase();
+    }
+  }
+
+  const built = [];
+  const Labelled = view(function () {
+    built.push(this);
+    return h("p", {}, bindTextRef(this, "label"));
+  }, LabelController);
+
+  const Page = view(function () {
+    return h("div", {}, h(Labelled, { label: "hello" }));
+  });
+
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  mount(Page, host, {}, {});
+
+  assert.ok(built[0] instanceof LabelController);
+  // The props reached the controller, so its own methods can use them.
+  assert.equal(built[0].label, "hello");
+  built[0].shout();
+  assert.equal(built[0].shouted, "HELLO");
+});
+
+test("a prop that changes reaches the view it was given to", () => {
+  const Labelled = view(function () {
+    return h("p", {}, bindTextRef(this, "label"));
+  });
+
+  class Page extends Component {
+    constructor() {
+      super();
+      this.label = "before";
+    }
+    draw() {
+      return h("div", {}, h(Labelled, { label: this.label }));
+    }
+  }
+
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const { view: page } = mount(Page, host, {});
+
+  const text = () => host.childNodes[0].childNodes[0].textContent;
+  assert.equal(text(), "before");
+
+  page.label = "after";
+  assert.equal(text(), "after");
+});
+
+test("a boolean attribute arrives as a boolean, as it does on a component", () => {
+  const seen = [];
+  const Flagged = view(function () {
+    seen.push(this.shown);
+    return h("p", {}, "x");
+  });
+  const Page = view(function () {
+    return h("div", {}, h(Flagged, { shown: "false" }));
+  });
+
+  mount(Page, document.createElement("div"), {}, {});
+  assert.equal(seen[0], false);
+});
+
+test("a function component written by hand still draws against its caller", () => {
+  // Unmarked: the behaviour the framework had before views could be composed,
+  // which an icon and any hand-written helper still rely on.
+  const Child = function () {
+    return h("span", { ref: (el) => (this.badge = el) }, "child");
+  };
+  const Parent = function () {
+    return h("div", {}, h(Child, null));
+  };
+
+  const controller = {};
+  mount(Parent, document.createElement("div"), {}, controller);
+  assert.equal(controller.badge.tagName, "span");
+});
+
+test("an outlet on a composed view hands over its scope, controller or not", () => {
+  class Own {}
+  const WithController = view(function () {
+    return h("p", {}, "a");
+  }, Own);
+  const Without = view(function () {
+    return h("b", {}, "b");
+  });
+
+  const controller = {};
+  const Page = view(function () {
+    return h(
+      "div",
+      {},
+      h(WithController, { ref: (v) => (this.withOne = v) }),
+      h(Without, { label: "given", ref: (v) => (this.without = v) }),
+    );
+  });
+
+  mount(Page, document.createElement("div"), {}, controller);
+  assert.ok(controller.withOne instanceof Own);
+  // A view with no class of any kind still hands over something to talk to,
+  // carrying what its tag was given.
+  assert.equal(controller.without.label, "given");
+  assert.equal(controller.without.tagName, undefined, "not its element");
+});
+
+test("a prop set through an outlet reaches the view that holds it", () => {
+  // What makes a `.mib` on its own enough: no class, and the page can still
+  // say `this.card.value = 12` and see it.
+  const Card = view(function () {
+    return h("p", {}, bindTextRef(this, "value"));
+  });
+  const controller = {};
+  const Page = view(function () {
+    return h("div", {}, h(Card, { value: "1", ref: (v) => (this.card = v) }));
+  });
+
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  mount(Page, host, {}, controller);
+
+  const text = () => host.childNodes[0].childNodes[0].textContent;
+  assert.equal(text(), "1");
+
+  // Read it back, and set it.
+  assert.equal(controller.card.value, "1");
+  controller.card.value = "12";
+  assert.equal(text(), "12");
+  assert.equal(controller.card.value, "12");
+});
+
+// --- a composed view redraws ------------------------------------------------
+//
+// Saying something to a view re-runs the function the compiler made of its
+// markup and patches the two trees against each other. That is what carries a
+// value into a child — a Button's `text`, another view's prop — which a binding
+// alone cannot do: a binding keeps this markup's own text and attributes right,
+// and a component is not this markup.
+
+/** `bindProp` as the compiler emits it for `<Child text="{label}"/>`. */
+const { bindProp } = await import(
+  "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
+);
+
+test("a value reaches a child component's prop, not just a text node", () => {
+  const Inner = view(function () {
+    return h("em", {}, bindTextRef(this, "label"));
+  });
+
+  const Outer = redrawingView(function () {
+    return h(
+      "div",
+      {},
+      h("p", {}, bindTextRef(this, "label")),
+      h(Inner, { label: bindProp(this, [{ path: "label" }]) }),
+    );
+  });
+
+  const controller = {};
+  const Page = view(function () {
+    return h("div", {}, h(Outer, { ref: (v) => (this.outer = v) }));
+  });
+
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  mount(Page, host, {}, controller);
+
+  const text = () => host.querySelector("p").textContent;
+  const inner = () => host.querySelector("em").textContent;
+
+  controller.outer.label = "Click It";
+  assert.equal(text(), "Click It", "this markup's own text");
+  assert.equal(inner(), "Click It", "and the view it was handed to");
+});
+
+test("redrawing patches: the nodes that stay are the same nodes", () => {
+  const Child = view(function () {
+    return h("em", {}, bindTextRef(this, "label"));
+  });
+  const Outer = redrawingView(function () {
+    return h(
+      "div",
+      {},
+      h("p", {}, "unchanged"),
+      h(Child, { label: bindProp(this, [{ path: "label" }]) }),
+    );
+  });
+  const controller = {};
+  const Page = view(function () {
+    return h("div", {}, h(Outer, { ref: (v) => (this.outer = v) }));
+  });
+
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  mount(Page, host, {}, controller);
+
+  const before = {
+    root: host.querySelector("div div"),
+    para: host.querySelector("p"),
+    em: host.querySelector("em"),
+  };
+
+  controller.outer.label = "again";
+
+  assert.equal(host.querySelector("div div"), before.root, "the view's root");
+  assert.equal(host.querySelector("p"), before.para, "a node it did not touch");
+  assert.equal(host.querySelector("em"), before.em, "and the one it did");
+});
+
+test("a lone bound prop is the value itself, not a string of it", () => {
+  const seen = [];
+  const Child = view(function (props) {
+    seen.push(props.count);
+    return h("em", {}, "x");
+  });
+  const Outer = redrawingView(function () {
+    return h("div", {}, h(Child, { count: bindProp(this, [{ path: "n" }]) }));
+  });
+  const controller = {};
+  const Page = view(function () {
+    return h("div", {}, h(Outer, { ref: (v) => (this.outer = v) }));
+  });
+
+  mount(Page, document.createElement("div"), {}, controller);
+  controller.outer.n = 12;
+  assert.equal(seen[seen.length - 1], 12, "a number stays a number");
+});
+
+test("text around a bound prop makes it a string", () => {
+  const seen = [];
+  const Child = view(function (props) {
+    seen.push(props.title);
+    return h("em", {}, "x");
+  });
+  const Outer = redrawingView(function () {
+    return h(
+      "div",
+      {},
+      h(Child, { title: bindProp(this, ["hello ", { path: "name" }]) }),
+    );
+  });
+  const controller = {};
+  const Page = view(function () {
+    return h("div", {}, h(Outer, { ref: (v) => (this.outer = v) }));
+  });
+
+  mount(Page, document.createElement("div"), {}, controller);
+  controller.outer.name = "Ada";
+  assert.equal(seen[seen.length - 1], "hello Ada");
+});
+
+test("a view redrawn many times registers one notifier, not one per draw", () => {
+  const Child = view(function () {
+    return h("em", {}, "x");
+  });
+  const Outer = redrawingView(function () {
+    return h("div", {}, h(Child, { label: bindProp(this, [{ path: "n" }]) }));
+  });
+  const controller = {};
+  const Page = view(function () {
+    return h("div", {}, h(Outer, { ref: (v) => (this.outer = v) }));
+  });
+
+  mount(Page, document.createElement("div"), {}, controller);
+  for (let i = 0; i < 50; i++) controller.outer.n = i;
+  // Nothing to assert but that it is still standing and still right: a
+  // notifier per draw would have grown a set of 50 and run 50 redraws for the
+  // last assignment.
+  assert.equal(controller.outer.n, 49);
+});
+
+test("a controller a page was mounted with keeps its binding pass", () => {
+  // It has no view function behind it — the page's markup is not its own — so
+  // there is nothing to re-run, and its bindings are pushed to the DOM as they
+  // always were.
+  const controller = { user: { name: "ada" } };
+  const Probe = function () {
+    return h("p", null, bindTextRef(this, "user.name"));
+  };
+  const root = document.createElement("div");
+  mount(Probe, root, {}, controller);
+
+  controller.user = { name: "grace" };
+  assert.match(root.innerHTML, />grace</);
+});

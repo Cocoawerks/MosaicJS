@@ -440,6 +440,121 @@ function layout(config, source) {
 }
 
 /**
+ * The same application, built somewhere else.
+ *
+ * A build is written into a directory beside the real one and moved into place
+ * whole, which is what makes it all-or-nothing: a compile that fails, or is
+ * killed halfway, leaves the last good build exactly where it was rather than a
+ * tree that is half this run and half the one before. Reading a partial build
+ * is what "it worked a minute ago" is made of, and it costs an afternoon to
+ * recognise — the files are all *there*, just not all from the same run.
+ *
+ * The staging directory sits beside the real one so the two are on the same
+ * filesystem and the move is a rename. It is the same depth, so every relative
+ * path a compiled module or a source map holds is right before and after.
+ */
+function staged(app) {
+  clearAbandoned(app.outdir);
+  const staging = `${app.outdir}.building-${process.pid}`;
+  return {
+    ...app,
+    outdir: staging,
+    entry: path.join(staging, path.relative(app.outdir, app.entry)),
+    outfile: path.join(staging, path.relative(app.outdir, app.outfile)),
+    /** Where it is going, for the messages that name it. */
+    finalOutdir: app.outdir,
+  };
+}
+
+/**
+ * The directories a build occupies: the one it lands in, and the two it passes
+ * through on the way — staging, and what a swap moves aside.
+ *
+ * Said in one place because two things have to agree about it, and when they
+ * did not it was expensive: `dev` watches the application directory and the
+ * build sits inside it, so a staging directory the watcher did not recognise
+ * looked exactly like someone editing. Every rebuild started another, and a
+ * single keystroke rebuilt for ever.
+ */
+const STAGING = /^(building|previous)-\d+$/;
+
+/** Whether `name` is a staging sibling of a build directory called `base`. */
+function isStaging(base, name) {
+  return (
+    name.startsWith(`${base}.`) && STAGING.test(name.slice(base.length + 1))
+  );
+}
+
+/**
+ * Whether the run that made a staging directory is still going.
+ *
+ * Its name carries the process it belongs to, which is what makes this
+ * answerable: signal 0 asks after a process without sending it anything.
+ * Deleting a directory a live build is writing into is how a build ends up
+ * reading a file that was there a moment ago and is not there now.
+ */
+function stagingIsLive(name) {
+  const pid = Number(name.slice(name.lastIndexOf("-") + 1));
+  if (!Number.isInteger(pid) || pid === process.pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    // Alive, but not ours to signal — which is still alive.
+    return e?.code === "EPERM";
+  }
+}
+
+/** Whether `full` is the build at `outdir`, or inside it, or inside its staging. */
+function inBuild(outdir, full) {
+  if (full === outdir || full.startsWith(outdir + path.sep)) return true;
+
+  const parent = path.dirname(outdir);
+  if (!full.startsWith(parent + path.sep)) return false;
+  const first = full.slice(parent.length + 1).split(path.sep)[0];
+  return isStaging(path.basename(outdir), first);
+}
+
+/**
+ * Delete staging left behind by a run that was killed before it could finish —
+ * a Ctrl-C, a terminal closed, a machine that went down mid-build.
+ *
+ * Nothing is lost with them: a staged build was never in use, and the one this
+ * run is about to make replaces whatever they were going to be.
+ */
+function clearAbandoned(outdir) {
+  const dir = path.dirname(outdir);
+  const base = path.basename(outdir);
+  if (!fs.existsSync(dir)) return;
+
+  for (const entry of fs.readdirSync(dir)) {
+    if (!isStaging(base, entry)) continue;
+    // Left by a run that is still going, not an abandoned one.
+    if (stagingIsLive(entry)) continue;
+    fs.rmSync(path.join(dir, entry), { recursive: true, force: true });
+  }
+}
+
+/**
+ * Put a staged build in place of the real one, and give back what was there so
+ * it can be deleted once nothing is reading it.
+ */
+function swapIntoPlace(build) {
+  const target = build.finalOutdir;
+  const previous = `${target}.previous-${process.pid}`;
+
+  if (fs.existsSync(target)) fs.renameSync(target, previous);
+  try {
+    fs.renameSync(build.outdir, target);
+  } catch (e) {
+    // Put back what was there rather than leaving the application with none.
+    if (fs.existsSync(previous)) fs.renameSync(previous, target);
+    throw e;
+  }
+  if (fs.existsSync(previous)) fs.rmSync(previous, { recursive: true, force: true });
+}
+
+/**
  * Copy the runtime tree into the app's build as a package, so compiled code can
  * import it by name: `import { MosaicApplication } from "mosaic"`, and each
  * framework compiled into it as a subpath of the same package:
@@ -808,8 +923,27 @@ function librarySources(config, app) {
 
 /** Compile the frameworks, the libraries and the application, then bundle. */
 async function compile(config, app, args) {
+  // Everything below writes into a staging directory; the last thing this does
+  // is move it into place. Nothing reads a build that is half-written, and a
+  // run that throws leaves the previous one untouched.
+  const build = staged(app);
+  try {
+    await compileInto(config, build, args);
+  } catch (e) {
+    fs.rmSync(build.outdir, { recursive: true, force: true });
+    throw e;
+  }
+  swapIntoPlace(build);
+}
+
+async function compileInto(config, app, args) {
   const log = args.quiet ? () => {} : (...a) => console.log(...a);
-  const relative = (p) => path.relative(config.root, p) || ".";
+  // A build is written into a staging directory and moved into place at the
+  // end, which is this run's business and not the reader's: paths are reported
+  // as where they will be, not where they are for the moment.
+  const settled = (p) =>
+    app.finalOutdir ? p.split(app.outdir).join(app.finalOutdir) : p;
+  const relative = (p) => path.relative(config.root, settled(p)) || ".";
 
   const frameworks = frameworkSources(config, app);
   const sources = [
@@ -825,19 +959,17 @@ async function compile(config, app, args) {
     { input: relative(app.source), outdir: app.outdir },
   ];
 
-  // The whole build is this run's to rewrite, so a renamed or deleted source
-  // cannot leave a stale module behind.
-  //
-  // Moved aside before it is deleted, rather than deleted where it stands: the
-  // rename is atomic, so whatever this run writes next lands in a directory no
-  // deletion is walking. Removing a tree in place and rebuilding into the same
-  // path leaves the two racing, and what goes missing is the file written last
-  // — the bundle.
-  wipe(app.outdir);
+  // Nothing to clear: this run writes into a directory of its own, which is
+  // what makes a renamed or deleted source unable to leave a stale module
+  // behind — there is nothing here from any earlier run to leave.
   const vendored = vendorRuntime(config, app);
 
   log(`==> compiling ${relative(app.source)}`);
   const written = compileAll(sources, {
+    // Where this build will end up. It is not written to during the run — the
+    // staging directory is — so it has to be named, or the build sitting there
+    // from last time is walked as source.
+    skip: app.finalOutdir ? [app.finalOutdir] : [],
     runtime: vendored.specifier,
     // Where `import X from "svg:name"` looks: the application's own icons
     // first, so an app can replace one the framework ships.
@@ -848,7 +980,7 @@ async function compile(config, app, args) {
     minify: args.minify,
     onFile: args.quiet
       ? undefined
-      : (src, dest) => log(`    ${src} -> ${dest}`),
+      : (src, dest) => log(`    ${src} -> ${settled(dest)}`),
   });
   log(`    ${written.length} modules`);
 
@@ -870,7 +1002,7 @@ async function compile(config, app, args) {
           : "")
       : "";
     log(
-      `    ${framework.specifier} -> ${index}  (${modules.length} modules${themed})`,
+      `    ${framework.specifier} -> ${settled(index)}  (${modules.length} modules${themed})`,
     );
     if (theme && usesFramework(framework, written, modules)) {
       themes.push(`${framework.specifier}/${THEME_MODULE}`);
@@ -914,7 +1046,7 @@ async function compile(config, app, args) {
 
   const bytes = fs.statSync(app.outfile).size;
   log(
-    `    ${app.outfile}  ${(bytes / 1024).toFixed(1)} KB${args.minify ? ", minified" : ""}`,
+    `    ${settled(app.outfile)}  ${(bytes / 1024).toFixed(1)} KB${args.minify ? ", minified" : ""}`,
   );
 
   if (!(args.keepModules || args.command === "check")) {
@@ -954,20 +1086,6 @@ async function writeBundle(outputs, app) {
   }
 }
 
-/** Empty `dir`, by moving it out of the way and deleting it from there. */
-function wipe(dir) {
-  if (!fs.existsSync(dir)) return;
-
-  const aside = `${dir}.wiping-${process.pid}-${Date.now()}`;
-  try {
-    fs.renameSync(dir, aside);
-  } catch {
-    // A rename can fail across filesystems; deleting in place is the fallback.
-    fs.rmSync(dir, { recursive: true, force: true });
-    return;
-  }
-  fs.rmSync(aside, { recursive: true, force: true });
-}
 
 /**
  * Delete everything in the build but the bundle and its map.
@@ -1226,7 +1344,9 @@ function watchSources(config, app, args) {
     const full = path.resolve(root, file);
     // Editors write backups and swap files beside the real one.
     if (path.basename(file).startsWith(".") || file.endsWith("~")) return true;
-    return full === outdir || full.startsWith(outdir + path.sep);
+    // And a build is not an edit — including the directories it is staged in,
+    // which sit beside the build rather than inside it.
+    return inBuild(outdir, full);
   };
 
   let timer = null;
@@ -1290,6 +1410,9 @@ async function main(argv) {
   }
 
   if (args.command === "clean") {
+    // Staging from a run that was killed goes too, so `clean` really does
+    // leave nothing of any build behind.
+    clearAbandoned(app.outdir);
     if (fs.existsSync(app.outdir)) {
       fs.rmSync(app.outdir, { recursive: true, force: true });
       console.log(`removed ${app.outdir}`);

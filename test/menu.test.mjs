@@ -8,7 +8,7 @@ import "./dom-shim.mjs";
 
 const { mount, h } =
   await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
-const { Menu, MenuButton, MenuItem, Tooltip } =
+const { Menu, MenuButton, MenuItem, MenuItemSeparator, Tooltip } =
   await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 const classesOf = (el) =>
@@ -336,4 +336,63 @@ test("nor does one hanging off something disabled", async () => {
 
   assert.equal(tooltip.visible, false);
   tooltip.dispose();
+});
+
+// --- MenuItemSeparator -------------------------------------------------------
+//
+// A rule written as what it is rather than as a setting on an item. The Java
+// version is a MenuItem subclass, and so is this — which is why the menu has to
+// take a kind of MenuItem for a line, not MenuItem itself.
+
+/** The same four lines, with the rule written as a MenuItemSeparator. */
+const itemsWithSeparator = () => [
+  h(MenuItem, { text: "Cut", value: "cut" }),
+  h(MenuItem, { text: "Copy", value: "copy" }),
+  h(MenuItemSeparator, {}),
+  h(MenuItem, { text: "Paste", value: "paste", enabled: "false" }),
+];
+
+test("a MenuItemSeparator draws the rule an item asked to be a rule draws", () => {
+  const { items } = menu({}, itemsWithSeparator());
+
+  assert.equal(items().length, 4, "the menu takes it for a line of its own");
+  assert.equal(items()[2].getAttribute("role"), "separator");
+  assert.ok(classesOf(items()[2]).includes("v-MenuItem-Separator"));
+  assert.equal(items()[2].textContent, "");
+});
+
+test("and is no more choosable than the other way of writing one", () => {
+  const { view } = menu({}, itemsWithSeparator());
+
+  // Not among the lines a pointer or a key can land on...
+  assert.deepEqual(
+    view.liveItems.map((item) => item.value),
+    ["cut", "copy"],
+  );
+
+  // ...and a step from the last live line has nowhere to go, rather than
+  // landing on the rule that follows it.
+  view.activate("copy");
+  view.step(1);
+  assert.equal(view.activeValue, "copy");
+
+  view.step(-1);
+  assert.equal(view.activeValue, "cut");
+});
+
+test("clicking one chooses nothing, and leaves the menu up", () => {
+  const chosen = [];
+  const { view, anchor, items } = menu(
+    { action: (_, value) => chosen.push(value) },
+    itemsWithSeparator(),
+  );
+  view.alignWith(anchor);
+
+  click(items()[2]);
+  assert.deepEqual(chosen, []);
+  assert.equal(view.visible, true, "a rule is not an answer to the menu");
+
+  // And the lines around it still are.
+  click(items()[0]);
+  assert.deepEqual(chosen, ["cut"]);
 });

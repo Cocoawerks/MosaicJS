@@ -1,8 +1,18 @@
-// Pushing `{path}` bindings back into the DOM.
+// Bringing what a controller drew back up to date.
+//
+// Two ways, and which one is used depends on what is behind the controller. A
+// composed view — a `.mib` placed as a tag — draws itself again and patches
+// what changed, so a value reaches a child component as readily as it reaches a
+// text node. Anything else has no function to re-run, and its `{path}`
+// bindings are pushed back into the DOM one at a time.
 import { attrValue, BINDINGS, display, readPath } from "./private/bindings.js";
 import { setAttribute } from "./private/props.js";
+import { redrawView } from "./private/scope.js";
 
 export function refresh(controller) {
+  // A view draws itself again, which reaches everything its markup holds.
+  if (redrawView(controller)) return;
+
   const entries = controller?.[BINDINGS];
   if (!entries) return;
 

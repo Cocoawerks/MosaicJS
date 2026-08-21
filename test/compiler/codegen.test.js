@@ -301,19 +301,142 @@ test("line markers map generated lines back to source", () => {
   expect(mappings.length).toBeGreaterThan(0);
 });
 
-test("a component's prop cannot be bound", () => {
-  // A binding keeps this markup's own attribute up to date; a component is
-  // not markup, and what it does with `enabled` is its own. The outlet is
-  // how a controller reaches it.
-  expect(() => compile('<div><Card enabled="{on}"/></div>')).toThrow(
-    /a component's props are not bound/,
+test("a component's prop is read, an element's attribute is declared", () => {
+  // The two are different things. An attribute belongs to this markup, and a
+  // binding keeps it up to date afterwards. A component's prop does not — what
+  // a Card does with `enabled` is the Card's own — so it is read as the view
+  // draws, and reading it is what makes the view draw again when it changes.
+  expect(compile('<div><Card enabled="{on}"/></div>')).toContain(
+    'bindProp(this, [{ path: "on" }])',
   );
-  expect(() => compile('<div><Card title="hello {name}"/></div>')).toThrow(
-    /outlet="name"/,
-  );
-
-  // The same attribute on an element is a binding, as it always was.
   expect(compile('<div><p title="{on}">x</p></div>')).toContain(
     "bindAttr(this,",
+  );
+});
+
+test("a bound prop with text around it is that text with the value in it", () => {
+  const js = compile('<div><Card title="hello {name}"/></div>');
+  expect(js).toContain('bindProp(this, ["hello ", { path: "name" }])');
+});
+
+test("each is imported only when it is used", () => {
+  const componentOnly = compile('<div><Card enabled="{on}"/></div>');
+  expect(componentOnly).toContain("bindProp");
+  expect(componentOnly).not.toContain("bindAttr");
+
+  const elementOnly = compile('<div><p title="{on}">x</p></div>');
+  expect(elementOnly).toContain("bindAttr");
+  expect(elementOnly).not.toContain("bindProp");
+});
+
+// --- composing views ---------------------------------------------------------
+
+test("a compiled view says it came from markup", () => {
+  // What tells the runtime to give it a scope of its own and hand it the tag's
+  // attributes; a function component written by hand carries no such mark and
+  // still draws against whoever placed it.
+  expect(compile("<p>hi</p>")).toContain("App.isMarkup = true;");
+});
+
+test("a capitalised tag is another compiled view, imported by its file name", () => {
+  const js = compile("<div><CustomView/></div>");
+  expect(js).toContain("import CustomView from");
+  expect(js).toContain("h(CustomView, null)");
+});
+
+test("and what the tag says is passed to it as props", () => {
+  expect(compile('<div><Labelled label="Name"/></div>')).toContain(
+    'h(Labelled, { label: "Name" })',
+  );
+});
+
+// --- surfaces ----------------------------------------------------------------
+
+test("a surface may be the root of a view", () => {
+  expect(compile('<PopOver orientation="bottom_center"><p>hi</p></PopOver>'))
+    .toContain("h(PopOver,");
+  expect(compile('<DialogBox title="Settings"><p>hi</p></DialogBox>')).toContain(
+    "h(DialogBox,",
+  );
+});
+
+test("but not anything else", () => {
+  // A surface is placed by the runtime rather than by the markup around it, so
+  // nested it would read as something the page does not do.
+  expect(() => compile("<div><PopOver/></div>")).toThrow(
+    /can only be the root of a .mib file/,
+  );
+  expect(() => compile("<div><DialogBox/></div>")).toThrow(
+    /can only be the root of a .mib file/,
+  );
+});
+
+test("nor beside another root, where it is not the root either", () => {
+  expect(() => compile("<div>first</div><PopOver/>")).toThrow(
+    /can only be the root of a .mib file/,
+  );
+});
+
+test("the refusal says which line, and what to write instead", () => {
+  expect(() => compile("<div>\n  <p>a</p>\n  <DialogBox/>\n</div>")).toThrow(
+    /line 3/,
+  );
+  expect(() => compile("<div><PopOver/></div>")).toThrow(/ColourPopOver.mib/);
+});
+
+test("a kind of popover that belongs to a control is nested like anything else", () => {
+  // Menu and Tooltip extend PopOver, and a menu inside a menu item is how a
+  // submenu is written. Only the two surfaces themselves are refused.
+  expect(
+    compile('<MenuItem text="Share"><Menu><MenuItem text="Someone"/></Menu></MenuItem>'),
+  ).toContain("h(Menu,");
+  expect(compile("<div><Tooltip/></div>")).toContain("h(Tooltip,");
+});
+
+test("a file with a bound prop says it has to redraw", () => {
+  // Only such a file does: a binding on this markup's own text or attributes
+  // is written straight back into the DOM, and a page that never binds a prop
+  // behaves exactly as it did.
+  expect(compile('<div><Card enabled="{on}"/></div>')).toContain(
+    "App.redraws = true;",
+  );
+  expect(compile('<div><p title="{on}">{x}</p></div>')).not.toContain(
+    "App.redraws",
+  );
+});
+
+test("a Drawer is a surface too: root only, like a dialog or a popover", () => {
+  // It is pinned to the window and pushes the page, so where its markup sits
+  // says nothing about where it goes — nesting one would read as something the
+  // page does not do.
+  expect(compile('<Drawer title="Filters"><p>a</p></Drawer>')).toContain(
+    "h(Drawer,",
+  );
+  expect(() => compile("<div><Drawer/></div>")).toThrow(
+    /can only be the root of a .mib file/,
+  );
+});
+
+test("but a surface may hold whatever it likes", () => {
+  // The rule runs one way: a surface cannot be contained, and contains freely.
+  const js = compile(
+    '<Drawer title="Filters"><CheckBox text="Unread"/><ColorWell/><MyView/></Drawer>',
+  );
+  expect(js).toContain("h(CheckBox,");
+  expect(js).toContain("h(ColorWell,");
+  expect(js).toContain("h(MyView,");
+
+  expect(compile('<DialogBox title="x"><MyView/></DialogBox>')).toContain(
+    "h(MyView,",
+  );
+  expect(compile("<PopOver><MyView/></PopOver>")).toContain("h(MyView,");
+});
+
+test("and a surface cannot hold another surface either", () => {
+  expect(() => compile('<Drawer title="x"><PopOver/></Drawer>')).toThrow(
+    /can only be the root of a .mib file/,
+  );
+  expect(() => compile('<DialogBox title="x"><Drawer/></DialogBox>')).toThrow(
+    /can only be the root of a .mib file/,
   );
 });

@@ -1,0 +1,356 @@
+<!doctype html>
+<!-- The app's own browser check: `mosaic check examples/Composite`.
+
+     It loads the bundle exactly as index.html does — nothing here imports a
+     module — and then drives the page the way a person would.
+
+     What it is about: one `.mib` file composed into a view, a dialog and a
+     popover, with no class written for it, and the tag's attributes reaching it
+     as its state. -->
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..700;1,300..700&amp;display=swap"
+    />
+    <title>Composite browser check</title>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <pre id="results"></pre>
+
+    <script type="module" src="build/app.js"></script>
+
+    <script type="module">
+      const log = [];
+      let failed = 0;
+      const check = (name, cond) => {
+        log.push(`${cond ? "PASS" : "FAIL"}  ${name}`);
+        if (!cond) failed++;
+        document.querySelector("#results").textContent = log.join("\n");
+      };
+
+      window.addEventListener("unhandledrejection", (e) => {
+        document.querySelector("#results").textContent =
+          log.join("\n") + `\nERROR  ${e.reason?.message ?? e.reason}`;
+        document.title = "verdict FAIL (threw)";
+      });
+      window.addEventListener("error", (e) => {
+        document.querySelector("#results").textContent =
+          log.join("\n") + `\nERROR  ${e.message}`;
+        document.title = "verdict FAIL (threw)";
+      });
+
+      const app = document.querySelector("#app");
+      for (let i = 0; i < 60 && !app.querySelector("h1"); i++) {
+        await new Promise((r) => setTimeout(r, 16));
+      }
+
+      const until = async (cond, ms = 2000) => {
+        const end = performance.now() + ms;
+        while (!cond() && performance.now() < end)
+          await new Promise((r) => requestAnimationFrame(r));
+        return cond();
+      };
+      const settle = () => new Promise((r) => requestAnimationFrame(r));
+      const labelled = (root, text) =>
+        [...root.querySelectorAll(".v-Button")].find(
+          (b) => b.textContent.trim() === text,
+        );
+      /**
+       * The views composed into one surface. A dialog and a popover are drawn
+       * where their markup sits, so asking the page for its own cards means
+       * leaving out the ones that belong to the surfaces inside it.
+       */
+      const own = (root, selector) =>
+        [...root.querySelectorAll(selector)].filter(
+          (el) =>
+            root !== app ||
+            (!el.closest("dialog.v-Dialog") && !el.closest(".v-PopOver")),
+        );
+      const cardsIn = (root) =>
+        own(root, ".card").map((c) => ({
+          label: c.children[0].textContent,
+          value: c.children[1].textContent,
+          note: c.children[2].textContent,
+        }));
+      const readingsIn = (root) =>
+        own(root, ".reading").map((r) => ({
+          place: r.children[0].textContent,
+          temp: r.children[1].textContent,
+        }));
+      const status = () => app.querySelector(".status").textContent;
+
+      // --- composed into the page ---------------------------------------------
+
+      check("the page mounted", app.querySelector("h1") !== null);
+
+      const pageCards = cardsIn(app);
+      check(
+        `StatCard.mib drew three times in the page (${pageCards.length})`,
+        pageCards.length === 3,
+      );
+      check(
+        "each with the attributes its tag gave it",
+        pageCards[0].label === "Sessions" &&
+          pageCards[0].value === "1,204" &&
+          pageCards[0].note === "this week" &&
+          pageCards[1].value === "3" &&
+          pageCards[2].label === "Queue",
+      );
+      check(
+        "one file, so one stylesheet: every card carries the same scope",
+        new Set(own(app, ".card").map((c) => c.className)).size === 1,
+      );
+      check(
+        "and the sheet paints it",
+        getComputedStyle(own(app, ".card")[0]).borderTopWidth === "1px",
+      );
+
+      // --- read and written through its outlet ----------------------------------
+      // StatCard.mib has no class and no controller. An outlet on its tag hands
+      // over its scope all the same, so the page can read what it holds and
+      // assign to it — which is what makes a `.mib` on its own enough.
+
+      const queueCard = () => cardsIn(app)[2];
+      check(
+        `the queue card starts at what its tag said (${queueCard().value})`,
+        queueCard().value === "0" && queueCard().note === "nothing waiting",
+      );
+
+      labelled(app, "Add to the queue").click();
+      await settle();
+      check(
+        `assigning through the outlet redraws it (${queueCard().value})`,
+        queueCard().value === "1" && queueCard().note === "1 waiting",
+      );
+      check(
+        "and the page read the old value back off it first",
+        status().includes("queue is 1"),
+      );
+
+      labelled(app, "Add to the queue").click();
+      labelled(app, "Add to the queue").click();
+      await settle();
+      check(
+        `reading and writing keep step (${queueCard().value})`,
+        queueCard().value === "3" && queueCard().note === "3 waiting",
+      );
+
+      check(
+        "the other two cards are untouched: each view holds its own",
+        cardsIn(app)[0].value === "1,204" && cardsIn(app)[1].value === "3",
+      );
+
+      labelled(app, "Empty it").click();
+      await settle();
+      check("and emptying it puts it back", queueCard().value === "0");
+
+      // --- a composed view with a controller of its own -------------------------
+
+      const pageReadings = readingsIn(app);
+      check(
+        "Reading.mib drew twice, each worked out from its own attribute",
+        pageReadings.length === 2 &&
+          pageReadings[0].place === "Reykjavík" &&
+          pageReadings[0].temp === "4.5 °C" &&
+          pageReadings[1].place === "Kraków" &&
+          pageReadings[1].temp === "18.2 °C",
+      );
+
+      // Its controller is its own: pressing °F on one leaves the other alone.
+      const firstReading = own(app, ".reading")[0];
+      labelled(firstReading, "°F").click();
+      await settle();
+      check(
+        `°F converts that view only (${readingsIn(app)[0].temp}, ${readingsIn(app)[1].temp})`,
+        readingsIn(app)[0].temp === "40.1 °F" &&
+          readingsIn(app)[1].temp === "18.2 °C",
+      );
+      labelled(firstReading, "°C").click();
+      await settle();
+      check("and one view's state is its own", readingsIn(app)[0].temp === "4.5 °C");
+
+      // A bound prop on a component. The Button inside Reading.mib is not that
+      // view's markup, so `text="{unitLabel}"` cannot be kept up to date the
+      // way `{shown}` beside it is — the view draws itself again instead, and
+      // the prop is worked out afresh. Nothing was written to the button.
+      const unitButton = () =>
+        own(app, ".reading")[0].querySelector(".v-Button");
+      check(
+        `the button's label came from a bound prop (${unitButton().textContent.trim()})`,
+        unitButton().textContent.trim() === "°F",
+      );
+      check(
+        "and its face from another, which is the default one",
+        unitButton().className.includes("default"),
+      );
+
+      unitButton().click();
+      await settle();
+      check(
+        `pressing it redraws the view, so both props follow (${unitButton().textContent.trim()})`,
+        unitButton().textContent.trim() === "°C" &&
+          unitButton().className.includes("primary"),
+      );
+      check("and the reading beside them too", readingsIn(app)[0].temp === "40.1 °F");
+
+      unitButton().click();
+      await settle();
+      check(
+        "and back again",
+        unitButton().textContent.trim() === "°F" &&
+          unitButton().className.includes("default") &&
+          readingsIn(app)[0].temp === "4.5 °C",
+      );
+
+      // An outlet on a view with a controller hands that controller over, which
+      // is how the page assigns a prop after the fact.
+      labelled(app, "A degree warmer").click();
+      await settle();
+      check(
+        `the page can assign a prop through the outlet (${readingsIn(app)[0].temp})`,
+        readingsIn(app)[0].temp === "5.5 °C",
+      );
+      check("and the page hears what it did", status().includes("5.5 °C"));
+      labelled(app, "Put it back").click();
+      await settle();
+      check("putting it back restores what the markup said",
+        readingsIn(app)[0].temp === "4.5 °C");
+
+      // --- composed into a dialog ----------------------------------------------
+
+      const dialog = () => app.querySelector("dialog.v-Dialog");
+      check("the dialog drew from its own .mib", dialog() !== null);
+      check("and starts closed", !dialog().hasAttribute("open"));
+
+      labelled(app, "Show the summary…").click();
+      await until(() => !dialog().className.includes("is-measuring"));
+      check("the page's button shows it", dialog().hasAttribute("open"));
+
+      const dialogCards = cardsIn(dialog());
+      check(
+        `the same StatCard.mib drew inside the dialog (${dialogCards.length})`,
+        dialogCards.length === 3 && dialogCards[0].label === "Sessions",
+      );
+      check(
+        "with the attributes the dialog's own markup gave it",
+        dialogCards[2].value === "99.9%" &&
+          dialogCards[2].note === "rolling 30 days",
+      );
+      check(
+        "and Reading.mib too, with a scope of its own",
+        readingsIn(dialog())[0].temp === "4.5 °C",
+      );
+
+      // The dialog's Reading is a different instance from the page's.
+      labelled(dialog(), "A degree warmer").click();
+      await settle();
+      check(
+        `the dialog's copy moves on its own (${readingsIn(dialog())[0].temp})`,
+        readingsIn(dialog())[0].temp === "5.5 °C",
+      );
+      check(
+        "leaving the page's where it was",
+        readingsIn(app).find((r) => r.place === "Reykjavík").temp === "4.5 °C",
+      );
+      check("and the page hears the dialog say so", status().includes("dialog"));
+
+      // A dialog says what colour its content is. The browser's own stylesheet
+      // gives `<dialog>` `color: CanvasText` — black, whatever the page around
+      // it is set to — and a rule on the element beats what it would have
+      // inherited, so on a dark theme the dialog drew black text on its dark
+      // surface. Only a real cascade shows it, which is why it is checked here.
+      const themeCombo = app.querySelector("#theme-combo");
+      const wear = async (name) => {
+        themeCombo.value = name;
+        themeCombo.dispatchEvent(new Event("change", { bubbles: true }));
+        await settle();
+        await settle();
+      };
+      const channels = (colour) => colour.match(/[\d.]+/g).slice(0, 3).map(Number);
+      const luminance = (colour) => {
+        const [r, g, b] = channels(colour).map((v) => {
+          const c = v / 255;
+          return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+      const contrast = (a, b) => {
+        const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+        return (hi + 0.05) / (lo + 0.05);
+      };
+
+      for (const theme of ["aristo_dark", "pop", "aristo"]) {
+        await wear(theme);
+        const box = getComputedStyle(dialog());
+        const ratio = contrast(box.color, box.backgroundColor);
+        check(
+          `${theme}: the dialog's text reads on its own surface (${ratio.toFixed(1)}:1, ${box.color} on ${box.backgroundColor})`,
+          ratio >= 4.5,
+        );
+        // And what it holds inherits that rather than the browser's black.
+        const value = getComputedStyle(dialog().querySelector(".card strong"));
+        check(
+          `${theme}: and so does a composed view inside it (${value.color})`,
+          value.color === box.color,
+        );
+      }
+
+      dialog().dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      await until(() => !dialog().hasAttribute("open"));
+      check("Escape closes it", !dialog().hasAttribute("open"));
+
+      // --- composed into a popover ----------------------------------------------
+
+      const popover = () => app.querySelector(".v-PopOver");
+      const popVisible = () =>
+        getComputedStyle(popover()).visibility === "visible";
+
+      check("the popover drew from its own .mib", popover() !== null);
+      check("and starts away", !popVisible());
+
+      const detailButton = labelled(app, "Detail…");
+      detailButton.scrollIntoView({ block: "center" });
+      detailButton.click();
+      check("the page's button shows it", await until(() => popVisible()));
+      check(
+        "the same two views drew inside the popover",
+        cardsIn(popover())[0].label === "Waiting" &&
+          cardsIn(popover())[0].value === "12" &&
+          readingsIn(popover())[0].place === "Kraków",
+      );
+      check(
+        "which is a third instance again, on its own",
+        readingsIn(popover())[0].temp === "18.2 °C",
+      );
+
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      check("Escape puts it away", !popVisible());
+
+      // --- all three at once ----------------------------------------------------
+
+      check(
+        "one file drew in all three surfaces: page, dialog and popover",
+        cardsIn(app).length === 3 &&
+          cardsIn(dialog()).length === 3 &&
+          cardsIn(popover()).length === 1,
+      );
+
+      document.querySelector("#results").textContent = log.join("\n");
+      document.title =
+        failed === 0
+          ? `verdict PASS (${log.length} checks)`
+          : `verdict FAIL (${failed} of ${log.length})`;
+    </script>
+  </body>
+</html>

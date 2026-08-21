@@ -44,6 +44,13 @@
      inner wrapper does the rounded-corner clipping instead. */
   overflow: visible;
   background-color: var(--dialog-background);
+  /* And its text. Said rather than inherited, because a `<dialog>` is given
+     `color: CanvasText` by the browser's own stylesheet — black, whatever the
+     page around it is set to — and a rule on the element beats anything it
+     would have inherited. Without this, a dialog on a dark theme draws black
+     text on its dark surface, except where something inside happens to set a
+     colour of its own. */
+  color: var(--text-color);
   /* Centred by auto margins against inset:0 — the free space is split evenly,
      and once max-height leaves none the dialog simply sits at the top. A
      translate of (100dvh - 100%) / 2 resolves the 100% against the dialog's
@@ -176,7 +183,12 @@
   display: flex;
   flex-direction: column;
   /* The rounded-corner clipping happens here; the dialog element itself stays
-     overflow:visible so a tooltip can escape it. */
+     overflow:visible so a tooltip can escape it. The radius is the dialog's
+     own less the 1px border it sits inside, so the two curves agree. Said
+     here rather than left to the header, which used to round its own top
+     corners: the header now reaches past this edge (see below) and is cut off
+     by it, so this is what the corners are cut along. */
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -184,7 +196,6 @@
    gives way, so a dialog too tall for its box scrolls its content rather than
    squeezing its chrome out. */
 .v-Dialog header {
-  border-radius: 8px 8px 0 0;
   height: 52px;
   flex: 0 0 auto;
   display: flex;
@@ -193,8 +204,6 @@
   padding: 12px;
   user-select: none;
   box-sizing: border-box;
-  border-left: 1px solid var(--dialog-header-border);
-  border-right: 1px solid var(--dialog-header-border);
   background-color: var(--dialog-header-background);
   border-bottom: 1px solid var(--dialog-header-border);
   color: var(--dialog-header-foreground);

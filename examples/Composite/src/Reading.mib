@@ -1,0 +1,38 @@
+<!-- The same idea with a controller beside it: Reading.mib is paired with
+     ReadingController.js by name, and draws against a fresh instance of it.
+
+     The tag's attributes land on that controller before it draws, so its own
+     methods can read them — `this.celsius` below is the `celsius` attribute.
+     What it works out from them is ordinary state, and binds like anything. -->
+
+<div styleName="reading">
+    <span styleName="place">{place}</span>
+    <span styleName="temp">{shown}</span>
+    <!-- Bound props on a component. The Button is not this view's markup, so
+         `text` cannot be kept up to date the way `{shown}` beside it is —
+         instead this view draws itself again when `unitLabel` changes, and the
+         prop is worked out afresh. A file with a bound prop in it is the only
+         kind that redraws; everything else keeps the cheaper binding pass. -->
+    <Button text="{unitLabel}" intent="{tone}" action="toggleUnit"/>
+</div>
+
+<style>
+    .reading {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 0.7rem;
+        border: 1px solid var(--default-border-color);
+        border-radius: 6px;
+        background: var(--light-view-background);
+    }
+
+    .place {
+        font-weight: 600;
+    }
+
+    .temp {
+        font-variant-numeric: tabular-nums;
+        color: var(--secondary-foreground, var(--text-color));
+    }
+</style>

@@ -123,6 +123,61 @@ test("Enter and Space activate, other keys do not", () => {
   assert.equal(fired, 0, "keydown alone does not fire for a momentary button");
 });
 
+test("the keyboard's own activation is left alone", () => {
+  // A `<button>` activates itself from the keyboard by firing a click — Enter
+  // as the key goes down, Space as it comes up. Cancelling the default on
+  // keydown cancels exactly that, and since the action hangs off `click` the
+  // button lit up under the key and then did nothing. Nothing but a real
+  // browser generates that click, so what can be checked here is that the
+  // default is left to happen.
+  const { el } = open({ text: "Go" });
+
+  for (const key of ["Enter", " "]) {
+    let cancelled = false;
+    el.dispatchEvent({
+      type: "keydown",
+      key,
+      preventDefault: () => (cancelled = true),
+    });
+    assert.equal(cancelled, false, `${key} was left to the browser`);
+    el.dispatchEvent({ type: "keyup", key });
+  }
+});
+
+test("and the click it produces fires the action once", () => {
+  // What the browser does next, which is the half of it these tests can only
+  // stand in for.
+  let fired = 0;
+  const { el, view } = open({ text: "Go", action: () => (fired += 1) });
+
+  el.dispatchEvent({ type: "keydown", key: "Enter" });
+  assert.equal(view.buttonState, ButtonState.ON, "pressed while held");
+  el.dispatchEvent({ type: "click" });
+  el.dispatchEvent({ type: "keyup", key: "Enter" });
+
+  assert.equal(fired, 1);
+  assert.equal(view.buttonState, ButtonState.OFF);
+});
+
+test("a toggle fires on the key going down, and not again on the click", () => {
+  // A toggle flips as the key goes down; the click that follows is the same
+  // activation arriving a second time and must not count twice.
+  let fired = 0;
+  const { el, view } = open({
+    text: "Toggle",
+    toggle: true,
+    action: () => (fired += 1),
+  });
+
+  el.dispatchEvent({ type: "keydown", key: " " });
+  assert.equal(view.on, true);
+  el.dispatchEvent({ type: "click" });
+  el.dispatchEvent({ type: "keyup", key: " " });
+
+  assert.equal(fired, 1);
+  assert.equal(view.on, true, "still latched on");
+});
+
 test("a disabled button neither activates nor fires", () => {
   let fired = 0;
   const { el, view } = open({

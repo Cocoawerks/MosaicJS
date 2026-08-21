@@ -11,6 +11,28 @@ export const MARKUP_EXT = ".mib";
 
 /** The built-in view element. */
 export const VIEW_TAG = "View";
+
+/**
+ * The components that are a surface of their own rather than a piece of one:
+ * they take over the window, position themselves against something, and are
+ * placed by the runtime rather than by the markup around them.
+ *
+ * A surface may only be the root of a `.mib` file. Nested in other markup it
+ * would sit in that markup's flow — inside a paragraph, inside a pane that
+ * scrolls, inside another dialog — which is not where it ends up on screen, so
+ * the file would read as something the page does not do. Written as its own
+ * file it says what it is, and the page places it by name:
+ *
+ *   <!-- ColourPopOver.mib -->      <!-- and in the page -->
+ *   <PopOver orientation="…">       <ColourPopOver outlet="colours"/>
+ *       …
+ *   </PopOver>
+ *
+ * Only these three: a kind of popover that belongs to a control it hangs from —
+ * a Menu inside a MenuItem, a Tooltip — is part of that control's markup and
+ * is nested like anything else.
+ */
+export const SURFACE_TAGS = new Set(["DialogBox", "Drawer", "PopOver"]);
 /** How markup names the CSS class, on every element — never `class`. */
 export const STYLE_NAME_ATTR = "styleName";
 /** Binds a method: a listener on a DOM element, an action on a component. */

@@ -65,7 +65,7 @@
                 <!-- An icon is a class name, which this page's sheet draws. -->
                 <MenuItem text="Find" value="find" icon="ks-menu-icon ks-icon-search"/>
                 <MenuItem text="Delete" value="delete" icon="ks-menu-icon ks-icon-trash"/>
-                <MenuItem separator="true"/>
+                <MenuItemSeparator/>
                 <MenuItem text="Paste" value="paste" enabled="false"/>
 
                 <!-- A line that holds a menu of its own opens it to the side. -->
@@ -280,6 +280,31 @@
         </div>
 
         <p styleName="values">bars={barCount} where={barWhere}</p>
+    </section>
+
+    <section styleName="section">
+        <h2 styleName="heading">Drawer</h2>
+        <p styleName="note">
+            A panel docked against the right edge that slides in and pushes the
+            page aside rather than covering it — the room it takes is padding on
+            the document, so what is here reflows into what is left. It is not
+            modal: everything on this page stays live while it is out. Escape
+            inside it, or its close button, puts it away. The colour well in it
+            opens its chooser over the panel rather than inside it.
+        </p>
+        <p styleName="note">
+            This one is the application's own: FiltersDrawer.mib holds its
+            markup and FiltersDrawerController.js beside it holds its behaviour,
+            the same pairing the popover and the dialog have.
+        </p>
+
+        <div styleName="row centred">
+            <Button text="Filters…" outlet="drawerButton" action="toggleDrawer"/>
+        </div>
+
+        <FiltersDrawer outlet="filtersDrawer"/>
+
+        <p styleName="values">filters={filters} drawer={drawerState}</p>
     </section>
 
     <section styleName="section">
@@ -514,6 +539,8 @@
                 <MenuBarItem slot="actions" text="File" showChevron action="barMenuChose">
                     <MenuItem text="New" value="new"/>
                     <MenuItem text="Open" value="open"/>
+                    <!-- The older way of writing a rule, which still says the
+                         same thing as the MenuItemSeparator above. -->
                     <MenuItem separator="true"/>
                     <MenuItem text="Close" value="close" enabled="false"/>
                 </MenuBarItem>

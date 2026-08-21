@@ -186,6 +186,14 @@ export default class DialogBox extends Component {
   forceClose() {
     if (!this.open) return;
 
+    // A dialog asked to close while it is still on its way up has a switch-on
+    // waiting to run: dropping it here is what stops the close being undone a
+    // moment later by a dialog that opens itself after being told not to.
+    if (this.showTimer !== null && this.showTimer !== undefined) {
+      clearTimeout(this.showTimer);
+      this.showTimer = null;
+    }
+
     const node = this.node;
     if (typeof node?.close === "function") {
       // The UA fires "close" for a modal and a non-modal dialog alike, and

@@ -4,6 +4,7 @@ import { coerceProps } from "./coerce.js";
 import { drawInto, isComponentClass } from "./private/draw.js";
 import { attachTree, discard, disposeTree } from "./private/lifecycle.js";
 import { render } from "./render.js";
+import { rememberView } from "./private/scope.js";
 
 /** What `mount` was given when it was given no controller at all. */
 const EMPTY = Symbol("no controller");
@@ -63,6 +64,26 @@ export function mount(component, target, props = {}, controller = EMPTY) {
   view.node = nodes[0] ?? null;
   view.props = coerceProps(props);
   if (view.node) view.node.__ibView = view;
+
+  // A page draws itself again the way a composed view does, so a value reaches
+  // a component's prop here too — `<Button text="{label}"/>` in a page is the
+  // same thing it is anywhere else. Only a page that has such a prop, though:
+  // `redraws` is what the compiler sets for a file with one, and a page
+  // without one keeps the binding pass it has always had. A page with more
+  // than one root has no single node to patch against and keeps it too.
+  if (
+    typeof component === "function" &&
+    component.redraws &&
+    nodes.length === 1 &&
+    nodes[0]?.nodeType === Node.ELEMENT_NODE
+  ) {
+    rememberView(controller, {
+      fn: component,
+      props,
+      out: vnode,
+      node: nodes[0],
+    });
+  }
 
   target.textContent = "";
   target.appendChild(dom);

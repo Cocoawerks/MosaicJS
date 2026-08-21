@@ -1,0 +1,88 @@
+/*
+ * Ported from GWT Mosaic: client/components/resources/drawer/style.css.
+ *
+ * The class names are the Java version's — all three themes already carry
+ * `.v-Drawer` rules for the surface, its header and its close button.
+ *
+ * The close button's element is Button's and carries Button's scope rather than
+ * this sheet's, so it is reached through `:global(...)` — the same arrangement
+ * the dialog's and the snackbar's have.
+ */
+
+/* A fixed dock pinned full-height against the right edge. It reserves its own
+   room — the page is padded while it is out — so it pushes what is there aside
+   rather than covering it. */
+.v-Drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  /* Above the page, below popovers and menus (z-index 100), so a picker opened
+     from something inside the drawer stacks over it rather than under. */
+  z-index: 10;
+  width: 370px;
+  max-width: 90vw;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  font-size: 15px;
+  /* Visible so a popover hosted inside is not clipped; the body scrolls on its
+     own account. */
+  overflow: visible;
+  /* Parked off screen; `.is-open` slides it in. The duration is `PUSH_MS` in
+     Drawer.js, which is what the page's padding is transitioned for — the two
+     move together, so they have to say the same thing. */
+  transform: translateX(100%);
+  transition: transform 220ms ease;
+}
+
+.v-Drawer.is-open {
+  transform: translateX(0);
+}
+
+/* Mirrors the dialog's header, so a drawer and a dialog match. */
+.v-Drawer .header {
+  height: 52px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.v-Drawer .title {
+  flex: 1;
+  margin: 4px 0 0 6px;
+  font-size: 21px;
+}
+
+/* --- the close button ------------------------------------------------------
+   Its element is Button's, and carries Button's scope rather than this one's. */
+
+.v-Drawer .header :global(.v-Button.close) {
+  width: 25px;
+  height: 25px;
+  border-radius: 50px;
+  border: none;
+  min-width: unset;
+  min-height: unset;
+}
+
+.v-Drawer .header :global(.v-Button.close .icon) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.v-Drawer .header :global(.v-Button.close .icon svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.v-Drawer .body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 16px;
+}

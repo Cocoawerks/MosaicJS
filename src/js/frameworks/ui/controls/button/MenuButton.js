@@ -10,7 +10,7 @@
 //
 //   <MenuButton text="Edit" action="edited">
 //       <MenuItem text="Cut" value="cut"/>
-//       <MenuItem separator="true"/>
+//       <MenuItemSeparator/>
 //       <MenuItem text="Paste" value="paste"/>
 //   </MenuButton>
 import { mount } from "mosaic";

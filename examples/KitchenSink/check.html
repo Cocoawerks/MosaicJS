@@ -113,6 +113,30 @@
         last().includes("clicked the primary button"),
       );
 
+      // A button is a real `<button>`, and a real button activates itself from
+      // the keyboard by firing a click — Enter as the key goes down, Space as it
+      // comes up. Cancelling the default on keydown cancels exactly that, and
+      // the action hangs off the click: the button lit up under the key and did
+      // nothing at all.
+      //
+      // A synthetic key press produces no native click, so what a page can check
+      // is the half that broke it — that the default is left to happen.
+      for (const key of ["Enter", " "]) {
+        const press = new KeyboardEvent("keydown", {
+          key,
+          bubbles: true,
+          cancelable: true,
+        });
+        labelled("default").dispatchEvent(press);
+        check(
+          `${key === " " ? "Space" : key} is left to the browser to act on`,
+          press.defaultPrevented === false,
+        );
+        labelled("default").dispatchEvent(
+          new KeyboardEvent("keyup", { key, bubbles: true }),
+        );
+      }
+
       // --- CheckBox -----------------------------------------------------------
       const remember = boxes()[0];
       check(
@@ -1698,6 +1722,23 @@
           menuItems()[2].getAttribute("role") === "separator" &&
           menuItems()[3].getAttribute("aria-disabled") === "true",
       );
+      // That rule is a MenuItemSeparator — a MenuItem subclass, so it also
+      // proves the menu takes a *kind* of item for a line rather than MenuItem
+      // itself. The title bar's File menu writes its rule the older way,
+      // `separator="true"`, and both land here as the same thing.
+      const ruleLine = menuItems()[2];
+      const rulePaint = getComputedStyle(ruleLine);
+      check(
+        `the rule is drawn as one: a painted hairline (${rulePaint.height}, ${rulePaint.backgroundColor})`,
+        Math.round(parseFloat(rulePaint.height)) === 1 &&
+          rulePaint.backgroundColor !== "rgba(0, 0, 0, 0)",
+      );
+      check(
+        "and holds nothing a reader could act on",
+        ruleLine.textContent.trim() === "" &&
+          ruleLine.getAttribute("data-item") === null,
+      );
+
       // The icon slot keeps menu.css's 19px min-width; what the page's sheet adds
       // is the height and the mask that draws the icon into it.
       check(
@@ -1711,6 +1752,27 @@
             menuItems()[0].querySelector(".icon"),
           ).maskImage.startsWith("url("),
       );
+      // The icon sits on the same line as the words beside it. The flex line
+      // centres both, but the label is pushed down again by the cap offset —
+      // text centred by its line box reads high — so an icon left on the raw
+      // line rides above the text it belongs to. Only a real layout has any of
+      // these numbers.
+      const middleOf = (el) => {
+        const box = el.getBoundingClientRect();
+        return box.top + box.height / 2;
+      };
+      const iconLine = menuItems()[0].querySelector(".icon");
+      const labelLine = menuItems()[0].querySelector("span");
+      const apart = middleOf(iconLine) - middleOf(labelLine);
+      check(
+        `the icon is on the label's line, not above it (out by ${apart.toFixed(2)}px)`,
+        Math.abs(apart) < 0.5,
+      );
+      check(
+        `because it takes the same cap offset the label does (${getComputedStyle(iconLine).top})`,
+        parseFloat(getComputedStyle(iconLine).top) > 0,
+      );
+
       check(
         "and the line that holds a menu of its own says so",
         menuItems()[4].getAttribute("aria-haspopup") === "menu" &&
@@ -2686,6 +2748,173 @@
         inBar().length === 5 &&
           getComputedStyle(overflowBtn()).display === "none",
       );
+
+      // --- Drawer ---------------------------------------------------------------
+      // A panel docked to the right that pushes the page aside rather than
+      // covering it. What the unit tests cannot see is the push itself: it is
+      // padding on the document, and only a real layout has any.
+      //
+      // Last of everything, because this is the one section that resizes the
+      // page: the drawer pushes what is beside it, the toolbar reflows into
+      // the narrower room and moves items into an overflow menu, and a
+      // section running afterwards would find a menu it did not put there.
+      const drawerBox = section("Drawer");
+      const drawer = () => app.querySelector(".v-Drawer");
+      const drawerOut = () =>
+        drawer().className.includes("is-open");
+      const pagePush = () =>
+        Math.round(parseFloat(getComputedStyle(document.body).paddingRight) || 0);
+      const drawerButton = (text) =>
+        [...drawerBox.querySelectorAll(".v-Button")].find(
+          (b) => b.textContent.trim() === text,
+        );
+      // The slide is 220ms and the panel says it is open at 260ms.
+      const slid = () => new Promise((r) => setTimeout(r, 340));
+
+      check("the drawer drew, from the page's own .mib", drawer() !== null);
+      check("and starts away", !drawerOut());
+      check(
+        "out of the tab order while it is",
+        drawer().hasAttribute("inert") &&
+          drawer().getAttribute("aria-hidden") === "true",
+      );
+      check("with nothing taken from the page", pagePush() === 0);
+      // Measured against the layout viewport rather than `window.innerWidth`,
+      // which counts the scrollbar the drawer is not positioned against.
+      const viewport = () => document.documentElement.clientWidth;
+      check(
+        `parked off screen, past the right edge (left ${Math.round(drawer().getBoundingClientRect().left)}px of ${viewport()}px)`,
+        Math.round(drawer().getBoundingClientRect().left) >= viewport() - 1,
+      );
+
+      const pageWidthBefore = app.getBoundingClientRect().width;
+      drawerButton("Filters…").click();
+      await slid();
+
+      check("the page's button brings it out", drawerOut());
+      check("and it joins the tab order", !drawer().hasAttribute("inert"));
+      // Which is what lets it take the keyboard at all: while it is away the
+      // panel is `inert`, and an inert subtree cannot be focused. A real
+      // browser is the only place that holds.
+      check(
+        `the close button has the keyboard (${document.activeElement?.className?.split(" ")[0] ?? "nothing"})`,
+        document.activeElement === drawer().querySelector(".v-Button.close"),
+      );
+      check(
+        `it is on screen now (left ${Math.round(drawer().getBoundingClientRect().left)}px of ${viewport()}px)`,
+        Math.round(drawer().getBoundingClientRect().right) <= viewport() + 1 &&
+          drawer().getBoundingClientRect().left < viewport(),
+      );
+      check(
+        `the page was pushed aside by its width (${pagePush()}px vs ${Math.round(drawer().getBoundingClientRect().width)}px)`,
+        pagePush() > 0 &&
+          Math.abs(pagePush() - drawer().getBoundingClientRect().width) <= 1,
+      );
+      check(
+        `so the page has less room than it had (${Math.round(app.getBoundingClientRect().width)}px was ${Math.round(pageWidthBefore)}px)`,
+        app.getBoundingClientRect().width < pageWidthBefore,
+      );
+      check(
+        "the theme paints it",
+        getComputedStyle(drawer()).backgroundColor !== "rgba(0, 0, 0, 0)",
+      );
+      check(
+        "its header reads what the markup gave it",
+        drawer().querySelector(".title").textContent === "Filters",
+      );
+
+      // It is not modal: the page behind it still works.
+      const stillLive = labelled("Say something");
+      stillLive.click();
+      check(
+        "the page behind it is still live",
+        last().includes("toast: Something happened") && drawerOut(),
+      );
+
+      // Its own controls answer to its own controller.
+      const unread = drawer().querySelector('[role="checkbox"]');
+      unread.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await until(() => app.textContent.includes("filters=unread"));
+      check(
+        `a control inside it answers its own controller (${app.textContent.match(/filters=(\S+)/)?.[1]})`,
+        app.textContent.includes("filters=unread"),
+      );
+
+      drawer()
+        .querySelector(".v-Button.close")
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await slid();
+      check("its close button puts it away", !drawerOut());
+      check(
+        "and the panel is out of the tab order again",
+        drawer().hasAttribute("inert"),
+      );
+      check(`and the page gets its room back (${pagePush()}px)`, pagePush() === 0);
+      check(
+        "which the page was told about",
+        app.textContent.includes("drawer=away"),
+      );
+
+      // A colour well inside it: its chooser is a popover, and the drawer's
+      // stylesheet is written around exactly this — `overflow: visible` so the
+      // chooser is not clipped by the panel, and a z-index below popovers so it
+      // stacks over the panel rather than under.
+      drawerButton("Filters…").click();
+      await slid();
+      check("out again", drawerOut());
+
+      const drawerWell = drawer().querySelector(".cw-well");
+      // The ColorWell section above left its own chooser on the page, and a
+      // well keeps the one it made. So this is the chooser that was not there
+      // a moment ago, rather than whichever the document happens to hold.
+      const choosersBefore = new Set(document.querySelectorAll(".ccp-root"));
+      const drawerChooser = () =>
+        [...document.querySelectorAll(".ccp-root")].find(
+          (c) => !choosersBefore.has(c),
+        ) ?? null;
+
+      check("the drawer holds a colour well", drawerWell !== null);
+      check("with no chooser of its own until one is asked for", drawerChooser() === null);
+
+      drawerWell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await until(() => drawerChooser() !== null);
+      const chooserPanel = () => drawerChooser().closest(".v-PopOver");
+      check(
+        "pressing it opens the chooser",
+        getComputedStyle(chooserPanel()).visibility === "visible",
+      );
+
+      const panelBox = drawer().getBoundingClientRect();
+      const overBox = chooserPanel().getBoundingClientRect();
+      check(
+        `the chooser is not clipped by the panel it was opened in (${Math.round(overBox.left)}px against the drawer's ${Math.round(panelBox.left)}px)`,
+        overBox.left < panelBox.left,
+      );
+      check(
+        `and stacks over the drawer, not under it (popover ${getComputedStyle(chooserPanel()).zIndex} vs drawer ${getComputedStyle(drawer()).zIndex})`,
+        Number(getComputedStyle(chooserPanel()).zIndex) >
+          Number(getComputedStyle(drawer()).zIndex),
+      );
+
+      const reported = () => app.textContent.match(/filters=(.+?) drawer=/)?.[1] ?? "";
+      const startedAs = reported();
+      // A swatch settles on the press, not the click — and swatch 18 is the
+      // blue the well already holds, so this takes another one.
+      const drawerSwatch = drawerChooser().querySelectorAll(".ccp-swatch")[8];
+      drawerSwatch.dispatchEvent(
+        new PointerEvent("pointerdown", { bubbles: true }),
+      );
+      await until(() => reported() !== startedAs);
+      check(
+        `choosing a colour reaches the drawer's own controller (${reported()})`,
+        /#[0-9A-Fa-f]{6}$/.test(reported().trim()) && reported() !== startedAs,
+      );
+      check("and the drawer is still out", drawerOut());
+
+      drawerButton("Filters…").click();
+      await slid();
+      check("putting it away leaves the page as it was", !drawerOut() && pagePush() === 0);
+
 
       document.querySelector("#results").textContent = log.join("\n");
       document.title =

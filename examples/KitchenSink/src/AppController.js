@@ -64,6 +64,10 @@ export default class AppController {
     /** What the settings dialog last saved. */
     this.saved = "nothing yet";
 
+    /** What the drawer's filters say, and whether it is out. */
+    this.filters = "newest";
+    this.drawerState = "away";
+
     /** How many snackbars are up, and which corner they stack against. */
     this.barCount = "0";
     this.barWhere = "bottom_right";
@@ -666,6 +670,24 @@ export default class AppController {
       this.note(`settings saved: ${this.saved}`);
     };
     this.settingsDialog.show();
+  }
+
+  // --- the drawer -----------------------------------------------------------
+
+  /**
+   * Show the drawer, or put it away. `this.filtersDrawer` is FiltersDrawer's
+   * own controller — an outlet on a view that has one hands that over — so
+   * this says what the page has to say to it and nothing about what is inside.
+   */
+  toggleDrawer() {
+    this.filtersDrawer.onChange = (what) => {
+      this.filters = what;
+      this.note(`filters: ${what}`);
+    };
+    this.filtersDrawer.onOpenChange = (open) => {
+      this.drawerState = open ? "out" : "away";
+    };
+    this.filtersDrawer.toggle();
   }
 
   // --- the snackbars --------------------------------------------------------

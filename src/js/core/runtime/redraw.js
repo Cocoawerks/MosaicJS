@@ -13,6 +13,11 @@ import {
 } from "./private/bindings.js";
 import { drawInto, isComponentClass } from "./private/draw.js";
 import { flatten } from "./private/flatten.js";
+import {
+  applyProps,
+  setViewRedraw,
+  VIEW,
+} from "./private/scope.js";
 import { attachTree, discard } from "./private/lifecycle.js";
 import { applyRef, setAttribute } from "./private/props.js";
 
@@ -151,6 +156,14 @@ function patch(parent, dom, oldV, newV, controller) {
         // controller of its own keeps it across redraws, or its state
         // would be built again every time anything above it changed.
         const own = dom.__ibCtl ?? controller;
+        // What the tag now says is put to the scope. Only what has changed
+        // since the last draw is assigned, so a view that was told something
+        // through its outlet keeps it.
+        if (dom.__ibCtl) {
+          const record = own[VIEW];
+          const applied = applyProps(own, newV.props, record?.applied);
+          if (record) record.applied = applied;
+        }
         const produced = newV.type.call(own, {
           ...newV.props,
           children: newV.children,
@@ -368,3 +381,45 @@ function sameProps(a = {}, b = {}) {
   if (ka.length !== kb.length) return false;
   return ka.every((k) => a[k] === b[k]);
 }
+
+
+/**
+ * Draw a composed view again and patch what changed.
+ *
+ * This is what makes a `.mib` behave like a component rather than a page whose
+ * text is kept up to date: saying something to a view re-runs the function the
+ * compiler made of its markup and reconciles the two trees, so a value that
+ * reaches a child — a Button's `text`, another view's prop — arrives there the
+ * same way it reaches a text node.
+ *
+ * Patched, never rebuilt: nodes that keep their place and their tag are the
+ * same nodes afterwards, so focus, scroll and a press in progress survive.
+ *
+ * @returns {boolean} Whether it drew. A view whose markup has more than one
+ * root has no single node to patch against and says no, which leaves the
+ * caller to fall back to the binding pass.
+ */
+function redrawComposedView(scope) {
+  const record = scope?.[VIEW];
+  const node = record?.node;
+  if (!record || !node?.parentNode) return false;
+
+  // Re-registered against whichever nodes survive, as a drawn component's are.
+  if (Object.prototype.hasOwnProperty.call(scope, BINDINGS))
+    scope[BINDINGS].length = 0;
+
+  const produced = record.fn.call(scope, record.props);
+  const patched = patch(node.parentNode, node, record.out, produced, scope);
+
+  record.out = produced;
+  record.node = patched;
+  if (patched?.nodeType === Node.ELEMENT_NODE) {
+    patched.__ibFn = record.fn;
+    patched.__ibOut = produced;
+    patched.__ibCtl = scope;
+  }
+  attachTree(patched);
+  return true;
+}
+
+setViewRedraw(redrawComposedView);

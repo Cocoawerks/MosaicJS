@@ -32,6 +32,30 @@ export function attrValue(parts, controller) {
     .join("");
 }
 
+/**
+ * One notifier per controller, so observing the same property twice registers
+ * one callback rather than two.
+ *
+ * `observe` keeps its callbacks in a Set, which only de-duplicates something
+ * that is the same function each time. A fresh closure per registration was
+ * harmless while a view drew once and tracked its bindings once; a view that
+ * redraws tracks them again on every draw, and the set would grow by one each
+ * time — then run every one of them on the next change. Two thousand redraws
+ * was two thousand notifiers and a heap out of memory.
+ *
+ * @type {WeakMap<object, Function>}
+ */
+const notifiers = new WeakMap();
+
+export function notifierFor(controller) {
+  let notify = notifiers.get(controller);
+  if (!notify) {
+    notify = () => refresh(controller);
+    notifiers.set(controller, notify);
+  }
+  return notify;
+}
+
 export function track(controller, entry) {
   if (!Object.prototype.hasOwnProperty.call(controller, BINDINGS)) {
     Object.defineProperty(controller, BINDINGS, {
@@ -48,6 +72,6 @@ export function track(controller, entry) {
     entry.kind === "text" ? [entry.path] : entry.parts.map((p) => p.path);
   for (const path of paths) {
     if (path)
-      observe(controller, path.split(".")[0], () => refresh(controller));
+      observe(controller, path.split(".")[0], notifierFor(controller));
   }
 }

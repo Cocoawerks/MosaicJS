@@ -9,6 +9,7 @@ import {
   OUTLET_ATTR,
   scopeClass,
   STYLE_NAME_ATTR,
+  SURFACE_TAGS,
   VIEW_TAG,
 } from "./js.js";
 
@@ -23,12 +24,15 @@ import {
  *              beside this one, when there is one.
  */
 export function generate(comp, opts) {
+  checkSurfaces(comp.markup, opts.name);
+
   const scope = scopeClass(opts.hash);
   const hasStyle = comp.style.trim() !== "";
 
   const imports = ["h", "Fragment"];
   if (usesTextBinding(comp.markup)) imports.push("bindText");
-  if (usesAttrBinding(comp.markup)) imports.push("bindAttr");
+  if (usesAttrBinding(comp.markup, false)) imports.push("bindAttr");
+  if (usesAttrBinding(comp.markup, true)) imports.push("bindProp");
   if (hasStyle) imports.push("addStyles");
 
   let out = `import { ${imports.join(", ")} } from ${jsString(opts.runtime)};\n\n`;
@@ -76,8 +80,28 @@ export function generate(comp, opts) {
   out += `export default function ${opts.name}(props = {}) {\n`;
   const ctx = new Ctx(hasStyle ? scope : null);
   out += `  return ${ctx.childrenExpr(comp.markup, 1)};\n}\n`;
+
+  // What tells the runtime this function came from a `.mib` rather than being
+  // a component someone wrote by hand. A view compiled from markup draws
+  // against a scope of its own and takes the tag's attributes as its state; a
+  // hand-written function component is the older, plainer thing and still
+  // draws against the controller of whatever placed it.
+  out += `\n${opts.name}.isMarkup = true;\n`;
+
+  // And whether it has to draw itself again when its state changes, rather
+  // than having its bindings brought up to date one at a time.
+  //
+  // Only a file with a bound prop does. A binding on this markup's own text or
+  // attributes is written straight back into the DOM, which is cheap and
+  // disturbs nothing; a component's prop can only be worked out by running the
+  // markup again. Saying so per file means a page that never binds a prop
+  // behaves exactly as it did — including the components in it that place
+  // themselves by hand, which a redraw they did not ask for can unsettle.
+  if (usesAttrBinding(comp.markup, true)) {
+    out += `${opts.name}.redraws = true;\n`;
+  }
   if (opts.controller) {
-    out += `\n${opts.name}.controller = ${opts.name}Controller;\n`;
+    out += `${opts.name}.controller = ${opts.name}Controller;\n`;
   }
   return out;
 }
@@ -99,6 +123,44 @@ function componentTags(nodes, out = []) {
   return out;
 }
 
+
+/**
+ * A surface — a DialogBox or a PopOver — may only be the root of a `.mib`.
+ *
+ * Nested in other markup it would draw inside that markup's flow, which is not
+ * where it goes on screen: a dialog is put in the top layer and a popover is
+ * placed against whatever it hangs from, so the file would read as something
+ * the page does not do. What a page writes instead is the name of the file the
+ * surface is the root of — see {@link SURFACE_TAGS}.
+ *
+ * Thrown rather than warned: the markup means something other than what it
+ * says, and finding that out on screen is an afternoon.
+ */
+function checkSurfaces(markup, name) {
+  const elements = markup.filter((node) => node.kind === "element");
+  const root = elements.length === 1 ? elements[0] : null;
+
+  const walk = (nodes) => {
+    for (const node of nodes) {
+      if (node.kind !== "element") continue;
+      if (node !== root && SURFACE_TAGS.has(node.name)) {
+        throw new Error(
+          `line ${node.line}: <${node.name}/> can only be the root of a .mib ` +
+            `file, not nested inside one.\n` +
+            `    A ${node.name} is a surface of its own: it is placed by the ` +
+            `runtime, not by the markup around it.\n` +
+            `    Put it in a file of its own — ${node.name === "PopOver" ? "ColourPopOver.mib" : "SettingsDialog.mib"} ` +
+            `is one — and name that file here instead:\n` +
+            `        <My${node.name === "PopOver" ? "PopOver" : "Dialog"} outlet="…"/>`,
+        );
+      }
+      walk(node.children);
+    }
+  };
+
+  walk(markup);
+}
+
 function isUpper(c) {
   return c !== undefined && c !== c.toLowerCase() && c === c.toUpperCase();
 }
@@ -112,14 +174,22 @@ function usesTextBinding(nodes) {
   );
 }
 
-/** Does the tree contain `{path}` inside an attribute value? */
-function usesAttrBinding(nodes) {
-  return nodes.some(
-    (n) =>
-      n.kind === "element" &&
-      (n.attrs.some((a) => a.value.kind === "template") ||
-        usesAttrBinding(n.children)),
-  );
+/**
+ * Does the tree contain `{path}` inside an attribute value — on a component
+ * when `onComponent` is true, and on plain markup when it is false? The two
+ * compile to different calls: a component's prop is read, an element's
+ * attribute is declared and kept up to date.
+ */
+function usesAttrBinding(nodes, onComponent) {
+  return nodes.some((n) => {
+    if (n.kind !== "element") return false;
+    const isComponent = isUpper(n.name[0]) || n.name.includes(".");
+    const here =
+      isComponent === onComponent &&
+      n.name !== VIEW_TAG &&
+      n.attrs.some((a) => a.value.kind === "template");
+    return here || usesAttrBinding(n.children, onComponent);
+  });
 }
 
 class Ctx {
@@ -201,15 +271,6 @@ class Ctx {
           withScope ? `${a.value.text} ${scope}`.trim() : a.value.text,
         );
       } else {
-        // A binding keeps an attribute of *this* markup up to date. A
-        // component is not markup: what it does with `enabled` is its own,
-        // and there is nothing to rewrite when the value changes.
-        if (isComponent) {
-          throw new Error(
-            `<${tag} ${a.name}="{...}"/>: a component's props are not bound. ` +
-              `Give it \`${OUTLET_ATTR}="name"\` and set ${a.name} on it from the controller.`,
-          );
-        }
         const parts = withScope
           ? [...a.value.parts, { kind: "text", text: ` ${scope}` }]
           : a.value.parts;
@@ -218,7 +279,15 @@ class Ctx {
             ? jsString(p.text)
             : `{ path: ${jsString(p.path)} }`,
         );
-        value = `bindAttr(this, [${items.join(", ")}])`;
+        // A binding keeps an attribute of *this* markup up to date, and
+        // `bindAttr` declares one of those. A component's prop is not part of
+        // the markup — what a Button does with `text` is the Button's own —
+        // so it is read now instead, and reading it is what marks it worth
+        // watching: assigning to it draws this view again, and the prop is
+        // worked out afresh.
+        value = isComponent
+          ? `bindProp(this, [${items.join(", ")}])`
+          : `bindAttr(this, [${items.join(", ")}])`;
       }
       if (withScope) scoped = true;
       entries.push(`${jsKey(key)}: ${value}`);

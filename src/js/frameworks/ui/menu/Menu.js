@@ -9,14 +9,24 @@
 //
 //   <Menu outlet="menu" action="chosen">
 //       <MenuItem text="Cut" value="cut"/>
-//       <MenuItem separator="true"/>
+//       <MenuItemSeparator/>
 //       <MenuItem text="Paste" value="paste" enabled="false"/>
 //   </Menu>
-import { coerceProps, mount } from "mosaic";
+import { coerceProps, mount, settingValue } from "mosaic";
 
 import PopOver, { PopOverOrientation } from "../popover/PopOver.js";
 import MenuItem from "./MenuItem.js";
 import "./menu.css";
+
+
+/**
+ * Whether a vnode's type is a menu item — MenuItem itself, or a kind of one.
+ * Asked rather than compared, so a subclass an application wrote is a line of
+ * the menu like any other; MenuItemSeparator is the framework's own.
+ */
+function isMenuItem(type) {
+  return type === MenuItem || type?.prototype instanceof MenuItem;
+}
 
 export default class Menu extends PopOver {
   static props = {
@@ -66,7 +76,7 @@ export default class Menu extends PopOver {
     const list = Array.isArray(children) ? children.flat(Infinity) : [children];
 
     return list
-      .filter((child) => child && child.type === MenuItem)
+      .filter((child) => child && isMenuItem(child.type))
       .map((child, index) => {
         const props = coerceProps(child.props);
         // A menu of its own is what an item holds, if it holds
@@ -74,6 +84,13 @@ export default class Menu extends PopOver {
         const submenu = (child.children ?? []).find(
           (grandchild) => grandchild?.type === Menu,
         );
+        // Whether it is a rule is the item's own to say: `separator="true"`
+        // on a MenuItem, or being a MenuItemSeparator, whose declaration
+        // defaults it true. Asked of the class rather than of what the markup
+        // passed, so both arrive here as the same answer.
+        const separator =
+          settingValue(child.type, "separator", props.separator) === true;
+
         return {
           // An item is known by its value; failing that by what it
           // reads, and failing that by where it sits.
@@ -81,7 +98,7 @@ export default class Menu extends PopOver {
           props,
           vnode: child,
           submenu,
-          separator: props.separator === true,
+          separator,
           enabled: props.enabled !== false,
         };
       });

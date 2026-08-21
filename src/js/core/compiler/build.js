@@ -20,10 +20,16 @@ import {
  * published under a name — into one job per compilable file.
  *
  * A tree's own output directory is skipped: an application's build lands
- * inside it, and compiling the previous run's output would be nonsense.
+ * inside it, and compiling the previous run's output would be nonsense. So is
+ * anything named in `skip` — a build is written into a staging directory and
+ * moved into place afterwards, so the directory it will land in is not among
+ * the outputs of this run and has to be said separately. Without that, the
+ * previous build sitting there is walked as though it were source.
  */
-export function planJobs(sources) {
-  const outdirs = sources.map((s) => path.resolve(s.outdir));
+export function planJobs(sources, skip = []) {
+  const outdirs = [...sources.map((s) => s.outdir), ...skip].map((d) =>
+    path.resolve(d),
+  );
   const isOutput = (file) => {
     const full = path.resolve(file);
     return outdirs.some(
@@ -49,11 +55,13 @@ export function planJobs(sources) {
 /**
  * Compile every source in `sources`.
  *
- * @param opts { runtime, name, sourcemap, minify, icons, out, onFile }
+ * @param opts { runtime, name, sourcemap, minify, icons, out, onFile, skip }
+ *             `skip` names directories that are output rather than source,
+ *             beyond the ones the sources themselves write to.
  * @returns the destination path of each compiled file
  */
 export function compileAll(sources, opts = {}) {
-  const jobs = planJobs(sources);
+  const jobs = planJobs(sources, opts.skip ?? []);
   if (jobs.length === 0) return [];
 
   const options = (job) => ({

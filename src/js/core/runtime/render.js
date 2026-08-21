@@ -8,6 +8,7 @@ import { Fragment } from "./Fragment.js";
 import { attrValue, display, readPath, track } from "./private/bindings.js";
 import { drawInto, isComponentClass } from "./private/draw.js";
 import { flatten } from "./private/flatten.js";
+import { applyProps, rememberView, scopeFor } from "./private/scope.js";
 import { applyRef, setAttribute } from "./private/props.js";
 
 /** The SVG namespace, and the element that hands the document back to HTML. */
@@ -80,25 +81,57 @@ export function render(vnode, controller = {}, ns = null) {
     // against and can only throw the node away and build another — which
     // destroys an icon mid-press, and with it the click that press was going
     // to become.
-    // A compiled page may carry a controller of its own — `Foo.mib` paired
-    // with the `FooController.js` beside it. One is built per drawn
-    // instance, and it is what the page is called against, so its
-    // `{bindings}`, outlets and actions are that controller's and not the
-    // controller of whatever drew it. Kept on the node, because a redraw
-    // has to call the page against the same one.
-    const own = type.controller ? new type.controller() : controller;
-    const produced = type.call(own, { ...props, children });
+    // A compiled `.mib` placed as a tag is a component: it draws against a
+    // scope of its own, and the tag's attributes are that scope's starting
+    // state. `Foo.mib` paired with a `FooController.js` beside it draws
+    // against a fresh instance of that controller; one written on its own
+    // draws against a plain object. Either way its `{bindings}`, outlets and
+    // actions are its own and not those of whatever drew it. Kept on the
+    // node, because a redraw has to call the view against the same one.
+    const own = scopeFor(type, controller);
+    const drawnWith = { ...props, children };
+    const applied = own !== controller ? applyProps(own, props) : null;
+    const produced = type.call(own, drawnWith);
     const dom = render(produced, own, ns);
     if (dom?.nodeType === Node.ELEMENT_NODE) {
       dom.__ibFn = type;
       dom.__ibOut = produced;
       if (own !== controller) dom.__ibCtl = own;
     }
-    // `outlet="colours"` on a page with a controller hands that controller
-    // over, not the element it drew: what the page above has to say to it
-    // is `show(button)` — the page's own words — and the element is the
-    // controller's business. A page without one hands over its element,
-    // which is all there is to hand.
+    // What it takes to draw this view again: saying something to its scope is
+    // what asks for that, so the scope is where it is kept.
+    //
+    // Kept only for a view that has a prop to work out — `type.redraws`, which
+    // the compiler sets for a file with a bound prop in it. Everything else has
+    // nothing a redraw would reach that the binding pass does not, and pays
+    // nothing for the difference. A view with more than one root has no single
+    // node to patch against and is left to the binding pass too.
+    if (
+      own !== controller &&
+      type.redraws &&
+      dom?.nodeType === Node.ELEMENT_NODE
+    ) {
+      rememberView(own, {
+        fn: type,
+        props: drawnWith,
+        out: produced,
+        node: dom,
+        applied,
+      });
+    }
+    // `outlet="colours"` on a composed view hands over that view's scope, not
+    // the element it drew: what the page above has to say to it is `show(button)`
+    // or `value = 12` — the view's own words — and the element is the view's
+    // business. A view written without a controller hands over its scope just
+    // the same, so `this.card.value = 12` reaches a `{value}` in a `.mib` that
+    // has no class of any kind written for it.
+    //
+    // The element is still reachable, by the way every view reaches its own:
+    // an `outlet` on the root element inside the `.mib`.
+    //
+    // A function component written by hand has no scope of its own — `own` is
+    // the controller that drew it — and hands over its element, as it always
+    // has.
     applyRef(props.ref, own !== controller ? own : dom);
     return dom;
   }

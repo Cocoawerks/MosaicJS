@@ -55,6 +55,26 @@ function notifiers(target) {
  * Idempotent — observing the same property again only adds the callback, and
  * the property keeps whatever value it already had.
  */
+/**
+ * The descriptor for `key`, from wherever it is defined — the object itself or
+ * anything it inherits from.
+ *
+ * Asked of the whole chain rather than the object alone, because a controller
+ * is usually a class and a derived value is usually a getter on its prototype.
+ * Looking only at own properties found nothing there, so observation took the
+ * property for plain state: it read the getter once, kept what came back, and
+ * defined an own accessor handing that same answer out for ever. A `{status}`
+ * that read `count >= limit` was therefore frozen at whatever it said the first
+ * time the page drew — the getter still existed, and was never called again.
+ */
+function definedDescriptor(target, key) {
+  for (let o = target; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) {
+    const found = Object.getOwnPropertyDescriptor(o, key);
+    if (found) return found;
+  }
+  return null;
+}
+
 export function observe(target, key, notify) {
   if (!target || (typeof target !== "object" && typeof target !== "function"))
     return;
@@ -69,11 +89,15 @@ export function observe(target, key, notify) {
   const callbacks = new Set([notify]);
   watched.set(key, callbacks);
 
-  const descriptor = Object.getOwnPropertyDescriptor(target, key);
+  const descriptor = definedDescriptor(target, key);
 
   // An accessor already there stays in charge of the value; observation only
   // wraps its setter, so a computed property keeps computing.
   if (descriptor && !("value" in descriptor)) {
+    // Read-only, so there is no assignment to hear about: it is left exactly
+    // as it is, and goes on deriving its answer from whatever it reads. A
+    // binding on one still comes right, because every binding is re-read
+    // whenever anything else the same controller holds is assigned.
     if (!descriptor.set) return;
     const inner = descriptor.set;
     Object.defineProperty(target, key, {

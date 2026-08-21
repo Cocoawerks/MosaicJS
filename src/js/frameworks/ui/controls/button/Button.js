@@ -125,10 +125,23 @@ export default class Button extends Control {
     if (!this.toggle) this.setButtonState(ButtonState.OFF);
   }
 
+  /**
+   * Enter or Space going down: the button takes its pressed face.
+   *
+   * What it does *not* do is call `preventDefault`. What it draws is a real
+   * `<button>`, and a real button already activates itself from the keyboard —
+   * Enter as the key goes down, Space as it comes up — by firing a click of its
+   * own. Cancelling the default is cancelling exactly that, and with the action
+   * hanging off `click` the button lit up under the key and then did nothing at
+   * all. The platform's own behaviour is left to happen, and this adds only the
+   * face it wears while the key is held.
+   *
+   * There is no page-scroll to head off either, which is the usual reason for
+   * cancelling Space: a focused button consumes the key itself.
+   */
   keyDown(event) {
     if (!this.enabled) return;
     if (!ACTIVATION_KEYS.has(event.key)) return;
-    event.preventDefault?.();
 
     if (this.toggle) {
       this.setButtonState(this.on ? ButtonState.OFF : ButtonState.ON);

@@ -15,6 +15,10 @@
 export { Component, BROWSER_EVENTS } from "./Component.js";
 
 export { coerceProps, coerceValue } from "./coerce.js";
+// What a child's declared setting resolves to, for a parent reading it off
+// the vnode rather than through the accessor — a Menu asking an item
+// whether it is a rule, and the like.
+export { settingValue } from "./private/settings.js";
 export { Fragment } from "./Fragment.js";
 export { h } from "./h.js";
 export { render } from "./render.js";
@@ -23,6 +27,7 @@ export { redraw } from "./redraw.js";
 export { refresh } from "./refresh.js";
 export { bindText } from "./bindText.js";
 export { bindAttr } from "./bindAttr.js";
+export { bindProp } from "./bindProp.js";
 export { clearBindings } from "./clearBindings.js";
 export { addStyles } from "./addStyles.js";
 export { collectStyles } from "./collectStyles.js";

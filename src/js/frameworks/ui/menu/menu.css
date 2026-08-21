@@ -88,9 +88,16 @@
 }
 
 .v-MenuItem .icon {
-  /* Symmetric, so the flex line centres the icon on itself: a 1px top margin
-       alone (which is what this was) drops it half a pixel. */
+  /* Symmetric, so the flex line centres the icon on itself: a top margin alone
+       moves it half as far as it says, since centring splits the difference. */
   margin: 0 12px 0 0;
+  /* And then down by exactly what the label goes down by. The line centres
+       both on itself, but the label is pushed on again by the cap offset —
+       text centred by its line box reads high — so an icon left on the raw
+       line sits above the words it belongs to. The same nudge from the same
+       variable puts the two on one line, at any size and in any face. */
+  position: relative;
+  top: var(--label-cap-offset, 0);
   border: none;
   padding: 1px;
   background-color: transparent;
