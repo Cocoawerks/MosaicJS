@@ -29,8 +29,7 @@
   height: 100%;
   overflow: visible;
   width: 100%;
-  cursor: inherit;
-  line-height: inherit;
+  cursor: inherit; 
   font-size: 16px;
 }
 

@@ -29,15 +29,16 @@
   flex-direction: row;
   align-items: center;
   height: 100%;
+  min-height:32px;
   overflow: hidden;
   box-sizing: border-box;
   padding: 0;
+  
 }
 
 .v-Button span {
   flex: 1;
-  pointer-events: none;
-  margin-top: 1px;
+  pointer-events: none; 
 }
 
 .v-Button.is-disabled {
@@ -62,8 +63,9 @@
   max-width: 100%;
 }
 
-.iconOnly > div {
+.v-Button.iconOnly > div {
   justify-content: center;
+  min-height:unset;
 }
 
 .v-Button:focus {
@@ -72,7 +74,7 @@
 }
 
 .v-Button.noIcon {
-  padding: 1px 20px;
+  padding: 0 20px;
 }
 
 .v-Button.iconOnly {
