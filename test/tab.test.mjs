@@ -146,10 +146,41 @@ test("the pill is drawn behind the tabs, and does not slide into place", () => {
 
   assert.ok(classesOf(pill).includes("v-TabBar-indicator"));
   assert.ok(
-    classesOf(pill).includes("no-anim"),
+    pill.classList.contains("no-anim"),
     "there is nowhere to slide from",
   );
   assert.equal(pill.getAttribute("aria-hidden"), "true");
+});
+
+test("and the class that stops it is put on rather than drawn", () => {
+  // `no-anim` is `movePill`'s, not `draw`'s. Drawn, every redraw put it back
+  // — including the one the action fires on the way through `selectTab`,
+  // which landed after the slide was set up and before the browser painted
+  // it. The pill jumped, which is what this is here to catch.
+  const { view, buttons } = tabs({ action: () => {} });
+  // Read afresh each time: a redraw replaces the node, and `pillNode` is what
+  // the ref hands back — the one `movePill` writes to.
+  const pill = () => view.pillNode;
+
+  view.sliding = true;
+  view.movePill();
+  assert.ok(!pill().classList.contains("no-anim"), "taken off for a slide");
+
+  // A redraw while the slide is set up leaves it off.
+  view.needsDisplay();
+  assert.ok(
+    !pill().classList.contains("no-anim"),
+    "and a redraw does not put it back",
+  );
+
+  view.sliding = false;
+  view.movePill();
+  assert.ok(pill().classList.contains("no-anim"), "and back on when it is not");
+
+  // The whole of it through the door a click comes in by: the action fires a
+  // redraw, and the pill has to come out of it still able to slide.
+  click(buttons[1]);
+  assert.ok(!pill().classList.contains("no-anim"));
 });
 
 test("the first tab is the one chosen", () => {

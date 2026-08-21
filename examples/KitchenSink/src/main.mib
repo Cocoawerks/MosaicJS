@@ -532,6 +532,8 @@
             trailing ones move into the ("»") menu at its right — drag the window narrower
             to watch them go. The two items at the left of the strip drop menus that meet its
             bottom edge; with one open, moving the pointer to the other switches to it.
+            The first tool wears a picture rather than a font icon — an imported .png,
+            which the build carries as a data URL.
         </p>
 
         <div styleName="bars">
@@ -556,6 +558,10 @@
             </TitleBar>
 
             <ToolBar outlet="tools">
+                <!-- An image rather than a font icon: the controller imports
+                     the .png, and the build carries it as a data URL. -->
+                <ToolBarItem text="Open" iconImage="{openIcon}"
+                             action="toolClicked"/>
                 <ToolBarItem text="Find" icon="ks-bar-icon ks-icon-search"
                              action="toolClicked"/>
                 <ToolBarItem text="Delete" icon="ks-bar-icon ks-icon-trash"

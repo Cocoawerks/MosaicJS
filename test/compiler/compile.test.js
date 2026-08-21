@@ -465,3 +465,37 @@ test("and is not doubled in one that reads the theme itself", () => {
   const declarations = bundled.split("--default-background-color:").length - 1;
   expect(declarations).toBe(1);
 });
+
+test("an imported image rides into the compiled module as a data URL", () => {
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+    "base64",
+  );
+  const root = tempDir();
+  fs.writeFileSync(path.join(root, "logo.png"), png);
+  fs.writeFileSync(
+    path.join(root, "Banner.jsx"),
+    'import logo from "./logo.png";\n' +
+      "export default class Banner {\n" +
+      '  draw() { return <img src={logo} alt="Mosaic"/>; }\n' +
+      "}\n",
+  );
+
+  const out = tempDir();
+  const dest = compileFile(path.join(root, "Banner.jsx"), {
+    root,
+    outdir: out,
+    runtime: "mosaic",
+    sourcemap: false,
+  });
+  const code = fs.readFileSync(dest, "utf8");
+
+  // The import is gone — nothing is fetched, and the bundler never sees a
+  // specifier it would have to resolve to a file.
+  expect(code).not.toContain("./logo.png");
+  expect(code).toContain(
+    `const logo = "data:image/png;base64,${png.toString("base64")}";`,
+  );
+  // And it is a string, so it is used where a URL is used.
+  expect(code).toContain("src: (logo)");
+});

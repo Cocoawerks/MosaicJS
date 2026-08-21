@@ -7,6 +7,7 @@ import { lineMarker, takeLineMarkers } from "../../src/js/core/compiler/js.js";
 import {
   ensureRuntimeNames,
   inlineCssImports,
+  inlineImageImports,
   inlineSvgImports,
   transform,
 } from "../../src/js/core/compiler/jsx.js";
@@ -333,4 +334,93 @@ test("the .svg is optional, and everything else is left alone", () => {
   const untouched =
     'import Control from "./Control.js";\nconst svg = "svg:not-an-import";\n';
   expect(inlineSvgImports(untouched, [dir])).toEqual([untouched, false]);
+});
+
+// --- image imports ----------------------------------------------------------
+
+/** A 1x1 transparent PNG — the smallest real file of its kind. */
+const PNG_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+const PNG = Buffer.from(PNG_BASE64, "base64");
+
+test("an image import becomes the data URL that names it", () => {
+  const dir = tempDir({ "logo.png": PNG });
+  const [code, found] = inlineImageImports(
+    'import logo from "./logo.png";\n',
+    dir,
+  );
+
+  expect(found).toBe(true);
+  expect(code).toBe(`const logo = "data:image/png;base64,${PNG_BASE64}";\n`);
+  expect(code).not.toContain("import logo");
+});
+
+test("the data URL says what kind of image it carries", () => {
+  const dir = tempDir({
+    "a.jpg": PNG,
+    "b.JPEG": PNG,
+    "c.gif": PNG,
+    "d.webp": PNG,
+    "e.avif": PNG,
+    "f.ico": PNG,
+  });
+  const of = (file) =>
+    inlineImageImports(`import x from "./${file}";\n`, dir)[0];
+
+  expect(of("a.jpg")).toContain("data:image/jpeg;base64,");
+  // The extension is read without regard to case, as a file system may be.
+  expect(of("b.JPEG")).toContain("data:image/jpeg;base64,");
+  expect(of("c.gif")).toContain("data:image/gif;base64,");
+  expect(of("d.webp")).toContain("data:image/webp;base64,");
+  expect(of("e.avif")).toContain("data:image/avif;base64,");
+  expect(of("f.ico")).toContain("data:image/x-icon;base64,");
+});
+
+test("an image is found relative to the file that imported it", () => {
+  const dir = tempDir({ "logo.png": PNG });
+  fs.mkdirSync(path.join(dir, "views"));
+  fs.writeFileSync(path.join(dir, "views", "own.png"), PNG);
+
+  const views = path.join(dir, "views");
+  expect(inlineImageImports('import a from "../logo.png";\n', views)[1]).toBe(
+    true,
+  );
+  expect(inlineImageImports('import b from "./own.png";\n', views)[1]).toBe(
+    true,
+  );
+});
+
+test("a missing image is a build error, not a broken picture", () => {
+  const dir = tempDir({ "logo.png": PNG });
+  expect(() =>
+    inlineImageImports('import x from "./nope.png";\n', dir),
+  ).toThrow(/nope\.png/);
+});
+
+test("everything that is not an image import is left alone", () => {
+  const dir = tempDir({ "logo.png": PNG });
+  const untouched = [
+    // A module, not an image.
+    'import Control from "./Control.js";',
+    // An svg: import is an icon, and becomes the component that draws it.
+    'import Chevron from "svg:chevron-down";',
+    // A package cannot be read off the disk beside the importer.
+    'import png from "some-package/logo.png";',
+    // Not an import at all.
+    'const path = "./logo.png";',
+  ].join("\n");
+
+  expect(inlineImageImports(untouched, dir)).toEqual([untouched, false]);
+});
+
+test("an image import keeps the line marker it was compiled with", () => {
+  const dir = tempDir({ "logo.png": PNG });
+  const [code] = inlineImageImports(
+    `${lineMarker(7)}import logo from "./logo.png";\n`,
+    dir,
+  );
+
+  const [clean, mappings] = takeLineMarkers(code);
+  expect(clean).toContain('const logo = "data:image/png;base64,');
+  expect(mappings.length).toBe(1);
 });

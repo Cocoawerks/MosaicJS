@@ -211,6 +211,14 @@ class Element extends N {
     return 0;
   }
 
+  get offsetLeft() {
+    return 0;
+  }
+
+  get offsetTop() {
+    return 0;
+  }
+
   /** Whether this element answers to `sel` — the same few forms as below. */
   matches(sel) {
     return matches(this, sel);
@@ -329,11 +337,19 @@ function matches(el, sel) {
   }
   rest = rest.replace(/:not\([^)]*\)/g, "");
 
-  const m = /^([a-z0-9-]+)?((?:\.[\w-]+)*)?(?:\[([^\]=]+)\])?$/i.exec(rest);
+  // `[attr]` and `[attr="value"]` both: a tab bar finds its selected tab with
+  // `[data-tab="2"]`, and without the value the first tab would answer for
+  // every one of them.
+  const m =
+    /^([a-z0-9-]+)?((?:\.[\w-]+)*)?(?:\[([^\]=]+)(?:=["']?([^\]"']*)["']?)?\])?$/i.exec(
+      rest,
+    );
   if (!m) return false;
-  const [, tag, classes, attr] = m;
+  const [, tag, classes, attr, value] = m;
   if (tag && el.tagName !== tag) return false;
   if (attr && !el.attributes.has(attr)) return false;
+  if (attr && value !== undefined && String(el.getAttribute(attr)) !== value)
+    return false;
   if (classes) {
     const on = (el.getAttribute("class") ?? "").split(/\s+/).filter(Boolean);
     for (const name of classes.split(".").filter(Boolean)) {

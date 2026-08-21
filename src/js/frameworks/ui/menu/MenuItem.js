@@ -47,9 +47,16 @@ export default class MenuItem extends Control {
 
   // --- behaviour -----------------------------------------------------------
 
-  /** The pointer arrived: the menu is what decides what that means. */
+  /**
+   * The pointer arrived: the menu is what decides what that means.
+   *
+   * The keyboard follows it. A menu opened beside an item does not take the
+   * keys — that waits on ArrowRight — so pointing into one has to, or the
+   * next key pressed would work the menu above the one being pointed at.
+   */
   pointerEnter() {
     if (!this.canBeActive) return;
+    this.menu?.focusPanel?.();
     this.menu?.activate(this.value);
   }
 

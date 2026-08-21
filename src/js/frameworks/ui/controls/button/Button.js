@@ -219,17 +219,17 @@ export default class Button extends Control {
 
   drawIcon() {
     if (this.iconImage) {
-      // setIconBase64() in Java: the image is painted as the icon's background.
+      // setIconBase64() in Java: the image is painted as the icon's
+      // background. Only the picture is named here — how big the slot is and
+      // how the image is fitted into it are the stylesheet's, so an image icon
+      // is the size of the glyph beside it in a toolbar, a title bar or a
+      // plain button alike. The Java version wrote a 30px width inline
+      // instead, which no sheet could then correct: in a toolbar it made this
+      // one icon wider than its neighbours and drew it past the 24px slot.
       return (
         <i
-          styleName="icon"
-          style={{
-            backgroundImage: `url(${this.iconImage})`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            backgroundSize: "100%",
-            width: "30px",
-          }}
+          styleName={["icon", "iconImage"]}
+          style={{ backgroundImage: `url(${this.iconImage})` }}
         />
       );
     }

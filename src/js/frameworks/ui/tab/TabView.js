@@ -151,6 +151,12 @@ export default class TabView extends Component {
    * The bar: the pill first, so it sits behind the tabs that follow it, then
    * a tab for each title. What a tab holds is not drawn here — that is the
    * deck's, below.
+   *
+   * The pill is drawn without `no-anim`. That class is `movePill`'s to put on
+   * and take off, and it has to stay off for the whole frame a slide starts
+   * in. Drawn, every redraw put it back — and the action a click fires is a
+   * redraw, landing between the slide being set up and the browser painting
+   * it, which left the pill jumping instead of sliding.
    */
   drawBar() {
     return (
@@ -161,7 +167,7 @@ export default class TabView extends Component {
         tabindex="0"
       >
         <div
-          styleName={["v-TabBar-indicator", "no-anim"]}
+          styleName="v-TabBar-indicator"
           ref={(el) => (this.pillNode = el)}
           aria-hidden="true"
         />

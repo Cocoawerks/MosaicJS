@@ -607,6 +607,83 @@ export function inlineSvgImports(code, dirs = [], scope = null) {
   return [out, found];
 }
 
+/**
+ * The raster formats an import may name, and what a data URL calls each one.
+ *
+ * `.svg` is deliberately absent: an icon is markup and becomes the component
+ * that draws it, which is a better thing than a data URL — it can be styled,
+ * and `currentColor` still means what it means. See `inlineSvgImports`.
+ */
+const IMAGE_TYPES = new Map([
+  [".png", "image/png"],
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
+  [".gif", "image/gif"],
+  [".webp", "image/webp"],
+  [".avif", "image/avif"],
+  [".bmp", "image/bmp"],
+  [".ico", "image/x-icon"],
+]);
+
+/**
+ * Replace an image import with the image.
+ *
+ *   import logo from "./logo.png";
+ *
+ * The file is read at compile time and becomes the data URL that names it,
+ * which is a string like any other — so it is used where a URL is used:
+ *
+ *   <img src={logo} alt="Mosaic"/>
+ *
+ * The same reasoning as a stylesheet's: the build is one file, and a page that
+ * fetched its images would need a server that had them. Inlining settles it
+ * before the page is opened, and an image that is not there is a build error
+ * rather than a broken picture.
+ *
+ * Base64 costs a third again in bytes, so this is for the images that belong
+ * to the interface — a logo, a texture, a placeholder. Content is content and
+ * belongs at a URL.
+ *
+ * @param dir the importing file's directory, which the specifier is relative to
+ * @returns `[code, foundAny]`
+ */
+export function inlineImageImports(code, dir) {
+  let out = "";
+  let found = false;
+
+  for (const line of splitInclusive(code)) {
+    const [clean] = takeLineMarkers(line);
+    const match = clean
+      .trim()
+      .match(
+        /^import\s+([\p{L}_$][\p{L}\p{N}_$]*)\s+from\s+["'](\.{1,2}\/[^"']+)["'];?$/u,
+      );
+
+    const type = match && IMAGE_TYPES.get(path.extname(match[2]).toLowerCase());
+    if (!type) {
+      out += line;
+      continue;
+    }
+
+    const [, name, spec] = match;
+    const file = path.join(dir, spec);
+    let data;
+    try {
+      data = fs.readFileSync(file);
+    } catch (e) {
+      throw new JsxError(`${file}: ${e.message}`);
+    }
+
+    const markerEnd = line.lastIndexOf("*/");
+    out += markerEnd === -1 ? "" : line.slice(0, markerEnd + 2);
+    out += `const ${name} = ${jsString(`data:${type};base64,${data.toString("base64")}`)};`;
+    if (line.endsWith("\n")) out += "\n";
+    found = true;
+  }
+
+  return [out, found];
+}
+
 /** Where an icon lives, searched nearest first. */
 function findIcon(icon, dirs) {
   const name = icon.endsWith(".svg") ? icon : `${icon}.svg`;

@@ -396,3 +396,137 @@ test("clicking one chooses nothing, and leaves the menu up", () => {
   click(items()[0]);
   assert.deepEqual(chosen, ["cut"]);
 });
+
+// --- a menu of a menu --------------------------------------------------------
+
+/** A menu whose second line holds a menu of its own. */
+function menuWithSubmenu() {
+  return menu({}, [
+    h(MenuItem, { text: "Cut", value: "cut" }),
+    h(MenuItem, { text: "More", value: "more" }, [
+      h(Menu, {}, [
+        h(MenuItem, { text: "Near", value: "near" }),
+        h(MenuItem, { text: "Far", value: "far" }),
+      ]),
+    ]),
+    h(MenuItem, { text: "Paste", value: "paste" }),
+  ]);
+}
+
+test("stepping onto an item opens its menu but stays where it is", () => {
+  const { view, el, anchor } = menuWithSubmenu();
+  view.alignWith(anchor);
+
+  keyDown(el, "ArrowDown");
+  keyDown(el, "ArrowDown");
+  assert.equal(view.activeValue, "more");
+
+  const submenu = view.openSubmenus.get("more");
+  assert.ok(submenu, "the menu beside it is built");
+  assert.equal(submenu.visible, true, "and shown, so the page says what is in it");
+  // But the keys are still this menu's: nothing in there is active, and the
+  // panel that has the keyboard is this one.
+  assert.equal(submenu.activeValue, null);
+  assert.equal(document.activeElement, el);
+});
+
+test("so ArrowDown reaches the line below rather than landing in the submenu", () => {
+  const { view, el, anchor } = menuWithSubmenu();
+  view.alignWith(anchor);
+
+  keyDown(el, "ArrowDown");
+  keyDown(el, "ArrowDown");
+  keyDown(el, "ArrowDown");
+  assert.equal(view.activeValue, "paste");
+  assert.equal(document.activeElement, el);
+  // And the menu it stepped past is put away again.
+  assert.equal(view.openSubmenus.get("more").visible, false);
+});
+
+test("ArrowRight goes in, on the first line", () => {
+  const { view, el, anchor } = menuWithSubmenu();
+  view.alignWith(anchor);
+
+  keyDown(el, "ArrowDown");
+  keyDown(el, "ArrowDown");
+  assert.ok(keyDown(el, "ArrowRight"), "the key is taken");
+
+  const submenu = view.openSubmenus.get("more");
+  assert.equal(submenu.activeValue, "near", "the first line, highlighted");
+  assert.equal(document.activeElement, submenu.node, "and it has the keyboard");
+  // The item it belongs to stays active, so the way back is still marked.
+  assert.equal(view.activeValue, "more");
+});
+
+test("ArrowRight on a line with no menu of its own does nothing", () => {
+  const { view, el, anchor } = menuWithSubmenu();
+  view.alignWith(anchor);
+
+  keyDown(el, "ArrowDown");
+  assert.equal(keyDown(el, "ArrowRight"), false, "the key is left alone");
+  assert.equal(view.activeValue, "cut");
+  assert.equal(document.activeElement, el);
+});
+
+test("ArrowLeft comes back out, and ArrowRight goes in again at the first line", () => {
+  const { view, el, anchor } = menuWithSubmenu();
+  view.alignWith(anchor);
+
+  keyDown(el, "ArrowDown");
+  keyDown(el, "ArrowDown");
+  keyDown(el, "ArrowRight");
+  const submenu = view.openSubmenus.get("more");
+
+  keyDown(submenu.node, "ArrowDown");
+  assert.equal(submenu.activeValue, "far");
+
+  assert.ok(keyDown(submenu.node, "ArrowLeft"), "the key is taken");
+  assert.equal(submenu.visible, false);
+  assert.equal(document.activeElement, el, "the keyboard is back in the menu above");
+
+  // In again: opened afresh, and at the top however far down it had got.
+  keyDown(el, "ArrowRight");
+  assert.equal(submenu.visible, true);
+  assert.equal(submenu.activeValue, "near");
+  assert.equal(document.activeElement, submenu.node);
+});
+
+test("Enter in a submenu chooses there, and both menus go", () => {
+  const chosen = [];
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const anchor = document.createElement("button");
+  document.body.appendChild(anchor);
+  const view = mount(Menu, host, {
+    action: (m, value) => chosen.push(value),
+    children: [
+      h(MenuItem, { text: "More", value: "more" }, [
+        h(Menu, {}, [h(MenuItem, { text: "Near", value: "near" })]),
+      ]),
+    ],
+  }).view;
+  view.alignWith(anchor);
+
+  keyDown(host.childNodes[0], "ArrowDown");
+  keyDown(host.childNodes[0], "ArrowRight");
+  const submenu = view.openSubmenus.get("more");
+  keyDown(submenu.node, "Enter");
+
+  assert.deepEqual(chosen, ["near"]);
+  assert.equal(view.visible, false);
+});
+
+test("pointing into a submenu takes the keyboard with it", () => {
+  const { view, el, anchor } = menuWithSubmenu();
+  view.alignWith(anchor);
+
+  keyDown(el, "ArrowDown");
+  keyDown(el, "ArrowDown");
+  const submenu = view.openSubmenus.get("more");
+
+  // The pointer is explicit where a step onto the item is not, so the keys
+  // follow it in — otherwise the next one would work the menu above.
+  point(submenu.node.querySelectorAll("li")[1], "pointerenter");
+  assert.equal(submenu.activeValue, "far");
+  assert.equal(document.activeElement, submenu.node);
+});

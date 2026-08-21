@@ -9,6 +9,12 @@ import {
 
 import UndoBar from "./UndoBar.js";
 
+// A raster image, read at compile time and carried into the build as the data
+// URL that names it — nothing is fetched, and the bundle is still one file.
+// The `.mib` markup has no imports of its own, so the page reaches it the way
+// it reaches anything else here: through this controller.
+import openImage from "./resources/open.png";
+
 /**
  * The controller behind `main.mib`: what the page binds to, and what drives
  * its controls.
@@ -82,6 +88,13 @@ export default class AppController {
 
     /** The colour the well holds, as it reads. */
     this.wellColour = "#3584E4";
+
+    /**
+     * The toolbar's one picture icon. The others are font icons named by a
+     * class; this one is an image, which a Button takes as `iconImage` and
+     * paints into the same slot.
+     */
+    this.openIcon = openImage;
 
     /** What the Edit menu last chose. */
     this.edit = "";

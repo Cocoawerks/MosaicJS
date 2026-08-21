@@ -33,6 +33,7 @@
   overflow: hidden;
   box-sizing: border-box;
   padding: 0;
+  line-height:120%;
   
 }
 
@@ -59,8 +60,46 @@
   max-height: 100%;
 }
 
+/*
+ * An icon that is a picture rather than a glyph — an svg or an image.
+ *
+ * A font icon is a <span> whose glyph fills it at the font-size above. Either
+ * kind of picture is drawn in an <i> instead, and an <i> has nothing of its own
+ * to be as big as: the svg one holds a drawing that may be any size, and the
+ * image one is empty and painted with a background. So the slot is given a size
+ * — the square the glyph beside it would have drawn in, which is what `1em`
+ * names here and in every sheet that sizes an icon. A toolbar's is 24px and a
+ * title bar's is 21px, and this follows each of them without being told.
+ *
+ * Without it a plain Button's svg icon came out 0 wide and was not drawn at
+ * all; only the sheets that state a width — the toolbar's, the title bar's —
+ * were showing one.
+ */
+.v-Button i.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+}
+
+/* Fitted inside that square rather than overflowing it. */
 .v-Button .icon svg {
   max-width: 100%;
+  max-height: 100%;
+}
+
+/*
+ * An image is painted as the slot's background, and `contain` is what fits it:
+ * `100%` sets the width alone and leaves the height to the picture's own
+ * proportions, so anything that is not square is drawn past the slot and
+ * clipped. Contained, the whole picture sits inside the square whatever shape
+ * it is.
+ */
+.v-Button .icon.iconImage {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
 .v-Button.iconOnly > div {

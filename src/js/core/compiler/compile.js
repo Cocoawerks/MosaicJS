@@ -13,6 +13,7 @@ import { generate } from "./codegen.js";
 import {
   ensureRuntimeNames,
   inlineCssImports,
+  inlineImageImports,
   inlineSvgImports,
   transform,
 } from "./jsx.js";
@@ -135,11 +136,14 @@ function compileJs(src, file, stem, runtime, opts = {}) {
   // An icon is markup, and becomes the component that draws it — so `h` is
   // needed for an icon just as it is for anything else drawn here.
   const [inlined] = inlineSvgImports(withCss, opts.icons ?? [], scope);
+  // A raster image cannot be drawn, only pointed at, so it becomes the data
+  // URL that points at it — a string, needing nothing from the runtime.
+  const [withImages] = inlineImageImports(inlined, path.dirname(file));
 
   const needed = ["h", "Fragment"];
   if (hasCss) needed.push("addStyles");
   return ensurePage(
-    ensureRuntimeNames(inlined, runtime, needed),
+    ensureRuntimeNames(withImages, runtime, needed),
     file,
     stem,
     runtime,

@@ -127,6 +127,12 @@ export default class Menu extends PopOver {
    * Open the active item's own menu beside it, and shut any other. It is put
    * at the item's right edge, or at its left when there is no room — the same
    * two placements `MenuItem.showSubMenu` makes.
+   *
+   * Opened, and no more than that: the keyboard stays in this menu. Stepping
+   * onto an item shows what its menu holds, but the keys go on working the
+   * menu the stepping is happening in, so ArrowDown past an expandable item
+   * reaches the item below it rather than landing in a menu that was never
+   * asked for. `enterSubmenu` is what asks.
    */
   showSubmenuOf(value) {
     for (const [open, submenu] of this.openSubmenus) {
@@ -148,7 +154,25 @@ export default class Menu extends PopOver {
     const width = submenu.node?.offsetWidth ?? 0;
     let left = box.right - 4;
     if (left + width > window.innerWidth) left = box.left - width - 14;
-    submenu.showAt(left, box.top - 11);
+    submenu.showAt(left, box.top - 11, false);
+  }
+
+  /**
+   * Go into the active item's own menu: it opens if it was closed, takes the
+   * keyboard, and starts on its first line.
+   *
+   * The first line every time, whatever the pointer may have left active in
+   * there — going in is going in at the top.
+   */
+  enterSubmenu(value) {
+    this.showSubmenuOf(value);
+
+    const submenu = this.openSubmenus.get(value);
+    if (!submenu) return;
+
+    submenu.focusPanel();
+    const first = submenu.liveItems[0];
+    if (first) submenu.activate(first.value);
   }
 
   /**
@@ -254,10 +278,16 @@ export default class Menu extends PopOver {
     this.focusPanel();
   }
 
-  /** Shown at a point rather than under something: a menu of its own place. */
-  showAt(left, top) {
+  /**
+   * Shown at a point rather than under something: a menu of its own place.
+   *
+   * `focus` is what a submenu opens without. A menu that is dropped is being
+   * used, and takes the keyboard; one that is opened beside the item the
+   * keyboard is on is only being shown.
+   */
+  showAt(left, top, focus = true) {
     super.showAt(left, top);
-    this.focusPanel();
+    if (focus) this.focusPanel();
   }
 
   setOpen(open) {
@@ -307,14 +337,15 @@ export default class Menu extends PopOver {
         this.step(-1);
         break;
       case "ArrowRight": {
-        // Into the active item's own menu, at its first line.
+        // Into the active item's own menu, at its first line. Until this is
+        // pressed the menu is only open beside the item — the keyboard is
+        // still here.
         const item = this.items.find(
           (entry) => entry.value === this.activeValue,
         );
         if (!item?.submenu) return;
         event.preventDefault?.();
-        const submenu = this.openSubmenus.get(item.value);
-        submenu?.step(1);
+        this.enterSubmenu(item.value);
         break;
       }
       case "ArrowLeft":
