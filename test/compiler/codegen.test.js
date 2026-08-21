@@ -440,3 +440,16 @@ test("and a surface cannot hold another surface either", () => {
     /can only be the root of a .mib file/,
   );
 });
+
+test("minifying collapses the line breaks a text node was written across", () => {
+  const src = "<p>one\n   two\n   three</p>";
+  expect(compile(src)).toContain('"one\\n   two\\n   three"');
+
+  const minified = generate(parse(src), {
+    runtime: "../src/js/runtime/mosaic.js",
+    name: "App",
+    hash: "test123",
+    minify: true,
+  });
+  expect(minified).toContain('"one two three"');
+});

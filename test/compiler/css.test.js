@@ -96,17 +96,17 @@ test("minifying drops the comments a stylesheet ships with", () => {
   const minified = scope(sheet, ".h", null, { minify: true });
   expect(minified).not.toContain("/*");
   expect(minified).not.toContain("what this is for");
-  expect(minified).toContain(".a.h{color: red;}");
-  expect(minified).toContain(".b.h{color: blue;}");
+  expect(minified).toContain(".a.h{color:red;}");
+  expect(minified).toContain(".b.h{color:blue;}");
 
   // Left alone without the flag: a compiled module stays readable.
   expect(scope(sheet, ".h")).toContain("what this is for");
 });
 
 test("minifying leaves a string that looks like a comment alone", () => {
-  const sheet = `.a::after { content: "/* not a comment */"; }`;
+  const sheet = `.a::after { content:"/* not a comment */"; }`;
   expect(scope(sheet, ".h", null, { minify: true })).toBe(
-    `.a.h::after{content: "/* not a comment */";}`,
+    `.a.h::after{content:"/* not a comment */";}`,
   );
 });
 
@@ -127,8 +127,8 @@ test("minifying a theme keeps the prefix it is emitted with", () => {
   const sheet = `/* the theme's own note */\n:root { --a: 1; }\n.v-Button { color: red; }\n`;
   const minified = scope(sheet, "", ":root", { minify: true });
   expect(minified).not.toContain("/*");
-  expect(minified).toContain(":root{--a: 1;}");
-  expect(minified).toContain(":root .v-Button{color: red;}");
+  expect(minified).toContain(":root{--a:1;}");
+  expect(minified).toContain(":root .v-Button{color:red;}");
 });
 
 test("minifying puts the whole sheet on one line", () => {
@@ -143,7 +143,7 @@ test("minifying puts the whole sheet on one line", () => {
 .b { color: blue; }
 `;
   const minified = scope(sheet, ".h", null, { minify: true });
-  expect(minified).toBe(".a.h{color: red;} .b.h{color: blue;}");
+  expect(minified).toBe(".a.h{color:red;}.b.h{color:blue;}");
   expect(minified).not.toContain("\n");
 
   // Untouched without the flag.
@@ -161,4 +161,64 @@ test("minifying leaves a space where whitespace was doing a job", () => {
   expect(scope('.x::after{content:"a\nb"}', ".h", null, { minify: true })).toBe(
     '.x.h::after{content:"a\nb"}',
   );
+});
+
+test("minifying takes out the whitespace that carries nothing", () => {
+  const sheet = `
+.a , .b > .c + .d ~ .e {
+  margin : 0 auto ;
+  color : red !important ;
+}
+`;
+  expect(scope(sheet, ".h", null, { minify: true })).toBe(
+    ".a.h,.b>.c+.d~.e.h{margin:0 auto;color:red!important;}",
+  );
+});
+
+test("minifying keeps the whitespace that is a token", () => {
+  // A descendant combinator, the parts of a shorthand, and the spaces `calc()`
+  // requires around its operators.
+  expect(
+    scope(".a .b{padding:1px 2px 3px 4px;width:calc(100% - 2px)}", "", null, {
+      minify: true,
+    }),
+  ).toBe(".a .b{padding:1px 2px 3px 4px;width:calc(100% - 2px)}");
+
+  // `.a :hover` is a descendant of `.a`; `.a:hover` is `.a` itself.
+  expect(scope(".a :hover{color:red}", "", null, { minify: true })).toBe(
+    ".a :hover{color:red}",
+  );
+});
+
+test("minifying a media query squeezes its features but not a calc in one", () => {
+  const sheet = `@media screen and (min-width : 40em) {\n  .a { color : red; }\n}`;
+  expect(scope(sheet, ".h", null, { minify: true })).toBe(
+    "@media screen and (min-width:40em){.a.h{color:red;}}",
+  );
+
+  expect(
+    scope("@media (min-width: calc(10px + 2px)){.a{color:red}}", "", null, {
+      minify: true,
+    }),
+  ).toBe("@media (min-width:calc(10px + 2px)){.a{color:red}}");
+});
+
+test("minifying leaves a selector inside :not() alone", () => {
+  // The same characters mean different things in a query and in a selector,
+  // so `:not(...)` is not squeezed the way `@media (...)` is.
+  expect(scope(":not(.a :hover){color:red}", "", null, { minify: true })).toBe(
+    ":not(.a :hover){color:red}",
+  );
+});
+
+test("minifying squeezes an attribute selector but not grid line names", () => {
+  expect(
+    scope('a[ type = "text" ]{color:red}', "", null, { minify: true }),
+  ).toBe('a[type="text"]{color:red}');
+  // In a value the brackets hold names that a space separates.
+  expect(
+    scope(".a{grid-template-columns:[full-start] 1fr [full-end]}", "", null, {
+      minify: true,
+    }),
+  ).toBe(".a{grid-template-columns:[full-start] 1fr [full-end]}");
 });

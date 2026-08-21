@@ -78,7 +78,7 @@ export function generate(comp, opts) {
   }
 
   out += `export default function ${opts.name}(props = {}) {\n`;
-  const ctx = new Ctx(hasStyle ? scope : null);
+  const ctx = new Ctx(hasStyle ? scope : null, { minify: opts.minify });
   out += `  return ${ctx.childrenExpr(comp.markup, 1)};\n}\n`;
 
   // What tells the runtime this function came from a `.mib` rather than being
@@ -194,8 +194,21 @@ function usesAttrBinding(nodes, onComponent) {
 
 class Ctx {
   /** `null` when the component has no styles — nothing is scoped then. */
-  constructor(scope) {
+  constructor(scope, opts = {}) {
     this.scope = scope;
+    this.minify = opts.minify ?? false;
+  }
+
+  /**
+   * A text literal. Under `--minify` the run of whitespace a line break in the
+   * markup left behind becomes the single space it renders as — the markup
+   * already treats that whitespace as formatting rather than content, and a
+   * literal newline in the source is a literal newline the bundler carries all
+   * the way into the bundle. Collapsing here is what keeps the minified bundle
+   * on one line.
+   */
+  textString(text) {
+    return jsString(this.minify ? text.replace(/\s+/g, " ") : text);
   }
 
   /**
@@ -211,7 +224,7 @@ class Ctx {
   }
 
   nodeExpr(node, indent) {
-    if (node.kind === "text") return jsString(node.text);
+    if (node.kind === "text") return this.textString(node.text);
     // The runtime creates the text node and remembers it, so a later
     // `refresh(controller)` can re-read the path and update it.
     if (node.kind === "bind") {

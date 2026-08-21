@@ -41,29 +41,43 @@ export function scope(css, scopeSuffix, prefix = null, options = {}) {
   const out = [];
   transformBlock(source, scopeSuffix, out, prefix);
   const text = out.join("");
-  return options.minify ? oneLine(text) : text;
+  return options.minify ? squeeze(text) : text;
 }
 
+/** Whitespace after one of these never separates anything. */
+const DROP_AFTER = new Set(["{", "}", ";", ",", "("]);
+/** Nor does whitespace before one of these. */
+const DROP_BEFORE = new Set(["{", "}", ";", ",", ")"]);
+/** The combinators that are written down, as against the one that is a space. */
+const WRITTEN_COMBINATORS = new Set([">", "+", "~"]);
+
 /**
- * The whole sheet on one line.
+ * The whole sheet on one line, with every space that is not load-bearing gone.
  *
- * A stylesheet is carried into the bundle as a string, and a string's newlines
- * are the one kind of whitespace the bundler cannot take out for us: they ship
- * as `\n` in the source and as line breaks in the served file. The sheets are
- * written a declaration to a line with a blank line between rules, so that is
- * most of what is left once the comments are gone.
+ * A stylesheet is carried into the bundle as a string, so the bundler's own
+ * minifier never looks inside it: whatever whitespace is left here is
+ * whitespace the application downloads. The sheets are written a declaration
+ * to a line with a blank line between rules, and that is most of it — but the
+ * spaces around `{`, `:`, `;` and `,` are the rest, and they add up.
  *
- * Every run of whitespace becomes a single space rather than nothing at all,
- * because whitespace between two compounds is a descendant combinator: `.a\n.b`
- * matches what `.a .b` matches, and running them together would mean something
- * else entirely. A space is what that newline already was, so nothing changes
- * meaning — and a run of one is no run at all. Strings are passed over whole:
- * a newline inside `content:` is content.
+ * What cannot go is the whitespace that *is* a token. Between two compounds it
+ * is the descendant combinator — `.a\n.b` matches what `.a .b` matches, and
+ * running them together would mean something else entirely. In a value it
+ * separates the parts of a shorthand, and in `calc()` it is required around
+ * `+` and `-`. So a run of whitespace collapses to one space, and that space
+ * is dropped only where the character on one side of it already ends the token
+ * for us. Which side is safe depends on where in the sheet we are, which is
+ * what `segmentAt` works out.
+ *
+ * Strings are passed over whole: a newline inside `content:` is content.
  */
-function oneLine(css) {
+function squeeze(css) {
   let out = "";
   let quote = null;
   let space = false;
+  let paren = 0;
+  let bracket = 0;
+  let at = segmentAt(css, 0);
 
   for (let i = 0; i < css.length; i++) {
     const c = css[i];
@@ -81,15 +95,119 @@ function oneLine(css) {
     }
 
     // Held back until something follows it, so a sheet neither starts nor
-    // ends with one.
-    if (space && out !== "") out += " ";
+    // ends with one — and so the character on both sides of it is known
+    // before it is decided on.
+    const prev = out[out.length - 1] ?? "";
+    if (space && out !== "" && !dropsSpace(prev, c, at, paren, bracket)) {
+      out += " ";
+    }
     space = false;
 
     if (c === '"' || c === "'") quote = c;
+    else if (c === "(") paren++;
+    else if (c === ")") paren--;
+    else if (c === "[") bracket++;
+    else if (c === "]") bracket--;
     out += c;
+
+    // A brace or a semicolon ends what was being read and starts the next
+    // thing, which may be a selector where the last one was a declaration.
+    if ((c === "{" || c === "}" || c === ";") && paren === 0) {
+      bracket = 0;
+      at = segmentAt(css, i + 1);
+    }
   }
 
   return out;
+}
+
+/**
+ * Is the single space between `prev` and `c` one the sheet can do without?
+ *
+ * @param at      what is being read, from `segmentAt`
+ * @param paren   nesting inside `(...)`
+ * @param bracket nesting inside `[...]`
+ */
+function dropsSpace(prev, c, at, paren, bracket) {
+  if (DROP_AFTER.has(prev) || DROP_BEFORE.has(c)) return true;
+
+  // `color: red` and `(min-width: 40em)` — a colon there ends the property or
+  // the feature name. In a selector it does not: `.a :hover` is a descendant
+  // and `.a:hover` is not, so that space stays. An at-rule's parentheses hold
+  // a query rather than a selector, which is why the two are told apart.
+  const declaration = !at.prelude || (at.atRule && paren > 0);
+  if (declaration && (prev === ":" || c === ":")) return true;
+  // `red !important`.
+  if (!at.prelude && c === "!") return true;
+
+  if (at.prelude && !at.atRule) {
+    // A combinator ends the compound before it and begins the one after, so
+    // the spaces written around it for legibility carry nothing. Only at the
+    // top level: inside `:not(...)` the same characters may sit in a value,
+    // and a `calc()` in an `@media` prelude needs its spaces around `+`.
+    if (
+      paren === 0 &&
+      (WRITTEN_COMBINATORS.has(prev) || WRITTEN_COMBINATORS.has(c))
+    ) {
+      return true;
+    }
+    // `[type = "text"]` — the brackets bound the whole thing.
+    if (
+      bracket > 0 &&
+      (prev === "=" || c === "=" || prev === "[" || c === "]")
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * What is being read at `i`: a prelude — a selector list, or an at-rule's name
+ * and query — or a declaration. They are told apart by which comes first, the
+ * `{` that would open a prelude's block or the `;`/`}` that would end a
+ * declaration.
+ *
+ * `atRule` says the prelude is an at-rule's, so `(min-width: 40em)` is not
+ * mistaken for `:not(...)`.
+ */
+function segmentAt(css, i) {
+  let paren = 0;
+  let quote = null;
+  let atRule = false;
+  let first = true;
+
+  for (let j = i; j < css.length; j++) {
+    const c = css[j];
+
+    if (quote) {
+      if (c === "\\") j++;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      first = false;
+      continue;
+    }
+    if (WS.has(c)) continue;
+
+    if (first) {
+      atRule = c === "@";
+      first = false;
+    }
+
+    if (c === "(") paren++;
+    else if (c === ")") paren--;
+    else if (paren === 0) {
+      if (c === "{") return { prelude: true, atRule };
+      if (c === ";" || c === "}") return { prelude: false, atRule: false };
+    }
+  }
+  // Nothing closes it — a declaration is the safer reading, since it is the
+  // one that leaves a selector's combinators alone.
+  return { prelude: false, atRule: false };
 }
 
 /**
