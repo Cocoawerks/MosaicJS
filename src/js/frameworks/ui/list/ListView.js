@@ -153,19 +153,24 @@ export default class ListView extends Component {
    * line the sheet lays out — `v-List-item` is the wrapper the Java version
    * puts that class on.
    *
-   * No `key`. A key is what tells the runtime that the node at a position is
-   * not the node that was there before, and rows are the one case where that
-   * is never true: a row is a slot the list pours a datum into, and the datum
-   * at a slot changing is a patch, not a new row. Keyed by index it would be
-   * the opposite — a progressive list draws a window whose indices all shift
-   * by one as it scrolls, so every row would count as new and the whole window
-   * would be rebuilt for one row of movement.
+   * Keyed by where the datum sits in the list — the row's name for as long as
+   * it is that datum's row.
+   *
+   * The key is what lets a window move without being rebuilt. Matched by
+   * position instead, a progressive list scrolling from rows 100–200 to
+   * 120–220 has a different datum at every position, so all two hundred rows
+   * are rewritten for twenty rows of movement. By name, 120–200 are found
+   * where they already are and left alone.
+   *
+   * The index of the *datum*, not of the row within the window: those do shift
+   * as it scrolls, and would name a different datum each time, which is no key
+   * at all.
    */
   drawItem(item, index, style = null) {
     const Item = this.itemType;
 
     return (
-      <div styleName="v-List-item" style={style} role="option">
+      <div key={index} styleName="v-List-item" style={style} role="option">
         <Item
           {...this.itemProps}
           content={item}
@@ -177,8 +182,8 @@ export default class ListView extends Component {
     );
   }
 
-  /** What is inside the scroller: the spinner, the message, or the rows. */
   drawContent() {
+    console.log("Calling Draw Content");
     if (this.spinning) {
       return <LoadingIndicator size="medium" styleName="v-ListLoading" />;
     }

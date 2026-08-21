@@ -525,7 +525,7 @@ export default class AppController {
       this.crowdDrawn = String(view.range.end - view.range.start);
     };
 
-    view.content = aCrowd(5000);
+    view.content = aCrowd(10000);
     this.crowdCount = String(view.count);
   }
 
@@ -797,13 +797,25 @@ export default class AppController {
   }
 }
 
-/** The people the plain list holds. */
+/**
+ * The people the plain list holds: five thousand of them, the same as the
+ * progressive list below it.
+ *
+ * The same number in both is what makes the pair say anything. A plain list
+ * draws one row per thing it holds — all five thousand of them, whether or not
+ * any is on screen — and the progressive one draws the handful in view. The
+ * `drawn=` figure under the second is the difference.
+ *
+ * The five it opens with are named, so a row is a person rather than a number
+ * before the scroll reaches the rest.
+ */
 const SOME_PEOPLE = [
   { name: "Ada Lovelace", worth: "1815" },
   { name: "Grace Hopper", worth: "1906" },
   { name: "Alan Turing", worth: "1912" },
   { name: "Katherine Johnson", worth: "1918" },
   { name: "Barbara Liskov", worth: "1939" },
+  ...aCrowd(49),
 ];
 
 /**

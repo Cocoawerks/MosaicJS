@@ -13,11 +13,7 @@ import {
 } from "./private/bindings.js";
 import { drawInto, isComponentClass } from "./private/draw.js";
 import { flatten } from "./private/flatten.js";
-import {
-  applyProps,
-  setViewRedraw,
-  VIEW,
-} from "./private/scope.js";
+import { applyProps, setViewRedraw, VIEW } from "./private/scope.js";
 import { attachTree, discard } from "./private/lifecycle.js";
 import { applyRef, setAttribute } from "./private/props.js";
 
@@ -104,6 +100,14 @@ function textOf(vnode, controller) {
  * Falls back to replacing the node whenever the two cannot be reconciled.
  */
 function patch(parent, dom, oldV, newV, controller) {
+  // The very same drawing as last time. A caller that hands back the vnode it
+  // was given is saying nothing here changed, and there is nothing to compare
+  // it against but itself — a progressive list keeps the vnode of every row
+  // that is still on screen, so the rows it did not touch cost nothing at all.
+  if (oldV === newV && dom && typeof newV === "object" && newV !== null) {
+    return dom;
+  }
+
   if (newV == null || typeof newV === "boolean") {
     const placeholder = document.createComment("");
     parent.insertBefore(placeholder, dom);
@@ -256,13 +260,22 @@ function anyKeyed(children) {
  * Children drawn without a key are still matched among themselves by position,
  * so a list of keyed rows beside a heading that has none behaves as it always
  * did.
+ *
+ * A child that is already in order is left where it is. Placing every child in
+ * turn would move all of them: drop the first row of a list and the second has
+ * to go to the front, and from there each one in turn no longer follows what it
+ * followed a moment ago, so each is taken out and put back. Order is what
+ * matters, not position — a child whose counterpart came after every one placed
+ * so far is already after them in the document, and needs no moving. Only one
+ * that has come back past another does. A progressive list scrolling by ten
+ * rows moves none of the two hundred it keeps.
  */
 function patchKeyedChildren(parent, olds, news, nodes, controller) {
   const byKey = new Map();
   const unkeyed = [];
 
   for (let i = 0; i < olds.length; i++) {
-    const entry = { vnode: olds[i], node: nodes[i] };
+    const entry = { vnode: olds[i], node: nodes[i], at: i };
     const key = keyOf(olds[i]);
     // First one wins: two children under one key is the caller's mistake, and
     // the second is treated as new rather than stealing the first's node.
@@ -275,6 +288,10 @@ function patchKeyedChildren(parent, olds, news, nodes, controller) {
   // The node the next child goes after; null while nothing has been placed, so
   // the first one goes to the front.
   let after = null;
+  // How far along the old children the ones placed so far reached. A match from
+  // before this has come back past something and has to be moved; one from
+  // after it is already in order.
+  let reachedTo = -1;
 
   for (const newV of news) {
     if (newV === undefined) continue;
@@ -289,16 +306,21 @@ function patchKeyedChildren(parent, olds, news, nodes, controller) {
     }
 
     let node;
+    let inOrder = false;
     if (match?.node && sameKind(match.vnode, newV)) {
       reused.add(match);
       node = patch(parent, match.node, match.vnode, newV, controller);
+      // The patch may have replaced the node, which then has to be placed
+      // wherever the old one was rather than left to be found there.
+      inOrder = node === match.node && match.at > reachedTo;
+      if (inOrder) reachedTo = match.at;
     } else {
       // No counterpart, or one too different to patch into: draw it fresh. A
       // match that cannot be patched is left to be discarded with the rest.
       node = render(newV, controller, nsOf(parent));
     }
 
-    after = placeAfter(parent, node, after);
+    after = inOrder ? lastOf(node, after) : placeAfter(parent, node, after);
   }
 
   // Whatever no new child claimed is gone from the drawing, so it goes from
@@ -329,6 +351,17 @@ function placeAfter(parent, node, after) {
   if (node !== before) parent.insertBefore(node, before ?? null);
 
   return inserted[inserted.length - 1] ?? after;
+}
+
+/**
+ * What a child that was left where it is leaves for the next one to follow —
+ * `placeAfter`'s answer without the placing.
+ */
+function lastOf(node, after) {
+  if (node?.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+    return node.childNodes[node.childNodes.length - 1] ?? after;
+  }
+  return node ?? after;
 }
 
 /** Add, update and remove props, undoing anything the previous draw set. */
@@ -381,7 +414,6 @@ function sameProps(a = {}, b = {}) {
   if (ka.length !== kb.length) return false;
   return ka.every((k) => a[k] === b[k]);
 }
-
 
 /**
  * Draw a composed view again and patch what changed.

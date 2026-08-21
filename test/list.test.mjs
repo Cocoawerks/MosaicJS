@@ -250,11 +250,11 @@ test("the reach either side is what the markup asked for", () => {
   assert.equal(rows().length, 5 + 2 * (2 + 2));
 });
 
-test("scrolling reuses the rows already drawn rather than building them again", () => {
-  // A row is a slot, and the datum in it changing is a patch. Keyed by index it
-  // would not be: a window's indices all shift by one as it scrolls, so every
-  // row would read as a new one and the whole window would be rebuilt to move
-  // it by a single row.
+test("scrolling only draws the rows that came into view", () => {
+  // A row belongs to its datum rather than to a position. Scrolling by one row
+  // drops one from the top and builds one at the bottom; every other row is the
+  // node it was, holding what it held, and is not written to at all. Matched by
+  // position instead, all five would be rewritten to move the window by one.
   const { view, rows } = list(
     ProgressiveListView,
     { itemHeight: "20", extension: "0", batch: "0" },
@@ -264,32 +264,29 @@ test("scrolling reuses the rows already drawn rather than building them again", 
   sized(view, { height: 100, scrollTop: 2000 });
   view.visibleRangeChanged();
   const before = rows();
+  assert.equal(before.length, 5);
+  assert.equal(before[0].textContent, "100: Person 100");
 
-  // Counted rather than timed: what costs is the building, and a scroll of one
-  // row should build one row's worth at most — not a window's.
-  let built = 0;
-  const create = document.createElement.bind(document);
-  document.createElement = (tag) => {
-    built++;
-    return create(tag);
-  };
   view.scroller.scrollTop = 2020;
   view.visibleRangeChanged();
-  document.createElement = create;
+  const after = rows();
 
-  assert.equal(
-    built,
-    0,
-    "the row that left is the row that came back, filled in again",
+  // The four that stayed are the very same nodes, in the same order — not four
+  // slots refilled with the data that moved up into them.
+  // `ok` rather than `equal`: a failed comparison of two DOM nodes would try to
+  // print the difference between two whole trees.
+  for (let i = 0; i < 4; i++) {
+    assert.ok(after[i] === before[i + 1], `row ${i} is the node it was`);
+  }
+  assert.ok(
+    !before.includes(after[4]),
+    "and the last is the one that came into view",
   );
-  assert.equal(
-    rows()[0].textContent,
-    "101: Person 101",
-    "and it says what it now holds",
+  assert.ok(
+    !after.includes(before[0]),
+    "while the one that left is gone from the list",
   );
-  // The nodes stay where they are and the data moves through them, which is the
-  // whole of what a slot means. `ok` rather than `equal`: a failed comparison of
-  // two DOM nodes would try to print the difference between two whole trees.
-  assert.ok(rows()[0] === before[0], "the first row is the one that was there");
-  assert.ok(rows().at(-1) === before.at(-1), "and so is the last");
+
+  assert.equal(after[0].textContent, "101: Person 101", "the window moved on");
+  assert.equal(after[4].textContent, "105: Person 105");
 });

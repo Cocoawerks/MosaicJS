@@ -23,7 +23,7 @@ export default class ProgressiveListView extends ListView {
     /** How far beyond the visible edge to draw, so scrolling stays ahead. */
     extension: { type: Number, default: 300 },
     /** And how many rows past that again. */
-    batch: { type: Number, default: 5 },
+    batch: { type: Number, default: 10 },
   };
 
   constructor() {
@@ -35,6 +35,12 @@ export default class ProgressiveListView extends ListView {
     /** The rows drawn now: everything in view, and a little either side. */
     this.first = 0;
     this.last = 0;
+
+    /**
+     * The drawing of each row in that window, by the index of the datum it
+     * holds. What lets a window move without being rebuilt — see `rowFor`.
+     */
+    this.drawnRows = new Map();
   }
 
   // --- how tall it is ------------------------------------------------------
@@ -58,6 +64,9 @@ export default class ProgressiveListView extends ListView {
       offsets[index + 1] = offsets[index] + this.heightOf(index);
     }
     this.offsets = offsets;
+    // A row's drawing carries the offset it was placed at, so it is only good
+    // for as long as these are.
+    this.forgetRows();
   }
 
   get totalHeight() {
@@ -102,9 +111,11 @@ export default class ProgressiveListView extends ListView {
       this.indexAt(top + height + this.extension) + this.batch,
     );
 
-    if (first === this.first && last === this.last) return;
+    if (this.first == first && this.last == last) return;
+
     this.first = first;
     this.last = last;
+
     this.needsDisplay();
   }
 
@@ -126,7 +137,9 @@ export default class ProgressiveListView extends ListView {
   attached() {
     this.measure();
     this.onScroll = () => this.visibleRangeChanged();
-    this.scroller?.addEventListener("scroll", this.onScroll, { passive: true });
+    this.scroller?.addEventListener("scroll", this.onScroll, {
+      passive: false,
+    });
 
     if (typeof ResizeObserver === "function") {
       this.watcher = new ResizeObserver(() => this.visibleRangeChanged());
@@ -155,9 +168,55 @@ export default class ProgressiveListView extends ListView {
     });
   }
 
+  /**
+   * The row for `index`, drawn once and kept.
+   *
+   * A window that moves keeps most of what it had: scrolling from rows 100–200
+   * to 120–220 changes twenty of two hundred and twenty rows, and the other two
+   * hundred are the rows they were, at the offsets they were, holding the data
+   * they held. Handing back the same vnode is how the runtime is told so — it
+   * compares a drawing against the one before it, and the same drawing needs no
+   * comparing. Only the indexes that came into view are drawn here at all.
+   *
+   * Emptied whenever the rows themselves change, since a cached drawing is only
+   * good for as long as the datum and the offset behind it are.
+   */
+  rowFor(index) {
+    const item = this.items[index];
+    const held = this.drawnRows.get(index);
+    // The datum is checked rather than trusted: a list can be added to and
+    // taken from without being measured again, and a drawing of what used to
+    // be at an index is worse than no drawing at all.
+    if (held && held.item === item) return held.row;
+
+    const row = this.drawItem(item, index);
+    this.drawnRows.set(index, { item, row });
+    return row;
+  }
+
+  /** Forget every drawn row, so the next drawing builds them afresh. */
+  forgetRows() {
+    this.drawnRows.clear();
+  }
+
   drawContent() {
-    const drawn = super.drawContent();
-    if (this.spinning || this.items.length === 0) return drawn;
+    if (this.spinning || this.items.length === 0) {
+      this.forgetRows();
+      return super.drawContent();
+    }
+
+    // The rows in the window, each of them the one drawn last time unless it
+    // has only just come into view. What has left the window is dropped, so a
+    // list scrolled from one end to the other does not keep every row it ever
+    // drew.
+    const rows = [];
+    for (let index = this.first; index < this.last; index++) {
+      rows.push(this.rowFor(index));
+    }
+    for (const index of [...this.drawnRows.keys()]) {
+      if (index < this.first || index >= this.last)
+        this.drawnRows.delete(index);
+    }
 
     // The rows are placed into a box the height of the whole list, so the
     // scrollbar says what it would if every row were drawn.
@@ -167,7 +226,7 @@ export default class ProgressiveListView extends ListView {
         style={{ height: `${this.totalHeight}px` }}
         role="none"
       >
-        {drawn}
+        <div role="none">{rows}</div>
       </div>
     );
   }

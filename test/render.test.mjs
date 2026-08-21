@@ -1798,3 +1798,85 @@ test("a controller a page was mounted with keeps its binding pass", () => {
   controller.user = { name: "grace" };
   assert.match(root.innerHTML, />grace</);
 });
+
+test("a keyed row already in order is left where it is, not moved", () => {
+  // Placing every child in turn would move all of them: drop the first and the
+  // second has to go to the front, and from there each one no longer follows
+  // what it followed, so each is taken out and put back. A window scrolling by
+  // one row would move every row in it. Order is what matters, not position.
+  const list = keyedList(["a", "b", "c", "d", "e"]);
+  const nodes = list.nodes();
+
+  let moved = 0;
+  const parent = nodes[0].parentNode;
+  const insert = parent.insertBefore.bind(parent);
+  parent.insertBefore = (node, before) => {
+    moved++;
+    return insert(node, before);
+  };
+
+  // A window moving on: one leaves the front, one arrives at the back.
+  list.view.rows = ["b", "c", "d", "e", "f"];
+  list.view.needsDisplay();
+  parent.insertBefore = insert;
+
+  assert.deepEqual(list.labels(), ["b", "c", "d", "e", "f"]);
+  assert.equal(moved, 1, "only the row that came into view was placed");
+  for (let i = 0; i < 4; i++) {
+    assert.ok(list.nodes()[i] === nodes[i + 1], `row ${i} is the node it was`);
+  }
+});
+
+test("but one that has come back past another is moved", () => {
+  const list = keyedList(["a", "b", "c"]);
+  const before = list.instances();
+
+  list.view.rows = ["c", "a", "b"];
+  list.view.needsDisplay();
+
+  assert.deepEqual(list.labels(), ["c", "a", "b"]);
+  // Moved, not rebuilt: the instances are the ones that were there.
+  const now = list.instances();
+  assert.ok(now[0] === before[2]);
+  assert.ok(now[1] === before[0]);
+  assert.ok(now[2] === before[1]);
+});
+
+test("handing back the same vnode leaves what it drew alone", () => {
+  // A caller that hands back the vnode it was given is saying nothing here
+  // changed, and is answered by being left alone — which is what lets a
+  // progressive list keep the drawing of every row still on screen and pay
+  // nothing for the ones it did not touch. Cheapness is not what this checks,
+  // since a walk that finds no difference makes no difference either; what it
+  // checks is that reusing a drawing is safe to do.
+  class Cached extends Component {
+    constructor() {
+      super();
+      this.held = null;
+      this.label = "one";
+    }
+
+    draw() {
+      // The same vnode object every time, whatever `label` now says.
+      if (!this.held) this.held = h("p", { title: this.label }, this.label);
+      return h("div", {}, this.held);
+    }
+  }
+
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const view = mount(Cached, host, {}).view;
+  const drawn = host.childNodes[0].childNodes[0];
+
+  assert.equal(drawn.textContent, "one");
+
+  view.label = "two";
+  view.needsDisplay();
+
+  assert.ok(
+    host.childNodes[0].childNodes[0] === drawn,
+    "the node is the one that was there",
+  );
+  assert.equal(drawn.textContent, "one", "and it was not written to");
+  assert.equal(drawn.getAttribute("title"), "one");
+});

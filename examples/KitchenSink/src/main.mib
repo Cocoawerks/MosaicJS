@@ -468,9 +468,10 @@
         <h2 styleName="heading">ListView and ProgressiveListView</h2>
         <p styleName="note">
             A list draws one row per thing it holds, in the kind of row it is given —
-            PersonItem.js beside this page, which draws itself. The second list holds five
-            thousand and draws only the handful on screen, so scrolling it costs the same
-            as scrolling ten.
+            PersonItem.js beside this page, which draws itself. Both of these hold five
+            thousand people. The first draws all five thousand, on screen or not; the
+            second draws only the handful in view, so scrolling it costs the same as
+            scrolling ten. The `drawn=` figure below it is the difference.
         </p>
 
         <div styleName="row">
