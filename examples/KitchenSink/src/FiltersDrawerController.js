@@ -10,6 +10,7 @@ export default class FiltersDrawerController {
     this.unread = false;
     this.starred = false;
     this.sort = "newest";
+    this.density = "cosy";
     this.colour = "#3584E4";
   }
 
@@ -64,6 +65,15 @@ export default class FiltersDrawerController {
   }
 
   /**
+   * @param {object} combo The popup ComboBox that changed.
+   * @param {string} value What was chosen.
+   */
+  densityChanged(combo, value) {
+    this.density = value;
+    this.report();
+  }
+
+  /**
    * The well's chooser settled on a colour. It is a popover opened from inside
    * the drawer, which is the case the drawer's own stylesheet is written for.
    *
@@ -80,9 +90,11 @@ export default class FiltersDrawerController {
     this.unreadBox.value = false;
     this.starredBox.value = false;
     this.sortCombo.value = "newest";
+    this.densityCombo.value = "cosy";
     this.unread = false;
     this.starred = false;
     this.sort = "newest";
+    this.density = "cosy";
     this.report();
   }
 
@@ -93,6 +105,6 @@ export default class FiltersDrawerController {
       this.starred ? "starred" : null,
     ].filter(Boolean);
     const what = on.length ? `${on.join("+")} by ${this.sort}` : this.sort;
-    this.onChange?.(`${what} ${this.colour}`);
+    this.onChange?.(`${what} ${this.density} ${this.colour}`);
   }
 }

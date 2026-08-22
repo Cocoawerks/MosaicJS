@@ -23,7 +23,7 @@
         <span styleName="spacer"></span>
 
         <label styleName="state" for="theme-combo">Theme</label>
-        <ComboBox controlId="theme-combo" action="themeChanged" outlet="themeCombo">
+        <ComboBox popup="true" styleName="theme-combo"   controlId="theme-combo" action="themeChanged" outlet="themeCombo">
             <Option text="Aristo" value="aristo"/>
             <Option text="Aristo Dark" value="aristo_dark"/>
             <Option text="Pop" value="pop"/>
@@ -194,7 +194,7 @@
 
             <!-- Which side it should try first. It is only the side it *asks*
                  for: a popover with no room there sits on the opposite one. -->
-            <ComboBox outlet="orientationCombo" action="orientationChanged"
+            <ComboBox popup outlet="orientationCombo" action="orientationChanged"
                       value="bottom_center">
                 <Option text="Bottom center" value="bottom_center"/>
                 <Option text="Bottom left" value="bottom_left"/>
@@ -372,7 +372,10 @@
         <h2 styleName="heading">ComboBox</h2>
         <p styleName="note">
             A native select in a framed box: the platform's own list, with the theme's
-            frame and chevron around it.
+            frame and chevron around it. The second is the same control with `popup`
+            set, which trades the platform's list for one of the framework's own —
+            a macOS popup button, opening over itself with the chosen line under the
+            pointer and a tick beside it.
         </p>
 
         <div styleName="row">
@@ -382,9 +385,16 @@
                 <Option text="Blue" value="blue"/>
                 <Option text="Out of stock" value="none" enabled="false"/>
             </ComboBox>
+
+            <ComboBox popup value="green" action="popupColourChanged" outlet="popupCombo">
+                <Option text="Red" value="red"/>
+                <Option text="Green" value="green"/>
+                <Option text="Blue" value="blue"/>
+                <Option text="Out of stock" value="none" enabled="false"/>
+            </ComboBox>
         </div>
 
-        <p styleName="values">colour={colour}</p>
+        <p styleName="values">colour={colour} popup={popupColour}</p>
     </section>
 
     <section styleName="section">
@@ -784,4 +794,8 @@
         background: var(--dark-view-background);
         font-size: 0.85rem;
     }
+	
+	.theme-combo {
+		width:120px;
+	}
 </style>

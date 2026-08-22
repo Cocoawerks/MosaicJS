@@ -278,6 +278,10 @@
   display: flex;
   min-height: 0;
   overflow: auto;
+  /* The content sits on the view colour rather than the dialog's own, so the
+     header and footer read as the chrome around it — the same separation a
+     panel and the view inside it have. */
+  background-color: var(--light-view-background);
 }
 
 /* A little more room under the buttons than a caller's own footer padding
@@ -286,6 +290,9 @@
   height: auto;
   flex: 0 0 auto;
   padding-bottom: 3px;
+  /* The view colour main is on: the buttons stand on the same surface as what
+     they settle, so the only chrome left is the header. */
+  background-color: var(--light-view-background);
 }
 
 /* Footer buttons are one size across every dialog: a shared minimum, so a

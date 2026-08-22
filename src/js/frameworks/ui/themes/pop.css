@@ -329,7 +329,9 @@
   --radio-mark-color: #f6f4f2;
   --search-icon-fill: #393634;
   --slider-knob-border: #a29b95;
-  --slider-knob-active: #efedeb;
+  /* A press darkens the knob a clear step past its hover, so holding it
+     reads as held rather than as hovered. */
+  --slider-knob-active: #ded9d5;
   --slider-knob-background: #fcfbfa;
   --slider-knob-hover: #f6f4f2;
   --slider-track-background: #e6e3e1;

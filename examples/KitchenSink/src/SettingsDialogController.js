@@ -13,6 +13,9 @@ export default class SettingsDialogController {
     /** What the field held when the dialog was opened, so Cancel can say. */
     this.name = "";
 
+    /** Which theme was asked for. The popup combo box's. */
+    this.theme = "system";
+
     /** Whether an unsaved change is worth warning about. The checkbox's. */
     this.warn = true;
 
@@ -58,6 +61,18 @@ export default class SettingsDialogController {
   }
 
   /**
+   * A choice is a change like any other, so it makes the dialog dirty too.
+   *
+   * @param {object} combo The popup ComboBox that changed.
+   * @param {string} value Which theme was chosen.
+   */
+  themeChanged(combo, value) {
+    this.theme = value;
+    this.dirty = true;
+    this.hint = "";
+  }
+
+  /**
    * @param {object} box The CheckBox that changed.
    * @param {boolean} value Whether it is now ticked.
    */
@@ -70,7 +85,7 @@ export default class SettingsDialogController {
    * losing what was typed, and this is the path that keeps it.
    */
   save() {
-    this.onSave?.(this.name);
+    this.onSave?.(this.name, this.theme);
     this.dialog.forceClose();
   }
 

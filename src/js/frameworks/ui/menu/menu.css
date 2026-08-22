@@ -11,6 +11,10 @@
   line-height: 12px;
   display: block;
   margin: 0;
+  /* A menu is as wide as the longest line in it, and a menu of short words —
+     Cut, Copy, New — comes out narrower than it reads as a menu. This is the
+     floor it drops no further than. */
+  min-width: 120px;
   outline: none;
   border-radius: 8px;
   border: 1px solid var(--default-border-color);
@@ -44,7 +48,7 @@
   border: 1px solid transparent;
   min-height: 30px;
   margin: 0 4px;
-  padding: 0 4px;
+  padding: 2px 8px;
   border-radius: 4px;
   white-space: nowrap;
   color: var(--menu-foreground);
@@ -128,14 +132,17 @@
   top: var(--label-cap-offset, 0);
 }
 
-.v-MenuItem.noIcon span {
-  margin-left: 36px;
-  white-space: nowrap;
+/* An icon that is a drawing rather than a glyph takes the line's own colour.
+   Without this it takes the one SVG gives a path that is told nothing — black
+   — which happens to pass on a pale menu and disappears on a dark one. */
+.v-MenuItem .icon svg {
+  fill: currentColor;
 }
 
 .v-MenuItem .submenu-indicator {
   display: none;
-  margin-right: 2px;
+  margin-right: -4px;
+  margin-top: 2px;
 }
 
 .v-MenuItem-Separator,
@@ -144,6 +151,10 @@
   height: 1px;
   border: none;
   box-sizing: border-box;
+  /* A rule holds nothing, so the room an item leaves around its words would
+     only make the line thicker than the one pixel it is meant to be. What
+     stands either side of it is the margin below. */
+  padding: 0;
   margin: 6px;
   background-color: var(--menu-active-background);
 }

@@ -21,6 +21,19 @@
                        action="change:nameChanged"/>
         </div>
 
+        <!-- A popup's menu is drawn by the framework rather than by the
+             platform, so it has to stand above a modal dialog — which is in the
+             browser's top layer, over everything the page can stack. -->
+        <div styleName="field">
+            <label styleName="label" for="theme-combo">Theme</label>
+            <ComboBox popup controlId="theme-combo" outlet="themeCombo"
+                      value="system" action="themeChanged">
+                <Option text="Match the system" value="system"/>
+                <Option text="Light" value="light"/>
+                <Option text="Dark" value="dark"/>
+            </ComboBox>
+        </div>
+
         <div styleName="field">
             <CheckBox outlet="warnBox" text="Ask before discarding changes"
                       value="true" action="warnChanged"/>

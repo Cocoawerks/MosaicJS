@@ -1653,9 +1653,8 @@ test("a prop set through an outlet reaches the view that holds it", () => {
 // and a component is not this markup.
 
 /** `bindProp` as the compiler emits it for `<Child text="{label}"/>`. */
-const { bindProp } = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
-);
+const { bindProp } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
 
 test("a value reaches a child component's prop, not just a text node", () => {
   const Inner = view(function () {
@@ -1879,4 +1878,81 @@ test("handing back the same vnode leaves what it drew alone", () => {
   );
   assert.equal(drawn.textContent, "one", "and it was not written to");
   assert.equal(drawn.getAttribute("title"), "one");
+});
+
+// --- styleName on a component ------------------------------------------------
+//
+// `styleName` on a component means "and wear this too". The component decides
+// what it is; the tag that placed it may still have something to add, and says
+// it the way it would about an element of its own.
+
+/** A component that draws a class list of its own, and counts its drawings. */
+class Faced extends Component {
+  constructor() {
+    super();
+    this.label = "one";
+  }
+
+  draw() {
+    return h("div", { class: ["v-Faced", "own"] }, this.label);
+  }
+}
+
+const classesOn = (el) =>
+  (el.getAttribute("class") ?? "").split(/\s+/).filter(Boolean);
+
+test("a component wears the class the tag asked it to", () => {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  mount(Faced, host, { styleName: "wide" });
+
+  const el = host.childNodes[0];
+  assert.deepEqual(classesOn(el), ["v-Faced", "own", "wide"]);
+});
+
+test("and it survives the component drawing itself again", () => {
+  // Put on the drawing rather than on the node: written onto the element it
+  // would be patched off the first time the component drew again, since the
+  // component's own drawing never mentioned it.
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const view = mount(Faced, host, { styleName: "wide" }).view;
+
+  view.label = "two";
+  const el = host.childNodes[0];
+  assert.equal(el.textContent, "two", "it did draw again");
+  assert.deepEqual(classesOn(el), ["v-Faced", "own", "wide"]);
+});
+
+test("more than one class, and none, both work", () => {
+  const two = document.createElement("div");
+  document.body.appendChild(two);
+  mount(Faced, two, { styleName: "wide tall" });
+  assert.deepEqual(classesOn(two.childNodes[0]), [
+    "v-Faced",
+    "own",
+    "wide",
+    "tall",
+  ]);
+
+  const none = document.createElement("div");
+  document.body.appendChild(none);
+  mount(Faced, none, {});
+  assert.deepEqual(classesOn(none.childNodes[0]), ["v-Faced", "own"]);
+});
+
+test("a component whose root is another component passes it down", () => {
+  // There is no element to put it on until the innermost drawing, so it is
+  // carried until there is one.
+  class Wrapping extends Component {
+    draw() {
+      return h(Faced, {});
+    }
+  }
+
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  mount(Wrapping, host, { styleName: "framed" });
+
+  assert.deepEqual(classesOn(host.childNodes[0]), ["v-Faced", "own", "framed"]);
 });

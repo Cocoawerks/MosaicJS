@@ -79,10 +79,17 @@ export default class MenuItem extends Control {
 
   // --- drawing -------------------------------------------------------------
 
-  /** An icon may be a class name or a component, as a Button's may. */
+  /**
+   * An icon may be a class name or a component, as a Button's may.
+   *
+   * An item with none draws none: the slot is 19px wide with 12px beside it,
+   * and an empty one is that much of a gap before the words for nothing. A
+   * menu of plain lines reads as a list rather than as a column of icons that
+   * are all missing.
+   */
   drawIcon() {
     const icon = this.icon;
-    if (!icon) return <i styleName="icon" aria-hidden="true" />;
+    if (!icon) return null;
 
     if (typeof icon === "function") {
       const Icon = icon;
@@ -105,9 +112,8 @@ export default class MenuItem extends Control {
       );
     }
 
-    // An item with an icon says so, and one without says nothing: the
-    // sheet's `.noIcon` rule indents a label by 36px, and the Java version
-    // never puts that class on an item.
+    // An item with an icon says so, and one without says nothing — it has no
+    // icon slot at all, so there is nothing for a class to describe.
     return (
       <li
         styleName={[

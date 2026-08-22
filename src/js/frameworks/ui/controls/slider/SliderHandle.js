@@ -28,6 +28,8 @@ export default class SliderHandle {
     this.grabOffset = { x: 0, y: 0 };
     /** Whether this knob has focus, and so wears the ring. */
     this.focused = false;
+    /** Whether this knob is being worked, and so wears the pressed face. */
+    this.active = false;
   }
 
   // --- value ---------------------------------------------------------------

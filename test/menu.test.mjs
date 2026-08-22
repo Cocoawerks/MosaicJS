@@ -530,3 +530,37 @@ test("pointing into a submenu takes the keyboard with it", () => {
   assert.equal(submenu.activeValue, "far");
   assert.equal(document.activeElement, submenu.node);
 });
+
+test("an item with no icon has no icon slot to take up room", () => {
+  // The slot is 19px wide with 12px beside it. Drawn empty it is that much of a
+  // gap before the words, for nothing — a menu of plain lines should read as a
+  // list, not as a column of icons that are all missing.
+  const { items } = menu();
+
+  // The chevron on an item that opens a menu of its own wears `icon` too, and
+  // is not one.
+  const icons = (li) =>
+    [...li.querySelectorAll(".icon")].filter(
+      (i) => !i.classList.contains("submenu-indicator"),
+    );
+
+  assert.equal(icons(items()[0]).length, 0, "Cut has none, and draws none");
+  assert.equal(icons(items()[1]).length, 0);
+});
+
+test("and one with an icon still has it", () => {
+  const { items } = menu({}, [
+    h(MenuItem, { text: "Find", value: "find", icon: "fa-search" }),
+    h(MenuItem, { text: "Copy", value: "copy" }),
+  ]);
+
+  const icons = (li) =>
+    [...li.querySelectorAll(".icon")].filter(
+      (i) => !i.classList.contains("submenu-indicator"),
+    );
+
+  const icon = icons(items()[0])[0];
+  assert.ok(icon, "the one that named an icon draws the slot");
+  assert.ok(icon.classList.contains("fa-search"), "wearing what it named");
+  assert.equal(icons(items()[1]).length, 0, "and its neighbour still has none");
+});

@@ -6,7 +6,7 @@
 // this shows up — an icon that is in the DOM and invisible.
 import { Fragment } from "./Fragment.js";
 import { attrValue, display, readPath, track } from "./private/bindings.js";
-import { drawInto, isComponentClass } from "./private/draw.js";
+import { drawInto, isComponentClass, withStyleName } from "./private/draw.js";
 import { flatten } from "./private/flatten.js";
 import { applyProps, rememberView, scopeFor } from "./private/scope.js";
 import { applyRef, setAttribute } from "./private/props.js";
@@ -91,7 +91,9 @@ export function render(vnode, controller = {}, ns = null) {
     const own = scopeFor(type, controller);
     const drawnWith = { ...props, children };
     const applied = own !== controller ? applyProps(own, props) : null;
-    const produced = type.call(own, drawnWith);
+    // `styleName` on the tag is a class the drawing wears, here as it is on a
+    // component class — a compiled `.mib` placed as a tag is one of these.
+    const produced = withStyleName(type.call(own, drawnWith), props);
     const dom = render(produced, own, ns);
     if (dom?.nodeType === Node.ELEMENT_NODE) {
       dom.__ibFn = type;

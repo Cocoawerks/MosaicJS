@@ -1,25 +1,10 @@
-/*
- * The Aristo Dark theme, ported from GWT Mosaic:
- * themes/aristo_dark/client/style.css, whole.
- *
- * The dark counterpart of aristo.css — same structure, same shapes, the
- * neutrals inverted. Kept variable-for-variable with the light sheet, so the
- * two can be diffed against each other.
- *
- * A theme is global by nature and is emitted unscoped, so these selectors mean
- * what they say. What the build adds is a `:root ` in front of each one, which
- * buys back the specificity a component's stylesheet gets from its scope class.
- */
+ 
 /* Aristo Dark — the dark counterpart of themes/aristo. Same structure, same
    shapes, same pale sky blue for the default action; the neutrals are inverted
    and the text is light. Kept variable-for-variable with the light sheet so the
    two can be diffed against each other. */
 :root {
-  /* The face everything is set in. Source Sans 3 is what Mosaic is drawn in;
-       the rest of the stack is what a page falls back to when the application
-       has not loaded it (a `<link>` to it, as the KitchenSink page carries).
-       Declared as a variable so an application can put its own in front of it
-       by redeclaring one thing. */
+ 
   --font-family:
     "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
 
@@ -306,7 +291,9 @@
   --box-title-background: #2b2b2e;
   --box-title-foreground: #d8d8d8;
   --checkbox-check-color: #313134;
-  --checkbox-indicator-background: #313134;
+  /* The same dark well an unselected radio sits in — see the rule below the
+     buttons, which the two share. */
+  --checkbox-indicator-background: #3d3d3d;
   --combobox-background: #313134;
   --dialog-background: #2b2b2e;
   --error-color: #cc5f5f;
@@ -334,7 +321,9 @@
   --radio-mark-color: #313134;
   --search-icon-fill: #c4c4c4;
   --slider-knob-border: #8a8a92;
-  --slider-knob-active: #38383c;
+  /* Darker than the knob at rest, not lighter: a press presses it into the
+     track, the same direction the light themes take. */
+  --slider-knob-active: #1f1f22;
   --slider-knob-background: #2b2b2e;
   --slider-knob-hover: #313134;
   --slider-track-background: #414146;
@@ -474,9 +463,13 @@ textarea,
   background: var(--checked-mark-color);
 }
 
-/* An unchecked box, radio or switch is a dark well, a step below the surface it
-   sits on. The slider's track stays pale — its knob is dark, so it needs
-   something to read against. */
+/* An unticked box, an unselected radio or a switch is a dark well, a step
+   below the surface it sits on. The slider's track stays pale — its knob is
+   dark, so it needs something to read against.
+
+   Box and radio share the well: they are the same kind of control asking the
+   same kind of question, and two different unchosen faces beside each other
+   read as two different controls. */
 .v-CheckBox > .indicator,
 .v-Radio > .indicator {
   background: #3d3d3d;
@@ -784,6 +777,26 @@ textarea,
 .v-MenuItem.v-MenuItem.active label {
   color: #ffffff;
   fill: #ffffff;
+}
+
+/* The tick in a combo box's popup menu is white on every line, whether or not
+   that line is the one under the pointer.
+ *
+ * It is not decoration on a line, it is the answer to which entry is chosen,
+ * and it has to read the same on the menu's own surface as it does on the
+ * highlight. Left to follow the line's colour it went the quiet grey a menu
+ * gives its words, which is right for a word and too faint for a mark.
+ *
+ * The class is doubled, and the highlighted case is stated separately at five
+ * classes, so both outscore the four-class rule above. */
+.v-ComboBox-menu.v-ComboBox-menu .v-MenuItem .icon {
+    fill: var(--menu-foreground);
+   color: var(--menu-foreground);
+}
+
+.v-ComboBox-menu.v-ComboBox-menu .v-MenuItem.active .icon {
+    fill: #fff;
+   color: #fff;
 }
 
 .v-MenuItem label {

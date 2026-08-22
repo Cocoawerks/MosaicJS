@@ -28,11 +28,23 @@ export const VIEW_TAG = "View";
  *       …
  *   </PopOver>
  *
- * Only these three: a kind of popover that belongs to a control it hangs from —
- * a Menu inside a MenuItem, a Tooltip — is part of that control's markup and
- * is nested like anything else.
+ * A SnackBar and a Toast are the same thing from the other end: they are put on
+ * the page by a SnackBarManager, which stacks them in a corner of the window,
+ * and a bar never adds itself. Written into a page's markup one would sit in
+ * that page's flow — which is not where a bar goes, and it would be up from the
+ * moment the page was drawn rather than when something happened.
+ *
+ * Only these: a kind of popover that belongs to a control it hangs from — a
+ * Menu inside a MenuItem, a Tooltip — is part of that control's markup and is
+ * nested like anything else.
  */
-export const SURFACE_TAGS = new Set(["DialogBox", "Drawer", "PopOver"]);
+export const SURFACE_TAGS = new Set([
+  "DialogBox",
+  "Drawer",
+  "PopOver",
+  "SnackBar",
+  "Toast",
+]);
 /** How markup names the CSS class, on every element — never `class`. */
 export const STYLE_NAME_ATTR = "styleName";
 /** Binds a method: a listener on a DOM element, an action on a component. */

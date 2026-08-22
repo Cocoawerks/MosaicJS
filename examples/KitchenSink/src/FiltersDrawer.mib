@@ -24,6 +24,17 @@
             <Option text="By sender" value="sender"/>
         </ComboBox>
 
+        <!-- The same list again as a popup: its menu is the framework's own and
+             stands over the control, so like the well's chooser below it has to
+             clear the drawer's panel rather than be clipped by it. -->
+        <label styleName="label" for="density-combo">Density</label>
+        <ComboBox popup controlId="density-combo" outlet="densityCombo"
+                  value="cosy" action="densityChanged">
+            <Option text="Roomy" value="roomy"/>
+            <Option text="Cosy" value="cosy"/>
+            <Option text="Tight" value="tight"/>
+        </ComboBox>
+
         <!-- A well in a drawer is what the drawer's sheet is written around:
              its chooser is a popover, which stacks above the panel and is not
              clipped by it. -->

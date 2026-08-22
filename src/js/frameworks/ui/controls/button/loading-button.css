@@ -17,14 +17,14 @@
 
 .v-Button.loading.is-loading .icon {
   margin-right: 6px;
-  width: 12px;
+  width: 16px;
 }
 
 /* A ring with a gap, spun: the mask cuts the disc's middle out and the conic
    gradient fades one end of it, so what is left reads as a chasing tail. */
 .button-loader {
   visibility: hidden;
-  /* The padding is the ring's thickness, so it has to fall inside the 12px the
+  /* The padding is the ring's thickness, so it has to fall inside the 16px the
        slot gives it rather than widening the loader past the label. */
   box-sizing: border-box;
   flex: none;
@@ -38,8 +38,8 @@
   -webkit-mask-composite: source-out;
   mask-composite: subtract;
   animation: v-button-loader-spin 1s infinite linear;
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
 }
 
 @keyframes v-button-loader-spin {

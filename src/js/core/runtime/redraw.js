@@ -11,7 +11,7 @@ import {
   readPath,
   track,
 } from "./private/bindings.js";
-import { drawInto, isComponentClass } from "./private/draw.js";
+import { drawInto, isComponentClass, withStyleName } from "./private/draw.js";
 import { flatten } from "./private/flatten.js";
 import { applyProps, setViewRedraw, VIEW } from "./private/scope.js";
 import { attachTree, discard } from "./private/lifecycle.js";
@@ -31,7 +31,9 @@ export function redraw(view) {
 
   const parent = anchor.parentNode;
   const previous = view.vtree;
-  const next = view.draw(view.props);
+  // As `drawInto` does: what the tag asked the component to wear goes on every
+  // drawing, not just the first, or the second would patch it off.
+  const next = withStyleName(view.draw(view.props), view.props);
 
   // Bindings and outlets are re-registered against whichever nodes survive.
   if (Object.prototype.hasOwnProperty.call(view, BINDINGS))
@@ -168,10 +170,10 @@ function patch(parent, dom, oldV, newV, controller) {
           const applied = applyProps(own, newV.props, record?.applied);
           if (record) record.applied = applied;
         }
-        const produced = newV.type.call(own, {
-          ...newV.props,
-          children: newV.children,
-        });
+        const produced = withStyleName(
+          newV.type.call(own, { ...newV.props, children: newV.children }),
+          newV.props,
+        );
         const patched = patch(parent, dom, dom.__ibOut, produced, own);
         if (patched?.nodeType === Node.ELEMENT_NODE) {
           patched.__ibFn = newV.type;

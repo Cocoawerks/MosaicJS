@@ -123,15 +123,45 @@ function componentTags(nodes, out = []) {
   return out;
 }
 
+/**
+ * What each surface is called in the advice below: a file to write it in, and
+ * the line that puts it on the page once it is written.
+ *
+ * The two kinds differ in that last line. A dialog, a drawer and a popover are
+ * named by the page that shows them, so the page writes the tag; a bar is
+ * shown through a SnackBarManager and is never named in markup at all.
+ */
+const SURFACE_ADVICE = {
+  PopOver: {
+    file: "ColourPopOver",
+    place: "<ColourPopOver outlet='colours'/>",
+  },
+  DialogBox: {
+    file: "SettingsDialog",
+    place: "<SettingsDialog outlet='settings'/>",
+  },
+  Drawer: { file: "FiltersDrawer", place: "<FiltersDrawer outlet='filters'/>" },
+  SnackBar: {
+    file: "SavedBar",
+    place: "this.bars.show(<SavedBar/>);",
+    bar: true,
+  },
+  Toast: {
+    file: "SavedToast",
+    place: "this.bars.show(<SavedToast/>);",
+    bar: true,
+  },
+};
 
 /**
- * A surface — a DialogBox or a PopOver — may only be the root of a `.mib`.
+ * A surface — a DialogBox, a PopOver, a SnackBar — may only be the root of a
+ * `.mib`.
  *
  * Nested in other markup it would draw inside that markup's flow, which is not
- * where it goes on screen: a dialog is put in the top layer and a popover is
- * placed against whatever it hangs from, so the file would read as something
- * the page does not do. What a page writes instead is the name of the file the
- * surface is the root of — see {@link SURFACE_TAGS}.
+ * where it goes on screen: a dialog is put in the top layer, a popover is
+ * placed against whatever it hangs from, and a bar is stacked in a corner of
+ * the window by the manager that shows it. So the file would read as something
+ * the page does not do — see {@link SURFACE_TAGS}.
  *
  * Thrown rather than warned: the markup means something other than what it
  * says, and finding that out on screen is an afternoon.
@@ -144,14 +174,25 @@ function checkSurfaces(markup, name) {
     for (const node of nodes) {
       if (node.kind !== "element") continue;
       if (node !== root && SURFACE_TAGS.has(node.name)) {
+        const advice = SURFACE_ADVICE[node.name];
+        const what = advice?.bar
+          ? `A ${node.name} is put on the page by a SnackBarManager, which ` +
+            `stacks it in a corner of the window — a bar never adds itself, ` +
+            `and one written here would be up from the moment the page was ` +
+            `drawn.`
+          : `A ${node.name} is a surface of its own: it is placed by the ` +
+            `runtime, not by the markup around it.`;
+        const then = advice?.bar
+          ? `and show it when there is something to say:`
+          : `and name that file here instead:`;
+
         throw new Error(
           `line ${node.line}: <${node.name}/> can only be the root of a .mib ` +
             `file, not nested inside one.\n` +
-            `    A ${node.name} is a surface of its own: it is placed by the ` +
-            `runtime, not by the markup around it.\n` +
-            `    Put it in a file of its own — ${node.name === "PopOver" ? "ColourPopOver.mib" : "SettingsDialog.mib"} ` +
-            `is one — and name that file here instead:\n` +
-            `        <My${node.name === "PopOver" ? "PopOver" : "Dialog"} outlet="…"/>`,
+            `    ${what}\n` +
+            `    Put it in a file of its own — ${advice?.file ?? "MySurface"}.mib ` +
+            `is one — ${then}\n` +
+            `        ${advice?.place ?? `<${advice?.file ?? "MySurface"}/>`}`,
         );
       }
       walk(node.children);
@@ -268,24 +309,32 @@ class Ctx {
     let scoped = false;
 
     for (const a of attrs) {
-      // Markup says `styleName`; the DOM wants `class`. Components keep the
-      // name they were given — their props are not DOM attributes.
-      const isClass = a.name === STYLE_NAME_ATTR && !isComponent;
+      // Markup says `styleName`; the DOM wants `class`. A component keeps the
+      // name — its props are not DOM attributes — and the runtime puts what it
+      // names onto whatever element the component draws itself as.
+      const isStyleName = a.name === STYLE_NAME_ATTR;
+      const isClass = isStyleName && !isComponent;
       const key = isClass ? "class" : a.name;
       // The scope is a class, so it joins the ones already there rather than
-      // sitting in a prop of its own.
-      const withScope = isClass && scope !== null;
+      // sitting in a prop of its own. A component's `styleName` carries it too:
+      // the point of naming a class on a component is to reach it from the
+      // sheet of the page that placed it, and that sheet is scoped.
+      // An element takes the scope the element rules worked out — none for
+      // `<style>`, which renders nothing. A component takes the module's,
+      // since the rules above deny it one of its own.
+      const classScope = isClass ? scope : this.scope;
+      const withScope = isStyleName && classScope !== null;
 
       let value;
       if (a.value.kind === "empty") {
         value = "true";
       } else if (a.value.kind === "static") {
         value = jsString(
-          withScope ? `${a.value.text} ${scope}`.trim() : a.value.text,
+          withScope ? `${a.value.text} ${classScope}`.trim() : a.value.text,
         );
       } else {
         const parts = withScope
-          ? [...a.value.parts, { kind: "text", text: ` ${scope}` }]
+          ? [...a.value.parts, { kind: "text", text: ` ${classScope}` }]
           : a.value.parts;
         const items = parts.map((p) =>
           p.kind === "text"

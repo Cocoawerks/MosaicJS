@@ -48,6 +48,8 @@ export default class AppController {
     this.newsletter = "false";
     /** @type {string} The chosen colour. */
     this.colour = "red";
+    /** @type {string} The same, from the ComboBox drawn as a popup. */
+    this.popupColour = "green";
     /** @type {string} The Wi-Fi switch's value, as text. */
     this.wifi = "true";
     /** @type {string} The aeroplane-mode switch's value, as text. */
@@ -277,6 +279,18 @@ export default class AppController {
   colourChanged(combo, value) {
     this.colour = value;
     this.note(`colour: ${value}`);
+  }
+
+  /**
+   * The same, from the ComboBox drawn as a popup. It reports exactly as the
+   * native one does — what changes is where the list came from.
+   *
+   * @param {object} combo The ComboBox.
+   * @param {string} value The entry chosen.
+   */
+  popupColourChanged(combo, value) {
+    this.popupColour = value;
+    this.note(`popup colour: ${value}`);
   }
 
   // --- the outline ---------------------------------------------------------
@@ -678,8 +692,8 @@ export default class AppController {
    * dialog is modal, so it needs nothing to hang from.
    */
   showSettings() {
-    this.settingsDialog.onSave = (name) => {
-      this.saved = name || "(nothing)";
+    this.settingsDialog.onSave = (name, theme) => {
+      this.saved = `${name || "(nothing)"} ${theme}`;
       this.note(`settings saved: ${this.saved}`);
     };
     this.settingsDialog.show();

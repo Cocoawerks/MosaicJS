@@ -304,9 +304,19 @@ export default class AbstractSlider extends Control {
     this.needsDisplay();
   }
 
-  /** Mark the knob being worked, which the sheet draws differently. */
+  /**
+   * Mark the knob being worked, which the sheet draws differently.
+   *
+   * The state is the handle's rather than a class written onto the element,
+   * for the reason the focus ring is: a drag moves the value, a moved value
+   * draws the slider again, and a redraw replaces the element the class was
+   * written on — so the knob shed its pressed face the moment it was dragged,
+   * which is the one time it is most meant to wear it.
+   */
   setActive(handle, active) {
-    handle.element?.classList?.[active ? "add" : "remove"]("is-active");
+    if (handle.active === active) return;
+    handle.active = active;
+    this.needsDisplay();
   }
 
   keyDown(event) {
@@ -362,7 +372,11 @@ export default class AbstractSlider extends Control {
   drawHandle(handle, label) {
     return (
       <div
-        styleName={["handle", handle.focused ? "is-focused" : null]}
+        styleName={[
+          "handle",
+          handle.focused ? "is-focused" : null,
+          handle.active ? "is-active" : null,
+        ]}
         role="slider"
         tabindex={this.enabled ? "0" : "-1"}
         aria-label={label}

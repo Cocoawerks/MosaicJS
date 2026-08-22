@@ -214,3 +214,141 @@ test("markup says false with a string, and it means false", () => {
   ]);
   assert.equal(bare.select.childNodes[0].getAttribute("disabled"), null);
 });
+
+// --- popup -------------------------------------------------------------------
+//
+// `popup` trades the platform's list for one of the framework's own: a macOS
+// popup button rather than a combo box. The value, the action and the entries
+// are the same either way — what changes is what opens.
+
+/** The panel of the menu this popup put up. Asked of the view rather than
+ * looked for in the document: the tests share one, and a menu another test
+ * left up would answer first. */
+const menuOf = (view) => view.menu?.node;
+
+/** Every element under `el`, since the shim matches one compound at a time. */
+const allUnder = (el, out = []) => {
+  for (const child of el.childNodes ?? []) {
+    if (child.tagName) out.push(child);
+    allUnder(child, out);
+  }
+  return out;
+};
+
+const press = (el) =>
+  el.dispatchEvent({
+    type: "pointerdown",
+    button: 0,
+    preventDefault: () => {},
+  });
+
+test("a popup draws no native list, and reads what is chosen", () => {
+  const { el } = open(
+    { popup: "true", value: "green" },
+    entries(["Red", "red"], ["Green", "green"]),
+  );
+
+  assert.equal(el.querySelectorAll("select").length, 0, "no select under it");
+  assert.equal(el.getAttribute("role"), "button");
+  assert.equal(el.getAttribute("aria-haspopup"), "listbox");
+  assert.equal(el.getAttribute("aria-expanded"), "false");
+  assert.ok(classesOf(el).includes("popup"));
+  assert.equal(el.querySelectorAll("span")[0].textContent, "Green");
+});
+
+test("and the chevron says the list may go either way", () => {
+  // Two paths: a chevron up over a chevron down, which is what a control that
+  // opens a list *over* itself wears.
+  const { el } = open({ popup: "true" }, entries(["Red", "red"]));
+
+  assert.equal(
+    allUnder(el).filter((n) => n.tagName === "path").length,
+    2,
+    "one up, one down",
+  );
+});
+
+test("pressing it puts up a menu of the entries, on the one chosen", () => {
+  const { el, view } = open(
+    { popup: "true", value: "green" },
+    entries(["Red", "red"], ["Green", "green"], ["Gone", "gone", "false"]),
+  );
+
+  press(el);
+
+  const menu = menuOf(view);
+  assert.ok(menu, "the menu is up");
+  const items = menu.querySelectorAll("li");
+  assert.deepEqual(
+    items.map((li) => li.textContent.trim()),
+    ["Red", "Green", "Gone"],
+  );
+  // Opened on what is already chosen, so the arrows step from there.
+  assert.equal(menu.__ibView.activeValue, "green");
+  // And ticked, as a popup marks the entry it is on.
+  const ticked = items.filter(
+    (li) =>
+      li
+        .querySelectorAll(".icon")
+        .filter((i) => !i.classList.contains("submenu-indicator")).length > 0,
+  );
+  assert.deepEqual(
+    ticked.map((li) => li.textContent.trim()),
+    ["Green"],
+  );
+  // An entry that cannot be chosen says so, as an <option> would.
+  assert.equal(items[2].getAttribute("aria-disabled"), "true");
+  assert.equal(view.open, true);
+});
+
+test("choosing from it sets the value and says so once", () => {
+  const said = [];
+  const { el, view } = open(
+    {
+      popup: "true",
+      value: "red",
+      action: (combo, value) => said.push(value),
+    },
+    entries(["Red", "red"], ["Blue", "blue"]),
+  );
+
+  press(el);
+  const blue = menuOf(view)
+    .querySelectorAll("li")
+    .find((li) => li.getAttribute("data-item") === "blue");
+  blue.dispatchEvent({ type: "click", stopPropagation: () => {} });
+
+  assert.equal(view.value, "blue");
+  assert.deepEqual(said, ["blue"]);
+  assert.equal(view.open, false, "and the menu goes with the choosing");
+  assert.equal(
+    view.node.querySelectorAll("span")[0].textContent,
+    "Blue",
+    "the trigger reads what is now chosen",
+  );
+});
+
+test("a disabled popup opens nothing", () => {
+  const { el, view } = open(
+    { popup: "true", enabled: "false" },
+    entries(["Red", "red"]),
+  );
+
+  press(el);
+  assert.equal(view.open, false);
+  assert.equal(el.getAttribute("tabindex"), null, "and is not a tab stop");
+});
+
+test("the keys that open a list open it too", () => {
+  const { el, view } = open(
+    { popup: "true", value: "red" },
+    entries(["Red", "red"], ["Blue", "blue"]),
+  );
+
+  el.dispatchEvent({
+    type: "keydown",
+    key: "ArrowDown",
+    preventDefault: () => {},
+  });
+  assert.equal(view.open, true);
+});

@@ -453,3 +453,70 @@ test("minifying collapses the line breaks a text node was written across", () =>
   });
   expect(minified).toContain('"one two three"');
 });
+
+test("styleName on a component is kept as a prop, and carries the scope", () => {
+  // On an element it becomes `class`; on a component it stays what it was —
+  // a component's props are not DOM attributes — and the runtime puts it on
+  // whatever element the component draws itself as.
+  //
+  // The scope goes with it either way. Naming a class on a component is how a
+  // page reaches a control it did not draw, and the page's sheet is scoped: a
+  // bare `wide` would be `.wide.<hash>` in the sheet and match nothing.
+  const js = compile(
+    '<style>.wide{min-width:220px}</style><Button styleName="wide"/>',
+  );
+
+  expect(js).toContain('styleName: "wide test123"');
+  expect(js).not.toContain('class: "wide');
+});
+
+test("and two classes are both kept", () => {
+  const js = compile(
+    '<style>.a{color:red}</style><Button styleName="wide tall"/>',
+  );
+  expect(js).toContain('styleName: "wide tall test123"');
+});
+
+test("an unscoped file gives a component's styleName no scope to carry", () => {
+  // No `<style>` block, so the module has no scope class of its own and there
+  // is nothing to append.
+  expect(compile('<Button styleName="wide"/>')).toContain('styleName: "wide"');
+});
+
+test("a SnackBar is a surface too: root only, like a dialog or a drawer", () => {
+  // A bar is put on the page by a SnackBarManager, which stacks it in a corner
+  // of the window. One written into a page's markup would sit in that page's
+  // flow — and would be up from the moment the page was drawn, rather than
+  // when there was something to say.
+  expect(
+    compile('<SnackBar intent="success"><span>Saved</span></SnackBar>'),
+  ).toContain("h(SnackBar,");
+
+  expect(() => compile("<div><SnackBar/></div>")).toThrow(
+    /can only be the root of a .mib file/,
+  );
+  expect(() => compile("<div><p>a</p><SnackBar/></div>")).toThrow(
+    /<SnackBar\/> can only be the root/,
+  );
+  // Nor beside another root, where it is not the root either.
+  expect(() => compile("<div>first</div><SnackBar/>")).toThrow(
+    /can only be the root of a .mib file/,
+  );
+});
+
+test("and so is a Toast, which is a kind of one", () => {
+  expect(compile('<Toast text="Saved"/>')).toContain("h(Toast,");
+  expect(() => compile('<div><Toast text="Saved"/></div>')).toThrow(
+    /<Toast\/> can only be the root/,
+  );
+});
+
+test("a bar is told how it is shown, not which tag to write", () => {
+  // The advice differs from a dialog's: a dialog is named by the page that
+  // shows it, and a bar is never named in markup at all.
+  expect(() => compile("<div><Toast/></div>")).toThrow(/SnackBarManager/);
+  expect(() => compile("<div><Toast/></div>")).toThrow(/this\.bars\.show/);
+  expect(() => compile("<div><DialogBox/></div>")).toThrow(
+    /name that file here instead/,
+  );
+});

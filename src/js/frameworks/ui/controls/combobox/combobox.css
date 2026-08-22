@@ -68,3 +68,91 @@
   pointer-events: none;
   height: calc(100% + 1.5px);
 }
+
+/*
+ * A popup: the same frame, with the chosen entry drawn in it instead of a
+ * native list. The menu is the framework's, and stands over the control.
+ */
+.v-ComboBox.popup {
+  cursor: default;
+  background-color: var(--combobox-background);
+  padding: 4px 36px 4px 8px;
+  box-sizing: border-box;
+  user-select: none;
+  min-height: 37px;
+}
+
+.v-ComboBox.popup .label {
+  /* The one cell the control has, which the sizer shares: they are drawn one
+     over the other rather than one after the other. */
+  grid-area: select;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Centred by its line box a label reads high, as it does in a menu. */
+  position: relative;
+  top: var(--label-cap-offset, 0);
+}
+
+/*
+ * What makes a popup as wide as its widest entry.
+ *
+ * The control is `width: fit-content` over a single grid cell, so the cell is
+ * as wide as the widest thing in it. The sizer holds every entry's text in
+ * that same cell, under the label: the widest of them sets the track, and the
+ * box stays that width whichever entry is chosen. Without it the box would
+ * shrink and grow as the choice changed, and a menu opened over the control
+ * would not line up with the words behind it.
+ *
+ * Hidden by having no height rather than by `display: none` or `visibility` —
+ * a laid-out box is what contributes a width, and a collapsed one contributes
+ * nothing to the height the label already sets. The same font as the label,
+ * since it is standing in for it.
+ */
+.v-ComboBox.popup .sizer {
+  grid-area: select;
+  display: flex;
+  flex-direction: column;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  font-size: 16px;
+}
+
+.v-ComboBox.popup .sizer .ghost {
+  white-space: nowrap;
+}
+
+.v-ComboBox.popup:focus {
+  outline: var(--focus-ring) solid 3px;
+  outline-offset: 1.5px;
+}
+
+/*
+ * The menu a popup opens. It stands over the control rather than under it, so
+ * it is drawn as a plain panel: a callout would point at what it is covering.
+ * :global — the panel and its lines are the menu's elements, not this
+ * module's.
+ */
+:global(.v-PopOver.v-Menu.v-ComboBox-menu) {
+  min-width: 0;
+}
+
+/*
+ * Every line keeps room for the tick, whether or not it is the one wearing it.
+ *
+ * A menu item draws no icon slot when it has no icon, which is right for a
+ * menu of commands — a column of nothing before the words. Here the icon is
+ * the mark of which entry is chosen, and it moves from line to line: without
+ * the room held open, every line would shift sideways as the choice changed,
+ * and the one that is chosen would be the only one indented.
+ *
+ * Held open by the label rather than by an empty slot, so there is no element
+ * standing where the tick will go. The amount is the slot's own — 19px of icon
+ * with 2px of padding and 12px beside it.
+ */
+:global(.v-ComboBox-menu .v-MenuItem:not(.hasIcon) span) {
+  margin-left: 33px;
+}
