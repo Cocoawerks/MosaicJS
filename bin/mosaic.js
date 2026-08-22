@@ -3,8 +3,9 @@
 //
 //   mosaic init <name>                  create a new application
 //   mosaic compile [dir]                compile the app and bundle it
-//   mosaic dev [dir] [--port 3000]      the same, then serve it, rebuilding
-//                                       whenever a source changes
+//   mosaic server [dev] [dir]           the same, then serve it, rebuilding
+//                                       and restarting on every change
+//   mosaic desktop [dev] [dir]          the same, run as a native desktop app
 //   mosaic check [dir]                  the same, then run the browser test
 //   mosaic clean [dir]                  delete the app's build directory
 //
@@ -12,10 +13,13 @@
 // thing a command takes — the current directory by default — and `main_file`
 // in the config says which module is the bootstrap.
 //
-// Everything beside that file is the application, and everything the build
-// produces lands in a `build/` inside it. That makes the app directory the
-// whole of the deployable thing — which is what `dev` serves as its root, so a
-// page can never reach up out of the app it belongs to.
+// The application's code is the tree `main_file` sits in — everything beside
+// it and below it, and nothing above — so `info.json` can sit further up,
+// at the root of a project whose other directories are none of the compiler's
+// business. Everything the build produces lands in a `build/` inside the app
+// directory. That makes the app directory the whole of the deployable thing —
+// which is what `server` serves as its root, so a page can never reach up out of
+// the app it belongs to.
 //
 // `info.json` is the configuration, merged from the project root down to the
 // application. The bundle is Bun's: it walks the import graph from the
@@ -30,8 +34,23 @@ import { fileURLToPath } from "node:url";
 import { compileAll } from "../src/js/core/compiler/build.js";
 import { componentName } from "../src/js/core/compiler/compile.js";
 import { scope as scopeCss } from "../src/js/core/compiler/css.js";
+import {
+  BUN_DIR,
+  DESKTOP_DIR,
+  findElectrobun,
+  installDependencies,
+  writeProject,
+} from "../src/js/core/desktop/project.js";
 
 const CONFIG = "info.json";
+
+/**
+ * How a run is meant. `dev` builds for editing and keeps up with the edits;
+ * `prod` will build for shipping, and does not exist yet.
+ */
+const MODES = ["dev", "prod"];
+/** The commands that run an application, and so have a mode to be run in. */
+const MODE_COMMANDS = ["server", "desktop"];
 
 /**
  * Where mosaic itself lives: the tree holding the runtime and the frameworks.
@@ -77,6 +96,12 @@ const FRAMEWORKS = "frameworks";
 const THEMES = "themes";
 /** The module a framework's themes are written into, beside its index. */
 const THEME_MODULE = "theme.js";
+/**
+ * How a theme names its dark counterpart: `aristo` and `aristo_dark` are one
+ * theme in two lights, and a build that carries the first carries the second
+ * so the page can follow whichever the reader asked their system for.
+ */
+const DARK_SUFFIX = "_dark";
 /** Where a framework keeps its icons, beside the themes that style them. */
 const ICONS = `${THEMES}/icons`;
 
@@ -106,11 +131,30 @@ const DEFAULTS = {
   // Themes to carry besides the one worn, so a page can switch at run time.
   // Each one named is in the bundle: an application that never switches
   // should leave this alone and pay for one stylesheet.
+  //
+  // Families, not lights: naming `aristo` brings `aristo_dark` with it, so a
+  // dark counterpart never has to be asked for. See `disable_dark_theme`.
   themes: [],
+  // Whether to carry only the light half of each theme named above.
+  //
+  // A theme with a `_dark` beside it is one theme in two lights, and a build
+  // carries both so the page can wear whichever the reader's system asks for
+  // and follow it if they change their mind. An application that wants to be
+  // one way whatever the reader prefers turns this on, and pays for one
+  // stylesheet per theme rather than two.
+  disable_dark_theme: false,
   // What this application is and who wrote it. Both are carried into the
   // package the build vendors, so what was built says so itself.
   version: "0.0.0",
   author: "",
+  // Packages the application itself needs at run time, by name and version, the
+  // way a package.json states them — installed into the generated project, so
+  // an application says what it is in one file and owns no manifest.
+  //
+  // Only what the application chose. What a mosaic app is built out of is not
+  // listed here and never has to be: the runtime is vendored by the compiler
+  // and Electrobun is installed by `desktop`, both without being asked.
+  dependencies: {},
   // Both relative to the application directory, not the project root.
   main_file: `${SRC}/${ENTRY}`,
   outdir: "build",
@@ -122,8 +166,10 @@ const USAGE = `usage: mosaic <command> [dir] [options]
 
 commands:
   init <name>        create a new application in ./<name>
+  install            install what "dependencies" in ${CONFIG} names
   compile            compile the application and bundle it
-  dev                compile, then serve it, rebuilding on every edit
+  server [dev|prod]  compile, then serve it, rebuilding on every edit
+  desktop [dev|prod] compile, then run it as a native desktop app
   check              compile, then run the headless browser test
   clean              delete the application's build directory
 
@@ -132,8 +178,13 @@ and defaults to the current one. \`main_file\` in that config names the
 bootstrap. For \`init\` the argument is the application's name instead, and
 the directory to create.
 
+\`server\` and \`desktop\` take a mode. \`dev\`, the default, keeps up with
+the edits: everything from \`main_file\`'s directory down is watched — the
+\`${BUN_DIR}/\` included — and every change rebuilds and runs it again.
+\`prod\` is not implemented yet.
+
 options:
-  --port <n>         port for \`dev\` (default 3000)
+  --port <n>         port for \`server\` (default 3000)
   --page <path>      page for \`check\`, relative to the current directory
   --no-open          don't launch a browser
   --no-watch         don't rebuild when sources change
@@ -142,6 +193,13 @@ options:
   --keep-modules     leave the compiled modules the bundle was built from
   --minify           minify the bundle
   -h, --help         this text
+
+\`desktop\` builds the desktop project itself, inside the build directory, on
+every run, and installs into it: the app's own "dependencies" from ${CONFIG},
+and the toolkit it runs on, which no app has to name. A \`${BUN_DIR}/\` beside
+\`main_file\` is the app's native side by convention: its \`index.js\` is the
+main process, the compiler skips the directory, and an app without one gets a
+generated window onto its page.
 
 Configuration is ${CONFIG}, merged from the project root down to the app.`;
 
@@ -268,6 +326,28 @@ import AppController from "./AppController.js";
 new MosaicApplication({ id: "app", controller: new AppController() });
 `,
 
+    [`${SRC}/${BUN_DIR}/${"index.js"}`]: `// ${name} — the native side, and what \`mosaic desktop\` runs as the main
+// process. This directory is \`${BUN_DIR}/\` by convention: the compiler skips it,
+// because none of it is browser code and none of it belongs in the bundle.
+//
+// It runs in Bun, not in the page. There is no DOM here and no application —
+// what it does is open the window the page is drawn in, and whatever else has
+// to be asked of the operating system: menus, a tray, dialogs, the file system.
+//
+// The page is reached as \`views://mainview/index.html\`. That is the view
+// \`desktop\` generates, and index.html is the one this app was created with.
+//
+// Keep this directory self-contained. It is copied into the generated project
+// whole, so a relative import reaching up out of it would not survive the move.
+import { BrowserWindow } from "electrobun/bun";
+
+new BrowserWindow({
+  title: "${name}",
+  url: "views://mainview/index.html",
+  frame: { width: 1024, height: 768, x: 200, y: 200 },
+});
+`,
+
     "index.html": `<!doctype html>
 
 <html lang="en">
@@ -286,6 +366,31 @@ new MosaicApplication({ id: "app", controller: new AppController() });
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..700;1,300..700&amp;display=swap"
     />
+
+    <!-- The page the application is drawn into. The document has no margin of
+         its own and is the full height of the window, so a view that asks for
+         100% gets the window rather than the height of its own content — which
+         is what a split panel, a list frame and anything else that fills the
+         page are measured against. The face is the one the themes are drawn
+         in, stated here so the document carries it before any component does. -->
+    <style>
+        /* Both, so the browser's own furniture follows the theme rather than
+           fighting it: form controls, scrollbars, the canvas behind the page
+           and the flash before the first paint. Which of the two is in force
+           is the reader's setting until a theme says otherwise. */
+        :root {
+            color-scheme: light dark;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: "Source Sans 3", sans-serif;
+        }
+    </style>
 </head>
 
 <body>
@@ -327,7 +432,7 @@ function init(name) {
   console.log(`created ${dir}`);
   for (const file of Object.keys(files)) console.log(`    ${file}`);
   console.log("");
-  console.log(`    cd ${name} && mosaic dev`);
+  console.log(`    cd ${name} && mosaic server`);
   return 0;
 }
 
@@ -398,16 +503,39 @@ function parseArgs(argv) {
       process.exit(0);
     } else if (a.startsWith("-")) throw new Error(`unknown option \`${a}\``);
     else if (!args.command) args.command = a;
+    // `dev` and `prod` say how a run is meant rather than where it is. A
+    // directory of either name is still reachable as `./dev`.
+    else if (MODES.includes(a) && !args.mode) args.mode = a;
     else if (!args.entry) args.entry = a;
     else throw new Error(`unexpected argument \`${a}\``);
   }
 
   if (!args.command) throw new Error("missing command");
-  if (!["init", "compile", "dev", "check", "clean"].includes(args.command)) {
+  if (
+    !["init", "install", "compile", "server", "desktop", "check", "clean"].includes(
+      args.command,
+    )
+  ) {
     throw new Error(`unknown command \`${args.command}\``);
   }
   if (args.command === "init" && !args.entry)
     throw new Error("`init` needs a name");
+
+  // Only the two commands that run an application have anything to say about
+  // how. Silently accepting `mosaic compile prod` would be promising something.
+  if (args.mode && !MODE_COMMANDS.includes(args.command)) {
+    throw new Error(
+      `\`${args.command}\` takes no mode — that is for ` +
+        `${MODE_COMMANDS.map((c) => `\`${c}\``).join(" and ")}`,
+    );
+  }
+  if (MODE_COMMANDS.includes(args.command)) args.mode ??= "dev";
+  if (args.mode === "prod") {
+    throw new Error(
+      `\`${args.command} prod\` is not implemented yet — only \`dev\``,
+    );
+  }
+
   return args;
 }
 
@@ -427,14 +555,28 @@ function layout(config, source) {
     );
   }
 
+  // What the compiler walks. `main_file` names the bootstrap, and the tree it
+  // sits in is the application's code: everything beside it and below it, and
+  // nothing above. That is what lets `info.json` sit above the sources —
+  // at the top of a project whose root also holds a `node_modules/` or a
+  // build directory belonging to something else — without the walk reaching
+  // any of it.
+  const sourceRoot = path.dirname(main);
+
   return {
     source,
+    sourceRoot,
+    // The native side, by convention: a `bun/` beside `main.js` is the
+    // Electrobun main process. The compiler skips it — it is not browser code
+    // and never belongs in the bundle — and `desktop` runs it.
+    bunDir: path.join(sourceRoot, BUN_DIR),
     name: path.basename(source),
     outdir,
-    // The bootstrap keeps its place in the tree, so `src/main.js` compiles to
-    // `build/src/main.js`. The bundle sits at the top of the build either way:
-    // it is what the page loads, and has no source position to keep.
-    entry: path.join(outdir, path.relative(source, main)),
+    // The bootstrap keeps its place in the compiled tree, which is now rooted
+    // at `main_file`'s directory: `src/main.js` compiles to `build/main.js`.
+    // The bundle sits at the top of the build either way: it is what the page
+    // loads, and has no source position to keep.
+    entry: path.join(outdir, path.relative(sourceRoot, main)),
     outfile: path.join(outdir, "app.js"),
   };
 }
@@ -471,7 +613,7 @@ function staged(app) {
  * through on the way — staging, and what a swap moves aside.
  *
  * Said in one place because two things have to agree about it, and when they
- * did not it was expensive: `dev` watches the application directory and the
+ * did not it was expensive: `server` watches the application directory and the
  * build sits inside it, so a staging directory the watcher did not recognise
  * looked exactly like someone editing. Every rebuild started another, and a
  * single keystroke rebuilt for ever.
@@ -551,6 +693,16 @@ function swapIntoPlace(build) {
     if (fs.existsSync(previous)) fs.renameSync(previous, target);
     throw e;
   }
+
+  // The generated desktop project is carried across. It sits in the build
+  // directory but is not of the build: it holds the dependencies `desktop`
+  // installed, and a compile that threw them away would charge every rebuild
+  // an install for a page that changed.
+  const carried = path.join(previous, DESKTOP_DIR);
+  if (fs.existsSync(carried) && !fs.existsSync(path.join(target, DESKTOP_DIR))) {
+    fs.renameSync(carried, path.join(target, DESKTOP_DIR));
+  }
+
   if (fs.existsSync(previous)) fs.rmSync(previous, { recursive: true, force: true });
 }
 
@@ -563,7 +715,7 @@ function swapIntoPlace(build) {
  * It lands in `build/node_modules/mosaic/`, which is the one layout every
  * resolver already understands — Bun's bundler and node find it with no
  * configuration, and a browser needs only the import map the host page carries.
- * Vendoring is also what lets `dev` serve the app as its root: a module
+ * Vendoring is also what lets `server` serve the app as its root: a module
  * reaching `../../src/...` would be reaching outside what the app ships.
  */
 function vendorRuntime(config, app) {
@@ -699,14 +851,31 @@ function writeFrameworkTheme(config, framework, options = {}) {
   // stylesheet; naming more in `themes` is what lets a page switch between
   // them at run time, and each one named is in the bundle whether it is worn
   // or not.
-  const bundled = [...new Set([chosen, ...(config.themes ?? [])])];
-  for (const name of bundled) {
+  const named = [...new Set([chosen, ...(config.themes ?? [])])];
+  for (const name of named) {
     if (!available.includes(name)) {
       throw new Error(
         `${CONFIG} names theme "${name}", which ${framework.name} does not have — ` +
           `it offers ${available.join(", ")}`,
       );
     }
+  }
+
+  // And the dark counterpart of each, unasked: a theme named `aristo` with an
+  // `aristo_dark` beside it is one theme in two lights, and a page that
+  // carried only the light one could not follow a reader who prefers the dark.
+  // It costs a stylesheet, and only for a theme that has a counterpart at all.
+  //
+  // Unless the application would rather be one way whatever the reader
+  // prefers, which is what `disable_dark_theme` says. Then a counterpart is
+  // carried only if it was named outright, and nothing follows the system.
+  const pairs = {};
+  const bundled = [...named];
+  for (const name of config.disable_dark_theme ? [] : named) {
+    const dark = `${name}${DARK_SUFFIX}`;
+    if (name.endsWith(DARK_SUFFIX) || !available.includes(dark)) continue;
+    pairs[name] = dark;
+    if (!bundled.includes(dark)) bundled.push(dark);
   }
 
   // Unscoped — a theme's selectors mean what they say — but prefixed with
@@ -737,6 +906,13 @@ function writeFrameworkTheme(config, framework, options = {}) {
 // The themes this build carries, and how one is worn. \`theme\` names the one
 // the page starts in; \`setTheme\` swaps it, which is a stylesheet swap and
 // nothing else — no component is redrawn and no state is touched.
+//
+// A theme with a dark counterpart is worn in whichever light the reader has
+// asked their system for, and follows it if they change their mind while the
+// page is open. Choosing one by hand ends that: an application that says which
+// theme it wants has said so, and a preference the reader expressed to their
+// operating system does not overrule a preference they expressed to the
+// application.
 
 const SHEETS = {
 ${entries}
@@ -748,14 +924,58 @@ export const themes = Object.keys(SHEETS);
 /** The one being worn. */
 export let theme = ${JSON.stringify(chosen)};
 
+/** Light theme -> the dark one beside it, for those that have one. */
+const DARK = ${JSON.stringify(pairs)};
+const LIGHT = Object.fromEntries(Object.entries(DARK).map(([l, d]) => [d, l]));
+
+const darkness =
+  typeof matchMedia === "function"
+    ? matchMedia("(prefers-color-scheme: dark)")
+    : null;
+
+/** \`name\` as the reader's system would have it, if it comes in two lights. */
+function asPreferred(name) {
+  const light = LIGHT[name] ?? name;
+  const dark = DARK[light];
+  if (!dark) return name;
+  return darkness?.matches ? dark : light;
+}
+
 const element = typeof document === "undefined" ? null : document.createElement("style");
 if (element) {
   element.setAttribute("data-mosaic-theme", ${JSON.stringify(framework.name)});
   document.head.appendChild(element);
 }
 
-/** Wear \`name\`. Unknown names are refused rather than silently ignored. */
+/**
+ * Wear \`name\`. Unknown names are refused rather than silently ignored.
+ *
+ * Said by the application, this settles it: the page stops following the
+ * reader's system setting, since a theme asked for by name is a decision and
+ * the system's is only a default. \`followSystem()\` hands it back.
+ */
 export function setTheme(name) {
+  following = false;
+  return wear(name);
+}
+
+/** Which of the two lights the reader's system is asking for. */
+export function systemTheme(name = theme) {
+  return asPreferred(name);
+}
+
+/**
+ * Go back to wearing whichever light the system asks for, and following it.
+ * What the page does until something calls \`setTheme\`.
+ */
+export function followSystem() {
+  following = true;
+  return wear(asPreferred(theme));
+}
+
+let following = true;
+
+function wear(name) {
   if (!(name in SHEETS)) {
     throw new Error(\`no theme "\${name}" in this build — it carries \${themes.join(", ")}\`);
   }
@@ -764,7 +984,11 @@ export function setTheme(name) {
   return name;
 }
 
-setTheme(theme);
+darkness?.addEventListener?.("change", () => {
+  if (following) wear(asPreferred(theme));
+});
+
+wear(asPreferred(theme));
 `;
 
   fs.mkdirSync(path.dirname(module), { recursive: true });
@@ -956,7 +1180,7 @@ async function compileInto(config, app, args) {
       specifier: f.specifier,
     })),
     ...librarySources(config, app),
-    { input: relative(app.source), outdir: app.outdir },
+    { input: relative(app.sourceRoot), outdir: app.outdir },
   ];
 
   // Nothing to clear: this run writes into a directory of its own, which is
@@ -964,12 +1188,14 @@ async function compileInto(config, app, args) {
   // behind — there is nothing here from any earlier run to leave.
   const vendored = vendorRuntime(config, app);
 
-  log(`==> compiling ${relative(app.source)}`);
+  log(`==> compiling ${relative(app.sourceRoot)}`);
   const written = compileAll(sources, {
-    // Where this build will end up. It is not written to during the run — the
-    // staging directory is — so it has to be named, or the build sitting there
-    // from last time is walked as source.
-    skip: app.finalOutdir ? [app.finalOutdir] : [],
+    // Not source. The build this run will end up as — it is not written to
+    // during the run, the staging directory is, so it has to be named or the
+    // build sitting there from last time is walked as source — and the `bun/`
+    // holding the native side, which is a program of its own and is compiled
+    // by nothing here.
+    skip: [...(app.finalOutdir ? [app.finalOutdir] : []), app.bunDir],
     runtime: vendored.specifier,
     // Where `import X from "svg:name"` looks: the application's own icons
     // first, so an app can replace one the framework ships.
@@ -1092,7 +1318,7 @@ async function writeBundle(outputs, app) {
  *
  * The compiled modules are what the bundle was built *from*: every one of them
  * is inside it, and the page loads it alone. Leaving them would ship a second
- * copy of the application beside the one being served — and, in `dev`, one a
+ * copy of the application beside the one being served — and, in `server`, one a
  * page could reach behind the bundle's back.
  *
  * The map is unaffected: Bun writes the sources into it, so the bundle stays
@@ -1193,13 +1419,13 @@ function serve(root, port, onResult = null) {
 
       const type = CONTENT_TYPES[path.extname(target)];
       const headers = {
-        // Always revalidate: the point of `dev` is that a rebuild is visible.
+        // Always revalidate: the point of `server` is that a rebuild is visible.
         "cache-control": "no-store",
         ...(type ? { "content-type": type } : {}),
       };
 
       // A page being checked reports back when it is done. Nothing is added to
-      // a page `dev` serves: an application should be what it is.
+      // a page `server` serves: an application should be what it is.
       //
       // Appended rather than spliced into `</body>`: a page is not required to
       // have one, and a check page that ends at its last <script> would
@@ -1323,9 +1549,27 @@ async function check(page, root, port, reported) {
  * The server keeps running throughout. It reads from disk on every request, so
  * a finished rebuild is live at the next reload with nothing to restart.
  */
-function watchSources(config, app, args) {
+/**
+ * Until when the watcher should disregard what it sees.
+ *
+ * A restart copies the application's `bun/` into the generated project, and
+ * reading a directory to copy it is enough for the filesystem to report the
+ * directory as changed. The watcher cannot tell that report from an edit — so
+ * it would rebuild, and restart, and copy again, for ever. One edit was
+ * observed to cost nine restarts before this.
+ *
+ * The window is around the copy itself and not the whole restart, which takes
+ * as long as building a desktop app: an edit made while the app is relaunching
+ * is a real edit and still counts.
+ */
+let watchBlindUntil = 0;
+function suppressWatch(ms) {
+  watchBlindUntil = Date.now() + ms;
+}
+
+function watchSources(config, app, args, onRebuilt = null) {
   const roots = [
-    app.source,
+    app.sourceRoot,
     config.runtimeRoot,
     ...config.frameworks.map((f) => f.input),
     ...config.libraries.map((lib) => lib.input),
@@ -1341,6 +1585,8 @@ function watchSources(config, app, args) {
   const outdir = path.resolve(app.outdir);
   const ignored = (root, file) => {
     if (!file) return true;
+    // What a restart's own copying stirs up is not an edit.
+    if (Date.now() < watchBlindUntil) return true;
     const full = path.resolve(root, file);
     // Editors write backups and swap files beside the real one.
     if (path.basename(file).startsWith(".") || file.endsWith("~")) return true;
@@ -1363,6 +1609,10 @@ function watchSources(config, app, args) {
     try {
       await compile(config, app, { ...args, quiet: true });
       console.log(`    rebuilt in ${Date.now() - started}ms`);
+      // What was built has to be picked up by whatever is running it. A server
+      // reads from disk and needs nothing; a desktop app is a process holding
+      // the old build in memory, and is restarted onto the new one.
+      if (onRebuilt) await onRebuilt();
     } catch (e) {
       // A broken source is the normal case while editing: report it and keep
       // watching, rather than taking the server down with it.
@@ -1386,6 +1636,144 @@ function watchSources(config, app, args) {
   }
 
   return watched;
+}
+
+/**
+ * Install what the application says it depends on.
+ *
+ * `bun install`, with `dependencies` in `info.json` standing in for the
+ * package.json an application does not have. It is the same install `desktop`
+ * does for itself, said as a command — for the first checkout of a project, for
+ * a CI step that wants the download over with before the build, and for
+ * changing a version and having it take effect without running the app.
+ *
+ * Asked for, it is done: unlike the install `desktop` performs on its way to
+ * launching, this one does not decide the dependencies look current and skip.
+ */
+async function install(config, app, args) {
+  const dir = path.join(app.outdir, DESKTOP_DIR);
+  const project = writeProject({ app, config, dir });
+  const log = args.quiet ? null : (...a) => console.log(...a);
+
+  // There is always something to install even when the application named
+  // nothing: what a desktop app is built out of is not its own dependency, but
+  // it does have to be here.
+  log?.(`==> installing into ${path.relative(config.root, dir) || "."}`);
+  await installDependencies({ ...project, needsInstall: true, log: null });
+
+  const names = Object.keys(project.dependencies);
+  log?.(`    ${names.length > 0 ? names.join(", ") : "nothing declared"}`);
+  return 0;
+}
+
+/**
+ * Run the application as a native desktop app.
+ *
+ * The Electrobun project is generated into the build directory and thrown away
+ * with it: an application says it is a desktop app by depending on Electrobun
+ * and, if it has a native side to speak of, by having a `bun/`. It does not
+ * acquire a second configuration file, a second build directory, or a second
+ * idea of where its sources are.
+ *
+ * Electrobun is spawned with this process's streams, so its output is this
+ * command's output, and it is killed with it — Ctrl-C reaches the app because
+ * the terminal signals the group, and the exit below covers every other way
+ * this process can end.
+ */
+async function desktop(config, app, args) {
+  const dir = path.join(app.outdir, DESKTOP_DIR);
+  const project = writeProject({ app, config, dir });
+  const log = args.quiet ? null : (...a) => console.log(...a);
+
+  log?.(`==> desktop ${path.relative(config.root, dir) || "."}`);
+  log?.(
+    `    main process ${
+      project.ownMain
+        ? path.relative(config.root, path.join(app.bunDir, "index.js"))
+        : `generated (no ${BUN_DIR}/ beside ${path.basename(app.entry)})`
+    }`,
+  );
+
+  await installDependencies({ ...project, log });
+
+  // The generated project holds what `dependencies` asked for, so it is looked
+  // in first. Anything installed further up still counts: a project that keeps
+  // its dependencies in a package.json of its own, as it may, is not required
+  // to say them twice.
+  const electrobun = findElectrobun(dir) ?? findElectrobun(app.source);
+  if (!electrobun) {
+    throw new Error(
+      `Electrobun is missing from ${dir} after installing it.\n` +
+        `    Delete that directory and run \`mosaic desktop\` again.`,
+    );
+  }
+
+  // Electrobun's CLI is a script with a `node` shebang, and node is not what
+  // any of this runs on: a project that has Electrobun has bun, and may well
+  // have no node at all. Run it under bun when bun can be found, and fall back
+  // to the shebang only when it cannot.
+  const bun = Bun.which("bun");
+  const command = bun ? [bun, electrobun, "dev"] : [electrobun, "dev"];
+
+  const launch = () =>
+    Bun.spawn(command, {
+      cwd: dir,
+      stdin: "inherit",
+      stdout: "inherit",
+      stderr: "inherit",
+    });
+
+  let proc = launch();
+  // A restart kills the app, and the app dying is otherwise how this command
+  // ends. The difference has to be recorded, because the exit looks the same.
+  let restarting = false;
+
+  // The app is a child of this process and outlives it otherwise: a killed
+  // `desktop` would leave a window on screen with nothing driving it.
+  const stop = () => proc.kill();
+  process.on("exit", stop);
+  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+    process.on(signal, () => {
+      stop();
+      process.exit(0);
+    });
+  }
+
+  if (!args.watch) return await proc.exited;
+
+  // The window holds the build it was launched with, and no reload reaches
+  // the main process: picking up an edit means running it again. The rebuild
+  // has already happened by the time this is called.
+  const restart = async () => {
+    restarting = true;
+    proc.kill();
+    await proc.exited;
+    // The generated project is written again, not reused: the page and the
+    // native side are copies, and an edit to either is only in the copy once
+    // it is made afresh. Copying `bun/` disturbs it enough to look like an
+    // edit, so the watcher is blind for as long as that takes.
+    suppressWatch(1000);
+    writeProject({ app, config, dir });
+    proc = launch();
+    restarting = false;
+    log?.("    restarted");
+  };
+
+  const watched = watchSources(config, app, args, restart);
+  log?.(
+    `    watching ${watched
+      .map((d) => path.relative(config.root, d) || ".")
+      .join(", ")}`,
+  );
+  log?.("    Ctrl-C to stop");
+
+  // Quitting the app ends the command; being killed for a restart does not.
+  for (;;) {
+    const code = await proc.exited;
+    if (!restarting) return code;
+    // The restart replaces `proc`; wait for it to have done so.
+    while (restarting) await Bun.sleep(20);
+  }
 }
 
 async function main(argv) {
@@ -1422,6 +1810,18 @@ async function main(argv) {
     return 0;
   }
 
+  // Installing is not building, and does not wait on a build: an application
+  // whose dependencies are not there yet is exactly the one that cannot
+  // compile, and telling it to compile first would be a circle.
+  if (args.command === "install") {
+    try {
+      return await install(config, app, args);
+    } catch (e) {
+      report(e);
+      return 1;
+    }
+  }
+
   try {
     await compile(config, app, args);
   } catch (e) {
@@ -1431,7 +1831,16 @@ async function main(argv) {
 
   if (args.command === "compile") return 0;
 
-  // `dev` serves the application directory, so a page can only reach what
+  if (args.command === "desktop") {
+    try {
+      return await desktop(config, app, args);
+    } catch (e) {
+      report(e);
+      return 1;
+    }
+  }
+
+  // `server` serves the application directory, so a page can only reach what
   // ships with the app. A check page is a test *of* an application, and reads
   // the build it produced, so it is served from far enough up to see both.
   let checkPage = null;
@@ -1470,7 +1879,7 @@ async function main(argv) {
   let reportResult;
   const reported = new Promise((resolve) => (reportResult = resolve));
 
-  const server =
+  let server =
     args.command === "check"
       ? serve(checkRoot, 0, reportResult)
       : serve(app.source, args.port);
@@ -1490,7 +1899,16 @@ async function main(argv) {
   const url = `http://localhost:${server.port}/`;
   console.log(`==> serving ${url}`);
   if (args.watch) {
-    const watched = watchSources(config, app, args);
+    // Put the server back on the same port after a rebuild. It reads from disk
+    // on every request, so this changes nothing about what it answers — what it
+    // does is make one thing true of both commands: `dev` runs the application
+    // again after an edit, and there is no rule about which edits count.
+    const restart = () => {
+      const port = server.port;
+      server.stop(true);
+      server = serve(app.source, port);
+    };
+    const watched = watchSources(config, app, args, restart);
     console.log(
       `    watching ${watched.map((d) => path.relative(config.root, d) || ".").join(", ")}`,
     );

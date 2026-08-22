@@ -462,8 +462,19 @@ test("and is not doubled in one that reads the theme itself", () => {
     'import {setTheme, theme} from "mosaic/frameworks/ui";\nconsole.log(setTheme, theme);\n',
   );
 
-  const declarations = bundled.split("--default-background-color:").length - 1;
-  expect(declarations).toBe(1);
+  // One style element, however the theme is reached. The build carries two
+  // sheets now — the theme named and the dark counterpart beside it — so what
+  // this watches for is the module being linked twice, which is what importing
+  // the theme by hand used to cause.
+  const elements = bundled.split("data-mosaic-theme").length - 1;
+  expect(elements).toBe(1);
+
+  // And each sheet once: a theme's opening comment is the cheapest thing to
+  // count that a second copy would repeat.
+  const light =
+    bundled.split("The Aristo theme, ported from GWT Mosaic").length - 1;
+  const dark = bundled.split("Aristo Dark — the dark counterpart").length - 1;
+  expect([light, dark]).toEqual([1, 1]);
 });
 
 test("an imported image rides into the compiled module as a data URL", () => {
@@ -498,4 +509,22 @@ test("an imported image rides into the compiled module as a data URL", () => {
   );
   // And it is a string, so it is used where a URL is used.
   expect(code).toContain("src: (logo)");
+});
+
+test("a theme brings its dark counterpart along, unasked", () => {
+  // `aristo` and `aristo_dark` are one theme in two lights. A build carrying
+  // only the light one could not follow a reader whose system asks for dark,
+  // so the counterpart comes too — for a theme that has one, and no other.
+  const bundled = bundle('import "mosaic/frameworks/ui";\n');
+
+  expect(bundled).toContain("aristo_dark:");
+  expect(bundled).toContain("Aristo Dark — the dark counterpart");
+});
+
+test("and the page wears whichever light the system asks for", () => {
+  const bundled = bundle('import "mosaic/frameworks/ui";\n');
+
+  // Asserted on the bundle, so only what survives it: the bundler renames
+  // every identifier, and the media query is the one part that cannot be.
+  expect(bundled).toContain("(prefers-color-scheme: dark)");
 });

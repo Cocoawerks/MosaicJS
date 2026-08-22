@@ -1,9 +1,3 @@
-/*
- * Ported from GWT Mosaic: client/components/resources/slider/style.css.
- *
- * Scoped to this module by the compiler, so every element these rules match is
- * one the slider itself draws — track, filled range and handles alike.
- */
 .v-Slider {
   display: block;
   text-align: left;
@@ -50,15 +44,9 @@
   user-select: none;
   margin: 0;
   box-sizing: border-box;
-  /* The rim is the knob's own colour, not the border colour every other
-       control uses. A knob is the one thing here that sits *on* a filled track
-       rather than on the surface, and a rim the value of the track is no rim at
-       all where the two meet — which is the width of the knob, exactly where
-       its edge is steepest and reads thinnest. Each theme names one dark enough
-       to hold against its track as well as against the panel behind it. */
-  border: 1px solid var(--slider-knob-border, var(--default-border-color));
-  width: 20px;
-  height: 20px;
+  border: 1px solid var(--slider-knob-border);
+  width: 23px;
+  height: 23px;
   /* Close in under the knob rather than spread out from it. At 0 2px 4px the
        shadow fell on the track just outside the rim, and a hairline with a soft
        dark band against it reads as one blurred edge instead of a line. */
@@ -66,9 +54,6 @@
   background: var(--slider-knob-background);
 }
 
-/* The knob is focusable, so the browser rings it with its own black outline.
-   The theme's ring replaces it — as the checkbox and radio sheets do for the
-   same reason — and appears only once the knob actually has focus. */
 .v-Slider .handle:focus,
 .v-Slider .handle:focus-visible {
   outline: none;
@@ -85,7 +70,7 @@
 
 .v-Slider:not(.is-disabled) .handle.is-active {
   background: var(--slider-knob-active);
-  border-color: var(--slider-knob-border, var(--default-border-color));
+  border-color: var(--slider-knob-border);
 }
 
 .v-Slider.vertical .handle {
@@ -95,7 +80,7 @@
 }
 
 .v-Slider.horizontal .handle {
-  top: -8px;
+  top: -9.5px;
   margin-left: -10.5px;
   left: 10px;
 }

@@ -38,6 +38,12 @@ const SLIDE_MS = 260;
 const PUSH_MS = 220;
 
 export default class Drawer extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `Drawer`. See Component.styleName.
+   */
+  static styleName = "v-Drawer";
+
   static props = {
     /** What the header reads. */
     title: { type: String, default: "" },
@@ -291,6 +297,7 @@ class CloseButton extends Button {
 
 /** The next frame, or as near as the host manages. */
 function nextFrame(run) {
-  if (typeof requestAnimationFrame === "function") return requestAnimationFrame(run);
+  if (typeof requestAnimationFrame === "function")
+    return requestAnimationFrame(run);
   return setTimeout(run, 16);
 }

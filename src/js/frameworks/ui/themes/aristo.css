@@ -313,10 +313,16 @@
   --popover-background: #ffffff;
   --popover-border: #c6c6c6;
   --progressbar-track: #dddddd;
+  /* The fill, which used to be read off the switch. Same value, said once. */
+  --progressbar-fill: #679bb6;
   --radio-indicator-background: #f7f7f7;
   --radio-mark-color: #f7f7f7;
   --search-icon-fill: #383838;
-  --slider-knob-border: #9a9a9a;
+  /* The switch's knob rim, so the two handles read as one part: both are a
+     white disc you take hold of, and the slider's darker #9a9a9a made them look
+     like different controls sitting on the same page. The faces already match
+     — both are #ffffff — so this is the whole of the difference. */
+  --slider-knob-border: var(--default-border-color);
   /* A press darkens the knob a clear step past its hover, so holding it
      reads as held rather than as hovered. */
   --slider-knob-active: #d8d8d8;
@@ -332,8 +338,25 @@
   --spinner-track: #dddddd;
   --splitter-hover: #767676;
   --success-color: #4e7c52;
+  /* The switch, all of it. The track is a shade darker than the page so the
+     capsule reads as a well; the knob is white with the hairline every other
+     control wears; on, the track takes the blue and the knob stays white, so
+     the disc is what the eye follows across. */
+  --switch-track-background: #dcdcdf;
+  --switch-track-border: #c8c8c8;
   --switch-knob-background: #ffffff;
-  --switch-track-background: #dddddd;
+  --switch-knob-border: #c8c8c8;
+  --switch-checked-border: color-mix(
+    in srgb,
+    var(--switch-checked-background),
+    black 10%
+  );
+  --switch-knob-checked-background: #ffffff;
+  --switch-knob-checked-border: color-mix(
+    in srgb,
+    var(--switch-checked-background),
+    black 10%
+  );
   --tab-selected-foreground: #2a2a2a;
   --tab-separator-color: #d8d8d8;
   --tabbar-background: #ebebeb;
@@ -464,35 +487,6 @@ textarea,
   background: var(--checked-mark-color);
 }
 
-.v-Switch .indicator:before {
-  border-color: #c8c8c8;
-}
-
-.v-Switch .indicator {
-  border-color: #c8c8c8;
-}
-
-.v-Switch.checked.checked > .indicator {
-  background-color: var(
-    --switch-checked-background,
-    var(--primary-background-color)
-  );
-  border-color: color-mix(
-    in srgb,
-    var(--switch-checked-background, var(--primary-background-color)),
-    white 25%
-  );
-}
-
-.v-Switch.checked.checked > .indicator:before {
-  border-color: color-mix(
-    in srgb,
-    var(--switch-checked-background, var(--primary-background-color)),
-    black 5%
-  );
-}
-
-/* Toolbar: flat grey on a hairline base, no gloss of its own. */
 .v-ToolBar.v-ToolBar {
   background-image: none;
   border-bottom: 1px solid #c8c8c8;
@@ -564,7 +558,7 @@ input,
   background-color: var(--dialog-header-background);
   border-bottom: 1px solid var(--dialog-header-border);
   color: var(--dialog-header-foreground);
-  box-shadow: var(--dialog-header-highlight, none);
+  box-shadow: var(--dialog-header-highlight);
 }
 
 .v-Drawer .title {
@@ -757,8 +751,14 @@ input,
 
 /* Keyboard focus only: :focus-visible is the browser's own judgement of that, so
    tabbing to the control rings it and clicking it doesn't. :has puts the ring on
-   the root, since the <select> that takes focus stops at the field. */
-.v-ComboBox.v-ComboBox:has(select:focus-visible) {
+   the root, since the <select> that takes focus stops at the field.
+
+   A popup has no <select> — its entries are a menu — so the root is what takes
+   the focus and the ring goes straight on it. Without this the rule above took
+   the component's own ring off and nothing put one back, and a popup tabbed to
+   showed nothing at all. */
+.v-ComboBox.v-ComboBox:has(select:focus-visible),
+.v-ComboBox.v-ComboBox.popup:focus-visible {
   outline: var(--focus-ring) solid 3px;
   outline-offset: 1px;
 }

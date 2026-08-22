@@ -28,10 +28,7 @@
   z-index: 0;
   /* Falls back to the face every other selected control takes (checkbox,
        radio, switch, slider range) unless a theme names its own. */
-  background: var(
-    --tab-indicator-background,
-    var(--switch-checked-background, var(--primary-background-color))
-  );
+  background: var(--tab-indicator-background);
   /* Full bar height: positionIndicator sets left/top/width from the selected
        tab but not height, so it has to come from here or the pill collapses. */
   height: 100%;
@@ -72,7 +69,7 @@
 }
 
 .v-TabButton:not(:last-child) {
-  border-right-color: var(--tab-separator-color, var(--group-border-color));
+  border-right-color: var(--tab-separator-color);
 }
 
 .v-TabButton.is-selected {

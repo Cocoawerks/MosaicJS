@@ -16,6 +16,12 @@ import Button from "../controls/button/Button.js";
 import "./titlebar-button.css";
 
 export default class TitleBarButton extends Button {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `TitleBarButton`. See Component.styleName.
+   */
+  static styleName = "v-TitleBarButton";
+
   buttonClasses() {
     return ["v-TitleBarButton", ...super.buttonClasses()];
   }

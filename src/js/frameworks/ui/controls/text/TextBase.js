@@ -16,6 +16,12 @@ import Control from "../Control.js";
 import "./text.css";
 
 export default class TextBase extends Control {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `TextBase`. See Component.styleName.
+   */
+  static styleName = "v-Text";
+
   static props = {
     /** Whether the browser may complete the field. */
     autocomplete: { type: Boolean, default: false },

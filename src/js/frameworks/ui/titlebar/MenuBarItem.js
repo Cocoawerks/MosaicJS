@@ -43,6 +43,12 @@ const ACTIVATION_KEYS = new Set(["Enter", " ", "Spacebar"]);
 const MENU_GAP = 9;
 
 export default class MenuBarItem extends TitleBarButton {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `MenuBarItem`. See Component.styleName.
+   */
+  static styleName = "v-MenuBarItem";
+
   static props = {
     /** A menu bar item latches while its menu is up. */
     toggle: { type: Boolean, default: true },
@@ -171,7 +177,7 @@ export default class MenuBarItem extends TitleBarButton {
   menuClosed() {
     if (MenuBarItem.openItem === this.self) MenuBarItem.openItem = null;
     this.setButtonState(ButtonState.OFF);
-    this.focusWas?.focus?.();
+    this.focusWas?.focus?.({ preventScroll: true });
     this.focusWas = null;
   }
 

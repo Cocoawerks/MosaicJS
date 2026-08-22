@@ -63,7 +63,24 @@ export function mount(component, target, props = {}, controller = EMPTY) {
   view.nodes = nodes;
   view.node = nodes[0] ?? null;
   view.props = coerceProps(props);
-  if (view.node) view.node.__ibView = view;
+  // Only if nothing else has claimed it. The first root may itself be a
+  // component — a page whose markup opens with one — and that component's own
+  // instance is what a patch has to find there, and what `attachTree` has to
+  // tell. Written over it, the component was never attached at all: its
+  // `attached()` did not run, and the page wrapper standing in its place has
+  // none.
+  if (view.node && !view.node.__ibView) view.node.__ibView = view;
+  // The controller is this page's scope, tagged onto its roots the way a
+  // composed view's is — which is what `attachTree` finds to tell it the page
+  // is on screen. A page mounted as the application's own goes through here
+  // rather than through `render`, and without this its `attached()` was the
+  // one that never ran.
+  //
+  // Every root, not only the first: a page whose markup has more than one is
+  // as much that page at the last of them as at the first, and something
+  // written there — a `<Bind/>` after the markup it joins up — has to be able
+  // to find the page it is in by looking upward.
+  for (const node of nodes) node.__ibCtl = controller;
 
   // A page draws itself again the way a composed view does, so a value reaches
   // a component's prop here too — `<Button text="{label}"/>` in a page is the

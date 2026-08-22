@@ -19,6 +19,12 @@ import Tab from "./Tab.js";
 import "./tab.css";
 
 export default class TabView extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `TabView`. See Component.styleName.
+   */
+  static styleName = "v-TabPanel";
+
   static props = {
     /** Which tab is chosen, counting from the first. */
     selectedIndex: { type: Number, default: 0 },

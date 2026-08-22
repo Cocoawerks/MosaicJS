@@ -57,6 +57,12 @@ const STEPS = {
 };
 
 export default class AbstractSlider extends Control {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `AbstractSlider`. See Component.styleName.
+   */
+  static styleName = "v-Slider";
+
   static props = {
     /** Whether a drag is reported all the way or only where it comes to rest. */
     continuous: { type: Boolean, default: true },

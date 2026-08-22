@@ -353,42 +353,34 @@ test("and what the tag says is passed to it as props", () => {
 // --- surfaces ----------------------------------------------------------------
 
 test("a surface may be the root of a view", () => {
-  expect(compile('<PopOver orientation="bottom_center"><p>hi</p></PopOver>'))
-    .toContain("h(PopOver,");
-  expect(compile('<DialogBox title="Settings"><p>hi</p></DialogBox>')).toContain(
+  expect(
+    compile('<PopOver orientation="bottom_center"><p>hi</p></PopOver>'),
+  ).toContain("h(PopOver,");
+  expect(
+    compile('<DialogBox title="Settings"><p>hi</p></DialogBox>'),
+  ).toContain("h(DialogBox,");
+});
+
+test("and may equally be written in the middle of one", () => {
+  // A `.mib` is a freeze dried object rather than a picture of the page, so
+  // where a surface's tag sits says nothing about where the surface ends up:
+  // the top layer for a dialog, against its anchor for a popover, pinned to
+  // the window for a drawer. Writing one in place is how a page keeps a dialog
+  // beside the thing it is about.
+  expect(compile("<div><p>a</p><PopOver/></div>")).toContain("h(PopOver,");
+  expect(compile('<div><DialogBox title="x"/></div>')).toContain(
     "h(DialogBox,",
   );
-});
-
-test("but not anything else", () => {
-  // A surface is placed by the runtime rather than by the markup around it, so
-  // nested it would read as something the page does not do.
-  expect(() => compile("<div><PopOver/></div>")).toThrow(
-    /can only be the root of a .mib file/,
-  );
-  expect(() => compile("<div><DialogBox/></div>")).toThrow(
-    /can only be the root of a .mib file/,
-  );
-});
-
-test("nor beside another root, where it is not the root either", () => {
-  expect(() => compile("<div>first</div><PopOver/>")).toThrow(
-    /can only be the root of a .mib file/,
-  );
-});
-
-test("the refusal says which line, and what to write instead", () => {
-  expect(() => compile("<div>\n  <p>a</p>\n  <DialogBox/>\n</div>")).toThrow(
-    /line 3/,
-  );
-  expect(() => compile("<div><PopOver/></div>")).toThrow(/ColourPopOver.mib/);
+  expect(compile("<div>first</div><PopOver/>")).toContain("h(PopOver,");
 });
 
 test("a kind of popover that belongs to a control is nested like anything else", () => {
   // Menu and Tooltip extend PopOver, and a menu inside a menu item is how a
-  // submenu is written. Only the two surfaces themselves are refused.
+  // submenu is written.
   expect(
-    compile('<MenuItem text="Share"><Menu><MenuItem text="Someone"/></Menu></MenuItem>'),
+    compile(
+      '<MenuItem text="Share"><Menu><MenuItem text="Someone"/></Menu></MenuItem>',
+    ),
   ).toContain("h(Menu,");
   expect(compile("<div><Tooltip/></div>")).toContain("h(Tooltip,");
 });
@@ -405,20 +397,14 @@ test("a file with a bound prop says it has to redraw", () => {
   );
 });
 
-test("a Drawer is a surface too: root only, like a dialog or a popover", () => {
-  // It is pinned to the window and pushes the page, so where its markup sits
-  // says nothing about where it goes — nesting one would read as something the
-  // page does not do.
+test("a Drawer goes wherever it is written, like the other two", () => {
   expect(compile('<Drawer title="Filters"><p>a</p></Drawer>')).toContain(
     "h(Drawer,",
   );
-  expect(() => compile("<div><Drawer/></div>")).toThrow(
-    /can only be the root of a .mib file/,
-  );
+  expect(compile("<div><Drawer/></div>")).toContain("h(Drawer,");
 });
 
-test("but a surface may hold whatever it likes", () => {
-  // The rule runs one way: a surface cannot be contained, and contains freely.
+test("and a surface holds whatever it likes", () => {
   const js = compile(
     '<Drawer title="Filters"><CheckBox text="Unread"/><ColorWell/><MyView/></Drawer>',
   );
@@ -432,12 +418,12 @@ test("but a surface may hold whatever it likes", () => {
   expect(compile("<PopOver><MyView/></PopOver>")).toContain("h(MyView,");
 });
 
-test("and a surface cannot hold another surface either", () => {
-  expect(() => compile('<Drawer title="x"><PopOver/></Drawer>')).toThrow(
-    /can only be the root of a .mib file/,
+test("including another surface", () => {
+  expect(compile('<Drawer title="x"><PopOver/></Drawer>')).toContain(
+    "h(PopOver,",
   );
-  expect(() => compile('<DialogBox title="x"><Drawer/></DialogBox>')).toThrow(
-    /can only be the root of a .mib file/,
+  expect(compile('<DialogBox title="x"><Drawer/></DialogBox>')).toContain(
+    "h(Drawer,",
   );
 });
 
@@ -483,40 +469,41 @@ test("an unscoped file gives a component's styleName no scope to carry", () => {
   expect(compile('<Button styleName="wide"/>')).toContain('styleName: "wide"');
 });
 
-test("a SnackBar is a surface too: root only, like a dialog or a drawer", () => {
-  // A bar is put on the page by a SnackBarManager, which stacks it in a corner
-  // of the window. One written into a page's markup would sit in that page's
-  // flow — and would be up from the moment the page was drawn, rather than
-  // when there was something to say.
+test("a bar goes wherever it is written too", () => {
+  // Nothing about where a tag sits is the compiler's to refuse. A bar is still
+  // put on the page by a SnackBarManager rather than by the markup around it,
+  // but that is a thing to know rather than a thing to be stopped from
+  // writing.
   expect(
     compile('<SnackBar intent="success"><span>Saved</span></SnackBar>'),
   ).toContain("h(SnackBar,");
+  expect(compile("<div><SnackBar/></div>")).toContain("h(SnackBar,");
+  expect(compile("<div>first</div><SnackBar/>")).toContain("h(SnackBar,");
+  expect(compile('<div><Toast text="Saved"/></div>')).toContain("h(Toast,");
+});
 
-  expect(() => compile("<div><SnackBar/></div>")).toThrow(
-    /can only be the root of a .mib file/,
-  );
-  expect(() => compile("<div><p>a</p><SnackBar/></div>")).toThrow(
-    /<SnackBar\/> can only be the root/,
-  );
-  // Nor beside another root, where it is not the root either.
-  expect(() => compile("<div>first</div><SnackBar/>")).toThrow(
-    /can only be the root of a .mib file/,
+test("a Bind is handed the scope its paths belong to", () => {
+  // The one tag the compiler knows the meaning of. Which scope a path belongs
+  // to is a lexical fact — the file it was written in — so it is said here
+  // rather than searched for at run time, where the question becomes "the
+  // nearest scope around this tag", which is a different question.
+  const js = compile('<div><Bind source="a.value" target="b"/></div>');
+  expect(js).toContain(
+    'h(Bind, { source: "a.value", target: "b", scope: this })',
   );
 });
 
-test("and so is a Toast, which is a kind of one", () => {
-  expect(compile('<Toast text="Saved"/>')).toContain("h(Toast,");
-  expect(() => compile('<div><Toast text="Saved"/></div>')).toThrow(
-    /<Toast\/> can only be the root/,
+test("however deeply it is nested, and whatever it is nested in", () => {
+  const js = compile(
+    '<DialogBox title="x"><main><Bind source="combo1.value" target="chosen"/></main></DialogBox>',
   );
+  expect(js).toContain("scope: this");
 });
 
-test("a bar is told how it is shown, not which tag to write", () => {
-  // The advice differs from a dialog's: a dialog is named by the page that
-  // shows it, and a bar is never named in markup at all.
-  expect(() => compile("<div><Toast/></div>")).toThrow(/SnackBarManager/);
-  expect(() => compile("<div><Toast/></div>")).toThrow(/this\.bars\.show/);
-  expect(() => compile("<div><DialogBox/></div>")).toThrow(
-    /name that file here instead/,
+test("and nothing else is handed one", () => {
+  const js = compile(
+    '<div><Button text="x"/><Bind source="a" target="b"/></div>',
   );
+  expect(js.match(/scope: this/g)).toHaveLength(1);
+  expect(js).toContain('h(Button, { text: "x" })');
 });

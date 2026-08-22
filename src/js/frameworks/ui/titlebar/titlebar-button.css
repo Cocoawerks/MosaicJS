@@ -99,7 +99,7 @@
 }
 
 :global(.v-TitleBarButton.v-TitleBarButton.v-Button.is-disabled) {
-  opacity: var(--opacity-disable, 0.4);
+  opacity: var(--opacity-disable);
   cursor: not-allowed;
   background-color: transparent;
 }

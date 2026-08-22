@@ -39,7 +39,7 @@ const COMBINATORS = new Set([" ", "\t", "\n", ">", "+", "~"]);
 export function scope(css, scopeSuffix, prefix = null, options = {}) {
   const source = options.minify ? stripComments(css) : css;
   const out = [];
-  transformBlock(source, scopeSuffix, out, prefix);
+  transformBlock(source, scopeSuffix, out, prefix, options.component ?? null);
   const text = out.join("");
   return options.minify ? squeeze(text) : text;
 }
@@ -246,7 +246,13 @@ function stripComments(css) {
   return out;
 }
 
-function transformBlock(css, scopeSuffix, out, prefix = null) {
+function transformBlock(
+  css,
+  scopeSuffix,
+  out,
+  prefix = null,
+  component = null,
+) {
   let i = 0;
   while (i < css.length) {
     // Emit leading whitespace and comments verbatim — a comment is not a
@@ -306,7 +312,7 @@ function transformBlock(css, scopeSuffix, out, prefix = null) {
       const name = trimmed.split(/[\s(]/)[0];
       out.push(trimmed, "{");
       if (NESTED_AT_RULES.includes(name)) {
-        transformBlock(body, scopeSuffix, out, prefix);
+        transformBlock(body, scopeSuffix, out, prefix, component);
       } else {
         // @keyframes / @font-face bodies hold declarations, not selectors.
         out.push(body);
@@ -314,7 +320,7 @@ function transformBlock(css, scopeSuffix, out, prefix = null) {
       out.push("}");
     } else {
       out.push(
-        scopeSelectorList(trimmed, scopeSuffix, prefix),
+        scopeSelectorList(trimmed, scopeSuffix, prefix, component),
         "{",
         body.trim(),
         "}",
@@ -358,9 +364,41 @@ function matchingBrace(css, open) {
   return -1;
 }
 
-function scopeSelectorList(list, scopeSuffix, prefix = null) {
+/**
+ * A compound naming a component, as the class that component wears.
+ *
+ * A stylesheet may say `ComboBox` where it means "the combo box" — the same
+ * name the markup places it by — rather than having to know that a combo box
+ * draws itself as `.v-ComboBox`. Written this way a sheet says what it means,
+ * and a component free to change the class it wears does not take every sheet
+ * that reached it down with it.
+ *
+ * Recognised by the capital: an element's tag is lower case, so `ComboBox` can
+ * only be a component and `div` can only be an element. Whatever follows the
+ * name is left alone, so `ComboBox.popup:hover` and `Button[disabled]` mean
+ * what they look like.
+ *
+ * @param part      one compound, possibly with a combinator hanging off it
+ * @param component name -> the class it wears, or null to leave names alone
+ */
+function asComponentClass(part, component) {
+  if (!component) return part;
+
+  const match = /^([A-Z][A-Za-z0-9_]*)/.exec(part.trimStart());
+  if (!match) return part;
+
+  const wears = component(match[1]);
+  if (!wears) return part;
+
+  const lead = part.length - part.trimStart().length;
+  return part.slice(0, lead) + `.${wears}` + part.slice(lead + match[1].length);
+}
+
+function scopeSelectorList(list, scopeSuffix, prefix = null, component = null) {
   return splitTopLevel(list, ",")
-    .map((s) => withPrefix(scopeSelector(s.trim(), scopeSuffix), prefix))
+    .map((s) =>
+      withPrefix(scopeSelector(s.trim(), scopeSuffix, component), prefix),
+    )
     .join(", ");
 }
 
@@ -376,13 +414,29 @@ function withPrefix(selector, prefix) {
 }
 
 /**
- * Scope the last compound that is not marked `:global(...)`.
+ * Scope the last compound that is not marked `:global(...)` — unless the
+ * selector names a component, in which case the first.
  *
- * `:global()` may wrap the whole selector or just one compound, so
- * `.todo :global(.item)` becomes `.todo.x1y2z3q .item` — the container is
- * scoped, the descendant is left open for nodes a controller builds.
+ * The two answer different questions. Anchored at the last compound the scope
+ * says "an element I drew myself", which is what keeps a module's sheet off
+ * everyone else's markup. Anchored at the first it says "inside an element I
+ * drew", which is what a rule reaching into a component it placed needs:
+ * `.mydialog ComboBox` cannot require the combo box's root to carry this
+ * page's hash, because the combo box drew that root and gave it its own.
+ *
+ * Naming the component is what asks for the second reading. It is a thing a
+ * sheet can only mean one way — a page that writes `ComboBox` is talking about
+ * a combo box it placed, not about markup of its own — so the anchor moves and
+ * nothing written the old way changes meaning.
+ *
+ * Either way the anchor is an element this module drew, so a rule still only
+ * reaches into that module's own subtree.
+ *
+ * A compound belonging to someone else marks itself `:global()`, and the
+ * anchor skips it — `:global(.v-Button) .icon` scopes `.icon`, as it always
+ * did. `:global()` may wrap the whole selector or just one compound.
  */
-function scopeSelector(sel, scopeSuffix) {
+function scopeSelector(sel, scopeSuffix, component = null) {
   const parts = splitCompounds(sel);
 
   // Unwrap `:global(...)`, remembering which pieces opted out of scoping.
@@ -395,10 +449,24 @@ function scopeSelector(sel, scopeSuffix) {
     }
   });
 
-  // The last scopable compound carries the scope. Combinator pieces
-  // ("` > `") are not compounds and never take it.
+  // A component's name stands for the class it wears, inside `:global()` as
+  // much as outside it — the name is how a sheet refers to the component
+  // either way, and whether the rule is scoped is a separate question.
+  let names = false;
+  for (let i = 0; i < parts.length; i++) {
+    const asClass = asComponentClass(parts[i], component);
+    if (asClass !== parts[i]) names = true;
+    parts[i] = asClass;
+  }
+
+  // The scopable compound at whichever end this selector is anchored by.
+  // Combinator pieces ("` > `") are not compounds and never take it.
+  const order = names
+    ? parts.map((_, i) => i)
+    : parts.map((_, i) => parts.length - 1 - i);
+
   let target = -1;
-  for (let i = parts.length - 1; i >= 0; i--) {
+  for (const i of order) {
     if (!isGlobal[i] && !isCombinator(parts[i])) {
       target = i;
       break;

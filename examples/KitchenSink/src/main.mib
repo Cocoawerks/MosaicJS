@@ -27,6 +27,7 @@
             <Option text="Aristo" value="aristo"/>
             <Option text="Aristo Dark" value="aristo_dark"/>
             <Option text="Pop" value="pop"/>
+            <Option text="Pop Dark" value="pop_dark"/>
         </ComboBox>
     </div>
 
@@ -795,7 +796,7 @@
         font-size: 0.85rem;
     }
 	
-	.theme-combo {
+	 .theme-combo {
 		width:120px;
 	}
 </style>

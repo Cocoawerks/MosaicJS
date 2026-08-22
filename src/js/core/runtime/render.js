@@ -99,6 +99,14 @@ export function render(vnode, controller = {}, ns = null) {
       dom.__ibFn = type;
       dom.__ibOut = produced;
       if (own !== controller) dom.__ibCtl = own;
+    } else if (
+      own !== controller &&
+      dom?.nodeType === Node.DOCUMENT_FRAGMENT_NODE
+    ) {
+      // A view with more than one root has no single node to stand for it, so
+      // each of them carries the scope. Without this a multi-root `.mib` was
+      // the one shape whose scope nothing could be found from.
+      for (const node of dom.childNodes) node.__ibCtl = own;
     }
     // What it takes to draw this view again: saying something to its scope is
     // what asks for that, so the scope is where it is kept.

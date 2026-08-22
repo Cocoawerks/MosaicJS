@@ -10,6 +10,12 @@ import CloseCircle from "svg:close-circle";
 import "./search.css";
 
 export default class SearchField extends TextBase {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `SearchField`. See Component.styleName.
+   */
+  static styleName = "v-Search";
+
   /** "Search", unless the application words it differently. */
   get placeholder() {
     return this.get("placeholder", "Search");

@@ -40,6 +40,47 @@ const INTERNAL = new Set([
   "root",
 ]);
 
+/**
+ * Keys currently telling their callbacks, per object.
+ *
+ * A component assigned through its public setter notifies twice over: the
+ * accessor observation wraps the setter and tells afterwards, and the setter
+ * itself reaches `Component.set`, which tells as well. Both are needed —
+ * either path may be the only one taken — so the second is folded into the
+ * first rather than removed.
+ */
+const NOTIFYING = new WeakMap();
+
+/**
+ * Run whatever is watching `key` on `target`.
+ *
+ * Exported because observation is not the only thing that assigns: a component
+ * keeps its settings in a bag of its own and writes them through
+ * `Component.set`, which never goes near the accessor an observer wrapped. A
+ * binding onto a control's `value` heard nothing at all until that path told
+ * it too.
+ */
+export function notify(target, key) {
+  if (!target || !Object.prototype.hasOwnProperty.call(target, OBSERVED))
+    return;
+  const callbacks = target[OBSERVED].get(key);
+  if (!callbacks || callbacks.size === 0) return;
+
+  let busy = NOTIFYING.get(target);
+  if (!busy) {
+    busy = new Set();
+    NOTIFYING.set(target, busy);
+  }
+  if (busy.has(key)) return;
+
+  busy.add(key);
+  try {
+    for (const callback of [...callbacks]) callback();
+  } finally {
+    busy.delete(key);
+  }
+}
+
 function notifiers(target) {
   if (!Object.prototype.hasOwnProperty.call(target, OBSERVED)) {
     Object.defineProperty(target, OBSERVED, {
@@ -51,7 +92,7 @@ function notifiers(target) {
 }
 
 /**
- * Watch `key` on `target`: run `notify` whenever it is assigned a new value.
+ * Watch `key` on `target`: run `run` whenever it is assigned a new value.
  * Idempotent — observing the same property again only adds the callback, and
  * the property keeps whatever value it already had.
  */
@@ -68,25 +109,29 @@ function notifiers(target) {
  * time the page drew — the getter still existed, and was never called again.
  */
 function definedDescriptor(target, key) {
-  for (let o = target; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) {
+  for (
+    let o = target;
+    o && o !== Object.prototype;
+    o = Object.getPrototypeOf(o)
+  ) {
     const found = Object.getOwnPropertyDescriptor(o, key);
     if (found) return found;
   }
   return null;
 }
 
-export function observe(target, key, notify) {
+export function observe(target, key, run) {
   if (!target || (typeof target !== "object" && typeof target !== "function"))
     return;
 
   const watched = notifiers(target);
   const existing = watched.get(key);
   if (existing) {
-    existing.add(notify);
+    existing.add(run);
     return;
   }
 
-  const callbacks = new Set([notify]);
+  const callbacks = new Set([run]);
   watched.set(key, callbacks);
 
   const descriptor = definedDescriptor(target, key);
@@ -104,7 +149,7 @@ export function observe(target, key, notify) {
       get: descriptor.get,
       set(value) {
         inner.call(this, value);
-        for (const callback of [...callbacks]) callback();
+        notify(target, key);
       },
       enumerable: descriptor.enumerable,
       configurable: true,
@@ -123,11 +168,38 @@ export function observe(target, key, notify) {
     set(next) {
       if (Object.is(value, next)) return;
       value = next;
-      for (const callback of [...callbacks]) callback();
+      notify(target, key);
     },
     enumerable: descriptor ? descriptor.enumerable : true,
     configurable: true,
   });
+}
+
+/**
+ * Stop running `run` when `key` is assigned.
+ *
+ * The accessor observation put there stays: it is the property now, and taking
+ * it off again would mean putting back whatever was underneath it, which
+ * nothing has kept. With no callbacks left it costs an empty loop per
+ * assignment and nothing else.
+ */
+export function unobserve(target, key, run) {
+  if (!target || !Object.prototype.hasOwnProperty.call(target, OBSERVED))
+    return;
+  target[OBSERVED].get(key)?.delete(run);
+}
+
+/**
+ * Whether `key` can be heard about at all — a property with no setter is one
+ * nothing ever assigns, so nothing can be told when it changes.
+ */
+export function isObservable(target, key) {
+  if (!target || (typeof target !== "object" && typeof target !== "function"))
+    return false;
+  const descriptor = definedDescriptor(target, key);
+  if (!descriptor) return true; // Undeclared, so it becomes plain state.
+  if ("value" in descriptor) return descriptor.configurable !== false;
+  return !!descriptor.set;
 }
 
 /**

@@ -25,6 +25,12 @@ export const State = Object.freeze({
 });
 
 export default class LoadingIndicator extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `LoadingIndicator`. See Component.styleName.
+   */
+  static styleName = "v-LoadingIndicator";
+
   /** The line beneath the spinner. An empty message is not drawn at all. */
   get message() {
     return this.get("message", "");

@@ -54,6 +54,23 @@ const MEASURING = "is-measuring";
  */
 const openListeners = new Set();
 
+/**
+ * A size a tag stated, as CSS — or null when it stated none.
+ *
+ * A bare number is pixels, which is what `width="820"` in markup means and
+ * what an attribute can say at all. Anything with a unit on it is written
+ * through untouched, so a dialog can be `"60ch"` or `"70vw"` as easily.
+ *
+ * @param {string|number|null|undefined} value what the tag said
+ * @returns {string|null} a CSS length, or null for nothing said
+ */
+function cssLength(value) {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  if (text === "") return null;
+  return /^-?\d+(\.\d+)?$/.test(text) ? `${text}px` : text;
+}
+
 /** Hear about every dialog that opens, whosever it is. */
 export function addOpenListener(listener) {
   openListeners.add(listener);
@@ -64,6 +81,12 @@ export function removeOpenListener(listener) {
 }
 
 export default class DialogBox extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `DialogBox`. See Component.styleName.
+   */
+  static styleName = "v-Dialog";
+
   static props = {
     /** What the header reads. */
     title: { type: String, default: "" },
@@ -82,6 +105,25 @@ export default class DialogBox extends Component {
      * over another dialog sets this false, so the page is not dimmed twice.
      */
     mask: { type: Boolean, default: true },
+    /**
+     * How wide the dialog is, when the standard 600px is not what this one
+     * wants. A bare number is pixels — `width="820"` — and anything else is
+     * written through as it stands, so `"60ch"` and `"70vw"` mean what they
+     * say.
+     *
+     * Stated on the element rather than through a class, since the value is
+     * this dialog's own. The sheet's `max-width` still holds above it: a
+     * dialog wider than the window would put a scrollbar on the page behind
+     * it, which reflows everything back there as it opens.
+     */
+    width: { type: String, default: "" },
+    /**
+     * And how tall. Left unsaid it is the height of what it holds, up to the
+     * viewport. Stated, the header and footer keep their heights and `main`
+     * gives way — so a dialog fixed at a height scrolls its content rather
+     * than growing.
+     */
+    height: { type: String, default: "" },
   };
 
   constructor() {
@@ -364,12 +406,33 @@ export default class DialogBox extends Component {
     ];
   }
 
+  /**
+   * What the tag said about its size, or nothing — in which case the sheet
+   * decides, as it always did.
+   *
+   * `pack` is left alone by this: it is a class, and a size stated here is on
+   * the element, so a dialog given both is the size it was given in the
+   * direction it was given one and packed in the other.
+   */
+  sizeStyle() {
+    const width = cssLength(this.width);
+    const height = cssLength(this.height);
+    if (width === null && height === null) return null;
+
+    // Both stated, the one that was not asked for as the empty string that
+    // takes a declaration off. A style object is merged onto the element
+    // rather than replacing what is there, so a key simply left out of it
+    // leaves whatever was written last time still standing — and a dialog
+    // whose height stopped being stated would keep the height it used to have.
+    return { width: width ?? "", height: height ?? "" };
+  }
+
   // The bare `<div>` inside is the wrapper the sheet clips the rounded corners
   // against; the dialog element itself stays overflow:visible so a tooltip
   // opened inside it is not cut off.
   draw() {
     return (
-      <dialog styleName={this.dialogClasses()}>
+      <dialog styleName={this.dialogClasses()} style={this.sizeStyle()}>
         <div>
           <header>
             {this.slot("header")}

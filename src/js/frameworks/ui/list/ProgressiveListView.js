@@ -14,6 +14,12 @@ import ListView from "./ListView.js";
 import "./list.css";
 
 export default class ProgressiveListView extends ListView {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `ProgressiveListView`. See Component.styleName.
+   */
+  static styleName = "v-ProgressiveList";
+
   static props = {
     /**
      * How tall a row is. A number when they are all the same; a function of

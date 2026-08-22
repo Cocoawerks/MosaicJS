@@ -43,6 +43,12 @@ const POPUP_KEYS = new Set(["ArrowDown", "ArrowUp", "Enter", " ", "Spacebar"]);
 const MARGIN = 8;
 
 export default class ComboBox extends Control {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `ComboBox`. See Component.styleName.
+   */
+  static styleName = "v-ComboBox";
+
   static props = {
     /**
      * Draw the entries as a Mosaic Menu rather than as the platform's own
@@ -166,6 +172,12 @@ export default class ComboBox extends Control {
     if (!this.popup) return;
     if (event.button !== undefined && event.button !== 0) return;
     event.preventDefault?.();
+    // Refused above, so the trigger has to take the keyboard itself: a press
+    // focuses what it lands on, and that is the default this just cancelled.
+    // Without it the keyboard never reaches the trigger by pointer, and the
+    // menu hands it back on closing to whatever held it before the press —
+    // somewhere else on the page entirely.
+    this.node?.focus?.();
     if (this.open) this.menu?.hide();
     else this.showMenu();
   }
@@ -291,7 +303,7 @@ export default class ComboBox extends Control {
 
   /** However the menu was dismissed, the trigger comes back up. */
   menuClosed() {
-    this.focusWas?.focus?.();
+    this.focusWas?.focus?.({ preventScroll: true });
     this.focusWas = null;
     this.needsDisplay();
   }

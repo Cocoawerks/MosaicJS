@@ -17,6 +17,12 @@ import "./tooltip.css";
 const SHOW_DELAY = 800;
 
 export default class Tooltip extends PopOver {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `Tooltip`. See Component.styleName.
+   */
+  static styleName = "v-Tooltip";
+
   static props = {
     /** The words it shows. */
     text: { type: String, default: "" },

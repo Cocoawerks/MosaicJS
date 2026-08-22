@@ -25,6 +25,12 @@ import "./list.css";
 const LOADING_DELAY = 180;
 
 export default class ListView extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `ListView`. See Component.styleName.
+   */
+  static styleName = "v-List";
+
   static props = {
     /** What the list says when it holds nothing. */
     emptyText: { type: String, default: "" },

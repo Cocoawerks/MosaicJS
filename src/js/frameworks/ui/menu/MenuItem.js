@@ -13,6 +13,12 @@ import "./menu.css";
 import ChevronRight from "svg:chevron-right";
 
 export default class MenuItem extends Control {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `MenuItem`. See Component.styleName.
+   */
+  static styleName = "v-MenuItem";
+
   static props = {
     /** What the line reads. */
     text: { type: String, default: "" },

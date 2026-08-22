@@ -92,6 +92,12 @@ export function closeTransientPopOvers() {
 }
 
 export default class PopOver extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `PopOver`. See Component.styleName.
+   */
+  static styleName = "v-PopOver";
+
   static props = {
     /** One of PopOverOrientation. */
     orientation: { type: String, default: PopOverOrientation.BOTTOM_CENTER },
@@ -266,7 +272,7 @@ export default class PopOver extends Component {
    * element takes no focus.
    */
   focusFirstControl() {
-    this.node?.querySelector(FOCUSABLE)?.focus?.();
+    this.node?.querySelector(FOCUSABLE)?.focus?.({ preventScroll: true });
   }
 
   // --- what it listens to while it is up -----------------------------------

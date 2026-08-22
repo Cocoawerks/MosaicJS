@@ -11,6 +11,12 @@ import SnackBar from "./SnackBar.js";
 import "./snackbar.css";
 
 export default class Toast extends SnackBar {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `Toast`. See Component.styleName.
+   */
+  static styleName = "v-Toast";
+
   static props = {
     /** The line it says. */
     text: { type: String, default: "" },

@@ -25,9 +25,11 @@
   border-radius: 40px;
   width: 0;
   outline: none;
-  /* The same fill the slider's range takes, so a filled track reads the same
-       in both controls. */
-  background: var(--switch-checked-background, var(--primary-background-color));
+  /* The theme's own if it names one; failing that the switch's on face, so a
+       filled track reads the same as the other filled things on the page. Named
+       separately because the two part company: a switch is a small thing that
+       can wear a pale colour, and a bar this wide in the same one is a smear. */
+  background: var(--progressbar-fill);
 }
 
 .v-ProgressBar.disabled,
@@ -37,8 +39,7 @@
 
 .v-ProgressBar.complete > div,
 .v-ProgressBar.progress > div {
-  border: 1px solid
-    var(--switch-checked-background, var(--primary-background-color));
+  border: 1px solid var(--progressbar-fill);
 }
 
 .v-ProgressBar.progress > div {

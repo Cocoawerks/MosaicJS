@@ -12,43 +12,30 @@ export const MARKUP_EXT = ".mib";
 /** The built-in view element. */
 export const VIEW_TAG = "View";
 
-/**
- * The components that are a surface of their own rather than a piece of one:
- * they take over the window, position themselves against something, and are
- * placed by the runtime rather than by the markup around them.
- *
- * A surface may only be the root of a `.mib` file. Nested in other markup it
- * would sit in that markup's flow — inside a paragraph, inside a pane that
- * scrolls, inside another dialog — which is not where it ends up on screen, so
- * the file would read as something the page does not do. Written as its own
- * file it says what it is, and the page places it by name:
- *
- *   <!-- ColourPopOver.mib -->      <!-- and in the page -->
- *   <PopOver orientation="…">       <ColourPopOver outlet="colours"/>
- *       …
- *   </PopOver>
- *
- * A SnackBar and a Toast are the same thing from the other end: they are put on
- * the page by a SnackBarManager, which stacks them in a corner of the window,
- * and a bar never adds itself. Written into a page's markup one would sit in
- * that page's flow — which is not where a bar goes, and it would be up from the
- * moment the page was drawn rather than when something happened.
- *
- * Only these: a kind of popover that belongs to a control it hangs from — a
- * Menu inside a MenuItem, a Tooltip — is part of that control's markup and is
- * nested like anything else.
- */
-export const SURFACE_TAGS = new Set([
-  "DialogBox",
-  "Drawer",
-  "PopOver",
-  "SnackBar",
-  "Toast",
-]);
 /** How markup names the CSS class, on every element — never `class`. */
 export const STYLE_NAME_ATTR = "styleName";
 /** Binds a method: a listener on a DOM element, an action on a component. */
 export const ACTION_ATTR = "action";
+
+/**
+ * The one tag the compiler knows the meaning of.
+ *
+ * `<Bind source="slider.value" target="volume"/>` reads its paths against this
+ * file's scope — the controller the markup draws against — so the compiler
+ * hands it that scope where it stands. Written out, the tag becomes
+ * `h(Bind, { source: …, target: …, scope: this })`, and `this` in a compiled
+ * `.mib` is exactly the file's own controller.
+ *
+ * Said at compile time rather than worked out at run time because it is a
+ * lexical fact: the scope a path belongs to is the file the path was written
+ * in, and the file is what the compiler has in its hands. A tag left to find
+ * its own scope has to search the document for one, which is a different
+ * question with a different answer — the nearest scope *around* it, which is
+ * whatever page happened to place this one.
+ */
+export const BIND_TAG = "Bind";
+/** What the compiler passes it. */
+export const BIND_SCOPE_PROP = "scope";
 
 /**
  * A module's scope, as a class name. Every element the module renders carries

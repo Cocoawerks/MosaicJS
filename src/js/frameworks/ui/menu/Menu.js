@@ -18,7 +18,6 @@ import PopOver, { PopOverOrientation } from "../popover/PopOver.js";
 import MenuItem from "./MenuItem.js";
 import "./menu.css";
 
-
 /**
  * Whether a vnode's type is a menu item — MenuItem itself, or a kind of one.
  * Asked rather than compared, so a subclass an application wrote is a line of
@@ -29,6 +28,12 @@ function isMenuItem(type) {
 }
 
 export default class Menu extends PopOver {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `Menu`. See Component.styleName.
+   */
+  static styleName = "v-Menu";
+
   static props = {
     /**
      * Whether the menu's left edge lines up with the anchor's rather than
@@ -300,9 +305,17 @@ export default class Menu extends PopOver {
     }
   }
 
-  /** Put the keyboard on the panel, which is what the keys are read from. */
+  /**
+   * Put the keyboard on the panel, which is what the keys are read from.
+   *
+   * Without `preventScroll` the browser brings the focused element into view,
+   * and a menu is `position: fixed` — so the page underneath scrolls to chase a
+   * panel that was already on screen. Hovering along a title bar's menus made
+   * the document jump under the pointer for exactly that reason. Nothing here
+   * ever needs scrolling to: the panel was just placed where it is wanted.
+   */
   focusPanel() {
-    this.node?.focus?.();
+    this.node?.focus?.({ preventScroll: true });
   }
 
   /** The menus this one built go when it does. */

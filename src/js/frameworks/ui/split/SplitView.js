@@ -80,6 +80,12 @@ function releasePointer(element, pointerId) {
 }
 
 export default class SplitView extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `SplitView`. See Component.styleName.
+   */
+  static styleName = "v-SplitView";
+
   static props = {
     /** Which way the panes sit — one of Orientation. */
     orientation: { type: String, default: Orientation.HORIZONTAL },
@@ -219,7 +225,9 @@ export default class SplitView extends Component {
    * an application put inside them.
    */
   layout() {
-    const stretch = this.flexesTopLeft ? this.topLeftNode : this.bottomRightNode;
+    const stretch = this.flexesTopLeft
+      ? this.topLeftNode
+      : this.bottomRightNode;
     const fixed = this.flexesTopLeft ? this.bottomRightNode : this.topLeftNode;
     if (!stretch || !fixed) return;
 
@@ -338,10 +346,7 @@ export default class SplitView extends Component {
   }
 
   dividerClasses() {
-    return [
-      "v-SplitDivider",
-      this.dividerThickness < HAIRLINE ? "thin" : null,
-    ];
+    return ["v-SplitDivider", this.dividerThickness < HAIRLINE ? "thin" : null];
   }
 
   /**

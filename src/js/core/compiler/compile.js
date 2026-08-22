@@ -79,6 +79,7 @@ function compileIb(src, runtime, stem, dest, opts, file) {
   const name = opts.name ?? componentName(stem);
   return generate(parse(src), {
     minify: opts.minify,
+    styleNames: opts.styleNames,
     runtime,
     name,
     hash: hash(src),

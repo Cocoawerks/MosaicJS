@@ -9,6 +9,7 @@ import { BROWSER_EVENTS } from "./events.js";
 import { coerceValue } from "./coerce.js";
 import { redraw } from "./redraw.js";
 import { refresh } from "./refresh.js";
+import { notify } from "./private/observe.js";
 import { prepareSettings } from "./private/settings.js";
 import { SELF } from "./private/observe.js";
 
@@ -57,6 +58,27 @@ export class Component {
    * one written by hand always wins over the one this would define.
    */
   static props = {};
+
+  /**
+   * The class this kind of component draws its root with — its primary style
+   * name, `v-Button` for a Button.
+   *
+   * What it is for is stylesheets. A `.mib` may write the component's own
+   * name where a class would go —
+   *
+   *     .mydialog ComboBox { width: 160px; }
+   *
+   * — and the compiler puts this in its place. A sheet then says what it
+   * means, rather than having to know what a combo box calls itself, and a
+   * component free to rename its class does not take every sheet that reached
+   * it down with it.
+   *
+   * Usually `v-` and the class's own name, but not always: a DialogBox draws
+   * `v-Dialog` and a TabView `v-TabPanel`, so it is declared rather than
+   * guessed at. A component drawn as a kind of another — a LoadingButton is a
+   * Button — declares nothing and inherits that one's.
+   */
+  static styleName = null;
 
   constructor(controller) {
     // Once per class, the first time one is built: the accessors its
@@ -127,6 +149,12 @@ export class Component {
   set(name, value) {
     this.overrides[name] = coerceValue(value);
     this.needsDisplay();
+    // And anything watching this setting from outside — a binding onto a
+    // control's `value`, a `{path}` that reads it. A component writes its own
+    // settings through here rather than through the accessor an observer
+    // wrapped, so without this the assignment was invisible to everything but
+    // the component's own drawing.
+    notify(this, name);
   }
 
   /**

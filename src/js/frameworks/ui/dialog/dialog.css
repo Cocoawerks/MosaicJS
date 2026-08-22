@@ -207,7 +207,7 @@
   background-color: var(--dialog-header-background);
   border-bottom: 1px solid var(--dialog-header-border);
   color: var(--dialog-header-foreground);
-  box-shadow: var(--dialog-header-highlight, none);
+  box-shadow: var(--dialog-header-highlight);
 }
 
 .v-Dialog header h2 {
@@ -262,7 +262,9 @@
   display: block;
 }
 
-.v-Dialog header :global(.v-Button.close:not(.is-active):not(.is-disabled):hover) {
+.v-Dialog
+  header
+  :global(.v-Button.close:not(.is-active):not(.is-disabled):hover) {
   background-color: var(--dialog-close-hover);
 }
 

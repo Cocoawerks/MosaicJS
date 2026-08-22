@@ -1,10 +1,8 @@
- 
 /* Aristo Dark — the dark counterpart of themes/aristo. Same structure, same
    shapes, same pale sky blue for the default action; the neutrals are inverted
    and the text is light. Kept variable-for-variable with the light sheet so the
    two can be diffed against each other. */
 :root {
- 
   --font-family:
     "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
 
@@ -83,9 +81,6 @@
   /* The tick in a checked box and the dot in a selected radio — dark, since
          they sit on the pale checked face. */
   --checked-mark-color: #284e64;
-
-  /* An on switch — a shade deeper than the default button face. */
-  --switch-checked-background: #6f9cb4;
 
   /* The strip above the toolbar. */
   --titlebar-background-color: #373042db;
@@ -317,6 +312,8 @@
   --outline-selected-foreground: #2b2b2e;
   --outline-selected-icon: #c4c4c4;
   --progressbar-track: #414146;
+  /* The fill, which used to be read off the switch. Same value, said once. */
+  --progressbar-fill: #5d8ba3e0;
   --radio-indicator-background: #313134;
   --radio-mark-color: #313134;
   --search-icon-fill: #c4c4c4;
@@ -336,8 +333,17 @@
   --spinner-track: #414146;
   --splitter-hover: #9b9ba1;
   --success-color: #4e7c52;
-  --switch-knob-background: #2b2b2e;
-  --switch-track-background: #414146;
+  /* The switch, all of it. Off, a dark well with a knob a step above it,
+     rimmed as the slider handle is; on, the blue washed back with the knob
+     riding at full strength, so the disc leads and the track follows. */
+  --switch-track-background: #43434a;
+  --switch-track-border: #5c5c64;
+  --switch-knob-background: #6a6a72;
+  --switch-knob-border: #9b9ba4;
+  --switch-checked-background: #5d8ba3e0;
+  --switch-checked-border: #5b93b1;
+  --switch-knob-checked-background: #8bb4c9;
+  --switch-knob-checked-border: #8bb4c9;
   --tab-selected-foreground: #ababab;
   --tab-separator-color: #4f4f4f;
   --tabbar-background: #38383c;
@@ -480,41 +486,9 @@ textarea,
   border-color: #6e6e75;
 }
 
-.v-Switch .indicator {
-  background: #353535;
-  border-color: #4d4d52;
-}
-
 .v-Slider.v-Slider {
   background: #dddddd;
   border-color: #4d4d52;
-}
-
-/* The knob stays light against that darker track. */
-.v-Switch .indicator:before {
-  background: #d8d8d8;
-  border-color: #4d4d52;
-}
-
-.v-Switch.checked.checked > .indicator {
-  background-color: var(
-    --switch-checked-background,
-    var(--primary-background-color)
-  );
-  border-color: color-mix(
-    in srgb,
-    var(--switch-checked-background, var(--primary-background-color)),
-    white 15%
-  );
-}
-
-.v-Switch.checked.checked > .indicator:before {
-  background: #ffffff;
-  border-color: color-mix(
-    in srgb,
-    var(--switch-checked-background, var(--primary-background-color)),
-    black 15%
-  );
 }
 
 /* Toolbar: flat, on a hairline base. */
@@ -640,7 +614,7 @@ textarea,
   background-color: var(--dialog-header-background);
   border-bottom: 1px solid var(--dialog-header-border);
   color: var(--dialog-header-foreground);
-  box-shadow: var(--dialog-header-highlight, none);
+  box-shadow: var(--dialog-header-highlight);
 }
 
 .v-Drawer .title {
@@ -790,13 +764,13 @@ textarea,
  * The class is doubled, and the highlighted case is stated separately at five
  * classes, so both outscore the four-class rule above. */
 .v-ComboBox-menu.v-ComboBox-menu .v-MenuItem .icon {
-    fill: var(--menu-foreground);
-   color: var(--menu-foreground);
+  fill: var(--menu-foreground);
+  color: var(--menu-foreground);
 }
 
 .v-ComboBox-menu.v-ComboBox-menu .v-MenuItem.active .icon {
-    fill: #fff;
-   color: #fff;
+  fill: #fff;
+  color: #fff;
 }
 
 .v-MenuItem label {
@@ -910,8 +884,14 @@ textarea,
 
 /* Keyboard focus only: :focus-visible is the browser's own judgement of that, so
    tabbing to the control rings it and clicking it doesn't. :has puts the ring on
-   the root, since the <select> that takes focus stops at the field. */
-.v-ComboBox.v-ComboBox:has(select:focus-visible) {
+   the root, since the <select> that takes focus stops at the field.
+
+   A popup has no <select> — its entries are a menu — so the root is what takes
+   the focus and the ring goes straight on it. Without this the rule above took
+   the component's own ring off and nothing put one back, and a popup tabbed to
+   showed nothing at all. */
+.v-ComboBox.v-ComboBox:has(select:focus-visible),
+.v-ComboBox.v-ComboBox.popup:focus-visible {
   outline: var(--focus-ring) solid 3px;
   outline-offset: 1px;
 }

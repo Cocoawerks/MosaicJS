@@ -19,6 +19,12 @@ import ChevronDown from "svg:chevron-down";
 let nextId = 0;
 
 export default class AccordionSection extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `AccordionSection`. See Component.styleName.
+   */
+  static styleName = "v-accordionSection";
+
   static props = {
     /** The heading on the section's own line. */
     title: { type: String, default: "" },

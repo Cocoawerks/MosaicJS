@@ -55,6 +55,12 @@ const EXIT_DURATION = 200;
 const DEFAULT_LIFESPAN = 5;
 
 export default class SnackBar extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `SnackBar`. See Component.styleName.
+   */
+  static styleName = "v-SnackBar";
+
   static props = {
     /** One of Intent, which decides the face it wears. */
     intent: { type: String, default: Intent.DEFAULT },

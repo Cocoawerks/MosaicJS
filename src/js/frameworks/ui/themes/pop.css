@@ -1,5 +1,9 @@
 /*
- * The Pop theme, ported from GWT Mosaic: themes/pop/client/style.css, whole.
+ * The Pop theme, ported from GWT Mosaic: themes/pop/client/style.css, whole,
+ * and coloured from the Pop!_OS GTK theme itself —
+ * pop-os/gtk-theme, gtk/src/light/gtk-3.0/_pop_os-palette.scss and
+ * _colors-pop.scss. Where a value below has a name in those files, the name is
+ * given beside it.
  *
  * Warmer than Aristo and flatter — its greys are browns and its controls carry
  * no gloss. The same variables underneath, so a component styled for one theme
@@ -29,19 +33,19 @@
   --label-cap-offset: 0.06em;
 
   --text-color: #292929;
-  --accent-color: #5fa8b6;
+  --accent-color: #48b9c7;
   /* The strip above the toolbar (see the .v-TitleBar rule below). */
-  --titlebar-background-color: #4e4136;
-  --titlebar-border-color: #3a3431;
+  --titlebar-background-color: #574f4a;
+  --titlebar-border-color: #453f3b;
 
   /* The travelling part of a loading spinner — the arc in the indicator and
          the small one in a save-status pill. */
-  --loading-indicator-background: #5fa8b6;
+  --loading-indicator-background: #63b1bc;
   /* Zebra striping: the tint every other row of a list takes. */
-  --alternate-row-color: #f6f9fc;
+  --alternate-row-color: #fcfcfc;
 
   /* The workspace a view's content sits on — the page behind a view's content. */
-  --view-background: #ffffff;
+  --view-background: #f6f6f6;
 
   /* A panel sitting on the workspace — a card, a list frame, a tile —
          white, as a panel on the workspace has always been. */
@@ -49,7 +53,7 @@
 
   /* The counterpart: a step below the workspace — a well, a gutter, anything meant to sit under it
          rather than on it. */
-  --dark-view-background: #e6e3e1;
+  --dark-view-background: #e6e6e6;
 
   /* Overlay washes: the darkening a flat control takes on hover, on press, and
          while held on. A dark theme replaces these with lightenings, so anything
@@ -60,15 +64,18 @@
   --wash-on-press: rgba(0, 0, 0, 0.24);
 
   --opacity-disable: 0.6;
+  /* The softer amber, kept rather than the palette’s own #FFAD00: at three
+       pixels around a control the pure orange is a shout, and this reads as a
+       ring. The one place this sheet does not follow the GTK source. */
   --focus-ring: #efbe5a;
 
   /* Text insertion caret — Pop GTK tints it with the accent teal. */
   --caret-color: var(--accent-color);
 
   /* Hyperlinks — darkened teal from the accent family, Pop GTK link look */
-  --link-color: #287782;
-  --link-color-hover: #34828c;
-  --link-color-active: #266f79;
+  --link-color: #00496d;
+  --link-color-hover: #0a6a99;
+  --link-color-active: #003a57;
 
   /* Textarea/TextView placeholder — the body text lightened a touch, darker
          than the light theme's mix so it still reads clearly on Pop's own
@@ -82,10 +89,10 @@
        */
 
   /* DEFAULT Intent */
-  --default-background-color: #f6f4f2;
-  --default-background-color-hover: #efedeb;
-  --default-background-color-active: #e6e3e1;
-  --default-border-color: #d8d4d1;
+  --default-background-color: #fcfcfc;
+  --default-background-color-hover: #ffffff;
+  --default-background-color-active: #ededed;
+  --default-border-color: #c8c8c8;
   --default-foreground-color: var(--text-color);
 
   /* Text color for selected list rows: the default text color, not white. */
@@ -93,7 +100,7 @@
          preview, a word in the clue list, a grid tile: the teal it accents with. */
   --selection-color: var(--accent-color);
 
-  --selection-foreground: var(--default-foreground-color);
+  --selection-foreground: #000000;
 
   /* PRIMARY Intent — Pop "suggested action" sage green */
   --primary-background-color: #82bf8c;
@@ -112,7 +119,7 @@
     var(--primary-background-color),
     black 25%
   );
-  --primary-foreground-color: var(--text-color);
+  --primary-foreground-color: #000000;
 
   /* DANGER Intent — Pop coral */
   --danger-background-color: #e56a54;
@@ -133,8 +140,12 @@
   );
   --danger-foreground-color: #ffffff;
 
-  /* SUCCESS Intent — Pop sage green, a touch lighter than the primary action */
-  --success-background-color: #2d893d;
+  /* SUCCESS Intent — $highlights_green, the palette own lighter green. The
+         GTK theme gives success and the suggested action the same #82BF8C, which
+         puts two green buttons side by side that read as one; this is the same
+         family a step lighter, so the pair are told apart and neither leaves
+         Pop. */
+  --success-background-color: #c3edd8;
   --success-background-color-hover: color-mix(
     in srgb,
     var(--success-background-color),
@@ -150,12 +161,11 @@
     var(--success-background-color),
     black 25%
   );
-  /* White: the face is dark enough now that the theme's text colour would
-         not carry on it. */
-  --success-foreground-color: #ffffff;
+  /* Black: a pale mint face carries dark words, not light ones. */
+  --success-foreground-color: #000000;
 
   /* WARNING Intent — Pop orange (yellow reads as a caution, not a success) */
-  --warning-background-color: #ffad00;
+  --warning-background-color: #fedb40;
   --warning-background-color-hover: color-mix(
     in srgb,
     var(--warning-background-color),
@@ -171,7 +181,7 @@
     var(--warning-background-color),
     black 25%
   );
-  --warning-foreground-color: var(--text-color);
+  --warning-foreground-color: #624d1e;
 
   /* INFO Intent — Pop progress teal (accent family) */
   --info-background-color: #6acad8;
@@ -190,7 +200,7 @@
     var(--info-background-color),
     black 25%
   );
-  --info-foreground-color: var(--text-color);
+  --info-foreground-color: #00496d;
 
   /* INVERSE Intent — warm dark to match toolbar */
   --inverse-background-color: #574f4a;
@@ -204,7 +214,7 @@
     var(--inverse-background-color),
     black 20%
   );
-  --inverse-border-color: #3a3431;
+  --inverse-border-color: #453f3b;
   --inverse-foreground-color: #ffffff;
 
   /* The toolbar is light with dark text, as the app's own toolbar was before
@@ -216,7 +226,7 @@
 
   /* A grouping box's frame — the hairline it has always worn. Also worn by anything framed to match
          one, e.g. the clue dialog's word list. */
-  --group-border-color: #bbbbbb;
+  --group-border-color: #c8c8c8;
 
   /* The split panel's divider face — white, as it has always been. */
   --splitter-background: #ffffff;
@@ -230,10 +240,10 @@
   --toolbar-button-foreground: var(--text-color);
 
   /* Resting glyph in a segmented toggle group (bold/italic/underline) — the mid grey it has always worn. */
-  --segmented-glyph: #393634;
+  --segmented-glyph: #666666;
 
   /* Its hovered / latched glyph — a step brighter than the resting one. */
-  --segmented-glyph-on: #574f4a;
+  --segmented-glyph-on: #292929;
   --toolbar-button-hover: rgba(0, 0, 0, 0.06);
   --toolbar-button-active: rgba(0, 0, 0, 0.12);
 
@@ -277,7 +287,7 @@
   --wizard-step-bullet-background: #7a6f6b;
   --wizard-step-bullet-foreground: #ffffff;
   --wizard-step-connector: #9b8e8a;
-  --wizard-step-completed: #559a63;
+  --wizard-step-completed: #3b6e43;
   --wizard-step-current-color: #00496d;
 
   /* ── Component colours ───────────────────────────────────────────────
@@ -289,12 +299,12 @@
   --accordion-header-hover: #f6f4f2;
   --box-title-background: #fcfbfa;
   --box-title-foreground: #474341;
-  --checkbox-check-color: #f6f4f2;
-  --checkbox-indicator-background: #f6f4f2;
-  --combobox-background: #f6f4f2;
-  --dialog-background: #fcfbfa;
+  --checkbox-check-color: #000000;
+  --checkbox-indicator-background: #ffffff;
+  --combobox-background: #fcfcfc;
+  --dialog-background: #f6f6f6;
   --error-color: #e56a54;
-  --field-background: #f6f4f2;
+  --field-background: #ffffff;
   --field-disabled-foreground: #d8d4d1;
   --field-error-border: #ea9090;
   --field-invalid-background: #a0252b;
@@ -304,29 +314,33 @@
   --hrline-foreground: #635e5b;
   --hrline-rule: #d8d4d1;
   --list-empty-foreground: #474341;
-  --menu-active-background: #e6e3e1;
-  --menu-active-foreground: #393634;
-  --menu-background: #f6f4f2;
-  --menu-foreground: #2b2928;
+  /* A highlighted line is marked the same way a selected outline row is — the
+     accent behind it, the ink unchanged — rather than with a grey wash of its
+     own. Pop's teal is pale enough to carry the dark words that sit on it. */
+  --menu-active-background: var(--accent-color);
+  --menu-active-foreground: #292929;
+  --menu-background: #fcfcfc;
+  --menu-foreground: #292929;
   --outline-focus-border: #efedeb;
   --outline-foreground: #393634;
   --outline-hover-background: #efedeb;
-  --outline-selected-foreground: #fcfbfa;
+  /* A selected row keeps the same ink as an unselected one: the band behind it
+     is what marks it, and Pop's selection is pale enough to carry dark words. */
+  --outline-selected-foreground: var(--outline-foreground);
   --outline-selected-icon: #f6f4f2;
   /* A popover is drawn the same in both light themes: the surface it floats on
        is the one thing on the page that is not part of it, so it takes the
        plainest white either theme has rather than the warm greys around it. */
   --popover-background: #ffffff;
-  --popover-border: #c6c6c6;
-  --progressbar-track: #e6e3e1;
-  /* What fills the track. Pop's filled surfaces are the accent, not the green
-       primary: the slider's range takes --accent-color, and this theme's switch
-       mixes its own checked face from it too. Left unset, the progress bar falls
-       back to --primary-background-color and is the only filled thing on the
-       page wearing the green. */
-  --switch-checked-background: var(--accent-color);
-  --radio-indicator-background: #f6f4f2;
-  --radio-mark-color: #f6f4f2;
+  --popover-border: #c8c8c8;
+  --progressbar-track: #dedede;
+  /* What fills the track. Not the switch's on face, which this would fall
+       back to: that is a pale amber, and a bar the width of a dialog in it
+       reads as a smear rather than as a measure. The switch's earlier, washed
+       orange instead — enough colour to carry across the whole track. */
+  --progressbar-fill: #f2ba61;
+  --radio-indicator-background: #ffffff;
+  --radio-mark-color: #000000;
   --search-icon-fill: #393634;
   --slider-knob-border: #a29b95;
   /* A press darkens the knob a clear step past its hover, so holding it
@@ -334,25 +348,46 @@
   --slider-knob-active: #ded9d5;
   --slider-knob-background: #fcfbfa;
   --slider-knob-hover: #f6f4f2;
-  --slider-track-background: #e6e3e1;
+  --slider-track-background: #dedede;
   --snackbar-danger-background: #e56a54;
   --snackbar-danger-border: #c94a36;
   --snackbar-divider: #e6e3e1;
   --snackbar-foreground: #fcfbfa;
   --spinbutton-field-background: #fcfbfa;
   --spinner-mask: #fcfbfa;
-  --spinner-track: #e6e3e1;
+  --spinner-track: #dedede;
   --splitter-hover: #635e5b;
-  --success-color: #559a63;
+  --success-color: #3b6e43;
   --switch-knob-background: #fcfbfa;
-  --switch-track-background: #e6e3e1;
+  /* The knob's rim is the track it sits in, so the disc reads as cut out of
+     the trough rather than laid on it. */
+  --switch-knob-border: var(--switch-track-background);
+  /* No rim on the trough: Pop draws one flat shape, and a hairline round a
+     capsule this size reads as a ring. The border is coloured as the track
+     rather than dropped, so the trough keeps its size — the indicator clips
+     its background to the padding box. */
+  --switch-track-border: var(--switch-track-background);
+  /* On, the orange washed back with the knob at full strength on it. Neither
+     takes a rim: the two tones of the one hue are what separate them. */
+  --switch-checked-background: #f9cb83;
+  --switch-checked-border: #f9cb83;
+  /* The knob's face while the switch is on — a warm yellow, so a switch that
+     is on is read at the knob and not only by the track behind it. Its rim is
+     the lit track, as the off rim is the trough: the disc is cut out of
+     whichever half of the switch it is standing in. */
+  --switch-knob-checked-background: #eda641;
+  --switch-knob-checked-border: var(--switch-checked-background);
+  --switch-track-background: #dedede;
+  /* The sliding tab pill, which fell through to the switch's on face. Same
+     value, said once — the two are free to part company now. */
+  --tab-indicator-background: #f9cb83;
   --tab-selected-foreground: #2b2928;
   --tab-separator-color: transparent;
-  --tabbar-background: #efedeb;
+  --tabbar-background: #ededed;
   --wizard-buttons-border: #e6e3e1;
   --secondary-foreground: #4a4441;
-  --list-divider: #e6e3e1;
-  --badge-background: #e6e3e1;
+  --list-divider: #e6e6e6;
+  --badge-background: #e6e6e6;
   --badge-foreground: #4a4441;
 }
 
@@ -400,6 +435,33 @@ textarea,
   color: #ffffff;
 }
 
+/* ---- Checkbox / radio ----------------------------------------------------- */
+
+/*
+ * Pop ticks its boxes in orange, not in the colour it selects with:
+ * `$checkradio_bg_color` is the palette's orange and `$checkradio_fg_color` is
+ * black, in both variants. The component draws a checked box in
+ * --accent-color, which is the teal Pop reserves for selection, so the two are
+ * told apart here. The face is halfway between the palette's own #FFAD00 and
+ * the paler amber the switch wears — of a piece with the switch without going
+ * as light, since a box this small needs the stronger colour to register.
+ *
+ * Doubled to outscore the component's own `.indicator.checked` rule.
+ */
+.v-CheckBox > .indicator.checked.checked,
+.v-Radio > .indicator.checked.checked {
+  background: #ffc24c;
+  border-color: color-mix(in srgb, #ffc24c, black 12%);
+}
+
+.v-CheckBox > .indicator.checked .check {
+  border-color: #000000;
+}
+
+.v-Radio > .indicator.checked.checked:before {
+  background: #000000;
+}
+
 /* ---- Drawer / TitleBar -------------------------------------------------- */
 
 /* The side panel: a light surface with a hairline against the page and a soft
@@ -414,7 +476,7 @@ textarea,
   background-color: var(--dialog-header-background);
   border-bottom: 1px solid var(--dialog-header-border);
   color: var(--dialog-header-foreground);
-  box-shadow: var(--dialog-header-highlight, none);
+  box-shadow: var(--dialog-header-highlight);
 }
 
 .v-Drawer .title {
@@ -489,20 +551,6 @@ textarea,
   background: #e6e3e1;
   box-shadow: inset 0 -3px 0 var(--dialog-close-background);
   border-radius: 0;
-}
-
-/* ---- Switch -------------------------------------------------------------- */
-
-/* An on switch sits a step darker than the accent: the track is a wide, flat
-   area, where the accent itself reads lighter than it does on a checkbox or a
-   radio. Doubled to outscore the component's own .v-Switch.checked rule. */
-.v-Switch.checked.checked > .indicator {
-  background-color: color-mix(in srgb, var(--accent-color), black 18%);
-  border-color: color-mix(in srgb, var(--accent-color), black 18%);
-}
-
-.v-Switch.checked.checked > .indicator:before {
-  border-color: color-mix(in srgb, #4fa1b0, black 10%);
 }
 
 /* ---- Snackbar ------------------------------------------------------------ */

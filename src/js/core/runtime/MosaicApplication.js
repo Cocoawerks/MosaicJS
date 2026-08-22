@@ -34,7 +34,14 @@ export class MosaicApplication {
   constructor(props = {}) {
     const { id, target, component, controller, ...rest } = props;
 
-    this.controller = controller ?? {};
+    // Left unset rather than defaulted to an empty object: `mount` reads
+    // "nothing was said" as "use the controller the page was compiled with",
+    // and an empty object is something said. A `main.mib` paired with a
+    // `MainController.js` beside it was therefore mounted against a bare
+    // object at the application root, while the same page placed as a tag got
+    // its controller — the pairing worked everywhere but the one place a page
+    // is usually used.
+    this.controller = controller ?? null;
     this.props = rest;
     this.target = resolveTarget(id, target);
     this.view = null;
@@ -60,7 +67,15 @@ export class MosaicApplication {
       );
     }
 
-    this.unmount = mount(Component, this.target, this.props, this.controller);
+    this.unmount = mount(
+      Component,
+      this.target,
+      this.props,
+      this.controller ?? undefined,
+    );
+    // Whatever it ended up drawing against, which is the page's own when
+    // nothing was passed.
+    this.controller = this.unmount.view?.controller ?? this.controller ?? {};
     this.view = this.controller.view;
     return this;
   }

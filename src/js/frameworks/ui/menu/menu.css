@@ -76,7 +76,7 @@
 /* Disabled items: dim the text and icon, and don't react to hover/press. */
 .v-MenuItem.disabled,
 .v-MenuItem.is-disabled {
-  opacity: var(--opacity-disable, 0.4);
+  opacity: var(--opacity-disable);
   cursor: default;
   pointer-events: none;
 }
@@ -101,7 +101,7 @@
        line sits above the words it belongs to. The same nudge from the same
        variable puts the two on one line, at any size and in any face. */
   position: relative;
-  top: var(--label-cap-offset, 0);
+  top: var(--label-cap-offset);
   border: none;
   padding: 1px;
   background-color: transparent;
@@ -129,7 +129,7 @@
        puts them back on it, which is what lines the words up with the icon
        beside them. The amount belongs to the face, so the theme states it. */
   position: relative;
-  top: var(--label-cap-offset, 0);
+  top: var(--label-cap-offset);
 }
 
 /* An icon that is a drawing rather than a glyph takes the line's own colour.
@@ -156,5 +156,11 @@
      stands either side of it is the margin below. */
   padding: 0;
   margin: 6px;
-  background-color: var(--menu-active-background);
+  /* The colour of the words it divides, not the colour a highlighted line
+     wears: a rule in the accent reads as something selected rather than as a
+     break between two groups. Dimmed well past a disabled line: that opacity
+     is set for glyphs, which are mostly the gaps between their strokes, and a
+     solid bar of it reads far heavier than the words around it. */
+  background-color: var(--menu-foreground);
+  opacity: 0.25;
 }

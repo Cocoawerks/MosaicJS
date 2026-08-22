@@ -11,6 +11,12 @@ import { Component } from "mosaic";
 import "./box.css";
 
 export default class Box extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `Box`. See Component.styleName.
+   */
+  static styleName = "v-Box";
+
   static props = {
     /** The heading. A box with none is drawn without one. */
     title: { type: String, default: "" },

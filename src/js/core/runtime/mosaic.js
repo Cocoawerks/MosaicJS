@@ -25,6 +25,9 @@ export { render } from "./render.js";
 export { mount } from "./mount.js";
 export { redraw } from "./redraw.js";
 export { refresh } from "./refresh.js";
+// Binding a property of one thing to a property of another — a control to a
+// controller, a control to a control. One way each; two facing make it two.
+export { bind, bindBoth, canPush, observeKey } from "./bind.js";
 export { bindText } from "./bindText.js";
 export { bindAttr } from "./bindAttr.js";
 export { bindProp } from "./bindProp.js";

@@ -80,6 +80,17 @@ export function compileAll(sources, opts = {}) {
   //
   // A name can be claimed more than once — two demos may each have their own
   // Counter — so every candidate is kept and the choice is made per module.
+  // What class each component draws its root with, so a stylesheet can name
+  // the component — `.mydialog ComboBox` — and have the class put in its
+  // place. Read off the source rather than imported: the compiler never runs
+  // the modules it compiles.
+  const styleNames = new Map();
+  for (const job of jobs) {
+    const name = componentName(path.basename(job.file, path.extname(job.file)));
+    const declared = declaredStyleName(job.file);
+    if (declared) styleNames.set(name, declared);
+  }
+
   const byName = new Map();
   for (const job of jobs) {
     const name =
@@ -154,6 +165,7 @@ export function compileAll(sources, opts = {}) {
       dest = compileFile(job.file, {
         ...options(job),
         components: componentsFor(job),
+        styleNames,
       });
     } catch (e) {
       throw new Error(`${job.file}: ${e.message}`, { cause: e });
@@ -162,4 +174,27 @@ export function compileAll(sources, opts = {}) {
     opts.onFile?.(job.file, dest);
   }
   return written;
+}
+
+/**
+ * The class a component declares as its own — `static styleName = "v-Dialog"`.
+ *
+ * Read out of the source with a pattern rather than by importing the module:
+ * the compiler compiles, it does not run what it compiles, and a component
+ * that had to be executed to be compiled could not be compiled at all.
+ *
+ * @returns {string|null} what it declared, or null for a component that
+ *   declares none — one drawn as a kind of another inherits that one's, and
+ *   the runtime is where that is resolved.
+ */
+function declaredStyleName(file) {
+  if (![".js", ".jsx"].includes(path.extname(file))) return null;
+  let source;
+  try {
+    source = fs.readFileSync(file, "utf8");
+  } catch {
+    return null;
+  }
+  const match = /static\s+styleName\s*=\s*["']([^"']+)["']/.exec(source);
+  return match ? match[1] : null;
 }

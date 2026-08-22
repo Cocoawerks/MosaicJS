@@ -28,6 +28,12 @@ const STEPS = {
 };
 
 export default class RadioGroup extends Control {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `RadioGroup`. See Component.styleName.
+   */
+  static styleName = "v-RadioGroup";
+
   // --- value ---------------------------------------------------------------
 
   /** The value of the chosen option, or "" while nothing is chosen. */

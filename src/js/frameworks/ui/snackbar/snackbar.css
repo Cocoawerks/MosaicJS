@@ -74,7 +74,7 @@
      the same weight and win, pinning the bar at full strength: the fade would
      run its 200ms with nothing to see, and the bar would simply vanish at the
      end of it. Which is what both Aristo themes did. */
-  opacity: var(--snackbar-opacity, 0.97);
+  opacity: var(--snackbar-opacity);
   display: flex;
   flex-direction: row;
   align-items: flex-start;

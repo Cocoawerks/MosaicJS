@@ -352,3 +352,35 @@ test("the keys that open a list open it too", () => {
   });
   assert.equal(view.open, true);
 });
+
+test("pressing a popup gives it the keyboard, and closing gives it back", () => {
+  // A press focuses what it lands on, and the popup refuses that default so
+  // the press can open the menu instead — so the trigger has to take the
+  // keyboard itself. Without it the menu hands focus back on closing to
+  // whatever held it before the press, somewhere else on the page entirely.
+  const { el, view } = open(
+    { popup: "true", value: "red" },
+    entries(["Red", "red"], ["Blue", "blue"]),
+  );
+  document.body.appendChild(el);
+
+  press(el);
+  // The menu has it while it is up — that is what the arrows are driving.
+  assert.equal(document.activeElement, view.menu.node);
+
+  view.menu.hide();
+  assert.equal(document.activeElement, el, "and the trigger has it again");
+});
+
+test("a popup is a tab stop, and a disabled one is not", () => {
+  // What the ring is drawn against: the theme rings the root on
+  // `:focus-visible`, and a control nothing can focus never gets one.
+  const on = open({ popup: "true" }, entries(["Red", "red"]));
+  assert.equal(on.el.getAttribute("tabindex"), "0");
+
+  const off = open(
+    { popup: "true", enabled: "false" },
+    entries(["Red", "red"]),
+  );
+  assert.equal(off.el.getAttribute("tabindex"), null);
+});

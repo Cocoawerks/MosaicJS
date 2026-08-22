@@ -22,6 +22,12 @@ export const ButtonState = Object.freeze({ ON: "on", OFF: "off" });
 const ACTIVATION_KEYS = new Set(["Enter", " ", "Spacebar"]);
 
 export default class Button extends Control {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `Button`. See Component.styleName.
+   */
+  static styleName = "v-Button";
+
   constructor() {
     super();
     this.buttonState = ButtonState.OFF;

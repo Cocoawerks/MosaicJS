@@ -47,7 +47,7 @@
   position: relative;
   pointer-events: all;
   overflow: visible;
-  background: var(--splitter-background, #fff) none;
+  background: var(--splitter-background) none;
   /* It never scrolls: the rule above is the panes', and a divider that took it
      would show a scrollbar in place of its sash. */
   flex: none;
@@ -55,8 +55,8 @@
 
 .v-SplitView.row > .v-SplitDivider {
   cursor: col-resize;
-  border-left: 1px solid var(--default-border-color, #e1e3e5);
-  border-right: 1px solid var(--default-border-color, #e1e3e5);
+  border-left: 1px solid var(--default-border-color);
+  border-right: 1px solid var(--default-border-color);
 }
 
 .v-SplitView.row > .v-SplitDivider.thin {
@@ -65,8 +65,8 @@
 
 .v-SplitView.column > .v-SplitDivider {
   cursor: ns-resize;
-  border-top: 1px solid var(--default-border-color, #e1e3e5);
-  border-bottom: 1px solid var(--default-border-color, #e1e3e5);
+  border-top: 1px solid var(--default-border-color);
+  border-bottom: 1px solid var(--default-border-color);
 }
 
 .v-SplitView.column > .v-SplitDivider.thin {

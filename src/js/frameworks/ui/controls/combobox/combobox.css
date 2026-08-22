@@ -29,7 +29,7 @@
   height: 100%;
   overflow: visible;
   width: 100%;
-  cursor: inherit; 
+  cursor: inherit;
   font-size: 16px;
 }
 
@@ -92,7 +92,7 @@
   text-overflow: ellipsis;
   /* Centred by its line box a label reads high, as it does in a menu. */
   position: relative;
-  top: var(--label-cap-offset, 0);
+  top: var(--label-cap-offset);
 }
 
 /*

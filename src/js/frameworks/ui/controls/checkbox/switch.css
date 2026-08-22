@@ -1,28 +1,22 @@
-/*
- * Ported from GWT Mosaic: client/components/resources/checkbox/switch.css.
- * Scoped to this module by the compiler, so .v-Switch and friends cannot
- * collide with an application's own class names.
- */
 .v-Switch {
-  padding: 3px 3px 3px 36px;
+  padding: 3px 3px 3px 48px;
   display: flex;
   flex-direction: row;
-  align-content: center;
+  align-items: center;
   position: relative;
   cursor: default;
-  min-height: 16px;
+  min-height: 26px;
   text-transform: none;
-  line-height: 15px;
   width: fit-content;
   box-sizing: border-box;
   outline: 3px solid transparent;
 }
 
 .v-Switch > span {
-  margin-top: -1px;
-  margin-left: 9px;
   cursor: default;
   padding: 0;
+  /* Clear of the track, which ends at the root's padding edge. */
+  margin-left: 9px;
 }
 
 /* Both spellings: `is-disabled` is the one Control puts on, and `disabled` is
@@ -37,56 +31,72 @@
   opacity: var(--opacity-disable);
 }
 
+/* The track. Border-box, so 48x26 is what it measures however thick a theme
+   makes its rim — the knob's travel below is worked out from these numbers and
+   would drift otherwise. */
 .v-Switch > .indicator {
-  border-radius: 28px;
-  box-shadow: none;
-  width: 36px;
-  transition: background 100ms cubic-bezier(0.4, 1, 0.75, 0.9);
-  font-size: 16px;
-  font-weight: 400;
-  font-style: normal;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-font-smoothing: antialiased;
   position: absolute;
-  top: 2px;
-  left: 1px;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: 48px;
+  height: 26px;
   margin: 0;
+  border-radius: 999px;
   background-clip: padding-box;
   cursor: default;
-  line-height: 16px;
-  height: 14px;
   background-color: var(--switch-track-background);
-  border: 1px solid var(--default-border-color);
+  border: 1px solid var(--switch-track-border);
+  box-shadow: none;
+  transition:
+    background-color 120ms cubic-bezier(0.4, 1, 0.75, 0.9),
+    border-color 120ms cubic-bezier(0.4, 1, 0.75, 0.9);
 }
 
+/* The knob, filling the track rather than sitting over it: the track's padding
+   box is 46x24, and the disc is that tall, so what shows of the track is the
+   length it has left to travel. */
 .v-Switch > .indicator:before {
-  margin: 0;
+  content: "";
   display: block;
+  position: absolute;
+  /* Stated rather than left to the static position, which resolves to the same
+     0,0 — `left: auto` and the checked `left` below are not a pair CSS can
+     interpolate, so without this the knob jumps across instead of sliding. */
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  margin: 0;
   border-radius: 50%;
   background-clip: padding-box;
-  width: 17px;
-  height: 17px;
-  content: "";
-  transition: left 100ms cubic-bezier(0.4, 1, 0.75, 0.9);
-  position: relative;
   background: var(--switch-knob-background);
-  border: 2px solid var(--default-border-color);
-  top: -3.25px;
-  left: -1px;
+  border: 1px solid var(--switch-knob-border);
+  transition:
+    left 120ms cubic-bezier(0.4, 1, 0.75, 0.9),
+    background 120ms cubic-bezier(0.4, 1, 0.75, 0.9),
+    border-color 120ms cubic-bezier(0.4, 1, 0.75, 0.9);
 }
 
+/* On. The face is the theme's own if it names one, and the accent if it does
+   not — which is what every other selected control falls back to. */
 .v-Switch.checked > .indicator {
-  box-shadow: none;
-  border-color: var(--accent-color);
-  background-color: var(--accent-color);
+  background-color: var(--switch-checked-background);
+  border-color: var(--switch-checked-border);
 }
 
+/* 46 of track, less the 24px disc, and one past that — the same overhang at
+   this end that the rim gives it at the other. */
 .v-Switch.checked > .indicator:before {
-  left: 16px;
-  border: 2px solid color-mix(in srgb, var(--accent-color), black 10%);
+  left: 23px;
+  background: var(--switch-knob-checked-background);
+  border-color: var(--switch-knob-checked-border);
 }
 
-.v-Switch:focus .indicator:before {
-  outline-offset: 0;
+/* The ring goes round the track, which is the control — on the knob it drew a
+   circle that moved when the switch was thrown. */
+.v-Switch:focus .indicator {
+  outline-offset: 1px;
   outline: var(--focus-ring) solid 3px;
 }

@@ -11,6 +11,12 @@ import { Component } from "mosaic";
 import "./deck.css";
 
 export default class DeckView extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `DeckView`. See Component.styleName.
+   */
+  static styleName = "v-Deck";
+
   static props = {
     /** Which card is on top, counting from the first. */
     selectedIndex: { type: Number, default: 0 },

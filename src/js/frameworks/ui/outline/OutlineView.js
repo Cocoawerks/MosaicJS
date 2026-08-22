@@ -29,6 +29,12 @@ import OutlineItem from "./OutlineItem.js";
 import "./outline.css";
 
 export default class OutlineView extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `OutlineView`. See Component.styleName.
+   */
+  static styleName = "v-OutlineView";
+
   constructor() {
     super();
 

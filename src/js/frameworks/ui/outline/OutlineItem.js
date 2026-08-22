@@ -22,6 +22,12 @@ import ChevronRight from "svg:chevron-right";
 const DEEPEST_LEVEL = 20;
 
 export default class OutlineItem extends Component {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `OutlineItem`. See Component.styleName.
+   */
+  static styleName = "v-OutlineItem";
+
   static props = {
     /** What the row reads. */
     text: { type: String, default: "" },

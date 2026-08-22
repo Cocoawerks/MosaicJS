@@ -1,0 +1,873 @@
+/*
+ * Pop Dark — the dark counterpart of themes/pop, drawn from the Pop!_OS GTK
+ * dark theme. Same structure, same shapes, same variables, and the same warmth:
+ * where Aristo Dark's neutrals are grey, these are browns with the light taken
+ * out of them, so a page in this theme still reads as Pop rather than as a
+ * generic dark.
+ *
+ * What Pop's own dark theme is made of, and what is taken from it here:
+ *   the window        #333333 flat, no gradient
+ *   the surfaces      a step above it, not below — a card is lighter here
+ *   the borders       near-black hairlines, #232323
+ *   the text          #f6f6f6, and never pure white
+ *   the accent        the Pop blue, #48b9c7, lifted a little to carry on dark
+ *   the headerbar     darker than the window, the one thing that recedes
+ *
+ * Kept variable-for-variable with the light sheet so the two can be diffed
+ * against each other, and so a component styled for one is styled for this one.
+ *
+ * A theme is global by nature and is emitted unscoped, so these selectors mean
+ * what they say. What the build adds is a `:root ` in front of each one, which
+ * buys back the specificity a component's stylesheet gets from its scope class.
+ */
+:root {
+  --font-family:
+    "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Where a capital sits against the middle of a line box, for the face above.
+       A font's ascent and descent are not symmetric — Source Sans 3 carries
+       1.00em above the baseline and 0.41em below, against a 0.71em capital — so
+       text centred by its line box reads high, by (descent - ascent + cap) / 2.
+       This is that, and anything centring words against something else (a menu
+       line's icon) takes it back. */
+  --label-cap-offset: 0.06em;
+
+  /* Pop's dark foreground. Not #ffffff: the theme's own is a shade off it, and
+       pure white on these browns glares. */
+  --text-color: #cccccc;
+  /* The Pop blue. Between the light theme’s #48b9c7 and the GTK dark
+       variant’s $selected_bg_color, #94ebeb — that one is nearly a pastel, and
+       a selection band in it washes out the words sitting on it. This has the
+       hue and enough of the light to carry on these browns. */
+  --accent-color: #5ec5cb;
+  /* The strip above the toolbar. The one surface that goes *down* from the
+       window rather than up — Pop's headerbar is darker than what it sits on,
+       which is what makes the window read as lit from inside. */
+  --titlebar-background-color: #363636;
+  --titlebar-border-color: #222222;
+
+  /* The travelling part of a loading spinner. */
+  --loading-indicator-background: #6acad8;
+  /* Zebra striping: the tint every other row of a list takes. */
+  --alternate-row-color: #2b2928;
+
+  /* The workspace a view's content sits on. Pop's #333333, warmed. */
+  --view-background: #303030;
+
+  /* A panel sitting on the workspace — a card, a list frame, a tile. A step
+       *above* the workspace: on a dark theme a raised thing is lighter, which
+       is the opposite of what the light sheet does with the same variable. */
+  --light-view-background: #393634;
+
+  /* The counterpart: a step below the workspace — a well, a gutter, anything
+       meant to sit under it rather than on it. */
+  --dark-view-background: #272727;
+
+  /* Overlay washes: on dark surfaces a control lightens rather than darkens
+         (see the light sheet, where these are blacks). */
+  --wash-hover: rgba(255, 255, 255, 0.08);
+  --wash-press: rgba(255, 255, 255, 0.14);
+  --wash-on: rgba(255, 255, 255, 0.2);
+  --wash-on-press: rgba(255, 255, 255, 0.26);
+
+  --opacity-disable: 0.45;
+  /* The focus halo. Pop rings in its orange; on dark it is deepened a shade so
+       it reads as a ring rather than as a glow. */
+  --focus-ring: #fbb86c;
+
+  /* Text insertion caret — Pop GTK tints it with the accent teal. */
+  --caret-color: var(--accent-color);
+
+  /* Hyperlinks — the accent family, lightened so they carry as text. */
+  --link-color: #6acad8;
+  --link-color-hover: #94ebeb;
+  --link-color-active: #63b1bc;
+
+  /* The band behind highlighted text. */
+  --text-selection-background: #2c6570;
+
+  /* Placeholder / hint text: present, and plainly not an answer. */
+  --placeholder-color: #888888;
+
+  /** intent colors — uniform construction:
+          hover  = bg mixed with 12% white
+          active = bg mixed with 18% black
+          border = bg mixed with 25% black
+       */
+
+  /* DEFAULT Intent — the push-button face, a step above the window so a button
+         reads as raised out of it. Pop's buttons are flat, so this is the whole
+         of it: no gloss, no gradient. */
+  --default-background-color: #474341;
+  --default-background-color-hover: #514c49;
+  --default-background-color-active: #403c3a;
+  /* Pop's near-black hairline, warmed. A border darker than everything it
+         touches is what gives a flat theme its edges. */
+  --default-border-color: #222222;
+  --default-foreground-color: var(--text-color);
+
+  /* What marks a thing as chosen — a menu item, a row, a tile: the teal it
+         accents with. */
+  --selection-color: var(--accent-color);
+  --selection-foreground: #000000;
+
+  /* PRIMARY Intent — Pop's suggested-action green. Kept as the light sheet has
+         it rather than deepened: on a dark page the suggested action is the one
+         thing that should be brighter than its surroundings, and a pale face
+         with dark text is what carries at this size. */
+  --primary-background-color: #90cfb0;
+  --primary-background-color-hover: color-mix(
+    in srgb,
+    var(--primary-background-color),
+    white 12%
+  );
+  --primary-background-color-active: color-mix(
+    in srgb,
+    var(--primary-background-color),
+    black 18%
+  );
+  --primary-border-color: color-mix(
+    in srgb,
+    var(--primary-background-color),
+    black 25%
+  );
+  --primary-foreground-color: #000000;
+
+  /* DANGER Intent — Pop coral, deepened a step so white text carries on it. */
+  --danger-background-color: #ea9090;
+  --danger-background-color-hover: color-mix(
+    in srgb,
+    var(--danger-background-color),
+    white 12%
+  );
+  --danger-background-color-active: color-mix(
+    in srgb,
+    var(--danger-background-color),
+    black 18%
+  );
+  --danger-border-color: color-mix(
+    in srgb,
+    var(--danger-background-color),
+    black 25%
+  );
+  --danger-foreground-color: #000000;
+
+  /* SUCCESS Intent — the light sheet's #2d893d is a deep green that disappears
+         against these browns, so it comes up to meet them. */
+  --success-background-color: #90cfb0;
+  --success-background-color-hover: color-mix(
+    in srgb,
+    var(--success-background-color),
+    white 12%
+  );
+  --success-background-color-active: color-mix(
+    in srgb,
+    var(--success-background-color),
+    black 18%
+  );
+  --success-border-color: color-mix(
+    in srgb,
+    var(--success-background-color),
+    black 25%
+  );
+  --success-foreground-color: #000000;
+
+  /* WARNING Intent — Pop orange, which needs no help on a dark page. */
+  --warning-background-color: #fff19e;
+  --warning-background-color-hover: color-mix(
+    in srgb,
+    var(--warning-background-color),
+    white 12%
+  );
+  --warning-background-color-active: color-mix(
+    in srgb,
+    var(--warning-background-color),
+    black 18%
+  );
+  --warning-border-color: color-mix(
+    in srgb,
+    var(--warning-background-color),
+    black 25%
+  );
+  --warning-foreground-color: #000000;
+
+  /* INFO Intent — the accent family again, as the light sheet has it. */
+  --info-background-color: #6acad8;
+  --info-background-color-hover: color-mix(
+    in srgb,
+    var(--info-background-color),
+    white 12%
+  );
+  --info-background-color-active: color-mix(
+    in srgb,
+    var(--info-background-color),
+    black 18%
+  );
+  --info-border-color: color-mix(
+    in srgb,
+    var(--info-background-color),
+    black 25%
+  );
+  --info-foreground-color: #000000;
+
+  /* INVERSE Intent — inverted in turn: the light slab on a dark theme, where
+         the light sheet's inverse is its dark brown. */
+  --inverse-background-color: #f6f6f6;
+  --inverse-background-color-hover: #fcfcfc;
+  --inverse-background-color-active: #ededed;
+  --inverse-border-color: #dedede;
+  --inverse-foreground-color: #292929;
+
+  /* The toolbar takes the button face, as it does in the light sheet: the bar
+         and the things on it are made of the same thing, and the items are
+         transparent until touched. */
+  --toolbar-background: var(--default-background-color);
+
+  /* A grouping box's frame — a hairline that reads as a cut rather than a drawn
+         line, which on dark means darker than the surface, not lighter. */
+  --group-border-color: #222222;
+
+  /* The split panel's divider face. */
+  --splitter-background: #393634;
+
+  /* The cell-marker icons' square face and the heavy bar drawn on its edge. */
+  --marker-cell-face: #393634;
+  --marker-bar-color: #cccccc;
+  --toolbar-foreground: var(--text-color);
+  --toolbar-button-background: transparent;
+  --toolbar-button-border: transparent;
+  --toolbar-button-foreground: var(--text-color);
+
+  /* Resting glyph in a segmented toggle group (bold/italic/underline). */
+  --segmented-glyph: #888888;
+  /* Its hovered / latched glyph — a step brighter than the resting one, which
+         on dark means lighter where the light sheet meant darker. */
+  --segmented-glyph-on: #cccccc;
+  --toolbar-button-hover: rgba(255, 255, 255, 0.08);
+  --toolbar-button-active: rgba(255, 255, 255, 0.14);
+
+  --navbar-separator: #222222;
+
+  /* The light sheet's amber, taken down: a tooltip is the one thing in Pop
+     that is a coloured card rather than a grey one, and dropping that on dark
+     lost what makes it recognisable. #e19f3b is too bright to float over these
+     browns, so it is deepened to the same hue a couple of steps down. The
+     words on it are a deep warm brown rather than white: on an amber this
+     size, dark ink is what reads. */
+  --tooltip-background: #efbb6e;
+  --tooltip-foreground: #37280d;
+
+  /* Dialog (Pop GTK headerbar look) */
+  --dialog-border: #222222;
+  --dialog-shadow:
+    0 18px 40px -6px color-mix(in srgb, #000000, transparent 45%),
+    0 4px 10px -2px color-mix(in srgb, #000000, transparent 62%);
+  --dialog-backdrop: #4f4f4f36;
+  --dialog-header-background: #363636;
+  --dialog-header-foreground: #cccccc;
+  --dialog-header-border: #222222;
+  --dialog-header-highlight: inset 0 1px 0
+    color-mix(in srgb, #ffffff, transparent 92%);
+  --dialog-header-title-weight: 600;
+  --dialog-header-title-align: center;
+  /* Its own orange rather than the tooltip's — deeper, so a white cross reads
+     on it. Cut loose from --tooltip-background: the two were tied together and
+     recolouring one moved the other. */
+  --dialog-close-background: #d98810;
+  --dialog-close-foreground: #ffffff;
+  --dialog-close-hover: color-mix(
+    in srgb,
+    var(--dialog-close-background),
+    white 12%
+  );
+  --dialog-close-active: color-mix(
+    in srgb,
+    var(--dialog-close-background),
+    black 18%
+  );
+
+  /* Wizard step navigation */
+  --sidebar-background-gradient-start: #393634;
+  --sidebar-background-gradient-end: #33302f;
+  --wizard-nav-border: #222222;
+  --wizard-step-color: #cccccc;
+  --wizard-step-disabled-color: #666666;
+  --wizard-step-bullet-background: #666666;
+  --wizard-step-bullet-foreground: #cccccc;
+  --wizard-step-connector: #444444;
+  --wizard-step-completed: #90cfb0;
+  --wizard-step-current-color: #6acad8;
+
+  /* ── Component colours ───────────────────────────────────────────────
+         What each part is painted with, named for the part rather than for a
+         place on a palette. */
+  --navitem-active-foreground: #10262b;
+  --accordion-divider: #393634;
+  --accordion-header-foreground: #cccccc;
+  --accordion-header-hover: #403c3a;
+  --box-title-background: #393634;
+  --box-title-foreground: #cccccc;
+  /* The tick, dark, because the box it sits in is light — see below. */
+  --checkbox-check-color: #38332a;
+  /* A checkbox is light in both states, as Aristo Dark's is: a dark well that
+         turns pale the moment it is ticked reads as two different controls, and
+         an empty one on these browns is hard to find at all. */
+  --checkbox-indicator-background: #272727;
+  --combobox-background: #403c3a;
+  --dialog-background: #33302f;
+  --error-color: #ea9090;
+  --field-background: #2b2827;
+  --field-disabled-foreground: #6d6662;
+  --field-error-border: #c96b5a;
+  --field-invalid-background: #4a1f1c;
+  --field-invalid-border: #a8503c;
+  --field-placeholder-foreground: #8b8480;
+  --hrline-background: #303030;
+  --hrline-foreground: #cccccc;
+  --hrline-rule: #403c3a;
+  --list-empty-foreground: #888888;
+  /* The line under the pointer takes the accent — the teal Pop reserves for
+     selection — rather than a warm grey a shade off the panel: what is about
+     to be chosen is a selection, and it was barely telling itself apart from
+     the menu behind it. The dark text is what holds against that teal. */
+  --menu-active-background: var(--accent-color);
+  --menu-active-foreground: #1c1a19;
+  --menu-background: #393634;
+  --menu-foreground: #cccccc;
+  --outline-focus-border: #474341;
+  --outline-foreground: #ffffff;
+  --outline-hover-background: #403c3a;
+  --outline-selected-foreground: #000000;
+  --outline-selected-icon: #000000;
+  /* A popover floats over the page rather than being part of it, so it takes
+       the plainest surface the theme has — which on dark is a step above the
+       window, not the white the light sheets use. */
+  --popover-background: #393634;
+  --popover-border: #222222;
+  --progressbar-track: #272727;
+  /* The fill, which used to be read off the switch. Same value, said once. */
+  --progressbar-fill: #f8c06e;
+  /* What fills the track. Pop's filled surfaces are the accent, not the green
+       primary. */
+  /* Light, for the reason the checkbox is. */
+  --radio-indicator-background: #272727;
+  --radio-mark-color: #38332a;
+  --search-icon-fill: #ffffff;
+  --slider-knob-border: #5a5a5a;
+  --slider-knob-active: #403c3a;
+  --slider-knob-background: #474341;
+  --slider-knob-hover: #514c49;
+  --slider-track-background: #272727;
+  --snackbar-danger-background: #ea9090;
+  --snackbar-danger-border: #c96b5a;
+  --snackbar-divider: #474341;
+  --snackbar-foreground: #cccccc;
+  --spinbutton-field-background: #2b2827;
+  --spinner-mask: #303030;
+  --spinner-track: #474341;
+  --splitter-hover: var(--accent-color);
+  --success-color: #90cfb0;
+  /* Off, the knob takes the slider handle's face — they are the one shape in
+     the theme, a disc you take hold of and move. Its rim is the track it sits
+     in, so the disc reads as cut out of the trough rather than laid on it. */
+  --switch-knob-background: var(--slider-knob-background);
+  --switch-knob-border: var(--switch-track-background);
+  --switch-track-border: var(--default-border-color);
+  /* On, as the light sheet has it: the orange washed back, the knob at full
+     strength on it, and no rim on either. */
+  --switch-checked-background: #f8c06e;
+  --switch-checked-border: #f8c06e;
+  /* On, the knob darkens a touch and takes the track's orange as its rim: a
+     dark disc ringed in the lit colour, rather than a grey hole in it. */
+  --switch-knob-checked-background: #363535;
+  --switch-knob-checked-border: #f8c06e;
+  --switch-track-background: #1f1f1f;
+  /* The sliding tab pill, which fell through to the switch's on face. The
+     theme paints the indicator itself further down, so this is what a page
+     reading the variable gets rather than what shows on the bar. */
+  --tab-indicator-background: #f8c06e;
+  --tab-selected-foreground: #ffffff;
+  --tab-separator-color: transparent;
+  --tabbar-background: #2b2928;
+  --wizard-buttons-border: #393634;
+  --secondary-foreground: #888888;
+  --list-divider: #393634;
+  --badge-background: #474341;
+  --badge-foreground: #cccccc;
+}
+
+/* Hyperlinks, styled to match the Pop!_OS GTK theme. */
+a {
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+a:hover {
+  color: var(--link-color-hover);
+}
+
+a:active {
+  color: var(--link-color-active);
+}
+
+a:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+/* Text insertion caret tinted with the accent, matching the Pop GTK theme. A
+   thin transparent text-stroke on the editable text fattens the native caret
+   (the caret inherits the text's effective stroke), giving a bolder cursor. */
+input,
+textarea,
+[contenteditable] {
+  caret-color: var(--caret-color);
+  -webkit-text-stroke: 2px transparent;
+}
+
+/* Selected text: the accent deepened, so the words on it stay light rather
+   than being bleached by a bright band. */
+::selection {
+  background-color: var(--text-selection-background);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background-color: var(--text-selection-background);
+  color: #ffffff;
+}
+
+/* ---- Slider --------------------------------------------------------------- */
+
+/*
+ * A bigger knob with a heavier rim than the component draws: 24px across
+ * against its 20, and a two-pixel rim against its one.
+ *
+ * Only what differs is stated. The knob's shape, its shadow and its face are
+ * the component's already — repeating them here would be two places to change
+ * the same thing, and the first one to be forgotten wins.
+ *
+ * The rim is #5a5a5a, which is --slider-knob-border above: a knob sits *on* a
+ * filled track rather than on the surface, so its rim has to hold against the
+ * track as well as against the panel behind it, and the border colour every
+ * other control uses is too dark to do both here.
+ */
+.v-Slider .handle {
+  border-width: 2px;
+}
+
+/* ---- Text fields and the pull-down --------------------------------------- */
+
+.v-Text.v-Text {
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 33%);
+}
+
+.v-Text-input,
+.v-Text .v-Text-input {
+  color: var(--text-color);
+}
+
+.v-Text.is-disabled .v-Text-input {
+  color: var(--field-disabled-foreground);
+}
+
+.v-ComboBox.v-ComboBox select {
+  background-color: var(--combobox-background);
+  color: var(--text-color);
+}
+
+/* And the list it drops, which the platform draws from the same two. */
+.v-ComboBox.v-ComboBox select option {
+  background-color: var(--menu-background);
+  color: var(--text-color);
+}
+
+/* ---- Icons ---------------------------------------------------------------- */
+
+/*
+ * White, rather than the #cccccc the theme sets its text in.
+ *
+ * A letter is a run of strokes with counters and spacing to be read by; an icon
+ * is one thin shape. At the same value the glyph reads a step fainter than the
+ * words beside it, which on a dark surface is the difference between an arrow
+ * you see and one you look for. Pop's own dark theme does the same — its
+ * symbolic icons are lighter than its label text.
+ *
+ * `.icon` and `.chevron` are what every component calls the slot it draws one
+ * in, so this reaches them all: the combo box's chevrons, a menu's tick, an
+ * outline's disclosure, the search field's glass, a button's icon.
+ */
+.icon,
+.icon svg,
+.icon svg path,
+.chevron,
+.chevron svg,
+.chevron svg path,
+.accordion-state-icon,
+.accordion-state-icon svg,
+.accordion-state-icon svg path,
+/* The search field calls its magnifier slot `search` rather than `icon`, and
+   nothing sets a fill on it at all — so it falls back to the black an svg
+   draws itself in when told nothing, which the light themes get away with. */
+.search,
+.search svg,
+.search svg path,
+.Search-reset,
+.Search-reset i,
+.Search-reset svg,
+.submenu-indicator svg,
+.v-Search .icon,
+.v-TitleBarButton .icon,
+.v-TitleBarButton .icon svg,
+.v-ToolBarItem .icon svg,
+.v-SpinButton .icon svg,
+.v-OutlineItem .icon svg,
+.v-OutlineView.v-OutlineView .icon,
+.v-OutlineView.v-OutlineView .icon svg,
+.v-OutlineView.v-OutlineView .chevron svg,
+.v-Search.v-Search .icon svg,
+.v-SpinButton.v-SpinButton .icon svg {
+  fill: #ffffff;
+  color: #ffffff;
+}
+
+/* A popover is portaled to the end of the document rather than drawn inside
+   the page, so it inherits nothing: no rule in this sheet or the component
+   sheets sets a colour on body, and its words fall back to the black the
+   browser gives text told nothing — which the light sheets get away with and
+   this one does not. The colour panel is where it shows, since that is the
+   popover with words in it. */
+.v-PopOver {
+  color: var(--text-color);
+}
+
+/* A tooltip is a PopOver with its own face, and tooltip.css finishes it with
+   `box-shadow: 0 3px 10px #777` — a mid grey, which on a light page reads as a soft
+   shadow and here reads as a grey halo ringing the card. Black, and closer in,
+   so the tooltip casts a shadow on these browns instead of glowing on them. */
+.v-PopOver.v-Tooltip {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55);
+  color: var(--tooltip-foreground);
+}
+
+/*
+ * Except on a highlighted menu line, which is the pale accent with near-black
+ * words on it: the whites above would put an invisible icon beside a perfectly
+ * legible label. This covers the tick a popup combo box marks its entry with,
+ * since that is drawn into the line's ordinary icon slot.
+ */
+.v-MenuItem.active .icon,
+.v-MenuItem.active .icon svg,
+.v-MenuItem.active .icon svg path,
+.v-MenuItem.active .submenu-indicator svg,
+.v-MenuItem.active .submenu-indicator svg path {
+  fill: var(--menu-active-foreground);
+  color: var(--menu-active-foreground);
+}
+
+/*
+ * The outline's disclosure chevron, which the fills above don't reach: it sits
+ * in a slot called `.toggle`, and the icon inside it is an `svg:` import that
+ * paints itself in its own dark ink. `brightness(0) invert(1)` flattens
+ * whatever it draws to white, which is what outline.css already does for a
+ * selected row.
+ */
+.v-OutlineItem > .content > .toggle,
+.v-OutlineItem > .content > .toggle svg {
+  filter: brightness(0) invert(1);
+}
+
+/* And back to black on a selected row: Pop's dark selection is the pale cyan
+   accent, which the label above sits on in black. outline.css whitens the
+   toggle there on the assumption of a dark selection, so it is turned round. */
+.v-OutlineItem.selected > .content > .toggle,
+.v-OutlineItem.selected > .content > .toggle svg {
+  filter: brightness(0);
+}
+
+/*
+ * Except on the pale faces, which carry black content: Pop's dark intents are
+ * pastels — #90CFB0, #EA9090, #FFF19E — and an icon left white on one of those
+ * disappears where the label beside it is perfectly legible. Those follow the
+ * text, whatever the face has decided that is.
+ */
+.v-Button.primary .icon,
+.v-Button.primary .icon svg,
+.v-Button.danger .icon,
+.v-Button.danger .icon svg,
+.v-Button.success .icon,
+.v-Button.success .icon svg,
+.v-Button.warning .icon,
+.v-Button.warning .icon svg,
+.v-Button.info .icon,
+.v-Button.info .icon svg,
+.v-Button.inverse .icon,
+.v-Button.inverse .icon svg,
+.v-SnackBar.intent .icon,
+.v-SnackBar.intent .icon svg,
+.v-SnackBar.inverse .icon,
+.v-SnackBar.inverse .icon svg {
+  fill: currentColor;
+  color: inherit;
+}
+
+/* A close button on a dialog or a drawer: its cross is dark, because the face
+   under it is the amber the tooltip wears rather than the header behind it.
+   The svg and its path are named as well as the slot — the icon block above
+   paints every `.icon svg` on the page white, and a fill inherited from the
+   slot does not outrank that. */
+.v-Dialog header .v-Button.close .icon,
+.v-Dialog header .v-Button.close .icon svg,
+.v-Dialog header .v-Button.close .icon svg path,
+.v-Drawer .header button.close .icon,
+.v-Drawer .header button.close .icon svg,
+.v-Drawer .header button.close .icon svg path {
+  fill: var(--dialog-close-foreground);
+  color: var(--dialog-close-foreground);
+}
+
+/* ---- Checkbox / radio ----------------------------------------------------- */
+
+/*
+ * Pop ticks its boxes in orange, not in the colour it selects with:
+ * `$checkradio_bg_color` is the palette's orange and `$checkradio_fg_color` is
+ * black, in both variants. The component draws a checked box in
+ * --accent-color, which is the teal Pop reserves for selection, so the two are
+ * told apart here.
+ *
+ * Doubled to outscore the component's own `.indicator.checked` rule.
+ */
+.v-CheckBox > .indicator.checked.checked,
+.v-Radio > .indicator.checked.checked {
+  background: #fbb86c;
+  border-color: color-mix(in srgb, #fbb86c, black 12%);
+}
+
+.v-CheckBox > .indicator.checked .check {
+  border-color: var(--checkbox-check-color);
+}
+
+/* ---- Drawer / TitleBar -------------------------------------------------- */
+
+/* The side panel: a surface a step above the page, a near-black hairline
+   against it, and a shadow deep enough to read on a dark ground. */
+.v-Drawer {
+  background: #3a3634;
+  border-left: 1px solid #1c1a19;
+  box-shadow: -2px 0 14px rgba(0, 0, 0, 0.45);
+}
+
+.v-Drawer .header {
+  background-color: var(--dialog-header-background);
+  border-bottom: 1px solid var(--dialog-header-border);
+  color: var(--dialog-header-foreground);
+  box-shadow: var(--dialog-header-highlight);
+}
+
+.v-Drawer .title {
+  font-weight: var(--dialog-header-title-weight);
+  text-align: var(--dialog-header-title-align);
+}
+
+/* Its close button reads from the same variables as a dialog's. */
+.v-Drawer .header button.close {
+  background-color: var(--dialog-close-background);
+}
+
+.v-Drawer .header button.close:not(.is-active):not(.is-disabled):hover {
+  background-color: var(--dialog-close-hover);
+}
+
+.v-Drawer .header button.close.active {
+  background-color: var(--dialog-close-active);
+}
+
+/* The strip above the toolbar — Pop's headerbar, which on dark recedes below
+   the window rather than rising above it. */
+.v-TitleBar {
+  background-color: var(--titlebar-background-color);
+  color: var(--text-color);
+  border-bottom: 1px solid var(--titlebar-border-color);
+}
+
+/* Its buttons stay transparent: hovering lightens them against the bar, while
+   an item held on — a menu bar item with its menu down — darkens instead, so
+   "open" reads as pressed into the bar rather than raised out of it. */
+.v-TitleBarButton.v-Button {
+  color: var(--text-color);
+  fill: var(--text-color);
+}
+
+.v-TitleBarButton.v-TitleBarButton.v-Button:not(.is-active):not(
+    .is-disabled
+  ):hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.v-TitleBarButton.v-TitleBarButton.v-Button.is-active {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+
+/* ---- Tabs ---------------------------------------------------------------- */
+
+/* Square tabs that fill the bar edge to edge, rather than the default rounded
+   pills floating inside it. */
+.v-TabBar.v-TabBar {
+  border-radius: 0;
+}
+
+/* No side gutters: the tabs run edge to edge, as they do in the other themes.
+   The bar places the slab behind the selected button from its measured offset,
+   so a left margin here would leave the first slab short of the bar's edge and
+   every other one short of its own tab. */
+.v-TabButton.v-TabButton {
+  margin: 5px 0 6px;
+  border-radius: 12px;
+  padding: 4px;
+  background: transparent;
+  color: #f0f0f0;
+}
+
+/* The selected tab is a grey slab a step above the bar, underlined in the
+   accent. The underline is an inset shadow rather than a border so it doesn't
+   change the slab's size — the bar positions the indicator from measured
+   geometry. */
+.v-TabBar-indicator.v-TabBar-indicator {
+  /* Flush with the top of the bar. TabView#movePill sets top from the selected
+     button, which the pill margins push down by 5px; with the pill also height:
+     100% that hangs it off the bottom. Inline styles are what !important is
+     for here — the pill is positioned from JavaScript. */
+  top: 0 !important;
+  background: #3f3f3f;
+  box-shadow: inset 0 -3px 0 var(--accent-color);
+  border-radius: 0;
+}
+
+/* ---- Snackbar ------------------------------------------------------------ */
+
+/*
+ * A small window rather than a coloured slab, warm rather than grey, and flat —
+ * Pop's controls carry no gloss, so its bars carry none either, and its 3px
+ * corners rather than the 6px the Aristo bars round to.
+ */
+.v-SnackBar.v-SnackBar {
+  border-radius: 3px;
+  border: 1px solid var(--default-border-color);
+  background-color: var(--dialog-background);
+  color: var(--text-color);
+  box-shadow:
+    0 4px 14px -5px rgba(0, 0, 0, 0.6),
+    0 1px 3px -1px rgba(0, 0, 0, 0.5);
+  --snackbar-opacity: 1;
+  padding: 6px 8px;
+}
+
+/* Intent shows as a tint of the surface rather than a saturated fill, as in the
+   light sheet — but tinted toward black rather than toward white, so the bar
+   stays part of the dark page and keeps the theme's light text. */
+.v-SnackBar.v-SnackBar.intent,
+.v-SnackBar.v-SnackBar.intent > .v-SnackBar-content {
+  color: var(--text-color);
+}
+
+/* The component lifts content on a saturated bar to rescue light text from it.
+   There is no saturated bar here, so the lift only washes the tints out. */
+.v-SnackBar.intent .v-SnackBar-content *,
+.v-SnackBar.primary .v-SnackBar-content *,
+.v-SnackBar.danger .v-SnackBar-content *,
+.v-SnackBar.success .v-SnackBar-content *,
+.v-SnackBar.warning .v-SnackBar-content *,
+.v-SnackBar.info .v-SnackBar-content * {
+  filter: none;
+}
+
+/* Each tint is the theme's own intent colour taken most of the way to the
+   surface. How far differs per colour rather than being one number: they are
+   nothing like equally light to begin with, and an even mix would leave some
+   bars glaring and others invisible. */
+.v-SnackBar.v-SnackBar.primary {
+  background-color: color-mix(
+    in srgb,
+    var(--primary-background-color),
+    #2b2827 76%
+  );
+  border-color: color-mix(in srgb, var(--primary-background-color), black 42%);
+}
+
+.v-SnackBar.v-SnackBar.danger {
+  background-color: color-mix(
+    in srgb,
+    var(--danger-background-color),
+    #2b2827 72%
+  );
+  border-color: color-mix(in srgb, var(--danger-background-color), black 34%);
+}
+
+.v-SnackBar.v-SnackBar.success {
+  background-color: color-mix(
+    in srgb,
+    var(--success-background-color),
+    #2b2827 74%
+  );
+  border-color: color-mix(in srgb, var(--success-background-color), black 36%);
+}
+
+.v-SnackBar.v-SnackBar.warning {
+  background-color: color-mix(
+    in srgb,
+    var(--warning-background-color),
+    #2b2827 80%
+  );
+  border-color: color-mix(in srgb, var(--warning-background-color), black 46%);
+}
+
+.v-SnackBar.v-SnackBar.info {
+  background-color: color-mix(
+    in srgb,
+    var(--info-background-color),
+    #2b2827 76%
+  );
+  border-color: color-mix(in srgb, var(--info-background-color), black 40%);
+}
+
+/* The one intent that flips: the light sheet's inverse is its dark brown, so
+   this one's is the pale slab, and it carries dark content. */
+.v-SnackBar.v-SnackBar.inverse {
+  background-color: var(--inverse-background-color);
+  border-color: var(--inverse-border-color);
+}
+
+.v-SnackBar.v-SnackBar.inverse,
+.v-SnackBar.v-SnackBar.inverse > .v-SnackBar-content {
+  color: var(--inverse-foreground-color);
+}
+
+/* The icon takes whatever the text is, which is the one thing carrying the
+   intent's own colour on a tinted bar. */
+.v-SnackBar.v-SnackBar.intent .v-SnackBar-content > div .icon svg {
+  fill: currentColor;
+}
+
+/* Close button: light on the tinted surfaces, dark on the inverse one, and
+   Pop's own washes under the pointer rather than a colour of its own. */
+.v-SnackBar.v-SnackBar.intent .v-Button.close {
+  color: var(--text-color);
+  fill: var(--text-color);
+}
+
+.v-SnackBar.v-SnackBar.inverse .v-Button.close {
+  color: var(--inverse-foreground-color);
+  fill: var(--inverse-foreground-color);
+}
+
+.v-SnackBar.v-SnackBar.intent
+  .v-Button.close:not(.is-active):not(.is-disabled):hover {
+  background-color: var(--wash-hover);
+}
+
+.v-SnackBar.v-SnackBar.intent .v-Button.close.is-active {
+  background-color: var(--wash-press);
+}

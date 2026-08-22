@@ -3,13 +3,14 @@
 import * as css from "./css.js";
 import {
   ACTION_ATTR,
+  BIND_SCOPE_PROP,
+  BIND_TAG,
   jsKey,
   jsString,
   lineMarker,
   OUTLET_ATTR,
   scopeClass,
   STYLE_NAME_ATTR,
-  SURFACE_TAGS,
   VIEW_TAG,
 } from "./js.js";
 
@@ -24,8 +25,6 @@ import {
  *              beside this one, when there is one.
  */
 export function generate(comp, opts) {
-  checkSurfaces(comp.markup, opts.name);
-
   const scope = scopeClass(opts.hash);
   const hasStyle = comp.style.trim() !== "";
 
@@ -62,7 +61,11 @@ export function generate(comp, opts) {
     // a bare `CSS` would collide.
     const cssVar = `CSS_${opts.name}`;
     out += `const ${cssVar} = ${jsString(
-      css.scope(comp.style, `.${scope}`, null, { minify: opts.minify }),
+      css.scope(comp.style, `.${scope}`, null, {
+        minify: opts.minify,
+        // `.mydialog ComboBox` — a component named where a class would go.
+        component: (name) => opts.styleNames?.get(name) ?? null,
+      }),
     )};\n`;
     out += `addStyles(${jsString(opts.hash)}, ${cssVar});\n\n`;
   }
@@ -121,85 +124,6 @@ function componentTags(nodes, out = []) {
     componentTags(node.children, out);
   }
   return out;
-}
-
-/**
- * What each surface is called in the advice below: a file to write it in, and
- * the line that puts it on the page once it is written.
- *
- * The two kinds differ in that last line. A dialog, a drawer and a popover are
- * named by the page that shows them, so the page writes the tag; a bar is
- * shown through a SnackBarManager and is never named in markup at all.
- */
-const SURFACE_ADVICE = {
-  PopOver: {
-    file: "ColourPopOver",
-    place: "<ColourPopOver outlet='colours'/>",
-  },
-  DialogBox: {
-    file: "SettingsDialog",
-    place: "<SettingsDialog outlet='settings'/>",
-  },
-  Drawer: { file: "FiltersDrawer", place: "<FiltersDrawer outlet='filters'/>" },
-  SnackBar: {
-    file: "SavedBar",
-    place: "this.bars.show(<SavedBar/>);",
-    bar: true,
-  },
-  Toast: {
-    file: "SavedToast",
-    place: "this.bars.show(<SavedToast/>);",
-    bar: true,
-  },
-};
-
-/**
- * A surface — a DialogBox, a PopOver, a SnackBar — may only be the root of a
- * `.mib`.
- *
- * Nested in other markup it would draw inside that markup's flow, which is not
- * where it goes on screen: a dialog is put in the top layer, a popover is
- * placed against whatever it hangs from, and a bar is stacked in a corner of
- * the window by the manager that shows it. So the file would read as something
- * the page does not do — see {@link SURFACE_TAGS}.
- *
- * Thrown rather than warned: the markup means something other than what it
- * says, and finding that out on screen is an afternoon.
- */
-function checkSurfaces(markup, name) {
-  const elements = markup.filter((node) => node.kind === "element");
-  const root = elements.length === 1 ? elements[0] : null;
-
-  const walk = (nodes) => {
-    for (const node of nodes) {
-      if (node.kind !== "element") continue;
-      if (node !== root && SURFACE_TAGS.has(node.name)) {
-        const advice = SURFACE_ADVICE[node.name];
-        const what = advice?.bar
-          ? `A ${node.name} is put on the page by a SnackBarManager, which ` +
-            `stacks it in a corner of the window — a bar never adds itself, ` +
-            `and one written here would be up from the moment the page was ` +
-            `drawn.`
-          : `A ${node.name} is a surface of its own: it is placed by the ` +
-            `runtime, not by the markup around it.`;
-        const then = advice?.bar
-          ? `and show it when there is something to say:`
-          : `and name that file here instead:`;
-
-        throw new Error(
-          `line ${node.line}: <${node.name}/> can only be the root of a .mib ` +
-            `file, not nested inside one.\n` +
-            `    ${what}\n` +
-            `    Put it in a file of its own — ${advice?.file ?? "MySurface"}.mib ` +
-            `is one — ${then}\n` +
-            `        ${advice?.place ?? `<${advice?.file ?? "MySurface"}/>`}`,
-        );
-      }
-      walk(node.children);
-    }
-  };
-
-  walk(markup);
 }
 
 function isUpper(c) {
@@ -356,6 +280,12 @@ class Ctx {
     }
 
     if (scope !== null && !scoped) entries.push(`class: ${jsString(scope)}`);
+
+    // A `<Bind/>` is handed the scope its paths are read against, which is this
+    // file's own controller — `this` in what is being written. See BIND_TAG.
+    if (isComponent && tag === BIND_TAG) {
+      entries.push(`${BIND_SCOPE_PROP}: this`);
+    }
 
     // On a DOM element `action` binds a listener; on a component it binds the
     // component's action to a method here, which the child invokes. Either way

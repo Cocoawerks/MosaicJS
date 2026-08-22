@@ -33,9 +33,9 @@
   padding: 6px 10px;
   border: none;
   border-radius: 6px;
-  background-color: var(--toolbar-button-background, transparent);
-  color: var(--toolbar-button-foreground, var(--default-foreground-color));
-  fill: var(--toolbar-button-foreground, var(--default-foreground-color));
+  background-color: var(--toolbar-button-background);
+  color: var(--toolbar-button-foreground);
+  fill: var(--toolbar-button-foreground);
   cursor: pointer;
 }
 
@@ -75,18 +75,18 @@
 :global(
   .v-ToolBarItem.v-ToolBarItem.v-Button:not(.is-active):not(.is-disabled):hover
 ) {
-  background-color: var(--toolbar-button-hover, rgba(0, 0, 0, 0.06));
+  background-color: var(--toolbar-button-hover);
 }
 
 /* Darken on press — the runtime adds `is-active` while the button is down. */
 :global(.v-ToolBarItem.v-ToolBarItem.v-Button.is-active) {
-  background-color: var(--toolbar-button-active, rgba(0, 0, 0, 0.12));
+  background-color: var(--toolbar-button-active);
 }
 
 /* Disabled: dimmed, no hover or press wash, and the cursor says so. A disabled
    Control also refuses the press, so the item cannot be worked either. */
 :global(.v-ToolBarItem.v-ToolBarItem.v-Button.is-disabled) {
-  opacity: var(--opacity-disable, 0.4);
+  opacity: var(--opacity-disable);
   cursor: not-allowed;
   background-color: transparent;
 }

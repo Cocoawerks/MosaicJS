@@ -222,3 +222,83 @@ test("minifying squeezes an attribute selector but not grid line names", () => {
     }),
   ).toBe(".a{grid-template-columns:[full-start] 1fr [full-end]}");
 });
+
+// --- a component named where a class goes ------------------------------------
+
+/** What each component draws its root with, as the build reads off the source. */
+const wears = (name) =>
+  ({ ComboBox: "v-ComboBox", DialogBox: "v-Dialog", Button: "v-Button" })[
+    name
+  ] ?? null;
+
+test("a component's name stands for the class it wears", () => {
+  // A sheet says what it means — the name the markup places it by — rather
+  // than having to know that a combo box draws itself as `.v-ComboBox`.
+  //
+  // And naming one moves the anchor to the front: the combo box drew its own
+  // root and gave it its own hash, so a rule cannot ask that root to carry
+  // this page's. Anchored at `.mydialog` the rule still reaches nothing this
+  // page did not place.
+  expect(
+    scope(".mydialog ComboBox{width:160px}", ".h", null, { component: wears }),
+  ).toBe(".mydialog.h .v-ComboBox{width:160px}");
+
+  // Written as the class instead, it is scoped as it always was — which is
+  // why every sheet in the framework goes on meaning what it meant.
+  expect(
+    scope(".mydialog .v-ComboBox{width:160px}", ".h", null, {
+      component: wears,
+    }),
+  ).toBe(".mydialog .v-ComboBox.h{width:160px}");
+});
+
+test("and the class it wears is not always its name", () => {
+  // A DialogBox draws `v-Dialog`, so a convention would have been wrong. The
+  // component declares it and the build reads what it declared.
+  expect(scope("DialogBox{color:red}", ".h", null, { component: wears })).toBe(
+    ".v-Dialog.h{color:red}",
+  );
+});
+
+test("whatever follows the name is left as it is", () => {
+  const at = (sel) =>
+    scope(sel, ".h", null, { component: wears }).split("{")[0];
+
+  expect(at(".a ComboBox.popup:hover{x:y}")).toBe(
+    ".a.h .v-ComboBox.popup:hover",
+  );
+  expect(at(".a > Button{x:y}")).toBe(".a.h > .v-Button");
+  expect(at(".a Button, .a ComboBox{x:y}")).toBe(
+    ".a.h .v-Button, .a.h .v-ComboBox",
+  );
+});
+
+test("a capital is what says it is a component, since a tag has none", () => {
+  const at = (sel) =>
+    scope(sel, ".h", null, { component: wears }).split("{")[0];
+
+  // Neither names a component, so neither moves the anchor either.
+  expect(at(".a div{x:y}")).toBe(".a div.h", "a tag is a tag");
+  expect(at(".a .Button{x:y}")).toBe(".a .Button.h", "and a class is a class");
+});
+
+test("a name nothing answers to is left alone", () => {
+  // A sheet naming a component this build never compiled is not rewritten into
+  // a class that would match nothing — it is left to fail as it was written.
+  expect(
+    scope(".a Whatever{x:y}", ".h", null, { component: wears }).split("{")[0],
+  ).toBe(".a Whatever.h");
+});
+
+test("a component named inside :global() is still its class", () => {
+  // The name is how a sheet refers to the component either way; whether the
+  // rule is scoped is a separate question.
+  expect(
+    scope(":global(DialogBox) .note{x:y}", ".h", null, { component: wears }),
+  ).toBe(".v-Dialog .note.h{x:y}");
+});
+
+test("with no resolver, a name is left as written", () => {
+  // Which is what every caller that is not compiling a `.mib` does.
+  expect(scope(".a ComboBox{x:y}", ".h").split("{")[0]).toBe(".a ComboBox.h");
+});

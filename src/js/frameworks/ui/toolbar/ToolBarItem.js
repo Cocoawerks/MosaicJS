@@ -20,6 +20,12 @@ import Button from "../controls/button/Button.js";
 import "./toolbar-item.css";
 
 export default class ToolBarItem extends Button {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `ToolBarItem`. See Component.styleName.
+   */
+  static styleName = "v-ToolBarItem";
+
   static props = {
     /**
      * Whether the application has taken the item out of the bar. A hidden

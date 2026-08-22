@@ -12,12 +12,10 @@ import assert from "node:assert/strict";
 import test, { afterEach } from "node:test";
 import "./dom-shim.mjs";
 
-const { mount, h } = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
-);
-const { DialogBox, addOpenListener, removeOpenListener } = await import(
-  "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
-);
+const { mount, h } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
+const { DialogBox, addOpenListener, removeOpenListener } =
+  await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /**
  * Every dialog a test made, so none is left up: the shared mask counts what is
@@ -161,7 +159,9 @@ test("pack and mask are said in the class list", () => {
   // backdrop is kept clear.
   assert.ok(classesOf(make().el).includes("v-Dialog--no-mask"));
   // Nothing to keep clear when there is no mask, and nothing when it is not modal.
-  assert.ok(!classesOf(make({ mask: "false" }).el).includes("v-Dialog--no-mask"));
+  assert.ok(
+    !classesOf(make({ mask: "false" }).el).includes("v-Dialog--no-mask"),
+  );
   assert.ok(
     !classesOf(make({ modal: "false" }).el).includes("v-Dialog--no-mask"),
   );
@@ -336,7 +336,11 @@ test("Enter presses the primary button", async () => {
 
 test("Enter leaves a disabled primary button alone", async () => {
   const { el } = await open({}, [
-    h("button", { slot: "footer", class: "v-Button primary is-disabled" }, "Save"),
+    h(
+      "button",
+      { slot: "footer", class: "v-Button primary is-disabled" },
+      "Save",
+    ),
   ]);
 
   let pressed = false;
@@ -413,4 +417,82 @@ test("a dialog that is not modal raises no mask", async () => {
   const mask = document.querySelector(".v-Dialog-mask");
   assert.ok(!mask || !mask.getAttribute("class").includes("is-visible"));
   view.forceClose();
+});
+
+// --- how big it is -----------------------------------------------------------
+
+/**
+ * An inline size, or "" for one that was never written: the shim leaves an
+ * unset property undefined where a browser gives back an empty string.
+ */
+const sized = (el, name) => el.style[name] ?? "";
+
+test("a dialog is the size the sheet gives it unless the tag says otherwise", async () => {
+  const { el } = await open();
+  // Nothing written on the element: the sheet's 600px and fit-content stand.
+  assert.equal(sized(el, "width"), "");
+  assert.equal(sized(el, "height"), "");
+});
+
+test("width and height are written on the element", async () => {
+  const { el } = await open({ width: "820px", height: "500px" });
+
+  assert.equal(sized(el, "width"), "820px");
+  assert.equal(sized(el, "height"), "500px");
+});
+
+test("a bare number is pixels, which is all an attribute can say", async () => {
+  const { el } = await open({ width: "820", height: "500" });
+
+  assert.equal(sized(el, "width"), "820px");
+  assert.equal(sized(el, "height"), "500px");
+});
+
+test("and a unit is written through as it stands", async () => {
+  const { el } = await open({ width: "60ch", height: "70dvh" });
+
+  assert.equal(sized(el, "width"), "60ch");
+  assert.equal(sized(el, "height"), "70dvh");
+});
+
+test("one without the other leaves the other to the sheet", async () => {
+  const wide = await open({ width: "820" });
+  assert.equal(sized(wide.el, "width"), "820px");
+  assert.equal(
+    sized(wide.el, "height"),
+    "",
+    "its height is still its content's",
+  );
+
+  const tall = await open({ height: "500" });
+  assert.equal(
+    sized(tall.el, "width"),
+    "",
+    "and its width is still the standard",
+  );
+  assert.equal(sized(tall.el, "height"), "500px");
+});
+
+test("a packed dialog can still be given one of the two", async () => {
+  // `pack` is a class and a size is on the element, so a dialog given both is
+  // the size it was given in that direction and packed in the other.
+  const { el } = await open({ pack: "true", width: "820" });
+
+  assert.ok(classesOf(el).includes("v-Dialog--auto"));
+  assert.equal(sized(el, "width"), "820px");
+  assert.equal(sized(el, "height"), "");
+});
+
+test("a size that stops being stated stops applying", async () => {
+  // A style object is merged onto the element rather than replacing what is
+  // there, so a key left out of it leaves whatever was written last time —
+  // which would keep a dialog at a height nothing asks for any more.
+  const dialog = await open({ width: "820", height: "500" });
+  assert.equal(sized(dialog.el, "height"), "500px");
+
+  dialog.view.props = { ...dialog.view.props, height: "" };
+  dialog.view.needsDisplay();
+
+  assert.equal(sized(dialog.view.node, "height"), "", "the height is given up");
+  assert.equal(sized(dialog.view.node, "width"), "820px", "the width stands");
 });

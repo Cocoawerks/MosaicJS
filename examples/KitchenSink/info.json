@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "author": "Christopher Bruno",
   "theme": "aristo",
-  "themes": ["aristo", "aristo_dark", "pop"],
+  "themes": [
+    "aristo",
+    "pop"
+  ],
   "main_file": "src/main.js",
   "check": "check.html"
 }

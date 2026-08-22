@@ -13,6 +13,12 @@ import "./checkbox.css";
 const ACTIVATION_KEYS = new Set(["Enter", " ", "Spacebar"]);
 
 export default class CheckBox extends ToggleControl {
+  /**
+   * The class this component draws its root with — what a stylesheet is
+   * naming when it says `CheckBox`. See Component.styleName.
+   */
+  static styleName = "v-CheckBox";
+
   // --- value ---------------------------------------------------------------
 
   /** Checked or not. `HasValue<Boolean>` in Java. */
