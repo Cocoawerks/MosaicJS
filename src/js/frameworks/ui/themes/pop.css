@@ -470,6 +470,19 @@ textarea,
   background: #000000;
 }
 
+/* ---- Combo box ----------------------------------------------------------- */
+
+/* The whole control is a button. */
+.v-ComboBox.v-ComboBox:not(.is-disabled) {
+  cursor: pointer;
+}
+
+/* Hover lifts the field too, not only the trigger; off while pressed. */
+.v-ComboBox.v-ComboBox.popup:not(.is-disabled):hover:not(:active),
+.v-ComboBox.v-ComboBox:not(.is-disabled):hover:not(:active) select {
+  background-color: var(--default-background-color-hover);
+}
+
 /* ---- Drawer / TitleBar -------------------------------------------------- */
 
 /* The side panel: a light surface with a hairline against the page and a soft

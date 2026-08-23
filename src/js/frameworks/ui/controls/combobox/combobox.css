@@ -86,6 +86,7 @@
   /* The one cell the control has, which the sizer shares: they are drawn one
      over the other rather than one after the other. */
   grid-area: select;
+  margin-bottom: 2px;
   font-size: 16px;
   white-space: nowrap;
   overflow: hidden;

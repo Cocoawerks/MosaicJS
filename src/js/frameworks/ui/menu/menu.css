@@ -118,6 +118,7 @@
   flex: 1;
   margin-right: 18px;
   margin-left: 0;
+  margin-bottom: 2px;
   user-select: none;
   font-size: 17px;
   /* Not the menu's 12px, which is a line shorter than the text it holds — the

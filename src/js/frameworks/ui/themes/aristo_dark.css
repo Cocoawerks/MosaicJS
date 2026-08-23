@@ -297,7 +297,9 @@
   /* The same dark well an unselected radio sits in — see the rule below the
      buttons, which the two share. */
   --checkbox-indicator-background: #3d3d3d;
-  --combobox-background: #313134;
+  /* The field reads as a button rather than a well: the lighter default button
+     face, not the dark field colour the checkbox and text fields take. */
+  --combobox-background: #46464b;
   --dialog-background: #2b2b2e;
   --error-color: #cc5f5f;
   --field-background: #313134;
@@ -840,10 +842,11 @@ textarea,
    same colour as a checkbox's tick, which is what that face is designed to
    carry. */
 .v-ComboBox.v-ComboBox .chevron {
-  /* Pulled out over the control's own 1px border on three sides, so the tab's
-         primary border replaces the grey one rather than sitting inside it. */
-  top: -1px;
+  /* Pulled out over the control's right border, so the tab's primary border
+     replaces the grey one there rather than sitting inside it. */
+  top: 0px;
   right: -1px;
+  height: 100%;
   width: 30px;
   box-sizing: border-box;
   align-items: center;
@@ -852,6 +855,8 @@ textarea,
   /* No gloss: this theme's buttons are flat, and the tab follows them. */
   background-image: none;
   border: 1px solid var(--primary-border-color);
+  /* No seam where the tab meets the field. */
+  border-left: none;
   border-radius: 0 0.3em 0.3em 0;
 }
 
@@ -878,6 +883,17 @@ textarea,
   padding-top: 1px;
   color: var(--checked-mark-color);
   fill: var(--checked-mark-color);
+}
+
+/* The whole control is a button. */
+.v-ComboBox.v-ComboBox:not(.is-disabled) {
+  cursor: pointer;
+}
+
+/* Hover lifts the field too, not only the trigger; off while pressed. */
+.v-ComboBox.v-ComboBox.popup:not(.is-disabled):hover:not(:active),
+.v-ComboBox.v-ComboBox:not(.is-disabled):hover:not(:active) select {
+  background-color: var(--default-background-color-hover);
 }
 
 /* The ring goes round the whole control, trigger included. The component draws it
