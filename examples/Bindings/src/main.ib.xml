@@ -254,6 +254,28 @@
             margin-bottom: 0.8rem;
         }
 
+        /* A Slider is a block with a minimum width and no width of its own, so
+           one sitting in a flex row beside a field comes out at that minimum —
+           fifty pixels of track, which is barely enough to take hold of and
+           says nothing about where the value sits between its ends. Given a
+           share of the row instead, up to a length past which a longer track
+           only makes each step of the value harder to land on.
+
+           Named by the class rather than by writing `Slider`, which is the way
+           a sheet usually refers to a component: that spelling is put in place
+           by the compiler from the `static styleName` the component declares,
+           and a Slider declares none — it wears the one AbstractSlider above it
+           declares, which the compiler cannot see. `:global(...)` because the
+           class is the framework's rather than this page's, so it must not be
+           scoped to this file.
+
+           A child, not a descendant: the panels further down hold sliders of
+           their own that already fill the width they are given. */
+        .row > :global(.v-Slider) {
+            flex: 1 1 16rem;
+            max-width: 24rem;
+        }
+
         .stack {
             display: flex;
             flex-direction: column;

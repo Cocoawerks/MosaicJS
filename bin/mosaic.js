@@ -3,7 +3,7 @@
 //
 //   mosaic init <name>                  create a new application
 //   mosaic compile [dir]                compile the app and bundle it
-//   mosaic server [dev] [dir]           the same, then serve it, rebuilding
+//   mosaic web [dev] [dir]              the same, then serve it, rebuilding
 //                                       and restarting on every change
 //   mosaic desktop [dev] [dir]          the same, run as a native desktop app
 //   mosaic check [dir]                  the same, then run the browser test
@@ -18,7 +18,7 @@
 // at the root of a project whose other directories are none of the compiler's
 // business. Everything the build produces lands in a `build/` inside the app
 // directory. That makes the app directory the whole of the deployable thing —
-// which is what `server` serves as its root, so a page can never reach up out of
+// which is what `web` serves as its root, so a page can never reach up out of
 // the app it belongs to.
 //
 // `info.json` is the configuration, merged from the project root down to the
@@ -50,7 +50,7 @@ const CONFIG = "info.json";
  */
 const MODES = ["dev", "prod"];
 /** The commands that run an application, and so have a mode to be run in. */
-const MODE_COMMANDS = ["server", "desktop"];
+const MODE_COMMANDS = ["web", "desktop"];
 
 /**
  * Where mosaic itself lives: the tree holding the runtime and the frameworks.
@@ -181,7 +181,7 @@ commands:
   install theme <name>
                      copy a theme's stylesheet into ./${THEMES}
   compile            compile the application and bundle it
-  server [dev|prod]  compile, then serve it, rebuilding on every edit
+  web [dev|prod]     compile, then serve it in a browser, rebuilding on every edit
   desktop [dev|prod] compile, then run it as a native desktop app
   check              compile, then run the headless browser test
   clean              delete the application's build directory
@@ -191,13 +191,13 @@ and defaults to the current one. \`main_file\` in that config names the
 bootstrap. For \`init\` the argument is the application's name instead, and
 the directory to create.
 
-\`server\` and \`desktop\` take a mode. \`dev\`, the default, keeps up with
+\`web\` and \`desktop\` take a mode. \`dev\`, the default, keeps up with
 the edits: everything from \`main_file\`'s directory down is watched — the
 \`${BUN_DIR}/\` included — and every change rebuilds and runs it again.
 \`prod\` is not implemented yet.
 
 options:
-  --port <n>         port for \`server\` (default 3000)
+  --port <n>         port for \`web\` (default 3000)
   --page <path>      page for \`check\`, relative to the current directory
   --no-open          don't launch a browser
   --no-watch         don't rebuild when sources change
@@ -499,7 +499,7 @@ function init(name) {
   console.log(`created ${dir}`);
   for (const file of Object.keys(files)) console.log(`    ${file}`);
   console.log("");
-  console.log(`    cd ${name} && mosaic server`);
+  console.log(`    cd ${name} && mosaic web`);
   return 0;
 }
 
@@ -586,7 +586,7 @@ function parseArgs(argv) {
 
   if (!args.command) throw new Error("missing command");
   if (
-    !["init", "install", "compile", "server", "desktop", "check", "clean"].includes(
+    !["init", "install", "compile", "web", "desktop", "check", "clean"].includes(
       args.command,
     )
   ) {
@@ -689,7 +689,7 @@ function staged(app) {
  * through on the way — staging, and what a swap moves aside.
  *
  * Said in one place because two things have to agree about it, and when they
- * did not it was expensive: `server` watches the application directory and the
+ * did not it was expensive: `web` watches the application directory and the
  * build sits inside it, so a staging directory the watcher did not recognise
  * looked exactly like someone editing. Every rebuild started another, and a
  * single keystroke rebuilt for ever.
@@ -791,7 +791,7 @@ function swapIntoPlace(build) {
  * It lands in `build/node_modules/mosaic/`, which is the one layout every
  * resolver already understands — Bun's bundler and node find it with no
  * configuration, and a browser needs only the import map the host page carries.
- * Vendoring is also what lets `server` serve the app as its root: a module
+ * Vendoring is also what lets `web` serve the app as its root: a module
  * reaching `../../src/...` would be reaching outside what the app ships.
  */
 function vendorRuntime(config, app) {
@@ -1416,7 +1416,7 @@ async function writeBundle(outputs, app) {
  *
  * The compiled modules are what the bundle was built *from*: every one of them
  * is inside it, and the page loads it alone. Leaving them would ship a second
- * copy of the application beside the one being served — and, in `server`, one a
+ * copy of the application beside the one being served — and, in `web`, one a
  * page could reach behind the bundle's back.
  *
  * The map is unaffected: Bun writes the sources into it, so the bundle stays
@@ -1517,13 +1517,13 @@ function serve(root, port, onResult = null) {
 
       const type = CONTENT_TYPES[path.extname(target)];
       const headers = {
-        // Always revalidate: the point of `server` is that a rebuild is visible.
+        // Always revalidate: the point of `web` is that a rebuild is visible.
         "cache-control": "no-store",
         ...(type ? { "content-type": type } : {}),
       };
 
       // A page being checked reports back when it is done. Nothing is added to
-      // a page `server` serves: an application should be what it is.
+      // a page `web` serves: an application should be what it is.
       //
       // Appended rather than spliced into `</body>`: a page is not required to
       // have one, and a check page that ends at its last <script> would
@@ -2093,7 +2093,7 @@ async function main(argv) {
     }
   }
 
-  // `server` serves the application directory, so a page can only reach what
+  // `web` serves the application directory, so a page can only reach what
   // ships with the app. A check page is a test *of* an application, and reads
   // the build it produced, so it is served from far enough up to see both.
   let checkPage = null;

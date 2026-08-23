@@ -35,6 +35,9 @@ export { clearBindings } from "./clearBindings.js";
 // Announcing something to whoever cares, without the two ends knowing each
 // other — what a binding cannot do across a distance.
 export { NotificationCenter, notifications } from "./NotificationCenter.js";
+// Talking to a server: `fetch` with the JSON and the status checking that
+// every call otherwise writes out again.
+export { Request, RequestError } from "./request.js";
 export { addStyles } from "./addStyles.js";
 export { collectStyles } from "./collectStyles.js";
 export { MosaicApplication } from "./MosaicApplication.js";

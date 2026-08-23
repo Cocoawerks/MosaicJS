@@ -65,7 +65,7 @@ test("init reports what it wrote", (t) => {
 
   assert.match(out, new RegExp(`created ${path.join(cwd, NAME)}`));
   for (const file of EXPECTED) assert.ok(out.includes(file), `listed ${file}`);
-  assert.match(out, new RegExp(`cd ${NAME} && mosaic server`));
+  assert.match(out, new RegExp(`cd ${NAME} && mosaic web`));
 });
 
 test("every file has content", (t) => {
