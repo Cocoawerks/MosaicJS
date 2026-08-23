@@ -29,11 +29,13 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { compileAll } from "../src/js/core/compiler/build.js";
 import { componentName } from "../src/js/core/compiler/compile.js";
 import { scope as scopeCss } from "../src/js/core/compiler/css.js";
+import { dispatch, methodsOf } from "../src/js/frameworks/rpc/dispatch.js";
+import { findServices, registrySource } from "../src/js/frameworks/rpc/services.js";
 import {
   BUN_DIR,
   DESKTOP_DIR,
@@ -164,6 +166,10 @@ const DEFAULTS = {
   // listed here and never has to be: the runtime is vendored by the compiler
   // and Electrobun is installed by `desktop`, both without being asked.
   dependencies: {},
+  // The window `desktop` opens: `width`, `height`, `x`, `y`, any of them, over
+  // the default. This is the whole of what an application says about its native
+  // side — the main process is generated, so there is nowhere else to say it.
+  window: {},
   // Both relative to the application directory, not the project root.
   main_file: `${SRC}/${ENTRY}`,
   outdir: "build",
@@ -191,6 +197,11 @@ and defaults to the current one. \`main_file\` in that config names the
 bootstrap. For \`init\` the argument is the application's name instead, and
 the directory to create.
 
+A module in \`${BUN_DIR}/services/\` is an rpc service, and its file name is the
+group a page calls it by: \`notes.js\` answers \`api.notes.*\`. \`web\` serves them
+at \`/rpc\`; \`desktop\` answers the same calls over the window's own bridge.
+The page reaches them with the rpc framework — \`install framework rpc\`.
+
 \`web\` and \`desktop\` take a mode. \`dev\`, the default, keeps up with
 the edits: everything from \`main_file\`'s directory down is watched — the
 \`${BUN_DIR}/\` included — and every change rebuilds and runs it again.
@@ -209,10 +220,10 @@ options:
 
 \`desktop\` builds the desktop project itself, inside the build directory, on
 every run, and installs into it: the app's own "dependencies" from ${CONFIG},
-and the toolkit it runs on, which no app has to name. A \`${BUN_DIR}/\` beside
-\`main_file\` is the app's native side by convention: its \`index.js\` is the
-main process, the compiler skips the directory, and an app without one gets a
-generated window onto its page.
+and the toolkit it runs on, which no app has to name. The main process is
+generated too — the title and "window" in ${CONFIG} are all it takes. A
+\`${BUN_DIR}/\` beside \`main_file\` holds the app's services and nothing else;
+the compiler skips the directory.
 
 Configuration is ${CONFIG}, merged from the project root down to the app.`;
 
@@ -393,26 +404,30 @@ import AppController from "./AppController.js";
 new MosaicApplication({ id: "app", controller: new AppController() });
 `,
 
-    [`${SRC}/${BUN_DIR}/${"index.js"}`]: `// ${name} — the native side, and what \`mosaic desktop\` runs as the main
-// process. This directory is \`${BUN_DIR}/\` by convention: the compiler skips it,
-// because none of it is browser code and none of it belongs in the bundle.
+    [`${SRC}/${BUN_DIR}/services/greeting.js`]: `// ${name} — a service: something the page can call that runs outside it.
 //
-// It runs in Bun, not in the page. There is no DOM here and no application —
-// what it does is open the window the page is drawn in, and whatever else has
-// to be asked of the operating system: menus, a tray, dialogs, the file system.
+// This directory is \`${BUN_DIR}/services/\` by convention. The compiler skips
+// \`${BUN_DIR}/\` entirely, because none of it is browser code and none of it
+// belongs in the page's bundle.
 //
-// The page is reached as \`views://mainview/index.html\`. That is the view
-// \`desktop\` generates, and index.html is the one this app was created with.
+// A service is a plain module. It knows nothing about rpc, nothing about the
+// desktop, and nothing about how it is reached — which is what lets the same
+// file answer over the desktop bridge under \`mosaic desktop\` and over HTTP
+// under \`mosaic web\`. The file name is the group: this is \`greeting\`, so
+// the page calls \`greeting.hello(...)\`.
 //
-// Keep this directory self-contained. It is copied into the generated project
-// whole, so a relative import reaching up out of it would not survive the move.
-import { BrowserWindow } from "electrobun/bun";
-
-new BrowserWindow({
-  title: "${name}",
-  url: "views://mainview/index.html",
-  frame: { width: 1024, height: 768, x: 200, y: 200 },
-});
+// The default export is the group: every function on it is callable, arguments
+// and return values make the trip as JSON, and an async function is awaited
+// before its answer is sent.
+//
+// The window itself is not written here or anywhere in the application:
+// \`mosaic desktop\` generates the main process, and what it needs to know —
+// the title, the size of the window — is in info.json.
+export default {
+  hello(who = "world") {
+    return \`Hello, \${who}.\`;
+  },
+};
 `,
 
     "index.html": `<!doctype html>
@@ -1460,6 +1475,13 @@ const CONTENT_TYPES = {
 const RESULT_PATH = "/__mosaic-check";
 
 /**
+ * Where a page's rpc calls land. One endpoint for every service: what is being
+ * called is in the message, not in the path, so a service is reached by
+ * exporting a function and nothing else has to be registered anywhere.
+ */
+const RPC_PATH = "/rpc";
+
+/**
  * The script the server adds to a checked page.
  *
  * A page says when it is finished; nothing here guesses. It waits for the
@@ -1488,13 +1510,65 @@ const REPORTER = `<script>
 })();
 </script>`;
 
-function serve(root, port, onResult = null) {
+/**
+ * The application's services, ready to be called.
+ *
+ * The registry is written into the build and imported from there rather than
+ * the source directory being read module by module: that generated file is
+ * what the desktop's Bun side is bundled from, so loading the same one here is
+ * what makes the two hosts run the same code. A service that is missing from
+ * one is missing from both, and it fails at build time in both.
+ *
+ * @returns {Promise<{services: object, methods: string[]}|null>} null for an
+ *   application with no services, which is most of them.
+ */
+async function loadServices(app) {
+  const found = findServices(app.bunDir);
+  if (found.length === 0) return null;
+
+  const dir = path.join(app.outdir, "rpc");
+  const registry = path.join(dir, "services.js");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(registry, registrySource(found, dir));
+
+  // Fresh every run: a dev server restarted after a service was edited must
+  // not answer from the module it imported an hour ago. Bun caches by
+  // specifier, so the query is what makes this a different one.
+  const loaded = await import(`${pathToFileURL(registry).href}?t=${Bun.nanoseconds()}`);
+  const services = loaded.default ?? {};
+
+  return { services, methods: methodsOf(services) };
+}
+
+function serve(root, port, onResult = null, services = null) {
   const base = path.resolve(root);
 
   return Bun.serve({
     port,
     async fetch(request) {
       const url = new URL(request.url);
+
+      // The application's own services, if it has any. Answered before
+      // anything is looked for on disk: this path is not a file and never
+      // was.
+      if (services && url.pathname === RPC_PATH) {
+        if (request.method !== "POST") {
+          return new Response("rpc calls are POSTed", { status: 405 });
+        }
+        let message;
+        try {
+          message = await request.json();
+        } catch {
+          return Response.json(
+            { id: null, error: { name: "BadRequest", message: "an rpc call is JSON" } },
+            { status: 400 },
+          );
+        }
+        // 200 whatever the answer is: a service refusing a call is the
+        // service's answer, not the request failing. The envelope says which
+        // it was, and the client throws where the call was made.
+        return Response.json(await dispatch(message, services, { request }));
+      }
 
       if (url.pathname === RESULT_PATH) {
         if (onResult) onResult(await request.json());
@@ -1930,13 +2004,9 @@ async function desktop(config, app, args) {
   const log = args.quiet ? null : (...a) => console.log(...a);
 
   log?.(`==> desktop ${path.relative(config.root, dir) || "."}`);
-  log?.(
-    `    main process ${
-      project.ownMain
-        ? path.relative(config.root, path.join(app.bunDir, "index.js"))
-        : `generated (no ${BUN_DIR}/ beside ${path.basename(app.entry)})`
-    }`,
-  );
+  if (project.services.length > 0) {
+    log?.(`    services ${project.services.join(", ")}`);
+  }
 
   await installDependencies({ ...project, log });
 
@@ -2132,10 +2202,24 @@ async function main(argv) {
   let reportResult;
   const reported = new Promise((resolve) => (reportResult = resolve));
 
+  // The services an application publishes, loaded before the first request
+  // rather than on demand: a service that cannot be imported is worth hearing
+  // about when the server starts, not the first time a page calls one.
+  let rpc = null;
+  if (args.command !== "check") {
+    try {
+      rpc = await loadServices(app);
+    } catch (e) {
+      console.error(`mosaic: the application's services could not be loaded`);
+      report(e);
+      return 1;
+    }
+  }
+
   let server =
     args.command === "check"
       ? serve(checkRoot, 0, reportResult)
-      : serve(app.source, args.port);
+      : serve(app.source, args.port, null, rpc?.services ?? null);
 
   if (args.command === "check") {
     let code;
@@ -2151,15 +2235,26 @@ async function main(argv) {
 
   const url = `http://localhost:${server.port}/`;
   console.log(`==> serving ${url}`);
+  if (rpc) {
+    console.log(`    rpc ${RPC_PATH}: ${rpc.methods.join(", ")}`);
+  }
   if (args.watch) {
     // Put the server back on the same port after a rebuild. It reads from disk
     // on every request, so this changes nothing about what it answers — what it
     // does is make one thing true of both commands: `dev` runs the application
     // again after an edit, and there is no rule about which edits count.
-    const restart = () => {
+    const restart = async () => {
       const port = server.port;
       server.stop(true);
-      server = serve(app.source, port);
+      // Re-imported, so an edited service is the one being called after a
+      // rebuild — the whole point of watching.
+      try {
+        rpc = await loadServices(app);
+      } catch (e) {
+        console.error(`mosaic: the application's services could not be loaded`);
+        report(e);
+      }
+      server = serve(app.source, port, null, rpc?.services ?? null);
     };
     const watched = watchSources(config, app, args, restart);
     console.log(

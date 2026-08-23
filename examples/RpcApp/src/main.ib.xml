@@ -1,0 +1,201 @@
+<!-- RpcApp: a page calling its own back end.
+
+     There is one thing to see here, and it is a thing you cannot see: nothing
+     on this page says where the calls go. AppController.js writes
+     `await api.notes.list()`; the service that answers is
+     src/bun/services/notes.js. Between them is a wire this application never
+     mentions — HTTP when it is run by `mosaic web`, the window's own bridge
+     when the same application is run by `mosaic desktop`. The controller is
+     the same file either way, and so is the service.
+
+     A module in `bun/services/` is a service and its file name is the group:
+     `notes.js` answers `api.notes.*`, `system.js` answers `api.system.*`.
+     There is nothing else to register. -->
+
+<interface>
+    <div styleName="page">
+        <header styleName="bar">
+            <h1 styleName="title">{title}</h1>
+            <span styleName="spacer" />
+
+            <label styleName="label" for="theme-combo">Theme</label>
+            <ComboBox controlId="theme-combo" action="themeChanged">
+                <Option text="Aristo" value="aristo" />
+                <Option text="Aristo Dark" value="aristo_dark" />
+                <Option text="Pop" value="pop" />
+            </ComboBox>
+        </header>
+
+        <section styleName="section">
+            <h2 styleName="heading">Who is answering</h2>
+            <p styleName="note">
+                The client is not told which host it is in — it looks. The
+                service below reports the same thing from the other end, and it
+                is the only function in this example that knows the difference.
+            </p>
+
+            <p styleName="reading">the page sends over: <strong>{wire}</strong></p>
+            <p styleName="reading">the service answered from: <strong>{host}</strong></p>
+            <p styleName="reading">and it is running on: {about}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Reading</h2>
+            <p styleName="note">
+                One name and no arguments, then the same call with an object to
+                filter by. Arguments and results cross as JSON, so what a
+                service takes and gives back is plain data.
+            </p>
+
+            <div styleName="row">
+                <Button text="notes.list()" enabled="{idle}" action="reload" />
+                <!-- The label is held on the controller: written here, the braces
+                     would be read as a binding — which is what they are. -->
+                <Button text="{filterCall}" enabled="{idle}" action="showDone" />
+            </div>
+
+            <pre styleName="lines">{lines}</pre>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Writing, and being refused</h2>
+            <p styleName="note">
+                The service decides whether a title will do, not this page —
+                which is the point of having a back end at all. Add an empty one
+                and what it threw arrives here as a rejected promise, carrying
+                its own message and whatever it attached: the field to mark.
+            </p>
+
+            <div styleName="row">
+                <TextField outlet="titleField" placeholder="A new note" />
+                <Button text="notes.create(…)" enabled="{idle}" action="add" />
+                <Button text="notes.setDone(…)" enabled="{idle}" action="toggleFirst" />
+                <Button text="notes.remove(…)" enabled="{idle}" action="removeLast" />
+            </div>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Waiting, and failing</h2>
+            <p styleName="note">
+                A call is an ordinary `await`, so a slow one is an ordinary
+                wait: the buttons are disabled by a property the controller
+                sets around it, and nothing else knows a call is in flight. The
+                last two show the two ways a call can fail — a name that is not
+                a method, and a service that throws.
+            </p>
+
+            <div styleName="row">
+                <Button text="notes.slowCount() — 1.2s" enabled="{idle}" action="count" />
+                <Button text="notes.thisIsNotAMethod()" enabled="{idle}" action="callMissing" />
+                <Button text="system.fail()" enabled="{idle}" action="callFailing" />
+            </div>
+
+            <p styleName="reading">{counted}</p>
+            <p styleName="refused">{refused}</p>
+        </section>
+
+        <p styleName="status">{note}</p>
+    </div>
+
+    <style>
+        :global(body) {
+            margin: 0;
+            font-family: var(--font-family);
+            color: var(--text-color);
+            background: var(--view-background);
+        }
+
+        .page {
+            max-width: 52rem;
+            margin: 0 auto;
+            padding-bottom: 2rem;
+        }
+
+        .bar {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--default-border-color);
+            background: var(--light-view-background);
+        }
+
+        .title {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .label {
+            font-size: 0.85rem;
+            color: var(--secondary-foreground);
+        }
+
+        .section {
+            padding: 0 1rem;
+        }
+
+        .heading {
+            margin: 1.2rem 0 0.4rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--secondary-foreground);
+        }
+
+        .note {
+            margin: 0 0 0.8rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            max-width: 44rem;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .reading {
+            margin: 0 0 0.3rem;
+            font-size: 0.85rem;
+        }
+
+        .lines {
+            margin: 0 0 0.8rem;
+            min-height: 5rem;
+            padding: 0.6rem 0.7rem;
+            border: 1px solid var(--default-border-color);
+            border-radius: 4px;
+            background: var(--light-view-background);
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .refused {
+            margin: 0.2rem 0 0;
+            font-family: ui-monospace, monospace;
+            font-size: 0.78rem;
+            color: var(--danger-background);
+        }
+
+        .status {
+            position: sticky;
+            bottom: 0;
+            margin: 1rem 0 0;
+            padding: 0.5rem 1rem;
+            border-top: 1px solid var(--default-border-color);
+            background: var(--light-view-background);
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+            color: var(--secondary-foreground);
+        }
+    </style>
+</interface>
