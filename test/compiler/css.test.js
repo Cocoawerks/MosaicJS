@@ -299,6 +299,6 @@ test("a component named inside :global() is still its class", () => {
 });
 
 test("with no resolver, a name is left as written", () => {
-  // Which is what every caller that is not compiling a `.mib` does.
+  // Which is what every caller that is not compiling a `.ib.xml` does.
   expect(scope(".a ComboBox{x:y}", ".h").split("{")[0]).toBe(".a ComboBox.h");
 });

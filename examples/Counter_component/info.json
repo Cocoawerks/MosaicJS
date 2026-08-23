@@ -2,5 +2,8 @@
   "app_name": "Counter_component",
   "version": "0.1.0",
   "theme": "aristo",
-  "main_file": "src/main.js"
+  "main_file": "src/main.js",
+  "frameworks": [
+    "ui"
+  ]
 }

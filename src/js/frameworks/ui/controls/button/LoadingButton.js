@@ -63,6 +63,8 @@ export default class LoadingButton extends Button {
   setLoading(loading) {
     if (this.isLoading === loading) return;
     this.isLoading = loading;
+    // `loading` is a getter over the field above, so nothing assigned it.
+    this.changed("loading");
 
     if (loading) {
       this.enabled = false;

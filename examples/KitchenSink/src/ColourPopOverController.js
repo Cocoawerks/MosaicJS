@@ -7,7 +7,7 @@
  */
 export default class ColourPopOverController {
   constructor() {
-    /** Bound in ColourPopOver.mib, so assigning to these updates it. */
+    /** Bound in ColourPopOver.ib.xml, so assigning to these updates it. */
     this.heading = "Pick a colour";
     this.chosen = "";
   }

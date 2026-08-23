@@ -27,11 +27,14 @@ export { redraw } from "./redraw.js";
 export { refresh } from "./refresh.js";
 // Binding a property of one thing to a property of another — a control to a
 // controller, a control to a control. One way each; two facing make it two.
-export { bind, bindBoth, canPush, observeKey } from "./bind.js";
+export { bind, bindTwoWay, canPush, observeKey } from "./bind.js";
 export { bindText } from "./bindText.js";
 export { bindAttr } from "./bindAttr.js";
 export { bindProp } from "./bindProp.js";
 export { clearBindings } from "./clearBindings.js";
+// Announcing something to whoever cares, without the two ends knowing each
+// other — what a binding cannot do across a distance.
+export { NotificationCenter, notifications } from "./NotificationCenter.js";
 export { addStyles } from "./addStyles.js";
 export { collectStyles } from "./collectStyles.js";
 export { MosaicApplication } from "./MosaicApplication.js";

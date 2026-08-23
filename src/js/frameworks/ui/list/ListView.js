@@ -59,7 +59,7 @@ export default class ListView extends Component {
   set content(items) {
     this.setLoading(false);
     this.items = Array.isArray(items) ? items : [];
-    this.needsDisplay();
+    this.contentChanged();
   }
 
   /** How many there are. */
@@ -69,17 +69,30 @@ export default class ListView extends Component {
 
   add(item) {
     this.items = [...this.items, item];
-    this.needsDisplay();
+    this.contentChanged();
   }
 
   remove(item) {
     this.items = this.items.filter((held) => held !== item);
-    this.needsDisplay();
+    this.contentChanged();
   }
 
   removeAll() {
     this.items = [];
+    this.contentChanged();
+  }
+
+  /**
+   * Redraw, and tell whatever is watching what the list holds.
+   *
+   * The rows live in a field of the list's own, so none of the calls above
+   * assigns `content` or `count` — the names a page binds. Without this a
+   * binding onto either was seeded once and never heard another thing.
+   */
+  contentChanged() {
     this.needsDisplay();
+    this.changed("content");
+    this.changed("count");
   }
 
   // --- while it is waiting -------------------------------------------------
@@ -92,6 +105,8 @@ export default class ListView extends Component {
     const wanted = this.bool(loading);
     if (this.loading === wanted) return;
     this.loading = wanted;
+    // `isLoading` is a getter over the field just assigned.
+    this.changed("isLoading");
 
     clearTimeout(this.loadingTimer);
     this.loadingTimer = null;

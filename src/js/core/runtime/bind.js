@@ -15,9 +15,9 @@
 //   bind(this, "nameField.value", this, "name");
 //
 // A binding is one-way — the source pushes, the target receives. Two of them
-// facing each other make it two-way, which is what `bindBoth` is:
+// facing each other make it two-way, which is what `bindTwoWay` is:
 //
-//   bindBoth(this.slider, "value", this.spinButton, "value");
+//   bindTwoWay(this.slider, "value", this.spinButton, "value");
 //
 // What it is built on is the same observation the rest of the runtime uses: a
 // `{path}` in markup and a drawn view's reads both come down to "run this when
@@ -85,9 +85,9 @@ export function bind(
  * @param {{to?: Function, from?: Function}} [options]
  * @returns {() => void} undoes both directions.
  */
-export function bindBoth(a, aKey, b, bKey = aKey, options = {}) {
-  const first = at("bindBoth", "first", a, aKey);
-  const second = at("bindBoth", "second", b, bKey);
+export function bindTwoWay(a, aKey, b, bKey = aKey, options = {}) {
+  const first = at("bindTwoWay", "first", a, aKey);
+  const second = at("bindTwoWay", "second", b, bKey);
 
   const there = link1(
     first.object,

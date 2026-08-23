@@ -162,6 +162,10 @@ export default class SplitView extends Component {
     if (!Number.isFinite(value)) return;
     this.assignedLength = value;
     this.layout();
+    // How long the pane is is worked out from what was assigned and the room
+    // there is, so nothing assigned `paneLength` and a binding onto it would
+    // sit still through a whole drag.
+    this.changed("paneLength");
     this.props.action?.(this.self, this.paneLength);
   }
 
@@ -173,6 +177,7 @@ export default class SplitView extends Component {
     this.preCollapseLength = this.staticPaneLength;
     this.collapsed = true;
     this.assignedLength = 0;
+    this.changed("paneLength");
     // Drawn, not written: `collapsed` is a class, and a class put on by hand
     // is wiped by the next redraw.
     this.needsDisplay();
@@ -185,6 +190,7 @@ export default class SplitView extends Component {
     if (!this.collapsed) return;
     this.collapsed = false;
     this.assignedLength = this.preCollapseLength;
+    this.changed("paneLength");
     this.needsDisplay();
     this.layout();
     this.reportCollapsed(false);

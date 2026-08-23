@@ -10,9 +10,9 @@
 //
 // It is a surface, like a dialog or a popover: it is pinned to the window and
 // placed by the runtime, not by the markup around it. So it is the root of a
-// `.mib` file of its own, and a page names that file:
+// `.ib.xml` file of its own, and a page names that file:
 //
-//   <!-- FiltersDrawer.mib -->        <!-- and in the page -->
+//   <!-- FiltersDrawer.ib.xml -->        <!-- and in the page -->
 //   <Drawer title="Filters">          <FiltersDrawer outlet="filters"/>
 //       …what it holds…
 //   </Drawer>                         showFilters() { this.filters.open(); }

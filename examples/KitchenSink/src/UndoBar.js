@@ -1,9 +1,9 @@
 // A snackbar of the application's own: what the page shows when something was
 // deleted, with the button that takes it back.
 //
-// A component rather than a `.mib` file, which is how the framework builds its
+// A component rather than a `.ib.xml` file, which is how the framework builds its
 // own bars (Toast is exactly this): a bar's content is drawn by the bar, so a
-// kind of bar says what it holds by overriding `drawContent`. A `.mib` would
+// kind of bar says what it holds by overriding `drawContent`. A `.ib.xml` would
 // give the markup a controller of its own, which a bar has no use for — what it
 // has to say goes back to whoever showed it.
 import {Button, SnackBar} from "mosaic/frameworks/ui";

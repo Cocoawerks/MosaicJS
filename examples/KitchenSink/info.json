@@ -2,6 +2,9 @@
   "app_name": "KitchenSink",
   "version": "0.1.0",
   "author": "Christopher Bruno",
+  "frameworks": [
+    "ui"
+  ],
   "theme": "aristo",
   "themes": [
     "aristo",

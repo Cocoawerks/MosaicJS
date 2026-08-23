@@ -1,0 +1,46 @@
+<!-- An observer, in the Cocoa spelling: `addObserver(this, "method", name)`.
+
+     Three of these are placed. One hears every sensor, one hears the kitchen
+     and one hears the garage — the difference is the `watch` attribute, which
+     becomes the `sender` its subscription is narrowed to. None of them is
+     mentioned by SensorPanel.ib.xml, and none of them mentions the other two. -->
+
+<interface>
+    <div styleName="readout">
+        <span styleName="title">{title}</span>
+        <strong styleName="value">{value}</strong>
+        <span styleName="count">{heard}</span>
+    </div>
+
+    <style>
+        .readout {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            flex: 1;
+            min-width: 10rem;
+            padding: 0.7rem 0.9rem;
+            border: 1px solid var(--default-border-color);
+            border-radius: 6px;
+            background: var(--light-view-background);
+        }
+
+        .title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--secondary-foreground);
+        }
+
+        .value {
+            font-size: 1.4rem;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+
+        .count {
+            font-size: 0.8rem;
+            color: var(--secondary-foreground);
+        }
+    </style>
+</interface>

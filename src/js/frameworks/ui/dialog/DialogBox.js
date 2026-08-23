@@ -9,7 +9,7 @@
 // MenuItem are read by. A child that names none is content, which is what a
 // dialog mostly holds:
 //
-//   <!-- SettingsDialog.mib -->
+//   <!-- SettingsDialog.ib.xml -->
 //   <DialogBox title="Settings" outlet="dialog">
 //       <p>Whatever the dialog is about.</p>
 //       <Button slot="footer" text="Cancel" action="cancel"/>

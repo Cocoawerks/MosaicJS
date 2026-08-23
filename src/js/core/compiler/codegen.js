@@ -40,7 +40,7 @@ export function generate(comp, opts) {
   // caller's business — a component library compiles somewhere of its own, so
   // assuming a sibling would emit an import that resolves to nothing.
   //
-  // A `.mib` file declares nothing itself, so every tag in it is another
+  // A `.ib.xml` file declares nothing itself, so every tag in it is another
   // module's: there is one place each component is written, and one import
   // that reaches it.
   const tags = componentTags(comp.markup);
@@ -72,7 +72,7 @@ export function generate(comp, opts) {
 
   // `props` carries initial values only — it is forwarded to child components
   // and is otherwise the controller's business. There is no reactivity.
-  // A page's own controller, written beside it: `Foo.mib` is paired with the
+  // A page's own controller, written beside it: `Foo.ib.xml` is paired with the
   // `FooController.js` next to it. The runtime builds one per drawn instance
   // and calls the page against it, so the bindings, outlets and actions in
   // this markup are that controller's rather than the page's above it.
@@ -84,7 +84,7 @@ export function generate(comp, opts) {
   const ctx = new Ctx(hasStyle ? scope : null, { minify: opts.minify });
   out += `  return ${ctx.childrenExpr(comp.markup, 1)};\n}\n`;
 
-  // What tells the runtime this function came from a `.mib` rather than being
+  // What tells the runtime this function came from a `.ib.xml` rather than being
   // a component someone wrote by hand. A view compiled from markup draws
   // against a scope of its own and takes the tag's attributes as its state; a
   // hand-written function component is the older, plainer thing and still

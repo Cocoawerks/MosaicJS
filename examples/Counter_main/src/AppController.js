@@ -1,6 +1,6 @@
 // Markup names a component; this is what puts it within reach.
 
-// The controller behind main.mib, and the whole of the counter's behaviour:
+// The controller behind main.ib.xml, and the whole of the counter's behaviour:
 // the page's state, the values its {bindings} read, and the methods its
 // actions fire.
 //

@@ -1,7 +1,7 @@
 // Compiling one source file, and finding where its output belongs.
 //
 // Two source kinds:
-//   `.mib`   markup + scoped `<style>`, compiled to a component function.
+//   `.ib.xml` markup + scoped `<style>`, compiled to a component function.
 //   `.js` / `.jsx`
 //           JavaScript whose JSX (typically a `Component` subclass's `draw()`)
 //           is rewritten into `h()` calls.
@@ -17,11 +17,18 @@ import {
   inlineSvgImports,
   transform,
 } from "./jsx.js";
-import { MARKUP_EXT, scopeClass, takeLineMarkers } from "./js.js";
+import {
+  MARKUP_EXT,
+  MARKUP_OUT_EXT,
+  isMarkup,
+  scopeClass,
+  stemOf,
+  takeLineMarkers,
+} from "./js.js";
 import { parse } from "./parser.js";
 import * as sourcemap from "./sourcemap.js";
 
-/** The stem of an application's bootstrap: `main.js` beside `main.mib`. */
+/** The stem of an application's bootstrap: `main.js` beside `main.ib.xml`. */
 const ENTRY_STEM = "main";
 
 /**
@@ -37,7 +44,7 @@ const ENTRY_STEM = "main";
  */
 export function compileFile(file, opts) {
   const src = fs.readFileSync(file, "utf8");
-  const stem = path.basename(file, path.extname(file));
+  const stem = stemOf(file);
 
   // Where this module will land, so its imports can be written relative to it.
   // A bare specifier like `mosaic` names a package rather than a path, and is
@@ -48,7 +55,7 @@ export function compileFile(file, opts) {
     : relativeSpecifier(opts.runtime, path.dirname(dest));
 
   const js =
-    path.extname(file) === MARKUP_EXT
+    isMarkup(file)
       ? compileIb(src, runtime, stem, dest, opts, file)
       : compileJs(src, file, stem, runtime, opts);
 
@@ -105,7 +112,7 @@ function compileIb(src, runtime, stem, dest, opts, file) {
 }
 
 /**
- * The controller written beside a page: `Foo.mib` is paired with a
+ * The controller written beside a page: `Foo.ib.xml` is paired with a
  * `FooController.js` next to it, if there is one — that is the whole of the
  * arrangement, and a page with no such file has no controller of its own.
  *
@@ -127,7 +134,7 @@ function controllerFor(name, file, dest) {
 }
 
 function compileJs(src, file, stem, runtime, opts = {}) {
-  // Drawn views are scoped like .mib components: one class per module, carried
+  // Drawn views are scoped like .ib.xml components: one class per module, carried
   // by its elements and required by its stylesheet's selectors.
   const scope = scopeClass(hash(src));
   let code = transform(src, scope);
@@ -154,9 +161,9 @@ function compileJs(src, file, stem, runtime, opts = {}) {
 /**
  * Bind the module's own page, if it has one.
  *
- * A `main.js` beside a `main.mib` is that page's module: the markup is compiled
- * and the binding is put in scope here, so nothing has to import a file it
- * never wrote. `main.mib` gives `Main`, the name it exports.
+ * A `main.js` beside a `main.ib.xml` is that page's module: the markup is
+ * compiled and the binding is put in scope here, so nothing has to import a
+ * file it never wrote. `main.ib.xml` gives `Main`, the name it exports.
  *
  * A module that imports the page itself keeps its own import — saying so
  * explicitly is never wrong.
@@ -166,14 +173,14 @@ function ensurePage(code, file, stem, runtime) {
   if (!fs.existsSync(markup)) return code;
 
   const name = componentName(stem);
-  const specifier = `./${stem}${MARKUP_EXT}.js`;
+  const specifier = `./${stem}${MARKUP_OUT_EXT}.js`;
 
   const header = [];
   if (!code.includes(specifier)) {
     header.push(`import ${name} from ${JSON.stringify(specifier)};`);
   }
 
-  // `main.js` beside `main.mib` is the application entry, so its page is the
+  // `main.js` beside `main.ib.xml` is the application entry, so its page is the
   // application's. Registering it here is what lets `new MosaicApplication()`
   // find it with nothing named and nothing fetched — and it has to run before
   // the module's own code does, which is why it goes at the top. Any other
@@ -191,14 +198,16 @@ function ensurePage(code, file, stem, runtime) {
  * Where a source compiles to: under `outdir`, mirroring the input tree so
  * `components/button/Button.js` keeps its folder.
  *
- * An `.mib` file keeps its whole name and gains `.js` — `main.mib` compiles to
- * `main.mib.js` — so a page can sit beside a `main.js` of its own that imports
- * it. A `.js`/`.jsx` source keeps its own name; it is already a module.
+ * Markup trades `.ib.xml` for `.ib.js` — `main.ib.xml` compiles to
+ * `main.ib.js` — so a page can sit beside a `main.js` of its own that imports
+ * it. The `.xml` goes because what comes out is a module, not markup; the
+ * `.ib` stays because that is what keeps the two names apart. A `.js`/`.jsx`
+ * source keeps its own name; it is already a module.
  */
 export function destination(file, opts) {
   if (opts.out) return opts.out;
-  const stem = path.basename(file, path.extname(file));
-  const name = path.extname(file) === MARKUP_EXT ? path.basename(file) : stem;
+  const stem = stemOf(file);
+  const name = isMarkup(file) ? `${stem}${MARKUP_OUT_EXT}` : stem;
   const relative = path.relative(opts.root, path.dirname(file));
   const inside = relative.startsWith("..") ? "" : relative;
   return path.join(opts.outdir, inside, `${name}.js`);
@@ -209,7 +218,7 @@ export function collectSources(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) collectSources(full, out);
-    else if ([MARKUP_EXT, ".jsx", ".js"].includes(path.extname(full)))
+    else if (isMarkup(full) || [".jsx", ".js"].includes(path.extname(full)))
       out.push(full);
   }
   return out.sort();

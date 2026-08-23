@@ -1,5 +1,5 @@
 /**
- * The view's own controller, paired with Reading.mib by name.
+ * The view's own controller, paired with Reading.ib.xml by name.
  *
  * What the tag said arrives here as properties — `place` and `celsius` are the
  * attributes — assigned before the view draws, so the first drawing already

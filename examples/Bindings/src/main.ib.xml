@@ -1,0 +1,282 @@
+<!-- Bindings: one property following another, written where the two things are.
+
+     A `<Bind/>` draws nothing. It joins the property named by `source` to the
+     property named by `target`, and it comes to exactly what `bind()` would do
+     if a controller called it — the difference is where it is written. In the
+     markup the join sits beside the controls it joins, so what the page does
+     can be read off the page rather than found in a method.
+
+     Both paths are read from this file's scope: a name on its own is a
+     property of the controller, and a dotted one goes through what it holds.
+     An outlet is a property of the controller like any other, which is why
+     `slider.value` works and why the two spellings below mean the same thing:
+
+         <Bind source="slider.value" target="volume"/>       to the controller
+         <Bind source="slider.value" target="meter.value"/>  to a control
+
+     Nothing here is wired up in JavaScript except the last section, which is
+     the same thing said in code — for the two things markup cannot say. -->
+
+<interface>
+    <div styleName="page">
+        <header styleName="bar">
+            <h1 styleName="title">{title}</h1>
+            <span styleName="spacer" />
+
+            <label styleName="label" for="theme-combo">Theme</label>
+            <ComboBox controlId="theme-combo" action="themeChanged">
+                <Option text="Aristo" value="aristo"/>
+                <Option text="Aristo Dark" value="aristo_dark"/>
+                <Option text="Pop" value="pop"/>
+            </ComboBox>
+        </header>
+
+        <section styleName="section">
+            <h2 styleName="heading">One control to another</h2>
+            <p styleName="note">
+                The field follows the slider. One way: the slider pushes and the
+                field receives, so typing in the field changes nothing. The field
+                is brought into agreement the moment the join is made, rather than
+                waiting for the first change.
+            </p>
+
+            <div styleName="row">
+                <Slider outlet="slider" minValue="0" maxValue="100" value="40" name="Level"/>
+                <TextField outlet="slidereading" readOnly="true"/>
+            </div>
+
+            <Bind source="slider.value" target="slidereading.value"/>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Both ways — <code>twoway</code></h2>
+            <p styleName="note">
+                Two joins facing each other. Drag the slider or press the spin
+                buttons; whichever moves, the other follows, and neither is the
+                owner of the number. The source is the one that wins to begin with,
+                so both start out holding what the slider holds.
+            </p>
+
+            <div styleName="row">
+                <Slider outlet="volumeSlider" minValue="0" maxValue="11" value="7" name="Volume"/>
+                <SpinButton outlet="volumeSpin" minValue="0" maxValue="11"/>
+            </div>
+
+            <Bind source="volumeSlider.value" target="volumeSpin.value" twoway="true"/>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">A control to the page's own state</h2>
+            <p styleName="note">
+                The target is a plain property of the controller — no outlet, no
+                dot. Assigning it is what a curly-brace binding in the markup
+                watches for, so the two readings below follow the field without
+                hearing about it from anything: one is the property, the other is a
+                getter that is worked out again whenever this page redraws.
+            </p>
+
+            <div styleName="row">
+                <TextField outlet="nameField" placeholder="Type a name"/>
+            </div>
+
+            <p styleName="reading">name = <strong>{name}</strong> · {greeting}</p>
+
+            <Bind source="nameField.value" target="name"/>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">The page's state to a control</h2>
+            <p styleName="note">
+                The same tag the other way about. The buttons assign
+                <code>this.brightness</code> and nothing else — the bar and the
+                number follow because they were joined to it here. A control is not
+                written to by hand anywhere in this file.
+            </p>
+
+            <div styleName="row">
+                <Button text="Dimmer" action="dimmer"/>
+                <Button text="Brighter" action="brighter"/>
+                <ProgressBar outlet="brightnessBar" minValue="0" maxValue="100"/>
+                <span styleName="reading">{brightness}%</span>
+            </div>
+
+            <Bind source="brightness" target="brightnessBar.value"/>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">A bound prop, which is not a Bind</h2>
+            <p styleName="note">
+                <!-- The spelling of a bound prop, held on the controller: written
+                     here it would be read as one, which is the very thing this
+                     paragraph is trying to point at. -->
+                <code>{propExample}</code> is a prop worked out again every time
+                this page redraws — the value flows one way, from the page into the
+                tag, and the control is never read. A Bind is the other thing: a
+                join between two live properties, either of which may be the one
+                that changes. The checkbox below is joined two ways to
+                <code>ready</code>, so pressing the button that sets it ticks the
+                box.
+            </p>
+
+            <div styleName="row">
+                <CheckBox outlet="readyBox" text="Ready"/>
+                <Button text="Send" enabled="{ready}" action="send"/>
+                <Button text="Toggle from code" action="toggleReady"/>
+            </div>
+
+            <Bind source="readyBox.value" target="ready" twoway="true"/>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Reaching into a composed view</h2>
+            <p styleName="note">
+                MixerPanel.ib.xml joins its own knob to its own meter, inside that
+                file. It keeps a scope of its own, so this page cannot name what is
+                inside it — what it names is the outlet it gave the tag, and goes
+                through that. Each file joins up what it placed, and nothing
+                reaches across.
+            </p>
+
+            <div styleName="row">
+                <MixerPanel outlet="mixer" title="Mixer"/>
+                <div styleName="stack">
+                    <span styleName="reading">the page sees: <strong>{mixerLevel}</strong></span>
+                    <!-- The same value the panel's own knob starts at: this
+                         slider is the source of the join below, and a source wins
+                         the moment a binding is made. Starting it anywhere else
+                         would knock the panel to that number on load. -->
+                    <Slider outlet="remote" minValue="0" maxValue="100" value="35"
+                            name="From the page"/>
+                </div>
+            </div>
+
+            <!-- Into the composed view, and back out of it. The second is what
+                 makes the page's own slider move the panel's knob. -->
+            <Bind source="mixer.knob.value" target="mixerLevel"/>
+            <Bind source="remote.value" target="mixer.knob.value"/>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">In code — what markup cannot say</h2>
+            <p styleName="note">
+                A Bind carries no transform, because an expression in an
+                attribute is a language growing inside the markup. When the value
+                has to change on the way across, the join is written where such
+                things belong: <code>AppController.attached()</code>, with
+                <code>bind()</code> and <code>bindTwoWay()</code> — the same calls the
+                tag comes to.
+            </p>
+
+            <div styleName="row">
+                <Slider outlet="celsiusSlider" minValue="-20" maxValue="40" value="20" name="Celsius"/>
+                <SpinButton outlet="fahrenheitSpin" minValue="-4" maxValue="104"/>
+                <span styleName="reading">{spelt}</span>
+            </div>
+
+            <p styleName="note">{codeNote}</p>
+        </section>
+
+        <p styleName="status">{note}</p>
+    </div>
+
+    <style>
+        :global(body) {
+            margin: 0;
+            font-family: var(--font-family);
+            color: var(--text-color);
+            background: var(--view-background);
+        }
+
+        .page {
+            max-width: 52rem;
+            margin: 0 auto;
+            padding-bottom: 2rem;
+        }
+
+        .bar {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--default-border-color);
+            background: var(--light-view-background);
+        }
+
+        .title {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .label {
+            font-size: 0.85rem;
+            color: var(--secondary-foreground);
+        }
+
+        .section {
+            padding: 0 1rem;
+        }
+
+        .heading {
+            margin: 1.2rem 0 0.4rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--secondary-foreground);
+        }
+
+        .heading code {
+            font-family: ui-monospace, monospace;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .note {
+            margin: 0 0 0.8rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            max-width: 44rem;
+        }
+
+        .note code {
+            font-family: ui-monospace, monospace;
+            font-size: 0.82em;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 15rem;
+        }
+
+        .reading {
+            font-size: 0.9rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .status {
+            position: sticky;
+            bottom: 0;
+            margin: 1rem 0 0;
+            padding: 0.5rem 1rem;
+            border-top: 1px solid var(--default-border-color);
+            background: var(--light-view-background);
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+            color: var(--secondary-foreground);
+        }
+    </style>
+</interface>

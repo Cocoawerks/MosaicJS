@@ -2,7 +2,7 @@
  * The dialog's own controller.
  *
  * What it has to say to the views composed inside it goes through their
- * outlets. `this.reading` is Reading.mib's controller — an outlet on a view
+ * outlets. `this.reading` is Reading.ib.xml's controller — an outlet on a view
  * that has one hands that over rather than the element it drew — so the dialog
  * can change what it was given after the fact.
  */

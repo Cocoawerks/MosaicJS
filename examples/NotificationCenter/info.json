@@ -1,0 +1,15 @@
+{
+  "app_name": "NotificationCenter",
+  "version": "0.1.0",
+  "author": "Christopher Bruno",
+  "frameworks": [
+    "ui"
+  ],
+  "theme": "aristo",
+  "themes": [
+    "aristo",
+    "aristo_dark",
+    "pop"
+  ],
+  "main_file": "src/main.js"
+}

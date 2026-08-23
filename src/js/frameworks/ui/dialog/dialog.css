@@ -8,7 +8,7 @@
  *   - the close button, whose element Button draws and which therefore carries
  *     Button's scope, not this one's (the same arrangement the snackbar's X has);
  *   - whatever a caller puts in `main` and `footer`, which is drawn by that
- *     caller's own `.mib` and carries its scope.
+ *     caller's own `.ib.xml` and carries its scope.
  *
  * The shared page mask is appended to the body by DialogMask rather than drawn,
  * so it is `:global` for a third reason: nothing scopes it at all.

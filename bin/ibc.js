@@ -7,7 +7,7 @@
 
 import { compileAll } from "../src/js/core/compiler/build.js";
 
-const USAGE = `usage: ibc --outdir dir <input.mib|input.js|input.jsx|dir>...
+const USAGE = `usage: ibc --outdir dir <input.ib.xml|input.js|input.jsx|dir>...
            [--outdir dir2 <more inputs>...]
            [-o out.js] [--runtime src/js/core/runtime/mosaic.js]
            [--name Component] [--no-sourcemap] [--quiet]

@@ -81,9 +81,9 @@ export function render(vnode, controller = {}, ns = null) {
     // against and can only throw the node away and build another — which
     // destroys an icon mid-press, and with it the click that press was going
     // to become.
-    // A compiled `.mib` placed as a tag is a component: it draws against a
+    // A compiled `.ib.xml` placed as a tag is a component: it draws against a
     // scope of its own, and the tag's attributes are that scope's starting
-    // state. `Foo.mib` paired with a `FooController.js` beside it draws
+    // state. `Foo.ib.xml` paired with a `FooController.js` beside it draws
     // against a fresh instance of that controller; one written on its own
     // draws against a plain object. Either way its `{bindings}`, outlets and
     // actions are its own and not those of whatever drew it. Kept on the
@@ -92,7 +92,7 @@ export function render(vnode, controller = {}, ns = null) {
     const drawnWith = { ...props, children };
     const applied = own !== controller ? applyProps(own, props) : null;
     // `styleName` on the tag is a class the drawing wears, here as it is on a
-    // component class — a compiled `.mib` placed as a tag is one of these.
+    // component class — a compiled `.ib.xml` placed as a tag is one of these.
     const produced = withStyleName(type.call(own, drawnWith), props);
     const dom = render(produced, own, ns);
     if (dom?.nodeType === Node.ELEMENT_NODE) {
@@ -104,7 +104,7 @@ export function render(vnode, controller = {}, ns = null) {
       dom?.nodeType === Node.DOCUMENT_FRAGMENT_NODE
     ) {
       // A view with more than one root has no single node to stand for it, so
-      // each of them carries the scope. Without this a multi-root `.mib` was
+      // each of them carries the scope. Without this a multi-root `.ib.xml` was
       // the one shape whose scope nothing could be found from.
       for (const node of dom.childNodes) node.__ibCtl = own;
     }
@@ -133,11 +133,11 @@ export function render(vnode, controller = {}, ns = null) {
     // the element it drew: what the page above has to say to it is `show(button)`
     // or `value = 12` — the view's own words — and the element is the view's
     // business. A view written without a controller hands over its scope just
-    // the same, so `this.card.value = 12` reaches a `{value}` in a `.mib` that
+    // the same, so `this.card.value = 12` reaches a `{value}` in a `.ib.xml` that
     // has no class of any kind written for it.
     //
     // The element is still reachable, by the way every view reaches its own:
-    // an `outlet` on the root element inside the `.mib`.
+    // an `outlet` on the root element inside the `.ib.xml`.
     //
     // A function component written by hand has no scope of its own — `own` is
     // the controller that drew it — and hands over its element, as it always

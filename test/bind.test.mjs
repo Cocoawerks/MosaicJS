@@ -6,9 +6,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-const { mount, h, Component, bind, bindBoth, canPush } =
+const { mount, h, Component, bind, bindTwoWay, canPush, refresh } =
   await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
-const { Button, CheckBox, TextField } =
+const { Button, CheckBox, Color, ColorWell, ListView, Slider, SplitView, TextField } =
   await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /** Mount a control, as a page would. */
@@ -88,7 +88,7 @@ test("bound both ways, either one moves the other", () => {
   const a = { value: "start" };
   const b = { value: "" };
 
-  bindBoth(a, "value", b);
+  bindTwoWay(a, "value", b);
   assert.equal(
     b.value,
     "start",
@@ -109,7 +109,7 @@ test("and settles rather than ringing", () => {
   const a = control(TextField, { value: "one" });
   const b = control(TextField, { value: "two" });
 
-  bindBoth(a, "value", b);
+  bindTwoWay(a, "value", b);
   assert.equal(b.value, "one");
 
   b.value = "typed";
@@ -121,7 +121,7 @@ test("both ways with a transform each way", () => {
   const celsius = { value: 100 };
   const fahrenheit = { value: 0 };
 
-  bindBoth(celsius, "value", fahrenheit, "value", {
+  bindTwoWay(celsius, "value", fahrenheit, "value", {
     to: (c) => c * 1.8 + 32,
     from: (f) => (f - 32) / 1.8,
   });
@@ -135,7 +135,7 @@ test("undoing a mutual binding undoes both directions", () => {
   const a = { value: 1 };
   const b = { value: 0 };
 
-  const undo = bindBoth(a, "value", b);
+  const undo = bindTwoWay(a, "value", b);
   undo();
 
   a.value = 5;
@@ -228,7 +228,7 @@ test("paths go as deep as they are written", () => {
 test("both ways works by path too", () => {
   const controller = { slider: { value: 40 }, spin: { value: 0 } };
 
-  bindBoth(controller, "slider.value", controller, "spin.value");
+  bindTwoWay(controller, "slider.value", controller, "spin.value");
   assert.equal(controller.spin.value, 40);
 
   controller.spin.value = 15;
@@ -278,14 +278,14 @@ test("canPush reads a path too", () => {
 // --- the <Bind> tag ----------------------------------------------------------
 //
 // A Bind reads its paths from the page's controller, which it finds by walking
-// up from where it stands: a compiled `.mib` tags the element it drew with the
+// up from where it stands: a compiled `.ib.xml` tags the element it drew with the
 // scope it drew against. Mounted here the same way, with a host that carries
 // one.
 
 const { Bind } =
   await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
-/** A page's element, tagged with its controller as a compiled `.mib` is. */
+/** A page's element, tagged with its controller as a compiled `.ib.xml` is. */
 function page(controller) {
   const el = document.createElement("div");
   el.__ibCtl = controller;
@@ -500,11 +500,11 @@ test("a control changing its own value tells what is bound to it", () => {
 
 // --- scope ---------------------------------------------------------------
 //
-// A path is read against the scope of the `.mib` the tag is written in, and
-// that scope alone. A `.mib` and its controller are one namespace — outlets are
+// A path is read against the scope of the `.ib.xml` the tag is written in, and
+// that scope alone. A `.ib.xml` and its controller are one namespace — outlets are
 // assigned onto the controller — so a path reaches the page's own state and the
 // controls it placed by the same names. It reaches nothing else: a composed
-// `.mib` keeps a scope of its own, and is named through the outlet it was
+// `.ib.xml` keeps a scope of its own, and is named through the outlet it was
 // placed under.
 
 test("a path is read against the scope the tag is written in", () => {
@@ -566,4 +566,154 @@ test("a page names a composed view's control through the outlet it placed", () =
   assert.equal(page.chosen, "Red", "reached through the outlet");
   inner.combo.value = "Blue";
   assert.equal(page.chosen, "Blue", "and stays joined");
+});
+
+test("a Bind survives being drawn again", () => {
+  // A Bind draws nothing, and drawing nothing twice is not a change. The
+  // patcher used to take it for one: it put a fresh comment where the Bind's
+  // was and released the component along with the old node, which undid the
+  // binding. Nothing said so — the tag was still in the markup and the page
+  // had simply stopped following anything.
+  const controller = { slider: { value: 40 }, label: { value: "" } };
+  const el = page(controller);
+
+  const placed = placeBind(el, {
+    source: "slider.value",
+    target: "label.value",
+  });
+
+  const node = placed.view.node;
+  placed.view.needsDisplay();
+
+  assert.equal(placed.view.node, node, "the same comment stands for it");
+  assert.equal(placed.view.isAttached, true, "and it is still on the page");
+
+  controller.slider.value = 70;
+  assert.equal(controller.label.value, 70, "still joined");
+});
+
+test("and survives the redraw of the page it is written in", () => {
+  // The way that happens for real: a page with a bound prop redraws, hands
+  // every child its props again, and each Bind among them is asked to draw.
+  const controller = { field: { value: "one" }, tally: "", ready: false };
+
+  function Page() {
+    return h(
+      "div",
+      { class: "page" },
+      h("span", null, String(this.ready)),
+      h(Bind, { source: "field.value", target: "tally" }),
+    );
+  }
+  Page.controller = function () {
+    return controller;
+  };
+
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const view = mount(Page, host).view;
+
+  assert.equal(controller.tally, "one", "joined to begin with");
+
+  view.needsDisplay();
+  controller.field.value = "two";
+  assert.equal(controller.tally, "two", "and still joined afterwards");
+
+  // And again: the second redraw must not undo it either.
+  view.needsDisplay();
+  controller.field.value = "three";
+  assert.equal(controller.tally, "three");
+});
+
+// --- a value that lives somewhere other than the property ---------------------
+
+test("a slider dragged by its knob tells what is bound to it", () => {
+  // A Slider's `value` is a getter over the knob that holds it, so a drag
+  // never assigns the property — it moves the knob and asks the slider to
+  // redraw. Nothing was assigned, so nothing watching the property heard
+  // anything, and a binding onto a slider followed it only when the value was
+  // set from code. Dragging it — the one thing a slider is for — did nothing.
+  const slider = control(Slider, { minValue: 0, maxValue: 100, value: 40 });
+  const controller = { level: 0 };
+
+  bind(slider, "value", controller, "level");
+  assert.equal(controller.level, 40, "seeded from the slider");
+
+  // What a drag does, and what an arrow key does: the knob moves and reports.
+  slider.handles[0].setValue(70, true);
+  assert.equal(slider.value, 70);
+  assert.equal(controller.level, 70, "and the binding followed");
+
+  // And a move that is not the user's — a drag with `continuous` off reports
+  // only at rest — still counts as the value having changed.
+  slider.handles[0].setValue(15, false);
+  assert.equal(controller.level, 15);
+});
+
+test("and so does one moved through its own setValue", () => {
+  const slider = control(Slider, { minValue: 0, maxValue: 100, value: 10 });
+  const target = { value: 0 };
+
+  bind(slider, "value", target);
+  slider.setValue(80, true);
+  assert.equal(target.value, 80);
+});
+
+// The same shape as the slider, in the other controls that keep what they are
+// worth somewhere other than the property a page binds. Each of these follows
+// the value being changed the way the user changes it, not the way code does —
+// assigning the property has always worked, because that is the assignment
+// observation wraps.
+
+test("a colour well tells what is bound to it when a colour is picked", () => {
+  const well = control(ColorWell, {});
+  const controller = { chosen: null };
+
+  bind(well, "color", controller, "chosen");
+
+  // What picking one comes to: the well is told, and reports it.
+  well.setColor(Color.fromHex("#ff0000"), true);
+  assert.equal(controller.chosen.toString(), well.color.toString());
+  assert.equal(String(controller.chosen).includes("255"), true);
+});
+
+test("a list tells what is bound to its content and its count", () => {
+  const list = control(ListView, {});
+  const controller = { rows: null, howMany: -1, waiting: null };
+
+  bind(list, "content", controller, "rows");
+  bind(list, "count", controller, "howMany");
+  bind(list, "isLoading", controller, "waiting");
+  assert.equal(controller.howMany, 0, "seeded empty");
+
+  list.content = ["a", "b"];
+  assert.deepEqual(controller.rows, ["a", "b"]);
+  assert.equal(controller.howMany, 2);
+
+  list.add("c");
+  assert.equal(controller.howMany, 3, "and after a row is added");
+
+  list.remove("a");
+  assert.equal(controller.howMany, 2, "and after one is taken away");
+
+  list.setLoading(true);
+  assert.equal(controller.waiting, true);
+});
+
+test("a split view tells what is bound to its pane length", () => {
+  const split = control(SplitView, { staticPaneLength: 200 });
+  const controller = { width: 0 };
+
+  bind(split, "paneLength", controller, "width");
+  assert.equal(controller.width, 200, "seeded from the markup");
+
+  // What a drag comes to, frame by frame.
+  split.setStaticPaneLength(320);
+  assert.equal(controller.width, 320);
+
+  split.collapse();
+  assert.equal(controller.width, 0, "shut away is worth nothing");
+
+  split.expand();
+  assert.equal(controller.width, 320, "and as long as it was on the way back");
 });

@@ -92,6 +92,10 @@ const ENTRY = "main.js";
 const SRC = "src";
 /** Where frameworks land inside the vendored runtime package, and their subpath. */
 const FRAMEWORKS = "frameworks";
+/** What `install` is told to install, when it is not the dependencies. */
+const FRAMEWORK_SUBJECT = "framework";
+const THEME_SUBJECT = "theme";
+const SUBJECTS = [FRAMEWORK_SUBJECT, THEME_SUBJECT];
 /** Where a framework keeps its themes, one stylesheet each. */
 const THEMES = "themes";
 /** The module a framework's themes are written into, beside its index. */
@@ -123,7 +127,12 @@ const DEFAULTS = {
   // `{name, input}` — a source tree compiled into the vendored package under
   // `frameworks/<name>/`, where the subpath export points at the index the
   // build generates for it.
-  frameworks: [{ name: "ui", input: path.join(HOME, "src/js/frameworks/ui") }],
+  //
+  // None by default: an application says which frameworks it is built against
+  // and nothing is assumed for it. A `<Button/>` in markup resolves because
+  // `ui` is listed, and an application that lists nothing cannot reach it —
+  // there is no ambient set of components in scope.
+  frameworks: [],
   // Which of a framework's `themes/` its components are built against — the
   // stylesheet of custom properties they read. One name for the whole build:
   // the theme is the application's, not a component's.
@@ -167,6 +176,10 @@ const USAGE = `usage: mosaic <command> [dir] [options]
 commands:
   init <name>        create a new application in ./<name>
   install            install what "dependencies" in ${CONFIG} names
+  install framework <name>
+                     copy a framework into ./${FRAMEWORKS} and name it in ${CONFIG}
+  install theme <name>
+                     copy a theme's stylesheet into ./${THEMES}
   compile            compile the application and bundle it
   server [dev|prod]  compile, then serve it, rebuilding on every edit
   desktop [dev|prod] compile, then run it as a native desktop app
@@ -246,7 +259,9 @@ function loadConfig(from) {
   for (const { dir, data } of chain) {
     for (const [key, value] of Object.entries(data)) {
       if (PATH_KEYS.includes(key)) config[key] = path.resolve(dir, value);
-      else if (key === "libraries" || key === "frameworks") {
+      else if (key === "frameworks") {
+        config[key] = value.map((entry) => resolveFramework(entry, dir));
+      } else if (key === "libraries") {
         config[key] = value.map((entry) => ({
           ...entry,
           input: path.resolve(dir, entry.input),
@@ -255,6 +270,48 @@ function loadConfig(from) {
     }
   }
   return config;
+}
+
+/**
+ * A framework named in `info.json`, found on disk.
+ *
+ * `"frameworks": ["ui"]` names one by name, and it is looked for in two
+ * places, nearest first:
+ *
+ *   <dir>/frameworks/ui              the project's own, beside its info.json
+ *   <mosaic>/src/js/frameworks/ui    the ones mosaic ships
+ *
+ * A project's own wins, so a framework can be forked into a repository and
+ * built against without anything else changing. Either way it is compiled into
+ * the build as `mosaic/frameworks/<name>`, which is what markup naming
+ * `<Button/>` resolves through.
+ *
+ * `{name, input}` says where instead of asking for it to be found — for a
+ * tree that sits somewhere neither rule reaches.
+ *
+ * Being listed is what makes a framework reachable. Nothing is in scope by
+ * default, so a `<Button/>` in an application that names no framework is an
+ * error at compile time rather than a component quietly arriving from
+ * somewhere the application never mentioned.
+ */
+function resolveFramework(entry, dir) {
+  if (typeof entry === "object" && entry !== null) {
+    return { ...entry, input: path.resolve(dir, entry.input) };
+  }
+
+  const name = String(entry);
+  const places = [
+    path.resolve(dir, FRAMEWORKS, name),
+    path.join(HOME, "src/js", FRAMEWORKS, name),
+  ];
+  const input = places.find((p) => fs.existsSync(p));
+  if (!input) {
+    throw new Error(
+      `${CONFIG}: no framework named "${name}" — looked in ` +
+        places.join(" and "),
+    );
+  }
+  return { name, input };
 }
 
 /** The files `init` writes. `name` is the application's name. */
@@ -270,13 +327,18 @@ function scaffold(name) {
           app_name: name,
           version: "0.1.0",
           author: "",
+          // What this application is built against. A framework is reachable
+          // because it is named here: `<Button/>` in the markup resolves to
+          // `mosaic/frameworks/ui` because "ui" is on this list, and an
+          // application that names none has no components in scope.
+          frameworks: ["ui"],
           main_file: `${SRC}/${ENTRY}`,
         },
         null,
         2,
       ) + "\n",
 
-    [`${SRC}/main.mib`]: `<!-- ${name} — the page.
+    [`${SRC}/main.ib.xml`]: `<!-- ${name} — the page.
 
      The markup itself has no logic and no JavaScript: everything dynamic is a
      binding to the controller, which is AppController.js beside this file.
@@ -294,14 +356,19 @@ function scaffold(name) {
      file — and naming it in the markup is all it takes: the compiler emits the
      import. There is one place a component is written, and one way to find it.
 
-     One <style> block, anywhere in the file — it is hoisted out of the markup
-     and scoped to this file, so its selectors only ever match this page. Use
-     :global(...) to opt one out. Convention is to put it last.
+     One <style> block, anywhere inside <interface> — it is hoisted out of the
+     markup and scoped to this file, so its selectors only ever match this
+     page. Use :global(...) to opt one out. Convention is to put it last.
 
-     Nothing renders until there is markup here. -->
+     Everything the file draws goes inside <interface>, which is the file
+     itself rather than anything it draws. One root, so the file is XML an
+     editor can check. Nothing renders until there is markup in it. -->
+
+<interface>
+</interface>
 `,
 
-    [`${SRC}/AppController.js`]: `// The controller behind main.mib: the page's state, the values its {bindings}
+    [`${SRC}/AppController.js`]: `// The controller behind main.ib.xml: the page's state, the values its {bindings}
 // read, and the methods its actions fire.
 //
 // A controller is a plain object — it extends nothing and the runtime asks
@@ -315,7 +382,7 @@ export default class AppController {
 
     [`${SRC}/${ENTRY}`]: `// ${name} — the application bootstrap, and the entry mosaic bundles.
 //
-// \`main.mib\` is this module's page: it sits beside this file, so the compiler
+// \`main.ib.xml\` is this module's page: it sits beside this file, so the compiler
 // compiles it and registers it as the application's page — there is nothing to
 // import and nothing to name. The runtime is vendored into the build as a
 // package, so it is imported by name.
@@ -503,6 +570,13 @@ function parseArgs(argv) {
       process.exit(0);
     } else if (a.startsWith("-")) throw new Error(`unknown option \`${a}\``);
     else if (!args.command) args.command = a;
+    // `install framework <name>`, `install theme <name>` — what is being
+    // installed, then which one. Said as two words because `install` on its
+    // own already means something else, and a bare name would have to guess
+    // which.
+    else if (args.command === "install" && SUBJECTS.includes(a) && !args.subject)
+      args.subject = a;
+    else if (args.subject && !args.name) args.name = a;
     // `dev` and `prod` say how a run is meant rather than where it is. A
     // directory of either name is still reachable as `./dev`.
     else if (MODES.includes(a) && !args.mode) args.mode = a;
@@ -520,6 +594,8 @@ function parseArgs(argv) {
   }
   if (args.command === "init" && !args.entry)
     throw new Error("`init` needs a name");
+  if (args.subject && !args.name)
+    throw new Error(`\`install ${args.subject}\` needs a name`);
 
   // Only the two commands that run an application have anything to say about
   // how. Silently accepting `mosaic compile prod` would be promising something.
@@ -813,18 +889,37 @@ function frameworkSources(config, app) {
     input: framework.input,
     outdir: path.join(root, framework.name),
     specifier: `${config.runtimeSpecifier}/${FRAMEWORKS}/${framework.name}`,
-    themes: path.join(framework.input, THEMES),
+    // Where a theme for this framework may be found, nearest first: the
+    // application's own `themes/`, then the ones the framework ships. A
+    // project can add a theme without touching the framework, and a theme it
+    // keeps under its own name wins over one of that name inside — the same
+    // rule a framework itself follows.
+    themes: [path.join(app.source, THEMES), path.join(framework.input, THEMES)],
   }));
 }
 
-/** The themes a framework offers: every stylesheet in its `themes/`. */
+/** The themes a framework offers: every stylesheet in the places it looks. */
 function themeNames(framework) {
-  if (!fs.existsSync(framework.themes)) return [];
-  return fs
-    .readdirSync(framework.themes)
-    .filter((file) => path.extname(file) === ".css")
-    .map((file) => path.basename(file, ".css"))
-    .sort();
+  const names = new Set();
+  for (const dir of framework.themes) {
+    if (!fs.existsSync(dir)) continue;
+    for (const file of fs.readdirSync(dir)) {
+      if (path.extname(file) === ".css") names.add(path.basename(file, ".css"));
+    }
+  }
+  return [...names].sort();
+}
+
+/**
+ * The stylesheet a theme name resolves to. Nearest first, so the application's
+ * own copy is what a build wears when both have one.
+ */
+function themeFile(framework, name) {
+  for (const dir of framework.themes) {
+    const file = path.join(dir, `${name}.css`);
+    if (fs.existsSync(file)) return file;
+  }
+  return null;
 }
 
 /**
@@ -884,12 +979,9 @@ function writeFrameworkTheme(config, framework, options = {}) {
   // component had an opinion about.
   const sheets = bundled.map((name) => [
     name,
-    scopeCss(
-      fs.readFileSync(path.join(framework.themes, `${name}.css`), "utf8"),
-      "",
-      ":root",
-      { minify: options.minify },
-    ).trimEnd(),
+    scopeCss(fs.readFileSync(themeFile(framework, name), "utf8"), "", ":root", {
+      minify: options.minify,
+    }).trimEnd(),
   ]);
 
   const module = path.join(framework.outdir, THEME_MODULE);
@@ -1204,15 +1296,14 @@ async function compileInto(config, app, args) {
     // A stylesheet rides into the bundle as a string, where the bundler's own
     // minifier cannot see its comments. The compiler drops them instead.
     minify: args.minify,
-    onFile: args.quiet
-      ? undefined
-      : (src, dest) => log(`    ${src} -> ${settled(dest)}`),
   });
-  log(`    ${written.length} modules`);
 
   // Each framework's index is written from what actually compiled into it, so
   // adding a component to the tree is all it takes to export one.
   const themes = [];
+  // What the run is summarised with at the end: one line per framework, so the
+  // reader sees what was built without reading it happen.
+  const frameworkStats = [];
   for (const framework of frameworks) {
     const modules = written.filter((dest) =>
       path.resolve(dest).startsWith(path.resolve(framework.outdir) + path.sep),
@@ -1220,15 +1311,15 @@ async function compileInto(config, app, args) {
     const theme = writeFrameworkTheme(config, framework, {
       minify: args.minify,
     });
-    const index = writeFrameworkIndex(framework, modules, theme);
+    writeFrameworkIndex(framework, modules, theme);
     const themed = theme
       ? `, ${theme.name} theme` +
         (theme.bundled.length > 1
           ? ` (+${theme.bundled.length - 1} to switch to)`
           : "")
       : "";
-    log(
-      `    ${framework.specifier} -> ${settled(index)}  (${modules.length} modules${themed})`,
+    frameworkStats.push(
+      `    ${framework.specifier}  ${modules.length} modules${themed}`,
     );
     if (theme && usesFramework(framework, written, modules)) {
       themes.push(`${framework.specifier}/${THEME_MODULE}`);
@@ -1246,7 +1337,7 @@ async function compileInto(config, app, args) {
     target: "browser",
     // What is served is the bundle, so this is the one place minifying
     // belongs: the compiled modules stay readable, and a source map still
-    // leads back to the `.mib` a name came from.
+    // leads back to the `.ib.xml` a name came from.
     minify: args.minify,
     throw: false,
   });
@@ -1271,14 +1362,21 @@ async function compileInto(config, app, args) {
   await writeBundle(result.outputs, app);
 
   const bytes = fs.statSync(app.outfile).size;
-  log(
-    `    ${settled(app.outfile)}  ${(bytes / 1024).toFixed(1)} KB${args.minify ? ", minified" : ""}`,
-  );
 
+  let removed = 0;
   if (!(args.keepModules || args.command === "check")) {
-    const removed = pruneModules(app);
-    if (removed > 0) log(`    ${removed} intermediate modules removed`);
+    removed = pruneModules(app);
   }
+
+  // The whole run in one place: what compiled, what it bundled to, and what was
+  // cleaned up after. The files themselves are not worth naming one by one.
+  log("==> compiled");
+  log(`    ${written.length} modules from ${relative(app.sourceRoot)}`);
+  for (const line of frameworkStats) log(line);
+  log(
+    `    ${relative(app.outfile)}  ${(bytes / 1024).toFixed(1)} KB${args.minify ? ", minified" : ""}`,
+  );
+  if (removed > 0) log(`    ${removed} intermediate modules removed`);
 }
 
 /**
@@ -1353,7 +1451,7 @@ const CONTENT_TYPES = {
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".map": "application/json; charset=utf-8",
-  ".mib": "text/plain; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
   ".svg": "image/svg+xml",
 };
 
@@ -1667,6 +1765,152 @@ async function install(config, app, args) {
 }
 
 /**
+ * Copy a framework into the application's own `frameworks/` and name it in
+ * `info.json`.
+ *
+ * Two halves, and both are needed: the tree has to be here, and the
+ * application has to say it is built against it — a framework sitting in the
+ * directory that nothing names is not in scope, which is the whole point of
+ * naming them.
+ *
+ * Copied rather than referenced, so what an application builds against is in
+ * the repository with it: it can be read, patched, and committed, and a build
+ * does not depend on which mosaic happens to be installed. `resolveFramework`
+ * looks here first for exactly this reason.
+ */
+function installFramework(dir, name, args) {
+  const builtIn = path.join(HOME, "src/js", FRAMEWORKS);
+  const source = path.join(builtIn, name);
+  if (!fs.existsSync(source)) {
+    const available = fs.existsSync(builtIn)
+      ? fs
+          .readdirSync(builtIn, { withFileTypes: true })
+          .filter((e) => e.isDirectory())
+          .map((e) => e.name)
+      : [];
+    throw new Error(
+      `mosaic ships no framework named "${name}"` +
+        (available.length > 0 ? ` — it has ${available.join(", ")}` : ""),
+    );
+  }
+
+  const dest = path.join(dir, FRAMEWORKS, name);
+  if (fs.existsSync(dest)) {
+    throw new Error(
+      `${path.relative(dir, dest)} is already here — remove it to install ` +
+        `"${name}" again`,
+    );
+  }
+
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.cpSync(source, dest, { recursive: true });
+
+  const named = nameFramework(path.join(dir, CONFIG), name);
+
+  const log = args.quiet ? null : (...a) => console.log(...a);
+  log?.(`==> installed ${name}`);
+  log?.(`    ${path.relative(dir, dest) || "."}`);
+  log?.(
+    named
+      ? `    ${CONFIG}: "${FRAMEWORKS}" now names ${name}`
+      : `    ${CONFIG}: already named ${name}`,
+  );
+  return 0;
+}
+
+/**
+ * Add `name` to the `frameworks` list in the config at `file`, if it is not
+ * already there. Rewritten rather than regenerated, so every other key keeps
+ * its place and its formatting.
+ *
+ * @returns {boolean} whether anything was added.
+ */
+function nameFramework(file, name) {
+  const data = JSON.parse(fs.readFileSync(file, "utf8"));
+  const listed = Array.isArray(data[FRAMEWORKS]) ? data[FRAMEWORKS] : [];
+  const already = listed.some((entry) =>
+    typeof entry === "string" ? entry === name : entry?.name === name,
+  );
+  if (already) return false;
+
+  data[FRAMEWORKS] = [...listed, name];
+  fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
+  return true;
+}
+
+/**
+ * Copy a theme's stylesheet into the application's own `themes/`.
+ *
+ * A theme is one stylesheet of custom properties, so installing one is one
+ * file — no module, no import, nothing generated. What makes it reachable is
+ * where it lands: a build looks in the application's `themes/` before the ones
+ * a framework ships, so a theme installed here is found by name and can stand
+ * in for a framework's own of the same name.
+ *
+ * Wearing it is still the application's to say. `theme` in the config names
+ * the one a page starts in and `themes` names any others the build carries, so
+ * this reports what to write rather than writing it: which theme an
+ * application wears is a decision, not a consequence of having fetched one.
+ */
+function installTheme(dir, name, args) {
+  const source = shippedTheme(name);
+  if (!source) {
+    const available = shippedThemeNames();
+    throw new Error(
+      `mosaic ships no theme named "${name}"` +
+        (available.length > 0 ? ` — it has ${available.join(", ")}` : ""),
+    );
+  }
+
+  const dest = path.join(dir, THEMES, `${name}.css`);
+  if (fs.existsSync(dest)) {
+    throw new Error(
+      `${path.relative(dir, dest)} is already here — remove it to install ` +
+        `"${name}" again`,
+    );
+  }
+
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(source, dest);
+
+  const log = args.quiet ? null : (...a) => console.log(...a);
+  log?.(`==> installed ${name}`);
+  log?.(`    ${path.relative(dir, dest)}`);
+  log?.(`    wear it with "${THEME_SUBJECT}": "${name}" in ${CONFIG}`);
+  return 0;
+}
+
+/** Every theme mosaic ships, across the frameworks it ships. */
+function shippedThemeDirs() {
+  const root = path.join(HOME, "src/js", FRAMEWORKS);
+  if (!fs.existsSync(root)) return [];
+  return fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => path.join(root, e.name, THEMES))
+    .filter((dir) => fs.existsSync(dir));
+}
+
+function shippedThemeNames() {
+  const names = new Set();
+  for (const dir of shippedThemeDirs()) {
+    for (const file of fs.readdirSync(dir)) {
+      if (path.extname(file) === ".css") names.add(path.basename(file, ".css"));
+    }
+  }
+  return [...names].sort();
+}
+
+/** Where a theme mosaic ships is read from, or null if it ships none. */
+function shippedTheme(name) {
+  for (const dir of shippedThemeDirs()) {
+    const file = path.join(dir, `${name}.css`);
+    if (fs.existsSync(file)) return file;
+  }
+  return null;
+}
+
+/**
  * Run the application as a native desktop app.
  *
  * The Electrobun project is generated into the build directory and thrown away
@@ -1780,12 +2024,15 @@ async function main(argv) {
   let args;
   let config;
   let app;
+  // The application's own directory — the one holding the `info.json` this run
+  // is about, which is what `install framework` writes to.
+  let source;
   try {
     args = parseArgs(argv);
     // `init` creates the application the other commands need, so it runs
     // before any of them is resolved.
     if (args.command === "init") return init(args.entry);
-    const source = resolveApp(args.entry);
+    source = resolveApp(args.entry);
     config = loadConfig(source);
     // Paths in the config are relative to the config that declared them, and
     // are absolute by now; the application's directory is where the rest of a
@@ -1815,6 +2062,12 @@ async function main(argv) {
   // compile, and telling it to compile first would be a circle.
   if (args.command === "install") {
     try {
+      if (args.subject === FRAMEWORK_SUBJECT) {
+        return installFramework(source, args.name, args);
+      }
+      if (args.subject === THEME_SUBJECT) {
+        return installTheme(source, args.name, args);
+      }
       return await install(config, app, args);
     } catch (e) {
       report(e);

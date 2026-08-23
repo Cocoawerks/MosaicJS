@@ -1,7 +1,7 @@
-// The scope a compiled `.mib` draws against when it is placed as a tag.
+// The scope a compiled `.ib.xml` draws against when it is placed as a tag.
 //
-// A `.mib` file is a component: `<Labelled label="Name"/>` in one file reaches
-// `Labelled.mib` beside it, and nothing has to be written as a class. What
+// A `.ib.xml` file is a component: `<Labelled label="Name"/>` in one file reaches
+// `Labelled.ib.xml` beside it, and nothing has to be written as a class. What
 // makes it a component rather than an include is this — it draws against a
 // scope of its own, and the tag's attributes are what that scope starts with.
 import { coerceProps } from "../coerce.js";
@@ -13,7 +13,7 @@ import { coerceProps } from "../coerce.js";
 const PLUMBING = new Set(["children", "ref", "key"]);
 
 /**
- * The object a composed `.mib` draws against — what its `{bindings}` read and
+ * The object a composed `.ib.xml` draws against — what its `{bindings}` read and
  * what its actions are called on.
  *
  * A file paired with a `FooController.js` beside it draws against a fresh

@@ -25,7 +25,7 @@ export const BUN_DIR = "bun";
  * A compile replaces that directory whole, and this is the one thing in it a
  * compile did not produce and must not discard: the dependencies installed
  * here are an application's, not a build's, and reinstalling them because a
- * `.mib` changed would make every rebuild a download.
+ * `.ib.xml` changed would make every rebuild a download.
  */
 export const DESKTOP_DIR = "desktop";
 /**

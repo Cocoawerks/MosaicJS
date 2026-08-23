@@ -11,12 +11,12 @@ import UndoBar from "./UndoBar.js";
 
 // A raster image, read at compile time and carried into the build as the data
 // URL that names it — nothing is fetched, and the bundle is still one file.
-// The `.mib` markup has no imports of its own, so the page reaches it the way
+// The `.ib.xml` markup has no imports of its own, so the page reaches it the way
 // it reaches anything else here: through this controller.
 import openImage from "./resources/open.png";
 
 /**
- * The controller behind `main.mib`: what the page binds to, and what drives
+ * The controller behind `main.ib.xml`: what the page binds to, and what drives
  * its controls.
  *
  * Two things connect it to the page, and they divide the work cleanly.

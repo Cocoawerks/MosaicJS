@@ -1,0 +1,169 @@
+<!-- NotificationCenter: panels that were never introduced.
+
+     Every view on this page is joined to the others by nothing but a string.
+     SensorPanel.ib.xml posts; Readout.ib.xml and LogPanel.ib.xml hear. No tag below
+     hands one of them to another, no controller holds a reference to another
+     controller, and the only file they share is sensors.js — the model, which
+     is what does the posting.
+
+     Move a slider and watch what lights up. Then untick "Subscribed" in the
+     log and move it again: the posting end is unchanged and unaware. -->
+
+<interface>
+    <div styleName="page">
+        <header styleName="bar">
+            <h1 styleName="title">{title}</h1>
+            <span styleName="spacer"></span>
+
+            <label styleName="label" for="theme-combo">Theme</label>
+            <ComboBox controlId="theme-combo" action="themeChanged">
+                <Option text="Aristo" value="aristo"/>
+                <Option text="Aristo Dark" value="aristo_dark"/>
+                <Option text="Pop" value="pop"/>
+            </ComboBox>
+        </header>
+
+        <section styleName="section">
+            <h2 styleName="heading">Posting</h2>
+            <p styleName="note">
+                Two sensors, each with a panel that moves it. A panel calls
+                <code>sensor.read(…)</code>, the sensor posts, and that is the end
+                of what either of them does. Neither knows whether anything is
+                listening, and posting to nobody is not an error.
+            </p>
+
+            <div styleName="row">
+                <SensorPanel which="kitchen"/>
+                <SensorPanel which="garage"/>
+            </div>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Observing — addObserver(this, "method", name)</h2>
+            <p styleName="note">
+                Three readouts, one file. The first hears every sensor; the other
+                two are narrowed to a sender, which is the sensor object itself —
+                imported from the model, not handed over by anything on this page.
+                Each subscribes in <code>attached()</code> and drops both of its
+                subscriptions in <code>detached()</code> with one
+                <code>removeObserver(this)</code>.
+            </p>
+
+            <div styleName="row">
+                <Readout/>
+                <Readout watch="kitchen"/>
+                <Readout watch="garage"/>
+            </div>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Observing — observe(name, handler)</h2>
+            <p styleName="note">
+                The other spelling, which hands back the function that undoes it.
+                The checkbox calls that function.
+            </p>
+
+            <LogPanel/>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">The center itself</h2>
+            <p styleName="note">
+                A poster with expensive detail to gather can ask whether anything is
+                listening first. Posting from here rather than from a sensor shows
+                what a sender is for: with none, the narrowed readouts hear nothing
+                and the ones that watch everything do.
+            </p>
+
+            <div styleName="row">
+                <Button text="Who is listening?" action="whoIsListening"/>
+                <Button text="Post with no sender" action="postAnonymously"/>
+                <Button text="Post as the kitchen" action="postAsKitchen"/>
+            </div>
+        </section>
+
+        <p styleName="status">{note}</p>
+    </div>
+
+    <style>
+        :global(body) {
+            margin: 0;
+            font-family: var(--font-family);
+            color: var(--text-color);
+            background: var(--view-background);
+        }
+
+        .page {
+            max-width: 52rem;
+            margin: 0 auto;
+            padding-bottom: 2rem;
+        }
+
+        .bar {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--default-border-color);
+            background: var(--light-view-background);
+        }
+
+        .title {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .label {
+            font-size: 0.85rem;
+            color: var(--secondary-foreground);
+        }
+
+        .section {
+            padding: 0 1rem;
+        }
+
+        .heading {
+            margin: 1.2rem 0 0.4rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--secondary-foreground);
+        }
+
+        .note {
+            margin: 0 0 0.8rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            max-width: 44rem;
+        }
+
+        .note code {
+            font-family: ui-monospace, monospace;
+            font-size: 0.82em;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: stretch;
+            margin-bottom: 0.8rem;
+        }
+
+        .status {
+            position: sticky;
+            bottom: 0;
+            margin: 1rem 0 0;
+            padding: 0.5rem 1rem;
+            border-top: 1px solid var(--default-border-color);
+            background: var(--light-view-background);
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+            color: var(--secondary-foreground);
+        }
+    </style>
+</interface>

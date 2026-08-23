@@ -1,6 +1,6 @@
 // Counter_main — the application bootstrap, and the entry mosaic bundles.
 //
-// `main.mib` is this module's page: it sits beside this file, so the compiler
+// `main.ib.xml` is this module's page: it sits beside this file, so the compiler
 // compiles it and puts `Main` in scope here. Nothing imports it by hand.
 import { MosaicApplication } from "mosaic";
 

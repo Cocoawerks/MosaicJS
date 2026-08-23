@@ -1,6 +1,8 @@
 // Hand-written parser for the component syntax.
 //
-// A file is markup, optionally containing one top-level `<style>` block.
+// A file is one `<interface>` root holding markup, optionally with a `<style>`
+// block beside that markup inside it. One root is what makes the file an XML
+// document rather than a fragment, which is what an editor checks it as.
 //
 // The only template syntax is `{path}`, which binds to a property on the
 // controller (`{count}` reads `this.count`). There is no expression language in
@@ -8,7 +10,7 @@
 // with `outlet="name"` and `action="event:method"`, and carried out by a
 // controller, which is a module of its own.
 //
-// A `.mib` file holds no JavaScript at all — a `<script>` block is an error,
+// A `.ib.xml` file holds no JavaScript at all — a `<script>` block is an error,
 // not a place to put code. What a page needs is imported by the module beside
 // it, so there is one place a component is declared and one way to find it.
 //
@@ -28,7 +30,9 @@ import {
   DEFAULT_EVENT,
   isIdent,
   isPath,
+  MARKUP_EXT,
   OUTLET_ATTR,
+  ROOT_TAG,
   STYLE_NAME_ATTR,
 } from "./js.js";
 
@@ -54,9 +58,42 @@ export class ParseError extends Error {}
 export function parse(src) {
   const p = new Parser(src);
   const comp = { style: "", markup: [] };
-  comp.markup = trimEdges(p.parseNodes(null, comp));
+  comp.markup = unwrapRoot(trimEdges(p.parseNodes(null, comp)));
   checkNames(comp.markup);
   return comp;
+}
+
+/**
+ * Take the file's content out of its `<interface>` root.
+ *
+ * The root is the file's own tag rather than anything it draws, so it is taken
+ * off here and never reaches codegen — what comes back is what the root held,
+ * which is a list because a file may hold several elements side by side.
+ *
+ * A file that says nothing is left alone: a `<style>` block on its own is
+ * hoisted before this runs, and so is a file of nothing but comments — the one
+ * `mosaic init` writes, which has no markup in it yet.
+ */
+function unwrapRoot(nodes) {
+  const content = nodes.filter(
+    (node) => node.kind !== "text" || node.text.trim() !== "",
+  );
+  if (content.length === 0) return [];
+
+  const [first] = content;
+  if (first.kind !== "element" || first.name !== ROOT_TAG) {
+    throw new ParseError(
+      `an ${MARKUP_EXT} file is one <${ROOT_TAG}> and its content — ` +
+        `wrap what is here in <${ROOT_TAG}>…</${ROOT_TAG}>`,
+    );
+  }
+  if (content.length > 1) {
+    throw new ParseError(
+      `only comments may sit beside <${ROOT_TAG}> — everything the file draws ` +
+        `belongs inside it`,
+    );
+  }
+  return first.children;
 }
 
 /**
@@ -170,7 +207,7 @@ class Parser {
         flush();
         if (this.startsWithTag("script")) {
           throw this.err(
-            "a .mib file holds markup, not JavaScript — move the <script> into a " +
+            "an .ib.xml file holds markup, not JavaScript — move the <script> into a " +
               "module beside it (a controller is its default export, a component " +
               "is its own file) and the markup will find it",
           );

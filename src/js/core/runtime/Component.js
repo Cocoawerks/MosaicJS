@@ -63,7 +63,7 @@ export class Component {
    * The class this kind of component draws its root with — its primary style
    * name, `v-Button` for a Button.
    *
-   * What it is for is stylesheets. A `.mib` may write the component's own
+   * What it is for is stylesheets. A `.ib.xml` may write the component's own
    * name where a class would go —
    *
    *     .mydialog ComboBox { width: 160px; }
@@ -158,6 +158,28 @@ export class Component {
   }
 
   /**
+   * Say that one of this component's properties is now worth something else,
+   * for a property the component does not keep as a setting.
+   *
+   * `set()` is the ordinary way, and it tells whatever is watching as part of
+   * storing the value. Some components keep a value somewhere else entirely: a
+   * Slider's `value` is a getter over the knob that holds it, so dragging the
+   * knob never assigns the property at all. Nothing was there to observe, and a
+   * binding onto that value heard nothing while the user dragged — which is the
+   * one moment it was there for.
+   *
+   * Only the telling: no setting is written and nothing is redrawn, because
+   * whatever moved the value has already done both.
+   *
+   *   handleMoved() { …; this.changed("value"); }
+   *
+   * @param {string} name The property that is now worth something else.
+   */
+  changed(name) {
+    notify(this, name);
+  }
+
+  /**
    * A value as a strict boolean, for the few settings that have to be one
    * before they are stored — a value compared against the current one, or
    * one kept in a field of the component's own rather than in a setting.
@@ -211,7 +233,7 @@ export class Component {
 
   /**
    * Subclasses may implement `draw(props)` and return a tree — JSX compiled to
-   * `h()` calls — instead of writing a `.mib` file:
+   * `h()` calls — instead of writing a `.ib.xml` file:
    *
    *   class Counter extends Component {
    *     draw() {
@@ -219,7 +241,7 @@ export class Component {
    *     }
    *   }
    *
-   * `draw` is optional: a view backed by a `.mib` component leaves it undefined.
+   * `draw` is optional: a view backed by a `.ib.xml` component leaves it undefined.
    */
 
   /**
@@ -252,7 +274,7 @@ export class Component {
 
   /**
    * Update the DOM to match current state. A drawn view re-runs `draw()` and
-   * replaces its nodes; a `.mib`-backed view re-reads its `{path}` bindings.
+   * replaces its nodes; a `.ib.xml`-backed view re-reads its `{path}` bindings.
    * Either way it applies immediately.
    *
    * Rarely needed: a property a `{path}` binds to, or that `draw()` reads, is

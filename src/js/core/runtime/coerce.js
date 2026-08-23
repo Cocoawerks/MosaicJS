@@ -1,6 +1,6 @@
 // Props as the values they name.
 //
-// A `.mib` file states props as text: `enabled="false"` is the string
+// A `.ib.xml` file states props as text: `enabled="false"` is the string
 // "false", which is truthy, so a component reading it would see a disabled
 // control as enabled. Rather than have every boolean getter defend itself, a
 // component's props are read once on the way in and `"true"` and `"false"`

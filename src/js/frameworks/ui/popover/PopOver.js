@@ -9,9 +9,9 @@
 // `draw()` and its measuring is the component's own.
 //
 // Whatever it should hold is its children, so a popover of an application's own
-// is a `.mib` file whose root is this component:
+// is a `.ib.xml` file whose root is this component:
 //
-//   <!-- ColourPopOver.mib -->
+//   <!-- ColourPopOver.ib.xml -->
 //   <PopOver orientation="bottom_center">
 //       <h3>Pick a colour</h3>
 //       <Button text="Red" action="pick"/>

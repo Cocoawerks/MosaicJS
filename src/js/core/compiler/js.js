@@ -1,13 +1,59 @@
 // Emitting JavaScript source text: quoting, object keys, and the line markers
 // that carry source positions through codegen into the source map.
+import * as path from "node:path";
 
 /**
  * The markup extension: a Mosaic Interface Builder file.
  *
- * It compiles to `<name>.mib.js` — the whole name plus `.js` — which is what
- * leaves `<name>.js` free to be the module beside it.
+ * Two parts rather than one, so an editor that knows nothing of Mosaic still
+ * highlights the file as the XML it is, and so the `.ib` in the middle stays
+ * to say whose XML it is. `path.extname` sees only `.xml`, which is why the
+ * two helpers below exist and why nothing compares extensions by hand.
+ *
+ * It compiles to `<name>.ib.js` — the `.xml` goes, since what comes out is a
+ * module and not markup, and the `.ib` stays to leave `<name>.js` free for the
+ * module beside it.
  */
-export const MARKUP_EXT = ".mib";
+export const MARKUP_EXT = ".ib.xml";
+
+/** What a compiled markup file is called, in place of MARKUP_EXT. */
+export const MARKUP_OUT_EXT = ".ib";
+
+/** Whether `file` is markup, by its whole name rather than its extension. */
+export function isMarkup(file) {
+  return file.endsWith(MARKUP_EXT);
+}
+
+/**
+ * The name a file is known by, with any extension taken off: `main.ib.xml`
+ * and `main.js` are both `main`, which is what pairs the two.
+ *
+ * `path.basename(file, path.extname(file))` is what this replaces — it takes
+ * one extension off, which for `main.ib.xml` leaves `main.ib`.
+ */
+export function stemOf(file) {
+  const base = path.basename(file);
+  return isMarkup(base)
+    ? base.slice(0, -MARKUP_EXT.length)
+    : path.basename(base, path.extname(base));
+}
+
+/**
+ * The tag every markup file is wrapped in.
+ *
+ * One root and nothing beside it is what makes the file an XML document rather
+ * than a fragment: the view and the `<style>` block are two elements, and two
+ * roots is what no XML parser accepts — an editor reports it before any
+ * inspection runs, so there is no comment that can wave it through.
+ *
+ * Lowercase, so it cannot be mistaken for a component: a capitalised tag is
+ * another module, and this one is the file itself. It draws nothing — its
+ * children are the file's content, and the tag is gone before codegen sees
+ * anything.
+ *
+ * Comments may sit outside it, as XML allows before and after a root.
+ */
+export const ROOT_TAG = "interface";
 
 /** The built-in view element. */
 export const VIEW_TAG = "View";
@@ -24,7 +70,7 @@ export const ACTION_ATTR = "action";
  * file's scope — the controller the markup draws against — so the compiler
  * hands it that scope where it stands. Written out, the tag becomes
  * `h(Bind, { source: …, target: …, scope: this })`, and `this` in a compiled
- * `.mib` is exactly the file's own controller.
+ * `.ib.xml` is exactly the file's own controller.
  *
  * Said at compile time rather than worked out at run time because it is a
  * lexical fact: the scope a path belongs to is the file the path was written

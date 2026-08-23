@@ -1,4 +1,4 @@
-/* The counter's own styles, scoped to Counter.js the way a .mib file's
+/* The counter's own styles, scoped to Counter.js the way an .ib.xml file's
    <style> block is scoped to its markup. */
 .counter {
   display: flex;

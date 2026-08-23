@@ -1,0 +1,71 @@
+<!-- An observer in the other spelling: `observe()`, which hands back the
+     function that undoes it.
+
+     The checkbox is that function. Unticking it calls the undo and the log
+     stops filling — the sensors go on posting exactly as before, and cannot
+     tell the difference. That is the thing worth watching in this example:
+     an observer coming and going changes nothing at the posting end. -->
+
+<interface>
+    <div styleName="log">
+        <header styleName="head">
+            <strong styleName="title">Log</strong>
+            <CheckBox text="Subscribed" value="true" outlet="toggle" action="toggleSubscription"/>
+            <span styleName="spacer"></span>
+            <Button text="Clear" action="clear"/>
+        </header>
+
+        <p styleName="first">First reading of the session, heard with once(): {firstSeen}</p>
+
+        <pre styleName="lines">{lines}</pre>
+    </div>
+
+    <style>
+        .log {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.8rem 0.9rem;
+            border: 1px solid var(--default-border-color);
+            border-radius: 6px;
+            background: var(--light-view-background);
+        }
+
+        .head {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--secondary-foreground);
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .first {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--secondary-foreground);
+        }
+
+        .lines {
+            margin: 0;
+            height: 11rem;
+            overflow: auto;
+            padding: 0.5rem 0.6rem;
+            border: 1px solid var(--default-border-color);
+            border-radius: 4px;
+            background: var(--view-background);
+            font-family: ui-monospace, monospace;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+    </style>
+</interface>

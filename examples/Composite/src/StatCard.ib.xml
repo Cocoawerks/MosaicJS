@@ -1,0 +1,54 @@
+<!-- A view of the application's own, and the whole of what one takes: this
+     file. There is no class extending Component and no controller beside it —
+     the file name is the tag, and what the tag says is what the view holds.
+
+     `{label}`, `{value}` and `{note}` are the attributes it was given, assigned
+     onto its scope before it draws. They read like any other state: assign one
+     through this view's outlet and it follows. -->
+
+<interface>
+    <div styleName="card">
+        <span styleName="label">{label}</span>
+        <strong styleName="value">{value}</strong>
+        <span styleName="note">{note}</span>
+    </div>
+
+    <style>
+        .card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            padding: 0.7rem 0.9rem;
+            /* Cards share the row they are in rather than each holding a width of
+               its own: a fixed minimum left a ragged gap at the end of the row and
+               made two cards look like a wide one beside a narrow one. `flex: 1`
+               gives them a basis of nothing and an equal share of what there is,
+               so a row of two and a row of three both come out even.
+
+               In the popover, where they sit in a column, there is no spare height
+               to share and this does nothing — which is what it should do. */
+            flex: 1;
+            border: 1px solid var(--default-border-color);
+            border-radius: 6px;
+            background: var(--light-view-background);
+        }
+
+        .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--secondary-foreground, var(--text-color));
+        }
+
+        .value {
+            font-size: 1.5rem;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+
+        .note {
+            font-size: 0.8rem;
+            color: var(--secondary-foreground, var(--text-color));
+        }
+    </style>
+</interface>

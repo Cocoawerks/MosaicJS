@@ -4,7 +4,7 @@
 // typically inside a `Component` subclass's `draw()` method. Only the JSX is
 // rewritten, into `h()` calls; every other byte is copied through untouched.
 //
-// Unlike `.mib` markup, JSX here sits inside real JavaScript, so `{...}` holds
+// Unlike `.ib.xml` markup, JSX here sits inside real JavaScript, so `{...}` holds
 // an arbitrary expression rather than a property path. `styleName`,
 // `outlet` and `action` mean the same thing in both.
 
@@ -30,7 +30,7 @@ export class JsxError extends Error {}
 /**
  * Transform JSX to `h()` calls. `scope` is the component's scope class — its
  * hash — carried by every DOM element so the module's scoped CSS matches it,
- * the same contract as `.mib` markup.
+ * the same contract as `.ib.xml` markup.
  */
 export function transform(src, scope = null) {
   return new Jsx(src, scope).program();
@@ -488,7 +488,7 @@ function attrKey(name, isComponent) {
 /**
  * Replace side-effect CSS imports with a runtime `addStyles` call, so
  * `import "./counter.css";` works in a browser with no bundler. The stylesheet
- * is inlined and scoped to this module at compile time, exactly as a `.mib`
+ * is inlined and scoped to this module at compile time, exactly as a `.ib.xml`
  * file's `<style>` block is; `:global(...)` opts out.
  *
  * @returns `[code, foundAny]`

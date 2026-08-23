@@ -86,6 +86,9 @@ export default class ColorChooserPanel extends Component {
 
     this.needsDisplay();
     this.paint();
+    // As in ColorWell: the colour lives in a field, so `color` is never
+    // assigned and a binding onto it would never hear the user pick one.
+    this.changed("color");
     if (fireEvents) {
       // `action="…"` is what a page names in markup; `onColor` is what a
       // component that built this panel itself passes instead, since an

@@ -1,7 +1,7 @@
 // The counter, as a component of its own.
 //
 // It owns its state — the page that hosts it binds nothing of the counter's —
-// so `<Counter limit="3"/>` is the whole of what main.mib says about it. A
+// so `<Counter limit="3"/>` is the whole of what main.ib.xml says about it. A
 // drawn component states its markup in `draw()`; assigning to a property it
 // read redraws it, which is why nothing here calls needsDisplay().
 import { Component } from "mosaic";

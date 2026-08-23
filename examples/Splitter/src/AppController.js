@@ -1,5 +1,5 @@
 /**
- * The controller behind `main.mib`.
+ * The controller behind `main.ib.xml`.
  *
  * Two SplitViews are driven from here through their outlets: the bar's buttons
  * say what to do to them, and each view reports back the length its divider was

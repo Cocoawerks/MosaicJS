@@ -3,7 +3,7 @@
 import { setTheme } from "mosaic/frameworks/ui";
 
 /**
- * The controller behind `main.mib`: the calculator itself.
+ * The controller behind `main.ib.xml`: the calculator itself.
  *
  * The page is Buttons and two bound lines. What connects them is what connects
  * any Mosaic page: `{bindings}` are the text it shows — assigning to one of

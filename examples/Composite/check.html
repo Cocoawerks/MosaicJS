@@ -4,7 +4,7 @@
      It loads the bundle exactly as index.html does — nothing here imports a
      module — and then drives the page the way a person would.
 
-     What it is about: one `.mib` file composed into a view, a dialog and a
+     What it is about: one `.ib.xml` file composed into a view, a dialog and a
      popover, with no class written for it, and the tag's attributes reaching it
      as its state. -->
 
@@ -92,7 +92,7 @@
 
       const pageCards = cardsIn(app);
       check(
-        `StatCard.mib drew three times in the page (${pageCards.length})`,
+        `StatCard.ib.xml drew three times in the page (${pageCards.length})`,
         pageCards.length === 3,
       );
       check(
@@ -113,9 +113,9 @@
       );
 
       // --- read and written through its outlet ----------------------------------
-      // StatCard.mib has no class and no controller. An outlet on its tag hands
+      // StatCard.ib.xml has no class and no controller. An outlet on its tag hands
       // over its scope all the same, so the page can read what it holds and
-      // assign to it — which is what makes a `.mib` on its own enough.
+      // assign to it — which is what makes a `.ib.xml` on its own enough.
 
       const queueCard = () => cardsIn(app)[2];
       check(
@@ -155,7 +155,7 @@
 
       const pageReadings = readingsIn(app);
       check(
-        "Reading.mib drew twice, each worked out from its own attribute",
+        "Reading.ib.xml drew twice, each worked out from its own attribute",
         pageReadings.length === 2 &&
           pageReadings[0].place === "Reykjavík" &&
           pageReadings[0].temp === "4.5 °C" &&
@@ -176,7 +176,7 @@
       await settle();
       check("and one view's state is its own", readingsIn(app)[0].temp === "4.5 °C");
 
-      // A bound prop on a component. The Button inside Reading.mib is not that
+      // A bound prop on a component. The Button inside Reading.ib.xml is not that
       // view's markup, so `text="{unitLabel}"` cannot be kept up to date the
       // way `{shown}` beside it is — the view draws itself again instead, and
       // the prop is worked out afresh. Nothing was written to the button.
@@ -226,7 +226,7 @@
       // --- composed into a dialog ----------------------------------------------
 
       const dialog = () => app.querySelector("dialog.v-Dialog");
-      check("the dialog drew from its own .mib", dialog() !== null);
+      check("the dialog drew from its own .ib.xml", dialog() !== null);
       check("and starts closed", !dialog().hasAttribute("open"));
 
       labelled(app, "Show the summary…").click();
@@ -235,7 +235,7 @@
 
       const dialogCards = cardsIn(dialog());
       check(
-        `the same StatCard.mib drew inside the dialog (${dialogCards.length})`,
+        `the same StatCard.ib.xml drew inside the dialog (${dialogCards.length})`,
         dialogCards.length === 3 && dialogCards[0].label === "Sessions",
       );
       check(
@@ -244,7 +244,7 @@
           dialogCards[2].note === "rolling 30 days",
       );
       check(
-        "and Reading.mib too, with a scope of its own",
+        "and Reading.ib.xml too, with a scope of its own",
         readingsIn(dialog())[0].temp === "4.5 °C",
       );
 
@@ -314,7 +314,7 @@
       const popVisible = () =>
         getComputedStyle(popover()).visibility === "visible";
 
-      check("the popover drew from its own .mib", popover() !== null);
+      check("the popover drew from its own .ib.xml", popover() !== null);
       check("and starts away", !popVisible());
 
       const detailButton = labelled(app, "Detail…");

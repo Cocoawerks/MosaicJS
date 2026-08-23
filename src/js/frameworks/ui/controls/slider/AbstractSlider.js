@@ -212,7 +212,25 @@ export default class AbstractSlider extends Control {
     handle.updatePosition();
     this.updateRangeLayer();
     this.updateAria();
+    // What the slider is worth lives in the knob, so none of the above
+    // assigned a property of this component and nothing watching one has heard
+    // anything. Said here rather than in `setValue`, because this is the one
+    // place every move comes through: a drag, an arrow key, the value being
+    // assigned from outside.
+    //
+    // Not conditional on `fireEvents`. That says whether the move counts as
+    // the user's and so whether the action fires; a binding is not an action,
+    // and a value that changed has changed however it came about.
+    for (const name of this.valueNames()) this.changed(name);
     if (fireEvents) this.fireAction(this.value);
+  }
+
+  /**
+   * The properties of this slider that a moved knob is worth telling about.
+   * A subclass holding its value under more than one name says so here.
+   */
+  valueNames() {
+    return ["value"];
   }
 
   /** Say what the knobs are worth, for a screen reader. */

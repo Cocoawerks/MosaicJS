@@ -1,0 +1,60 @@
+<!-- A poster. It moves a sensor and knows nothing about what reacts.
+
+     There is no outlet on this tag anywhere in the page, and this view holds
+     no reference to any other: `SensorPanelController` imports the sensor from
+     sensors.js, and the sensor posts. Everything that lights up when the
+     slider moves is joined to it through the notification's name alone.
+
+     Two of these are placed, `which="kitchen"` and `which="garage"`, and the
+     attribute is the whole of the difference between them. -->
+
+<interface>
+    <div styleName="panel">
+        <header styleName="head">
+            <strong styleName="place">{place}</strong>
+            <span styleName="reading">{reading}</span>
+        </header>
+
+        <Slider minValue="0" maxValue="40" step="1" value="18"
+                name="{place} temperature" action="moved"/>
+
+        <p styleName="code">notifications.post("ReadingTaken", sensor, {info})</p>
+    </div>
+
+    <style>
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 15rem;
+            padding: 0.8rem 0.9rem;
+            border: 1px solid var(--default-border-color);
+            border-radius: 6px;
+            background: var(--light-view-background);
+        }
+
+        .head {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .place {
+            font-size: 1rem;
+        }
+
+        .reading {
+            margin-left: auto;
+            font-size: 1.2rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .code {
+            margin: 0;
+            font-family: ui-monospace, monospace;
+            font-size: 0.72rem;
+            color: var(--secondary-foreground);
+        }
+    </style>
+</interface>

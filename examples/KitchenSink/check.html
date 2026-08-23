@@ -924,7 +924,7 @@
       );
 
       // --- PopOver ------------------------------------------------------------
-      // A popover of the application's own: ColourPopOver.mib with
+      // A popover of the application's own: ColourPopOver.ib.xml with
       // ColourPopOverController.js beside it, which the compiler pairs with it.
       const popBox = section("PopOver");
       const popover = app.querySelector(".v-PopOver");
@@ -936,7 +936,7 @@
           (b) => b.textContent.trim() === text,
         );
 
-      check("the popover drew, from the page's own .mib", popover !== null);
+      check("the popover drew, from the page's own .ib.xml", popover !== null);
       // In the middle of the page, so there is room on any side of it, with its
       // controls centred for the same reason.
       const sections = [...app.querySelectorAll("section")];
@@ -1163,7 +1163,7 @@
       chooseWhere("bottom_center");
 
       // --- DialogBox ----------------------------------------------------------
-      // A dialog of the application's own: SettingsDialog.mib with
+      // A dialog of the application's own: SettingsDialog.ib.xml with
       // SettingsDialogController.js beside it, which the compiler pairs with it.
       const dlgBox = section("DialogBox");
       const dlgButton = dlgBox.querySelector(".v-Button");
@@ -1193,7 +1193,7 @@
       const inert = () =>
         until(() => getComputedStyle(dialog).pointerEvents === "none");
 
-      check("the dialog drew, from the page's own .mib", dialog !== null);
+      check("the dialog drew, from the page's own .ib.xml", dialog !== null);
       check("it starts closed", !dlgOpen());
       check(
         "with its own markup's title in the header",
@@ -2771,7 +2771,7 @@
       // The slide is 220ms and the panel says it is open at 260ms.
       const slid = () => new Promise((r) => setTimeout(r, 340));
 
-      check("the drawer drew, from the page's own .mib", drawer() !== null);
+      check("the drawer drew, from the page's own .ib.xml", drawer() !== null);
       check("and starts away", !drawerOut());
       check(
         "out of the tab order while it is",

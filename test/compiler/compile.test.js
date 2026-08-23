@@ -60,10 +60,10 @@ test("outdir mirrors the input tree", () => {
       outdir: "build/ui",
     }),
   ).toBe("build/ui/button/Button.js");
-  // An .mib gains an `.mib.js` suffix, so a page can sit beside a main.js of its own.
+  // An .ib.xml gains an `.ib.js` suffix, so a page can sit beside a main.js of its own.
   expect(
-    destination("examples/main.mib", { root: "examples", outdir: "build" }),
-  ).toBe("build/main.mib.js");
+    destination("examples/main.ib.xml", { root: "examples", outdir: "build" }),
+  ).toBe("build/main.ib.js");
 });
 
 test("vlq encodes like the spec", () => {
@@ -75,35 +75,35 @@ test("vlq encodes like the spec", () => {
 
 test("a module map carries its source and content", () => {
   const map = JSON.parse(
-    forModule("../examples/main.mib", "<p>hi</p>\n", [[3, 1]]),
+    forModule("../examples/main.ib.xml", "<interface><p>hi</p></interface>\n", [[3, 1]]),
   );
   expect(map.version).toBe(3);
-  expect(map.sources).toEqual(["../examples/main.mib"]);
-  expect(map.sourcesContent).toEqual(["<p>hi</p>\n"]);
+  expect(map.sources).toEqual(["../examples/main.ib.xml"]);
+  expect(map.sourcesContent).toEqual(["<interface><p>hi</p></interface>\n"]);
   expect(map.mappings).toBe(";;AAAA;");
 });
 
-test("compiling a mib file writes the module and its map", () => {
+test("compiling an .ib.xml file writes the module and its map", () => {
   const dir = tempDir();
   fs.writeFileSync(
-    path.join(dir, "main.mib"),
-    '<div styleName="a">{title}</div>\n',
+    path.join(dir, "main.ib.xml"),
+    '<interface><div styleName="a">{title}</div></interface>\n',
   );
   const outdir = path.join(dir, "build");
 
-  const dest = compileFile(path.join(dir, "main.mib"), {
+  const dest = compileFile(path.join(dir, "main.ib.xml"), {
     root: dir,
     outdir,
     runtime: "src/js/runtime/mosaic.js",
   });
 
-  expect(dest).toBe(path.join(outdir, "main.mib.js"));
+  expect(dest).toBe(path.join(outdir, "main.ib.js"));
   const code = fs.readFileSync(dest, "utf8");
   expect(code).toContain("export default function Main(props = {}) {");
   expect(code).toContain('bindText(this, "title")');
   // No markers survive into the output.
   expect(code).not.toContain("/*@L");
-  expect(code.trimEnd().endsWith("//# sourceMappingURL=main.mib.js.map")).toBe(
+  expect(code.trimEnd().endsWith("//# sourceMappingURL=main.ib.js.map")).toBe(
     true,
   );
 
@@ -132,16 +132,16 @@ test("compiling a js file rewrites its jsx and inlines its css", () => {
   const code = fs.readFileSync(dest, "utf8");
   expect(code).toMatch(/h\("div", \{ class: "card \w+" \}/);
   expect(code).toContain("addStyles(");
-  // The stylesheet is scoped to this module, as a .mib <style> block would be.
+  // The stylesheet is scoped to this module, as a .ib.xml <style> block would be.
   expect(code).toMatch(/\.card\.\w+/);
   // One runtime import, carrying both the source's names and the added ones.
   expect(code.match(/^import/gm)).toHaveLength(1);
   expect(code).toContain("h, Fragment, addStyles, Component");
 });
 
-test("a module beside an .mib of the same name gets its page in scope", () => {
+test("a module beside an .ib.xml of the same name gets its page in scope", () => {
   const dir = tempDir();
-  fs.writeFileSync(path.join(dir, "main.mib"), "<p>{title}</p>\n");
+  fs.writeFileSync(path.join(dir, "main.ib.xml"), "<interface><p>{title}</p></interface>\n");
   fs.writeFileSync(
     path.join(dir, "main.js"),
     'import { MosaicApplication } from "mosaic";\n' +
@@ -156,13 +156,13 @@ test("a module beside an .mib of the same name gets its page in scope", () => {
 
   // `Main` is bound without main.js having imported a file it never wrote.
   const code = fs.readFileSync(dest, "utf8");
-  expect(code.startsWith('import Main from "./main.mib.js";')).toBe(true);
-  expect(code.match(/main\.mib\.js/g)).toHaveLength(1);
+  expect(code.startsWith('import Main from "./main.ib.js";')).toBe(true);
+  expect(code.match(/main\.ib\.js/g)).toHaveLength(1);
 });
 
 test("the entry registers its page, so nothing has to name it", () => {
   const dir = tempDir();
-  fs.writeFileSync(path.join(dir, "main.mib"), "<p>hi</p>\n");
+  fs.writeFileSync(path.join(dir, "main.ib.xml"), "<interface><p>hi</p></interface>\n");
   fs.writeFileSync(
     path.join(dir, "main.js"),
     'import { MosaicApplication } from "mosaic";\nnew MosaicApplication({ id: "app" });\n',
@@ -186,7 +186,7 @@ test("only the entry registers a page", () => {
   // A component and its markup are just that — registering would claim to be
   // the application's page.
   const dir = tempDir();
-  fs.writeFileSync(path.join(dir, "Card.mib"), "<p>hi</p>\n");
+  fs.writeFileSync(path.join(dir, "Card.ib.xml"), "<interface><p>hi</p></interface>\n");
   fs.writeFileSync(path.join(dir, "Card.js"), "export const x = 1;\n");
 
   const dest = compileFile(path.join(dir, "Card.js"), {
@@ -196,17 +196,17 @@ test("only the entry registers a page", () => {
   });
   const code = fs.readFileSync(dest, "utf8");
 
-  expect(code).toContain('import Card from "./Card.mib.js";');
+  expect(code).toContain('import Card from "./Card.ib.js";');
   expect(code).not.toContain("registerPage");
   expect(code).not.toContain("MosaicApplication");
 });
 
 test("a module that imports its page itself is left alone", () => {
   const dir = tempDir();
-  fs.writeFileSync(path.join(dir, "main.mib"), "<p>hi</p>\n");
+  fs.writeFileSync(path.join(dir, "main.ib.xml"), "<interface><p>hi</p></interface>\n");
   fs.writeFileSync(
     path.join(dir, "main.js"),
-    'import Page from "./main.mib.js";\nPage();\n',
+    'import Page from "./main.ib.js";\nPage();\n',
   );
 
   const dest = compileFile(path.join(dir, "main.js"), {
@@ -217,11 +217,11 @@ test("a module that imports its page itself is left alone", () => {
 
   // Saying so explicitly is never wrong, and must not be duplicated.
   const code = fs.readFileSync(dest, "utf8");
-  expect(code.match(/main\.mib\.js/g)).toHaveLength(1);
-  expect(code).toContain('import Page from "./main.mib.js";');
+  expect(code.match(/main\.ib\.js/g)).toHaveLength(1);
+  expect(code).toContain('import Page from "./main.ib.js";');
 });
 
-test("a module with no .mib beside it is untouched", () => {
+test("a module with no .ib.xml beside it is untouched", () => {
   const dir = tempDir();
   fs.writeFileSync(
     path.join(dir, "AppController.js"),
@@ -233,17 +233,17 @@ test("a module with no .mib beside it is untouched", () => {
     outdir: path.join(dir, "build"),
     runtime: "mosaic",
   });
-  expect(fs.readFileSync(dest, "utf8")).not.toContain(".mib.js");
+  expect(fs.readFileSync(dest, "utf8")).not.toContain(".ib.js");
 });
 
 test("a parse error names the file and line", () => {
   const dir = tempDir();
   fs.writeFileSync(
-    path.join(dir, "bad.mib"),
-    "<div>\n<p>{count + 1}</p>\n</div>\n",
+    path.join(dir, "bad.ib.xml"),
+    "<interface><div>\n<p>{count + 1}</p>\n</div></interface>\n",
   );
   expect(() =>
-    compileFile(path.join(dir, "bad.mib"), {
+    compileFile(path.join(dir, "bad.ib.xml"), {
       root: dir,
       outdir: path.join(dir, "build"),
       runtime: "src/js/runtime/mosaic.js",
@@ -258,7 +258,12 @@ test("a parse error names the file and line", () => {
 // names that component's own module — not the framework's index, which names
 // every component there is and would carry them all along with it.
 
-/** An application of one page and one controller, compiled with a framework. */
+/**
+ * An application of one page and one controller, compiled with a framework.
+ *
+ * `markup` is what the page holds; the `<interface>` root every .ib.xml is
+ * wrapped in is added here, so each test states only the markup it is about.
+ */
 function application(markup, extra = {}) {
   const dir = tempDir();
   const app = path.join(dir, "app");
@@ -266,7 +271,7 @@ function application(markup, extra = {}) {
   fs.mkdirSync(app, { recursive: true });
   fs.mkdirSync(lib, { recursive: true });
 
-  fs.writeFileSync(path.join(app, "main.mib"), markup);
+  fs.writeFileSync(path.join(app, "main.ib.xml"), `<interface>${markup}</interface>`);
   const widget =
     'import {Component} from "mosaic";\nexport default class %s extends Component {}\n';
   fs.writeFileSync(path.join(lib, "Widget.js"), widget.replace("%s", "Widget"));
@@ -287,7 +292,7 @@ function application(markup, extra = {}) {
     ],
     { runtime: "mosaic", sourcemap: false },
   );
-  return fs.readFileSync(path.join(out, "app", "main.mib.js"), "utf8");
+  return fs.readFileSync(path.join(out, "app", "main.ib.js"), "utf8");
 }
 
 test("naming a framework component in markup imports it", () => {
@@ -323,7 +328,7 @@ test("a component of the application's own is imported by path", () => {
 
 // --- a page's own controller -------------------------------------------------
 //
-// `Foo.mib` is paired with the `FooController.js` written beside it: the page is
+// `Foo.ib.xml` is paired with the `FooController.js` written beside it: the page is
 // drawn against a controller of its own rather than against whatever drew it.
 
 test("a page is paired with the controller written beside it", () => {
@@ -351,6 +356,62 @@ test("the pairing goes by the page's name, not by any controller nearby", () => 
   expect(compiled).not.toContain("Controller");
 });
 
+// --- which frameworks are in scope -------------------------------------------
+//
+// A framework is reachable because `info.json` names it. Nothing is ambient:
+// an application that lists none cannot reach a component, which is what keeps
+// a build honest about where its components come from.
+
+/** Build an app whose page names `<Button/>`, with `frameworks` as given. */
+function withFrameworks(frameworks) {
+  const dir = tempDir();
+  fs.mkdirSync(path.join(dir, "src"));
+  const config = { app_name: "Scoped", version: "0.1.0", theme: "aristo", main_file: "src/main.js" };
+  if (frameworks !== undefined) config.frameworks = frameworks;
+  fs.writeFileSync(path.join(dir, "info.json"), JSON.stringify(config));
+  fs.writeFileSync(
+    path.join(dir, "src", "main.ib.xml"),
+    "<interface><Button text=\"hi\"/></interface>\n",
+  );
+  fs.writeFileSync(path.join(dir, "src", "main.js"), "// nothing\n");
+
+  const root = path.resolve(import.meta.dir, "../..");
+  return Bun.spawnSync([
+    "bun",
+    path.join(root, "bin", "mosaic.js"),
+    "compile",
+    dir,
+    "--quiet",
+  ]);
+}
+
+test("a framework the application names is reachable from markup", () => {
+  const built = withFrameworks(["ui"]);
+  expect(built.stderr.toString()).not.toContain("has no compiled module");
+  expect(built.exitCode).toBe(0);
+});
+
+test("one it does not name is not", () => {
+  const built = withFrameworks([]);
+  expect(built.stderr.toString()).toContain(
+    "<Button/> has no compiled module",
+  );
+});
+
+test("and saying nothing is saying none", () => {
+  const built = withFrameworks(undefined);
+  expect(built.stderr.toString()).toContain(
+    "<Button/> has no compiled module",
+  );
+});
+
+test("a name that is nowhere on disk says where it looked", () => {
+  const built = withFrameworks(["nope"]);
+  const err = built.stderr.toString();
+  expect(err).toContain('no framework named "nope"');
+  expect(err).toContain("frameworks/nope");
+});
+
 // --- the theme ---------------------------------------------------------------
 //
 // A theme belongs to the application, not to any component: nothing in the
@@ -370,6 +431,10 @@ function bundle(main) {
     JSON.stringify({
       app_name: "Themed",
       version: "0.1.0",
+      // Named, because nothing is in scope unless it is: these tests import
+      // from the ui framework, so the application has to say it is built
+      // against it.
+      frameworks: ["ui"],
       theme: "aristo",
       main_file: "src/main.js",
     }),
@@ -429,6 +494,7 @@ test("the theme is worn after the sheets it restyles, not before them", () => {
     JSON.stringify({
       app_name: "Ordered",
       version: "0.1.0",
+      frameworks: ["ui"],
       theme: "aristo",
       main_file: "src/main.js",
     }),

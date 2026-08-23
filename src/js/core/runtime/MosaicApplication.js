@@ -8,7 +8,7 @@ import { mount } from "./mount.js";
  *   new MosaicApplication({ id: "app" });          // ...into #app
  *   new MosaicApplication({ controller: new AppController() });
  *
- * The page is found for you. A `main.js` beside a `main.mib` is the application
+ * The page is found for you. A `main.js` beside a `main.ib.xml` is the application
  * entry, so the compiler registers the compiled page as `MosaicApplication.page`
  * — nothing has to name it. Pass `component` to mount something else.
  *
@@ -26,7 +26,7 @@ export class MosaicApplication {
    */
   static page = null;
 
-  /** Called by compiled code: `main.mib` is the page of the app it belongs to. */
+  /** Called by compiled code: `main.ib.xml` is the page of the app it belongs to. */
   static registerPage(component) {
     MosaicApplication.page = component;
   }
@@ -36,7 +36,7 @@ export class MosaicApplication {
 
     // Left unset rather than defaulted to an empty object: `mount` reads
     // "nothing was said" as "use the controller the page was compiled with",
-    // and an empty object is something said. A `main.mib` paired with a
+    // and an empty object is something said. A `main.ib.xml` paired with a
     // `MainController.js` beside it was therefore mounted against a bare
     // object at the application root, while the same page placed as a tag got
     // its controller — the pairing worked everywhere but the one place a page
@@ -63,7 +63,7 @@ export class MosaicApplication {
     if (typeof Component !== "function") {
       throw new Error(
         "MosaicApplication has no root component to mount. A `main.js` beside a " +
-          "`main.mib` registers one when it is compiled — otherwise pass { component }.",
+          "`main.ib.xml` registers one when it is compiled — otherwise pass { component }.",
       );
     }
 

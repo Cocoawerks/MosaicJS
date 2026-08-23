@@ -25,7 +25,7 @@ export function attachTree(node) {
     view.attached?.();
   }
 
-  // A compiled `.mib` draws against a scope of its own rather than a component
+  // A compiled `.ib.xml` draws against a scope of its own rather than a component
   // instance — its controller — and that is where a page's own code lives. It
   // is told the same thing at the same moment: outlets are assigned as the
   // markup draws, so `attached()` is the first point at which a controller can

@@ -190,7 +190,7 @@ test("entries can be replaced after mounting", () => {
 });
 
 test("markup says false with a string, and it means false", () => {
-  // A `.mib` file has only text to say it with: `enabled="false"`. A control
+  // A `.ib.xml` file has only text to say it with: `enabled="false"`. A control
   // that read it as truthy would be enabled by an attribute disabling it.
   const { select } = open({}, [
     h(Option, { text: "Red", value: "red" }),

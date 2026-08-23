@@ -1,5 +1,5 @@
 /**
- * The controller behind `main.mib`.
+ * The controller behind `main.ib.xml`.
  *
  * The page holds the state its composed views are given. Assigning to one of
  * these properties updates the tag's attribute, which reaches the view it was
@@ -23,7 +23,7 @@ export default class AppController {
   // --- saying something to a composed view -----------------------------------
 
   /**
-   * `this.queueCard` is StatCard.mib's own scope, handed over by the outlet on
+   * `this.queueCard` is StatCard.ib.xml's own scope, handed over by the outlet on
    * its tag. Nothing was written for that file — no class, no controller — and
    * the page can still read what it holds and assign to it. A `{value}` in the
    * markup watches the property it reads, so the card redraws.
@@ -42,7 +42,7 @@ export default class AppController {
   }
 
   /**
-   * `this.reykjavik` is Reading.mib's own controller, handed over by the outlet
+   * `this.reykjavik` is Reading.ib.xml's own controller, handed over by the outlet
    * on its tag. `celsius` is the attribute the markup gave it, and assigning it
    * again is that same thing happening a second time — a prop is ordinary
    * state, so the view redraws.

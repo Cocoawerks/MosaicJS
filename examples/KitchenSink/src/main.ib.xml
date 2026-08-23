@@ -1,0 +1,804 @@
+<!-- KitchenSink: one page showing every component in the ui framework.
+
+     The page is markup and the controller is AppController.js beside it. Each
+     control carries an `outlet`, which hands the controller the control
+     itself — so `this.rememberBox.enabled = false` is how the page is driven.
+     `action` names the method a control calls when the user works it.
+
+     Adding a component to the framework means adding a section here and the
+     handful of lines it needs in the controller. -->
+
+<interface>
+    <div styleName="page">
+        <h1 styleName="title">{title}</h1>
+        <p styleName="lede">
+            Every control below comes from mosaic/frameworks/ui, drawn with the theme named in
+            info.json. The button at the top disables all of them at once.
+        </p>
+
+        <div styleName="toolbar">
+            <Button text="Disable controls" intent="danger" action="toggleControls"
+                    outlet="toggleButton"/>
+            <span styleName="state">controls are {state}</span>
+
+            <span styleName="spacer"></span>
+
+            <label styleName="state" for="theme-combo">Theme</label>
+            <ComboBox popup="true" styleName="theme-combo"   controlId="theme-combo" action="themeChanged" outlet="themeCombo">
+                <Option text="Aristo" value="aristo"/>
+                <Option text="Aristo Dark" value="aristo_dark"/>
+                <Option text="Pop" value="pop"/>
+                <Option text="Pop Dark" value="pop_dark"/>
+            </ComboBox>
+        </div>
+
+        <section styleName="section">
+            <h2 styleName="heading">Button</h2>
+            <p styleName="note">One per intent, then the two kinds that hold a state of their own.</p>
+
+            <div styleName="row">
+                <Button text="default" intent="default" action="buttonClicked" outlet="defaultButton"/>
+                <Button text="primary" intent="primary" action="buttonClicked" outlet="primaryButton"/>
+                <Button text="danger" intent="danger" action="buttonClicked" outlet="dangerButton"/>
+                <Button text="success" intent="success" action="buttonClicked" outlet="successButton"/>
+                <Button text="warning" intent="warning" action="buttonClicked" outlet="warningButton"/>
+                <Button text="info" intent="info" action="buttonClicked" outlet="infoButton"/>
+                <Button text="inverse" intent="inverse" action="buttonClicked" outlet="inverseButton"/>
+            </div>
+
+            <div styleName="row">
+                <Button text="Toggle" toggle action="toggleClicked" outlet="toggleStateButton"/>
+                <Button text="With a tooltip" tooltip="Shown as the native title"
+                        action="buttonClicked" outlet="tooltipButton"/>
+            </div>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">MenuButton and Tooltip</h2>
+            <p styleName="note">
+                A button that latches while a menu of its own is showing. The arrows walk the
+                lines that can be chosen, passing over the rule and anything disabled; Enter
+                or a click settles it. The second button carries a tooltip, which waits for
+                the pointer to rest before it explains itself.
+            </p>
+
+            <div styleName="row">
+                <MenuButton text="Edit" outlet="editMenu" action="editChosen">
+                    <!-- An icon is a class name, which this page's sheet draws. -->
+                    <MenuItem text="Find" value="find" icon="ks-menu-icon ks-icon-search"/>
+                    <MenuItem text="Delete" value="delete" icon="ks-menu-icon ks-icon-trash"/>
+                    <MenuItemSeparator/>
+                    <MenuItem text="Paste" value="paste" enabled="false"/>
+
+                    <!-- A line that holds a menu of its own opens it to the side. -->
+                    <MenuItem text="Share with" value="share">
+                        <Menu>
+                            <MenuItem text="Someone" value="someone"
+                                      icon="ks-menu-icon ks-icon-user"/>
+                            <MenuItem text="Nobody" value="nobody"
+                                      icon="ks-menu-icon ks-icon-close"/>
+                        </Menu>
+                    </MenuItem>
+                </MenuButton>
+
+                <Button text="Hover me" outlet="hoverButton"/>
+            </div>
+
+            <p styleName="values">edit={edit}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">CheckBox</h2>
+            <p styleName="note">
+                Each one owns its value; the action carries the new one, which is what the line
+                below reads.
+            </p>
+
+            <div styleName="column">
+                <CheckBox text="Remember me" action="rememberChanged" outlet="rememberBox"/>
+                <CheckBox text="Send me the newsletter" action="newsletterChanged"
+                          outlet="newsletterBox"/>
+            </div>
+
+            <p styleName="values">remember={remember} newsletter={newsletter}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">TextField and SearchField</h2>
+            <p styleName="note">
+                A field reports twice over: every keystroke as a change, and Enter as the action —
+                the user saying they are done. Clearing a search says so too.
+            </p>
+
+            <div styleName="column">
+                <TextField placeholder="Your name" outlet="nameField"
+                           action="nameSubmitted change:nameChanged"/>
+                <SearchField outlet="searchField"
+                             action="searchSubmitted change:searchChanged cancel:searchCleared"/>
+            </div>
+
+            <p styleName="values">name={name} search={search}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">MaskedTextField</h2>
+            <p styleName="note">
+                A field that holds a shape. The mask states which places take a digit and which
+                are its own punctuation, and the user can only fill the former — the controller
+                is told the digits alone.
+            </p>
+
+            <div styleName="column">
+                <MaskedTextField mask="(999) 999-9999" outlet="phoneField"
+                                 action="phoneSubmitted change:phoneChanged"/>
+            </div>
+
+            <p styleName="values">phone={phone} digits={phoneDigits}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">LoadingButton and LoadingIndicator</h2>
+            <p styleName="note">
+                The button disables itself while its work runs, and shows a spinner only once the
+                work has gone on long enough to be worth mentioning.
+            </p>
+
+            <div styleName="row">
+                <LoadingButton text="Save" intent="primary" action="save" outlet="saveButton"/>
+            </div>
+
+            <LoadingIndicator message="Nothing is loading" size="small" outlet="indicator"/>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Switch</h2>
+            <p styleName="note">
+                The same control as a CheckBox, worn differently: a track whose knob slides.
+            </p>
+
+            <div styleName="column">
+                <Switch text="Wi-Fi" value="true" action="wifiChanged" outlet="wifiSwitch"/>
+                <Switch text="Aeroplane mode" action="aeroplaneChanged" outlet="aeroplaneSwitch"/>
+            </div>
+
+            <p styleName="values">wifi={wifi} aeroplane={aeroplane}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Slider and RangeSlider</h2>
+            <p styleName="note">
+                A knob on a track. The track can be pressed anywhere, the arrow keys move the knob
+                a step at a time, and a range slider's two knobs cannot cross — each is the other's
+                limit.
+            </p>
+
+            <div styleName="sliders">
+                <Slider minValue="0" maxValue="100" value="40" step="5"
+                        outlet="volumeSlider" action="volumeChanged"/>
+                <RangeSlider minValue="0" maxValue="100" start="20" end="80"
+                             outlet="priceSlider" action="priceChanged"/>
+            </div>
+
+            <p styleName="values">volume={volume} price={price}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">PopOver</h2>
+            <p styleName="note">
+                A panel that hangs off something on the page, with a callout pointing back
+                at it. This one is an application's own: ColourPopOver.ib.xml holds its markup
+                and ColourPopOverController.js beside it holds its behaviour. A press
+                outside it, or Escape, puts it away.
+            </p>
+
+            <div styleName="row centred">
+                <Button text="Pick a colour…" outlet="colourButton" action="showColours"/>
+
+                <!-- Which side it should try first. It is only the side it *asks*
+                     for: a popover with no room there sits on the opposite one. -->
+                <ComboBox popup outlet="orientationCombo" action="orientationChanged"
+                          value="bottom_center">
+                    <Option text="Bottom center" value="bottom_center"/>
+                    <Option text="Bottom left" value="bottom_left"/>
+                    <Option text="Bottom right" value="bottom_right"/>
+                    <Option text="Top center" value="top_center"/>
+                    <Option text="Top left" value="top_left"/>
+                    <Option text="Top right" value="top_right"/>
+                    <Option text="Right middle" value="right_middle"/>
+                    <Option text="Right top" value="right_top"/>
+                    <Option text="Right bottom" value="right_bottom"/>
+                    <Option text="Left middle" value="left_middle"/>
+                    <Option text="Left top" value="left_top"/>
+                    <Option text="Left bottom" value="left_bottom"/>
+                </ComboBox>
+            </div>
+
+            <ColourPopOver outlet="colours"/>
+
+            <p styleName="values">picked={picked} where={where}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">DialogBox</h2>
+            <p styleName="note">
+                A native dialog, modal: the page behind it is shut out until it is
+                answered. This one is an application's own — SettingsDialog.ib.xml holds its
+                markup and SettingsDialogController.js beside it holds its behaviour, the
+                same pairing the popover above has. Escape and the X both close it, and
+                both are asked first: type in the field and the dialog refuses once
+                before letting go. Enter presses Save, the way Return submits a form.
+            </p>
+
+            <div styleName="row centred">
+                <Button text="Settings…" outlet="settingsButton" action="showSettings"/>
+            </div>
+
+            <SettingsDialog outlet="settingsDialog"/>
+
+            <p styleName="values">saved={saved}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">SnackBar and Toast</h2>
+            <p styleName="note">
+                A bar that appears over the page to say something happened, and takes
+                itself away again. A Toast is the common case — one line of text, no
+                close button, gone in a few seconds. A SnackBar is the general one: it
+                holds whatever it is given, so it can carry a button and wait to be
+                answered. A bar never puts itself up; the page shows it through a
+                SnackBarManager, which stacks it with whatever else is already there.
+            </p>
+
+            <div styleName="row centred">
+                <Button text="Say something" action="saySomething"/>
+                <Button text="Saved" intent="success" action="saySaved"/>
+                <Button text="Careful" intent="warning" action="sayCareful"/>
+                <Button text="That failed" intent="danger" action="sayFailed"/>
+            </div>
+
+            <p styleName="note">
+                The bar below is the application's own: UndoBar.js, a SnackBar that
+                says what it holds and carries the button that answers it. It stays
+                until it is answered rather than going on its own, which is the whole
+                difference between a SnackBar and a Toast.
+            </p>
+
+            <div styleName="row centred">
+                <Button text="Delete a message" action="showUndoBar"/>
+
+                <!-- Which corner the stack is pinned to. The newest bar sits nearest
+                     that edge: at the top of a top stack, the end of a bottom one. -->
+                <ComboBox outlet="barPositionCombo" action="barPositionChanged"
+                          value="bottom_right">
+                    <Option text="Bottom right" value="bottom_right"/>
+                    <Option text="Bottom center" value="bottom_center"/>
+                    <Option text="Bottom left" value="bottom_left"/>
+                    <Option text="Top right" value="top_right"/>
+                    <Option text="Top center" value="top_center"/>
+                    <Option text="Top left" value="top_left"/>
+                </ComboBox>
+
+                <Button text="Close them all" action="closeAllBars"/>
+            </div>
+
+            <p styleName="values">bars={barCount} where={barWhere}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Drawer</h2>
+            <p styleName="note">
+                A panel docked against the right edge that slides in and pushes the
+                page aside rather than covering it — the room it takes is padding on
+                the document, so what is here reflows into what is left. It is not
+                modal: everything on this page stays live while it is out. Escape
+                inside it, or its close button, puts it away. The colour well in it
+                opens its chooser over the panel rather than inside it.
+            </p>
+            <p styleName="note">
+                This one is the application's own: FiltersDrawer.ib.xml holds its
+                markup and FiltersDrawerController.js beside it holds its behaviour,
+                the same pairing the popover and the dialog have.
+            </p>
+
+            <div styleName="row centred">
+                <Button text="Filters…" outlet="drawerButton" action="toggleDrawer"/>
+            </div>
+
+            <FiltersDrawer outlet="filtersDrawer"/>
+
+            <p styleName="values">filters={filters} drawer={drawerState}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">ColorWell</h2>
+            <p styleName="note">
+                A button whose face is the colour it holds. Pressing it opens a colour
+                chooser in a popover — a palette, a saturation square with a hue strip, an
+                opacity slider and a hex entry. A swatch or Enter in the field settles it
+                and puts the chooser away; dragging reports as it goes.
+            </p>
+
+            <div styleName="row centred">
+                <ColorWell outlet="colourWell" color="#3584e4" action="wellColourChanged"/>
+            </div>
+
+            <p styleName="values">colour={wellColour}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">SpinButton</h2>
+            <p styleName="note">
+                A number with a step either side of it. Typing settles after a pause rather than on
+                every keystroke, and a step button switches itself off at the end it cannot go past.
+            </p>
+
+            <div styleName="row">
+                <SpinButton minValue="0" maxValue="10" value="3"
+                            outlet="quantitySpin" action="quantityChanged"/>
+            </div>
+
+            <p styleName="values">quantity={quantity}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">ProgressBar</h2>
+            <p styleName="note">
+                How far along the work is — or, when its length is not known, only that it is
+                running. The first bar follows the slider above it.
+            </p>
+
+            <div styleName="column">
+                <ProgressBar value="40" outlet="progress"/>
+                <ProgressBar indeterminate outlet="busy"/>
+            </div>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">RadioGroup</h2>
+            <p styleName="note">
+                The group holds the choice, so exactly one option can be chosen. The arrow keys
+                move it, skipping any option that is disabled.
+            </p>
+
+            <RadioGroup value="medium" action="sizeChanged" outlet="sizeGroup">
+                <Radio text="Small" value="small"/>
+                <Radio text="Medium" value="medium"/>
+                <Radio text="Large" value="large"/>
+                <Radio text="Out of stock" value="none" enabled="false"/>
+            </RadioGroup>
+
+            <p styleName="values">size={size}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">ComboBox</h2>
+            <p styleName="note">
+                A native select in a framed box: the platform's own list, with the theme's
+                frame and chevron around it. The second is the same control with `popup`
+                set, which trades the platform's list for one of the framework's own —
+                a macOS popup button, opening over itself with the chosen line under the
+                pointer and a tick beside it.
+            </p>
+
+            <div styleName="row">
+                <ComboBox controlId="colour-combo" action="colourChanged" outlet="colourCombo">
+                    <Option text="Red" value="red"/>
+                    <Option text="Green" value="green"/>
+                    <Option text="Blue" value="blue"/>
+                    <Option text="Out of stock" value="none" enabled="false"/>
+                </ComboBox>
+
+                <ComboBox popup value="green" action="popupColourChanged" outlet="popupCombo">
+                    <Option text="Red" value="red"/>
+                    <Option text="Green" value="green"/>
+                    <Option text="Blue" value="blue"/>
+                    <Option text="Out of stock" value="none" enabled="false"/>
+                </ComboBox>
+            </div>
+
+            <p styleName="values">colour={colour} popup={popupColour}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">OutlineView</h2>
+            <p styleName="note">
+                A tree of rows, one of which is selected. The chevron opens a row without
+                selecting it; the arrows move through what can be seen and the space bar
+                opens or shuts the selected row.
+            </p>
+
+            <div styleName="row">
+                <Button text="Expand all" action="expandPlaces"/>
+                <Button text="Collapse all" action="collapsePlaces"/>
+            </div>
+
+            <OutlineView outlet="placesTree" action="placeChosen" value="inbox">
+                <OutlineItem text="Mail" value="mail" expanded="true">
+                    <OutlineItem text="Inbox" value="inbox"/>
+                    <OutlineItem text="Sent" value="sent">
+                        <OutlineItem text="This year" value="year"/>
+                    </OutlineItem>
+                </OutlineItem>
+                <OutlineItem text="Files" value="files">
+                    <OutlineItem text="Work" value="work"/>
+                </OutlineItem>
+                <OutlineItem text="Trash" value="trash"/>
+            </OutlineView>
+
+            <p styleName="values">place={place}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Box</h2>
+            <p styleName="note">
+                A titled group, with its title straddling the top edge. What belongs together
+                goes inside it.
+            </p>
+
+            <Box title="Colours">
+                <div styleName="row">
+                    <ColorWell color="#3584e4" outlet="boxWellOne" action="boxColourChanged"/>
+                    <ColorWell color="#e01b24" outlet="boxWellTwo" action="boxColourChanged"/>
+                </div>
+                <CheckBox text="Use them everywhere" outlet="boxCheck"/>
+            </Box>
+
+            <p styleName="values">box={boxColour}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">AccordionView</h2>
+            <p styleName="note">
+                A column of titled sections, each opening to show what is under it. Any number
+                may be open at once: an accordion is a set of disclosures sharing a column,
+                not a set of tabs. The header answers the pointer and the space bar alike.
+            </p>
+
+            <div styleName="row">
+                <Button text="Open all" action="openAllSections"/>
+                <Button text="Shut all" action="shutAllSections"/>
+            </div>
+
+            <AccordionView outlet="details" action="sectionToggled">
+                <AccordionSection title="Delivery" value="delivery" expanded="true">
+                    <p styleName="note">Where it goes, and when it should arrive.</p>
+                </AccordionSection>
+                <AccordionSection title="Payment" value="payment">
+                    <div styleName="column">
+                        <TextField placeholder="Card number" outlet="cardField"/>
+                    </div>
+                </AccordionSection>
+                <AccordionSection title="Anything else" value="notes">
+                    <p styleName="note">A section can hold whatever a page can.</p>
+                </AccordionSection>
+            </AccordionView>
+
+            <p styleName="values">sections={sections}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">ListView and ProgressiveListView</h2>
+            <p styleName="note">
+                A list draws one row per thing it holds, in the kind of row it is given —
+                PersonItem.js beside this page, which draws itself. Both of these hold five
+                thousand people. The first draws all five thousand, on screen or not; the
+                second draws only the handful in view, so scrolling it costs the same as
+                scrolling ten. The `drawn=` figure below it is the difference.
+            </p>
+
+            <div styleName="row">
+                <Button text="Empty it" action="emptyList"/>
+                <Button text="Fill it" action="fillList"/>
+                <Button text="Load slowly" action="loadList"/>
+            </div>
+
+            <div styleName="list-frame">
+                <ListView outlet="people" emptyText="Nobody here">
+                    <PersonItem/>
+                </ListView>
+            </div>
+
+            <p styleName="values">people={peopleCount}</p>
+
+            <div styleName="list-frame tall">
+                <ProgressiveListView outlet="crowd" itemHeight="34" emptyText="Nobody here">
+                    <PersonItem/>
+                </ProgressiveListView>
+            </div>
+
+            <p styleName="values">crowd={crowdCount} drawn={crowdDrawn}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">TabView</h2>
+            <p styleName="note">
+                A bar of tabs over a deck of cards, with a pill that slides to whichever is
+                chosen. The arrows move along the bar. Every card is drawn and stays drawn,
+                so what is typed on one is still there when it comes back round.
+            </p>
+
+            <TabView outlet="tabs" action="tabChosen">
+                <Tab title="Overview">
+                    <p styleName="note">The first card. Nothing on it but this line.</p>
+                </Tab>
+                <Tab title="A field">
+                    <div styleName="column">
+                        <TextField outlet="tabField" placeholder="Type here, then switch tabs"/>
+                    </div>
+                </Tab>
+                <Tab title="A control">
+                    <div styleName="column">
+                        <Switch text="Something to flip" outlet="tabSwitch"/>
+                    </div>
+                </Tab>
+            </TabView>
+
+            <p styleName="values">tab={tab}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">TitleBar and ToolBar</h2>
+            <p styleName="note">
+                The two strips a window is topped with. The title bar centres its title on
+                itself, whatever sits either side of it; the toolbar below stacks each item's
+                icon over its label, and when the strip is too narrow for all of them the
+                trailing ones move into the ("»") menu at its right — drag the window narrower
+                to watch them go. The two items at the left of the strip drop menus that meet its
+                bottom edge; with one open, moving the pointer to the other switches to it.
+                The first tool wears a picture rather than a font icon — an imported .png,
+                which the build carries as a data URL.
+            </p>
+
+            <div styleName="bars">
+                <TitleBar title="Untitled document">
+                    <MenuBarItem slot="actions" text="File" showChevron action="barMenuChose">
+                        <MenuItem text="New" value="new"/>
+                        <MenuItem text="Open" value="open"/>
+                        <!-- The older way of writing a rule, which still says the
+                             same thing as the MenuItemSeparator above. -->
+                        <MenuItem separator="true"/>
+                        <MenuItem text="Close" value="close" enabled="false"/>
+                    </MenuBarItem>
+                    <MenuBarItem slot="actions" text="Edit" action="barMenuChose">
+                        <MenuItem text="Cut" value="cut"/>
+                        <MenuItem text="Paste" value="paste"/>
+                    </MenuBarItem>
+                    <TitleBarButton slot="actions" text="Back" icon="ks-bar-icon ks-icon-close"
+                                    action="barButtonClicked"/>
+                    <span styleName="pill">Saved</span>
+                    <TitleBarButton slot="trailing" text="Ada" icon="ks-bar-icon ks-icon-user"
+                                    toggle action="barButtonClicked"/>
+                </TitleBar>
+
+                <ToolBar outlet="tools">
+                    <!-- An image rather than a font icon: the controller imports
+                         the .png, and the build carries it as a data URL. -->
+                    <ToolBarItem text="Open" iconImage="{openIcon}"
+                                 action="toolClicked"/>
+                    <ToolBarItem text="Find" icon="ks-bar-icon ks-icon-search"
+                                 action="toolClicked"/>
+                    <ToolBarItem text="Delete" icon="ks-bar-icon ks-icon-trash"
+                                 action="toolClicked"/>
+                    <ToolBarItem text="Account" icon="ks-bar-icon ks-icon-user"
+                                 action="toolClicked"/>
+                    <ToolBarItem text="Dismiss" icon="ks-bar-icon ks-icon-close"
+                                 action="toolClicked"/>
+                    <ToolBarFlex/>
+                    <ToolBarItem text="Nowhere" icon="ks-bar-icon ks-icon-close" enabled="false"
+                                 action="toolClicked"/>
+                </ToolBar>
+            </div>
+
+            <p styleName="values">bar={bar}</p>
+        </section>
+
+        <p styleName="last">Last action: {lastAction}</p>
+    </div>
+
+    <style>
+        /* The face is the document's, not this page's: everything drawn into it —
+           a popover, a menu, a tooltip — is put at the end of the body rather than
+           inside the page, and inherits from there. `:global` is how a scoped sheet
+           names something it did not draw. */
+        :global(html),
+        :global(body) {
+            font-family: "Source Sans 3", system-ui, sans-serif;
+        }
+
+        .page {
+            color: var(--text-color);
+            background: var(--view-background);
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            margin: 0 0 0.25rem;
+        }
+
+        .lede {
+            margin: 0 0 1.5rem;
+            max-width: 60ch;
+            color: var(--secondary-foreground);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            margin-bottom: 1.5rem;
+            border-radius: 6px;
+            background: var(--toolbar-background);
+            border: 1px solid var(--group-border-color);
+        }
+
+        .state {
+            font-size: 0.85rem;
+            color: var(--secondary-foreground);
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .section {
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 6px;
+            background: var(--light-view-background);
+            border: 1px solid var(--group-border-color);
+        }
+
+        .heading {
+            font-size: 1rem;
+            margin: 0 0 0.25rem;
+        }
+
+        .note {
+            margin: 0 0 1rem;
+            font-size: 0.85rem;
+            color: var(--secondary-foreground);
+        }
+
+        /* The popover's own row: its controls sit in the middle of the page, so a
+           popover has room on any side of them. */
+        .centred {
+            justify-content: center;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin: 15px;
+        }
+
+        /* Sliders need more room between them than the other controls do: the track
+           is 6px, but the knob standing on it is 23px and overhangs both sides, so
+           two sliders a normal gap apart have their knobs almost touching. */
+        .sliders {
+            display: flex;
+            flex-direction: column;
+            gap: 2.25rem;
+            padding: 0.75rem 0;
+        }
+
+        /* Icons for the menu lines. A MenuItem's `icon` is a class name, and the
+           line it goes on is the item's own element — so this page reaches it with
+           `:global`. Drawn as a mask over the current colour, so an icon follows
+           the theme's text as the words beside it do. */
+        :global(.v-MenuItem .icon.ks-menu-icon) {
+            width: 18px;
+            height: 18px;
+            background-color: currentColor;
+            -webkit-mask-image: var(--ks-icon);
+            mask-image: var(--ks-icon);
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+        }
+
+        :global(.ks-icon-trash) {
+            --ks-icon: url("data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2022%2028%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%20%3Cpath%20d%3D%22M8%2011.5v9c0%20.28-.22.5-.5.5h-1c-.29%200-.5-.22-.5-.5v-9c0-.29.21-.5.5-.5h1c.28%200%20.5.21.5.5Zm4%200v9c0%20.28-.22.5-.5.5h-1c-.29%200-.5-.22-.5-.5v-9c0-.29.21-.5.5-.5h1c.28%200%20.5.21.5.5Zm4%200v9c0%20.28-.22.5-.5.5h-1c-.29%200-.5-.22-.5-.5v-9c0-.29.21-.5.5-.5h1c.28%200%20.5.21.5.5Zm2%2011.31V7.99H4V22.8c0%20.75.42%201.18.5%201.18h13c.07%200%20.5-.44.5-1.19ZM7.5%205.99h7l-.75-1.83c-.05-.07-.19-.16-.266-.18H8.52c-.1.01-.22.1-.266.17Zm14.5.5v1c0%20.28-.22.5-.5.5H20V22.8c0%201.71-1.125%203.18-2.5%203.18h-13c-1.375%200-2.5-1.41-2.5-3.125V7.97H.5c-.281%200-.5-.22-.5-.5v-1c0-.29.21-.5.5-.5h4.82L6.41%203.36C6.72%202.6%207.66%201.97%208.48%201.97h5c.82%200%201.766.625%202.07%201.391l1.09%202.609h4.82c.28%200%20.5.21.5.5Z%22%2F%3E%20%3C%2Fsvg%3E");
+        }
+
+        :global(.ks-icon-user) {
+            --ks-icon: url("data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2024%2024%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%20%3Cpath%20d%3D%22M12%204v0c2.2%200%204%201.79%204%204v0c0%202.2-1.8%204-4%204v0c-2.21%200-4-1.8-4-4v0c0-2.21%201.79-4%204-4m0%2010c4.42%200%208%201.79%208%204v2H4v-2c0-2.21%203.58-4%208-4%22%2F%3E%20%3C%2Fsvg%3E");
+        }
+
+        :global(.ks-icon-search) {
+            --ks-icon: url("data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2024%2024%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%20%3Cpath%20d%3D%22M10%204v0c-3.32%200-6%202.68-6%206%200%203.31%202.68%206%206%206v0c3.31%200%206-2.69%206-6%200-3.32-2.69-6-6-6m-8%206v-.01c0-4.42%203.58-8%208-8%204.41%200%207.99%203.58%207.99%208%20-.01%201.77-.6%203.5-1.68%204.9l5.38%205.38v0c.38.39.37%201.03-.03%201.41%20-.39.37-1.01.37-1.39%200l-5.39-5.39v0c-3.49%202.7-8.52%202.07-11.23-1.42%20-1.09-1.41-1.69-3.13-1.69-4.91%22%2F%3E%20%3C%2Fsvg%3E");
+        }
+
+        :global(.ks-icon-close) {
+            --ks-icon: url("data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2024%2024%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%20%3Cpath%20d%3D%22M6.29%207.7l10%2010c.39.39%201.02.39%201.41%200%20.39-.4.39-1.03%200-1.42l-10-10c-.4-.4-1.03-.4-1.42-.001%20-.4.39-.4%201.02%200%201.41Zm1.41%2010l10-10c.39-.4.39-1.03%200-1.42%20-.4-.4-1.03-.4-1.42%200l-10%2010c-.4.39-.4%201.02-.001%201.41%20.39.39%201.02.39%201.41%200Z%22%2F%3E%20%3C%2Fsvg%3E");
+        }
+
+        /* The two bars, framed so they read as the top of a window rather than as
+           two strips loose on the page. */
+        .bars {
+            width: 100%;
+            border: 1px solid var(--group-border-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        /* The save pill that sits beside the title — the kind of thing the Java
+           version's `status` slot held, and what a child naming no region is for. */
+        .pill {
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            background: rgba(127, 127, 127, 0.25);
+            white-space: nowrap;
+        }
+
+        /* Icons for the two bars. Same mask as the menu's, over the elements a
+           ToolBarItem and a TitleBarButton draw — both another module's, so this
+           page reaches them with `:global` as it does the menu lines. */
+        :global(.v-ToolBarItem .icon.ks-bar-icon),
+        :global(.v-TitleBarButton .icon.ks-bar-icon) {
+            background-color: currentColor;
+            -webkit-mask-image: var(--ks-icon);
+            mask-image: var(--ks-icon);
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+        }
+
+        /* A list fills the box it is given: these are the boxes. */
+        .list-frame {
+            width: 100%;
+            max-width: 380px;
+            height: 132px;
+            box-sizing: border-box;
+            border: 1px solid var(--group-border-color);
+            border-radius: 6px;
+            background: var(--light-view-background);
+            overflow: hidden;
+        }
+
+        .tall {
+            height: 200px;
+        }
+
+        .values {
+            margin: 1rem 0 0;
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+            color: var(--secondary-foreground);
+        }
+
+        .last {
+            margin: 0;
+            padding: 0.6rem 0.75rem;
+            border-radius: 6px;
+            background: var(--dark-view-background);
+            font-size: 0.85rem;
+        }
+	
+    	 .theme-combo {
+    		width:120px;
+    	}
+    </style>
+</interface>

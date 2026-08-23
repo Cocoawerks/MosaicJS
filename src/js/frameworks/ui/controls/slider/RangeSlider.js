@@ -26,6 +26,15 @@ export default class RangeSlider extends AbstractSlider {
     this.endHandle.value = Number(this.get("end", this.maxValue));
   }
 
+  /**
+   * A span is worth something under three names, and a knob that moved
+   * changed all of them — `start` and `end` are the ones a page binds to,
+   * since a binding wants a number rather than the pair.
+   */
+  valueNames() {
+    return ["value", "start", "end"];
+  }
+
   /** The span the two knobs hold, near end first. */
   get value() {
     return { start: this.startHandle.value, end: this.endHandle.value };

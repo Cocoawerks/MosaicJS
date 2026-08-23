@@ -4,13 +4,13 @@
 // same for `examples/Counter_component` — these tests drive the two example
 // applications, which are the two shapes this is about:
 //
-//   Counter_main       a `.mib` page whose `{bindings}` all read the
+//   Counter_main       a `.ib.xml` page whose `{bindings}` all read the
 //                      controller, with Buttons inside it calling its methods.
 //   Counter_component  the same page hosting a drawn Counter, which owns its
 //                      own state and redraws itself.
 //
 // The two are driven by different machinery and the difference matters. A
-// `.mib` declares its bindings, and assigning a property one reads pushes the
+// `.ib.xml` declares its bindings, and assigning a property one reads pushes the
 // new value into the nodes that hold it. A drawn component declares nothing:
 // `draw()` reads what it needs, those reads are recorded, and assigning one of
 // them runs `draw()` again. What a controller can and cannot reach across that
@@ -23,20 +23,20 @@ const { mount, h, Component, bindText } = await import(
   "../examples/Counter_main/build/node_modules/mosaic/runtime/mosaic.js"
 );
 const { default: BoundPage } = await import(
-  "../examples/Counter_main/build/src/main.mib.js"
+  "../examples/Counter_main/build/src/main.ib.js"
 );
 const { default: BoundController } = await import(
   "../examples/Counter_main/build/src/AppController.js"
 );
 
 const { default: HostPage } = await import(
-  "../examples/Counter_component/build/src/main.mib.js"
+  "../examples/Counter_component/build/src/main.ib.js"
 );
 const { default: HostController } = await import(
   "../examples/Counter_component/build/src/AppController.js"
 );
 
-/** The `.mib` page whose every value is the controller's. */
+/** The `.ib.xml` page whose every value is the controller's. */
 function bound(options = {}) {
   const root = document.createElement("div");
   document.body.appendChild(root);
@@ -60,7 +60,7 @@ function bound(options = {}) {
   };
 }
 
-/** The `.mib` page that hosts a drawn component instead. */
+/** The `.ib.xml` page that hosts a drawn component instead. */
 function hosting() {
   const root = document.createElement("div");
   document.body.appendChild(root);
@@ -83,7 +83,7 @@ function hosting() {
   };
 }
 
-// --- a .mib's bindings follow the controller ---------------------------------
+// --- a .ib.xml's bindings follow the controller ---------------------------------
 
 test("assigning a bound property writes it into the node that holds it", () => {
   const page = bound();

@@ -13,6 +13,7 @@ import {
   componentName,
   destination,
 } from "./compile.js";
+import { stemOf } from "./js.js";
 
 /**
  * Expand `sources` — `[{ input, outdir, specifier }]`, where `input` is a file
@@ -86,16 +87,14 @@ export function compileAll(sources, opts = {}) {
   // the modules it compiles.
   const styleNames = new Map();
   for (const job of jobs) {
-    const name = componentName(path.basename(job.file, path.extname(job.file)));
+    const name = componentName(stemOf(job.file));
     const declared = declaredStyleName(job.file);
     if (declared) styleNames.set(name, declared);
   }
 
   const byName = new Map();
   for (const job of jobs) {
-    const name =
-      opts.name ??
-      componentName(path.basename(job.file, path.extname(job.file)));
+    const name = opts.name ?? componentName(stemOf(job.file));
     if (!byName.has(name)) byName.set(name, []);
     byName.get(name).push({
       dest: destination(job.file, options(job)),

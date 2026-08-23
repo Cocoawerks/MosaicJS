@@ -15,6 +15,14 @@
  * component's own CSS before the theme's.
  */
 :root {
+  /* Which light this theme is drawn in, for the furniture the browser draws
+     rather than the theme: scrollbars, form-control internals, the canvas
+     behind the page and the flash before the first paint. Stated by the theme
+     because the theme is what decides it — an application wearing a dark sheet
+     under a light system is still dark, and a page that says nothing here is
+     one whose scrollbars come out the wrong colour. */
+  color-scheme: light;
+
   /* The face everything is set in. Source Sans 3 is what Mosaic is drawn in;
        the rest of the stack is what a page falls back to when the application
        has not loaded it (a `<link>` to it, as the KitchenSink page carries).

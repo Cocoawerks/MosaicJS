@@ -4,8 +4,17 @@ import { generate } from "../../src/js/core/compiler/codegen.js";
 import { takeLineMarkers } from "../../src/js/core/compiler/js.js";
 import { parse } from "../../src/js/core/compiler/parser.js";
 
+/**
+ * Markup as a file holds it: inside the `<interface>` root every .ib.xml has.
+ * The tests below are about what the markup compiles to, so the root each one
+ * would otherwise repeat is added here.
+ */
+function parseFile(markup) {
+  return parse(`<interface>${markup}</interface>`);
+}
+
 function compile(src) {
-  return generate(parse(src), {
+  return generate(parseFile(src), {
     runtime: "../src/js/runtime/mosaic.js",
     name: "App",
     hash: "test123",
@@ -14,8 +23,58 @@ function compile(src) {
 
 /** Parsing is expected to fail. */
 function rejects(src) {
-  expect(() => parse(src)).toThrow();
+  expect(() => parseFile(src)).toThrow();
 }
+
+// --- the <interface> root ----------------------------------------------------
+//
+// One root and nothing beside it: what makes a file an XML document rather
+// than a fragment. The root draws nothing — its children are the file.
+
+test("the root is taken off and never drawn", () => {
+  const js = compile("<p>hi</p>");
+  expect(js).toContain('h("p"');
+  expect(js).not.toContain("interface");
+});
+
+test("a file with no root is refused", () => {
+  expect(() => parse("<p>hi</p>")).toThrow(/<interface>/);
+});
+
+test("a root by another name is refused", () => {
+  expect(() => parse("<Root><p>hi</p></Root>")).toThrow(/<interface>/);
+});
+
+test("nothing may sit beside the root", () => {
+  expect(() =>
+    parse("<interface><p>hi</p></interface><p>and</p>"),
+  ).toThrow(/beside/);
+});
+
+test("comments may sit beside it, as XML allows", () => {
+  const js = generate(
+    parse("<!-- what this is --><interface><p>hi</p></interface>"),
+    { runtime: "../src/js/runtime/mosaic.js", name: "App", hash: "test123" },
+  );
+  expect(js).toContain('h("p"');
+});
+
+test("the root may hold several elements side by side", () => {
+  const js = compile("<p>one</p><p>two</p>");
+  expect(js).toContain("Fragment");
+  expect(js).toContain('"one"');
+  expect(js).toContain('"two"');
+});
+
+test("a file of nothing but comments compiles to an empty component", () => {
+  expect(() => compile("<!-- nothing here yet -->")).not.toThrow();
+});
+
+test("a style block is hoisted out of the root", () => {
+  const js = compile('<style>.a{color:red}</style><p styleName="a">hi</p>');
+  expect(js).toContain("const CSS_App =");
+  expect(js).not.toContain("interface");
+});
 
 test("static markup becomes h calls", () => {
   const js = compile('<div styleName="box">Hello</div>');
@@ -264,7 +323,7 @@ test("logic in the markup is still rejected", () => {
 });
 
 test("a <script> block is rejected", () => {
-  // A .mib file is markup. JavaScript lives in a module beside it: a
+  // A .ib.xml file is markup. JavaScript lives in a module beside it: a
   // controller is that module's default export, and a component is its own
   // file — which is also the only place either can be found.
   expect(() => compile("<script>const n = 1;</script><p>{title}</p>")).toThrow(
@@ -362,7 +421,7 @@ test("a surface may be the root of a view", () => {
 });
 
 test("and may equally be written in the middle of one", () => {
-  // A `.mib` is a freeze dried object rather than a picture of the page, so
+  // A `.ib.xml` is a freeze dried object rather than a picture of the page, so
   // where a surface's tag sits says nothing about where the surface ends up:
   // the top layer for a dialog, against its anchor for a popover, pinned to
   // the window for a drawer. Writing one in place is how a page keeps a dialog
@@ -431,7 +490,7 @@ test("minifying collapses the line breaks a text node was written across", () =>
   const src = "<p>one\n   two\n   three</p>";
   expect(compile(src)).toContain('"one\\n   two\\n   three"');
 
-  const minified = generate(parse(src), {
+  const minified = generate(parseFile(src), {
     runtime: "../src/js/runtime/mosaic.js",
     name: "App",
     hash: "test123",

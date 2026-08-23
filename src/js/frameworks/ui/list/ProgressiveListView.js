@@ -123,6 +123,9 @@ export default class ProgressiveListView extends ListView {
     this.last = last;
 
     this.needsDisplay();
+    // Which rows are on screen is `range`, a getter over the two fields above:
+    // scrolling changes it and assigns neither, so nothing watching it hears.
+    this.changed("range");
   }
 
   set content(items) {

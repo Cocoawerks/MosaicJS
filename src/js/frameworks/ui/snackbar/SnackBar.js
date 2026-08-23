@@ -4,10 +4,10 @@
 //
 // A bar is shown through a SnackBarManager, which is what puts it on the page
 // and stacks it with whatever else is up — a bar never adds itself. What it
-// says is its children, so a bar of an application's own can be a `.mib` file
+// says is its children, so a bar of an application's own can be a `.ib.xml` file
 // whose root is this component:
 //
-//   <!-- SavedBar.mib -->
+//   <!-- SavedBar.ib.xml -->
 //   <SnackBar intent="success" icon="svg:check" userClosable="true">
 //       <span>Everything was saved</span>
 //       <Button text="Undo" action="undo"/>

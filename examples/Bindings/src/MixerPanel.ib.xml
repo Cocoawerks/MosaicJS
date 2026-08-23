@@ -1,0 +1,55 @@
+<!-- A composed view that joins up its own controls, and is joined to from
+     outside — the two halves of how a Bind's paths are scoped.
+
+     Inside this file, a path names what this file placed: `knob` is the
+     Slider below, and `MixerPanelController` is what `level` is a property
+     of. It cannot see the page that placed it, and the page cannot see
+     `knob` — a page reaches in through the outlet it gave this tag:
+
+         <MixerPanel outlet="mixer"/>
+         <Bind source="mixer.knob.value" target="…"/>
+
+     which is the same rule, read from the other end. -->
+
+<interface>
+    <div styleName="panel">
+        <header styleName="head">
+            <strong styleName="title">{title}</strong>
+            <span styleName="level">{level}</span>
+        </header>
+
+        <Slider outlet="knob" minValue="0" maxValue="100" value="35" name="Level"/>
+        <ProgressBar outlet="meter" minValue="0" maxValue="100"/>
+
+        <!-- Both ends are this file's own. The first joins a control to this
+             view's controller, the second joins one control straight to another —
+             and neither passes through a method anyone has to read. -->
+        <Bind source="knob.value" target="level"/>
+        <Bind source="knob.value" target="meter.value"/>
+    </div>
+
+    <style>
+        .panel {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        flex: 1;
+        min-width: 15rem;
+        padding: 0.8rem 0.9rem;
+        border: 1px solid var(--default-border-color);
+        border-radius: 6px;
+        background: var(--light-view-background);
+        }
+
+        .head {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        }
+
+        .level {
+        margin-left: auto;
+        font-variant-numeric: tabular-nums;
+        }
+    </style>
+</interface>

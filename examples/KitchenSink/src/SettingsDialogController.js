@@ -7,7 +7,7 @@
  */
 export default class SettingsDialogController {
   constructor() {
-    /** Bound in SettingsDialog.mib, so assigning to this updates it. */
+    /** Bound in SettingsDialog.ib.xml, so assigning to this updates it. */
     this.hint = "";
 
     /** What the field held when the dialog was opened, so Cancel can say. */

@@ -39,10 +39,10 @@ export function mount(component, target, props = {}, controller = EMPTY) {
     return unmount;
   }
 
-  // Otherwise: a compiled `.mib` component. The controller reaches its view as
+  // Otherwise: a compiled `.ib.xml` component. The controller reaches its view as
   // `this.view`; it does not inherit from it.
   //
-  // A page may carry a controller of its own — `Foo.mib` paired with the
+  // A page may carry a controller of its own — `Foo.ib.xml` paired with the
   // `FooController.js` beside it. What the caller passes wins, since mounting
   // a page by hand and naming its controller is saying which to use; a page
   // mounted with nothing said uses the one written for it.

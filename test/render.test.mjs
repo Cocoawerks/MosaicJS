@@ -28,7 +28,7 @@ const {
   bindText: bindTextRef,
 } = await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
 const { default: Main } =
-  await import("../examples/Counter_component/build/src/main.mib.js");
+  await import("../examples/Counter_component/build/src/main.ib.js");
 const { Button } =
   await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 const { addStyles } =
@@ -86,7 +86,7 @@ class CounterView extends Component {
 }
 
 // A plain class — the view is handed to it as `this.view` by mount().
-// The page controller for main.mib: `{title}` reads this.
+// The page controller for main.ib.xml: `{title}` reads this.
 class PageController {
   constructor(title = "Mosaic") {
     this.title = title;
@@ -434,7 +434,7 @@ test("a missing id reports a clear error", () => {
   document.body.textContent = "";
 });
 
-// --- drawn components (a Component subclass with draw(), not a .mib file) ---
+// --- drawn components (a Component subclass with draw(), not a .ib.xml file) ---
 
 test("a Component subclass draws itself through mount()", () => {
   const root = document.createElement("div");
@@ -480,12 +480,12 @@ test("a drawn view reads props from the markup that rendered it", () => {
   assert.match(root.innerHTML, /class="value high[^"]*"/);
 });
 
-test("a .mib page renders a drawn view as a child component", async () => {
+test("a .ib.xml page renders a drawn view as a child component", async () => {
   const host = document.createElement("div");
   host.setAttribute("id", "composed");
   document.body.appendChild(host);
 
-  // counter/main.mib contains <Counter limit="3"/>; the compiler emitted its
+  // counter/main.ib.xml contains <Counter limit="3"/>; the compiler emitted its
   // import, resolved to wherever Counter compiled.
   const app = await MosaicApplication.run({
     id: "composed",
@@ -1028,7 +1028,7 @@ test("isAttached tracks the component's state", () => {
 const { default: ExampleController } =
   await import("../examples/Counter_main/build/src/AppController.js");
 const { default: AppPage } =
-  await import("../examples/Counter_main/build/src/main.mib.js");
+  await import("../examples/Counter_main/build/src/main.ib.js");
 
 test("AppController drives the page without a Counter component", () => {
   const root = document.createElement("div");
@@ -1427,7 +1427,7 @@ test("a fragment's children are levelled into the list around it", () => {
 
 // --- composing views ---------------------------------------------------------
 //
-// A `.mib` file placed as a tag is a component: it draws against a scope of its
+// A `.ib.xml` file placed as a tag is a component: it draws against a scope of its
 // own, and the tag's attributes are that scope's starting state. Nothing has to
 // be written as a class for it. What tells the runtime a function came from
 // markup is `isMarkup`, which the compiler puts on it — a function component
@@ -1620,7 +1620,7 @@ test("an outlet on a composed view hands over its scope, controller or not", () 
 });
 
 test("a prop set through an outlet reaches the view that holds it", () => {
-  // What makes a `.mib` on its own enough: no class, and the page can still
+  // What makes a `.ib.xml` on its own enough: no class, and the page can still
   // say `this.card.value = 12` and see it.
   const Card = view(function () {
     return h("p", {}, bindTextRef(this, "value"));

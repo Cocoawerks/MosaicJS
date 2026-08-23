@@ -401,7 +401,7 @@ test("a popover told to draw no callout draws none either way", () => {
 
 // --- a popover of an application's own ---------------------------------------
 //
-// `Foo.mib` whose root is a PopOver, with `FooController.js` beside it: the
+// `Foo.ib.xml` whose root is a PopOver, with `FooController.js` beside it: the
 // compiler pairs the two, and the runtime gives each drawn one a controller of
 // its own. These stand in for the compiled pair — a function with a
 // `controller` is exactly what the compiler emits.

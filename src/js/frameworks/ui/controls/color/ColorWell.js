@@ -57,6 +57,11 @@ export default class ColorWell extends Button {
 
     this.current = color;
     this.needsDisplay();
+    // The colour is kept in a field of the well's own, so assigning it is not
+    // an assignment to `color` and nothing watching that property would hear
+    // about a colour the user picked. Said here, where every path that changes
+    // it comes through.
+    this.changed("color");
     if (fireEvents) this.fireAction(color);
   }
 

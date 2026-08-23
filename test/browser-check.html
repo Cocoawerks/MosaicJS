@@ -27,7 +27,7 @@
 </script>
 <script type="module">
   import { addStyles, Component, h, mount } from "mosaic";
-  import Main from "../examples/Counter_component/build/src/main.mib.js";
+  import Main from "../examples/Counter_component/build/src/main.ib.js";
   import { Button, CheckBox, ComboBox, Option } from "mosaic/frameworks/ui";
 
   // A drawn view for the checks below: the shape the compiler emits for a
@@ -190,18 +190,18 @@
     getComputedStyle(stray).display !== "flex",
   );
 
-  // --- main.mib composing the drawn view -----------------------------------
+  // --- main.ib.xml composing the drawn view -----------------------------------
   const pageHost = document.createElement("div");
   stage.appendChild(pageHost);
   const page = { title: "Mosaic" };
   mount(Main, pageHost, {}, page);
 
   check(
-    ".mib page bound {title}",
+    ".ib.xml page bound {title}",
     pageHost.querySelector("h1").textContent === "Mosaic",
   );
   check(
-    ".mib page rendered the drawn child",
+    ".ib.xml page rendered the drawn child",
     pageHost.querySelector(".counter") !== null,
   );
   // A scope belongs to a file, and every component is one: the page, the

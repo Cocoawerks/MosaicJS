@@ -50,6 +50,22 @@ export function redraw(view) {
     return;
   }
 
+  // A component that drew nothing, and draws nothing again. What stands for it
+  // is a comment, and that comment is already right — there is no difference
+  // between two nothings to patch.
+  //
+  // Patching them anyway is not harmless: the null case replaces the node with
+  // a fresh comment and discards the old one, and discarding a node releases
+  // the component attached to it — this one. So a component whose whole job is
+  // to be there rather than to draw would undo itself the first time it was
+  // asked to draw again. `<Bind/>` is exactly that component: the page it is
+  // written in redraws, every Bind in it is handed its props again, and the
+  // bindings the page was made of come apart.
+  if (next == null && previous == null) {
+    view.vtree = next;
+    return;
+  }
+
   const node = patch(parent, view.nodes[0], previous, next, view);
   view.nodes = [node];
   view.node = node;
@@ -420,7 +436,7 @@ function sameProps(a = {}, b = {}) {
 /**
  * Draw a composed view again and patch what changed.
  *
- * This is what makes a `.mib` behave like a component rather than a page whose
+ * This is what makes a `.ib.xml` behave like a component rather than a page whose
  * text is kept up to date: saying something to a view re-runs the function the
  * compiler made of its markup and reconciles the two trees, so a value that
  * reaches a child — a Button's `text`, another view's prop — arrives there the

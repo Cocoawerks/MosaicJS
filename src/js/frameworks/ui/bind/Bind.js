@@ -6,7 +6,7 @@
 //
 //   <Bind source="slider.value" target="sliderValueLabel.value"/>
 //
-// Both are paths from the scope of the `.mib` the tag is written in, in the
+// Both are paths from the scope of the `.ib.xml` the tag is written in, in the
 // way a `{binding}` is: a name on its own is a property of that scope, and a
 // dotted one goes through what it holds — an outlet, most often, since an
 // outlet *is* a property of the scope.
@@ -14,29 +14,29 @@
 //   <Bind source="slider.value" target="volume"/>        <!-- to the controller -->
 //   <Bind source="volume" target="spin.value" twoway/>   <!-- and back again -->
 //
-// A `.mib` and its controller are one scope, not two: the controller is what
+// A `.ib.xml` and its controller are one scope, not two: the controller is what
 // the markup draws against, and its outlets are assigned onto it. So a path
 // reaches the page's own state and the controls it placed by the same names
 // the controller uses.
 //
-// And it reaches nothing else. A composed `.mib` keeps a scope of its own, so
+// And it reaches nothing else. A composed `.ib.xml` keeps a scope of its own, so
 // a page cannot name the controls inside one — it names the view it placed,
 // and goes through that:
 //
-//   <!-- MyDialog.mib -->            <!-- the page that places it -->
+//   <!-- MyDialog.ib.xml -->            <!-- the page that places it -->
 //   <ComboBox outlet="combo1"/>      <MyDialog outlet="mydialog"/>
 //                                    <Bind source="mydialog.combo1.value"
 //                                          target="chosenColor"/>
 //
 // which is the same rule the other way about: a Bind written *inside*
-// MyDialog.mib says `combo1.value`, and cannot see the page above it. Each
+// MyDialog.ib.xml says `combo1.value`, and cannot see the page above it. Each
 // file joins up what it placed, and nothing reaches across.
 //
 // Written this way the joins are in the page beside the things they join,
 // rather than in a controller method that has to be read to find out what the
 // page does. What it comes to is `bind()`, which is what a controller would
 // call; a page that wants a transform still calls it there.
-import { Component, bind, bindBoth, observeKey } from "mosaic";
+import { Component, bind, bindTwoWay, observeKey } from "mosaic";
 
 /** What the compiler hands over — see BIND_TAG in the compiler's js.js. */
 const SCOPE_PROP = "scope";
@@ -75,7 +75,7 @@ export default class Bind extends Component {
     twoway: { type: Boolean, default: false },
     /**
      * What the paths are read against, handed over by the compiler: the scope
-     * of the `.mib` the tag was written in. Not something to write by hand —
+     * of the `.ib.xml` the tag was written in. Not something to write by hand —
      * a Bind placed from JavaScript, where there is no file to belong to,
      * looks for the nearest scope around it instead.
      */
@@ -134,14 +134,14 @@ export default class Bind extends Component {
       throw new Error(
         `<Bind source="${this.source}"/> is not inside anything that has a ` +
           `controller. A Bind reads its paths from the page's controller, so ` +
-          `it belongs in a .mib that has one — a Foo.mib with a ` +
+          `it belongs in a .ib.xml that has one — a Foo.ib.xml with a ` +
           `FooController.js beside it.`,
       );
     }
 
     try {
       this.undo = this.twoway
-        ? bindBoth(controller, this.source, controller, this.target)
+        ? bindTwoWay(controller, this.source, controller, this.target)
         : bind(controller, this.source, controller, this.target);
       return true;
     } catch (e) {
@@ -182,7 +182,7 @@ export default class Bind extends Component {
         `<Bind source="${this.source}" target="${this.target}"/>: ` +
           `${this.refused?.message ?? "could not be joined"}\n    ` +
           `${whatItHas(controller)}\n    ` +
-          `A path reaches into a composed .mib through the outlet it was placed ` +
+          `A path reaches into a composed .ib.xml through the outlet it was placed ` +
           `under — "someView.control.value" — since that view keeps its own ` +
           `outlets.\n    ` +
           `Still watching, in case it turns up.`,
@@ -209,7 +209,7 @@ export default class Bind extends Component {
    * The controller of the page this tag was written in.
    *
    * Found by walking up from where it stands rather than being handed down: a
-   * compiled `.mib` tags the element it drew with the scope it drew against,
+   * compiled `.ib.xml` tags the element it drew with the scope it drew against,
    * so the nearest one above is the page that placed this tag. A Bind inside a
    * page inside another page therefore reads the paths of the page it is
    * written in, which is the only reading that makes sense.
@@ -221,7 +221,7 @@ export default class Bind extends Component {
     const stated = this.props?.[SCOPE_PROP];
     if (stated) return stated;
 
-    // A compiled `.mib`'s scope, wherever it is: looked for all the way up
+    // A compiled `.ib.xml`'s scope, wherever it is: looked for all the way up
     // before anything else is considered. A component standing between this
     // tag and its page has a `controller` of its own — itself, as it happens —
     // and taking that one because it came first would hand the Bind an object
