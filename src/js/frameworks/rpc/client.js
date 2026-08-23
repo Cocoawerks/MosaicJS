@@ -88,126 +88,28 @@ function httpTransport(url) {
   };
 }
 
-/** The one Electrobun method every mosaic call travels on. */
-const DESKTOP_METHOD = "mosaic.rpc";
-
 /**
- * Whether this page is inside an Electrobun webview, and can reach the main
- * process directly.
+ * Where a host installs the transport its pages should use.
  *
- * What is looked for is what that toolkit's preload leaves on the window: the
- * socket's port, this webview's id, and the pair of functions that encrypt and
- * decrypt what crosses it. All four or none — a page missing one of them is
- * not a desktop page, whatever else it looks like.
+ * A page is compiled once and run anywhere, so this file cannot import the
+ * thing that talks to a desktop main process: an import of a toolkit is in
+ * every build, including the one served to a browser that has no such toolkit.
+ * The dependency is inverted instead — a host that has a way home puts it here
+ * before the application starts, and a page that finds nothing posts over HTTP.
+ *
+ * `mosaic desktop` generates the module that fills this in, against Electrobun's
+ * published `Electroview` client, and bundles it only into the desktop build.
+ * `mosaic web` generates nothing, and this stays empty.
+ *
+ * The contract is one method: `send(message)` takes the dispatcher's envelope
+ * and resolves to the dispatcher's answer.
  */
-function desktopBridge() {
-  const w = globalThis;
-  const ready =
-    typeof w.__electrobunRpcSocketPort !== "undefined" &&
-    typeof w.__electrobunWebviewId !== "undefined" &&
-    typeof w.__electrobun_encrypt === "function" &&
-    typeof w.__electrobun_decrypt === "function";
-  return ready
-    ? { port: w.__electrobunRpcSocketPort, id: w.__electrobunWebviewId }
-    : null;
-}
+const INSTALLED = "mosaicRpcTransport";
 
-/**
- * Where a call goes on the desktop: straight down Electrobun's socket to the
- * Bun process, where the generated glue answers with the same dispatcher the
- * web host runs.
- *
- * The page does not import Electrobun, and this is why that is worth the
- * thirty lines below: a mosaic application does not know what toolkit it is
- * being run by — `mosaic desktop` is a way of *running* an application rather
- * than something an application has to be — and a page importing
- * `electrobun/view` would end that. What is used here is only what the
- * toolkit's preload has already put on the window.
- *
- * The socket is opened once, on the first call, and shared by every call
- * after it. A call made before it is open waits for it rather than failing:
- * a controller's `attached()` runs the moment the page is drawn, which is
- * routinely sooner than a socket can be established.
- */
-function desktopTransport(bridge) {
-  let socket = null;
-  let opening = null;
-  let nextId = 1;
-  const waiting = new Map();
-
-  const open = () => {
-    if (opening) return opening;
-
-    opening = new Promise((resolve, reject) => {
-      const ws = new WebSocket(
-        `ws://localhost:${bridge.port}/socket?webviewId=${bridge.id}`,
-      );
-
-      ws.addEventListener("open", () => {
-        socket = ws;
-        resolve(ws);
-      });
-      ws.addEventListener("error", () =>
-        reject(new Error("the desktop rpc socket could not be opened")),
-      );
-      ws.addEventListener("close", () => {
-        socket = null;
-        opening = null;
-      });
-
-      ws.addEventListener("message", async (event) => {
-        if (typeof event.data !== "string") return;
-        try {
-          const sealed = JSON.parse(event.data);
-          const plain = await globalThis.__electrobun_decrypt(
-            sealed.encryptedData,
-            sealed.iv,
-            sealed.tag,
-          );
-          const packet = JSON.parse(plain);
-          if (packet?.type !== "response") return;
-          const settle = waiting.get(packet.id);
-          if (!settle) return;
-          waiting.delete(packet.id);
-          // Electrobun's own envelope, carrying ours: `payload` is what the
-          // dispatcher returned, and a failure at this level is the bridge
-          // failing rather than the service refusing.
-          if (packet.success) settle.resolve(packet.payload);
-          else settle.reject(new Error(packet.error ?? "the desktop rpc call failed"));
-        } catch (e) {
-          // A malformed packet is not worth taking the page down for, and
-          // every call it might have answered will time out or be answered by
-          // a later one.
-          console.error("rpc: a desktop message could not be read:", e);
-        }
-      });
-    });
-
-    return opening;
-  };
-
-  return {
-    kind: "desktop",
-    async send(message) {
-      const ws = socket ?? (await open());
-      const id = nextId++;
-
-      const answered = new Promise((resolve, reject) => {
-        waiting.set(id, { resolve, reject });
-      });
-
-      const packet = JSON.stringify({
-        type: "request",
-        id,
-        method: DESKTOP_METHOD,
-        params: message,
-      });
-      const { encryptedData, iv, tag } = await globalThis.__electrobun_encrypt(packet);
-      ws.send(JSON.stringify({ encryptedData, iv, tag }));
-
-      return answered;
-    },
-  };
+/** The transport a host installed, if one did. */
+function installedTransport() {
+  const t = globalThis[INSTALLED];
+  return t && typeof t.send === "function" ? t : null;
 }
 
 /** How a call is sent when nothing says otherwise. */
@@ -232,10 +134,8 @@ function transportFor(options) {
   if (defaults.transport) return defaults.transport;
   if (chosen) return chosen;
 
-  const bridge = desktopBridge();
-  chosen = bridge
-    ? desktopTransport(bridge)
-    : httpTransport(options.url ?? defaults.url);
+  chosen =
+    installedTransport() ?? httpTransport(options.url ?? defaults.url);
   return chosen;
 }
 
@@ -277,7 +177,7 @@ export const Rpc = {
 
   /** Whether this page is talking to a desktop main process rather than a server. */
   get onDesktop() {
-    return desktopBridge() !== null;
+    return installedTransport() !== null;
   },
 
   reset() {
