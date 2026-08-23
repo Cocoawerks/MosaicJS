@@ -50,6 +50,12 @@ export default class AppController {
     /** @type {string} What the slow call last counted. */
     this.counted = "";
 
+    /** @type {string} Where the last file went, in the page's own words. */
+    this.wrote = "";
+
+    /** @type {string} What was read back out of it. */
+    this.fileText = "";
+
     /** @type {string} The theme the page is wearing. */
     this.theme = theme;
 
@@ -152,6 +158,27 @@ export default class AppController {
       const answer = await api.notes.remove(last.id);
       this.notes = await api.notes.list();
       this.show(`notes.remove(${last.id}) → ${JSON.stringify(answer)}`);
+    });
+  }
+
+  // --- doing something a page cannot ---------------------------------------
+
+  /**
+   * Ask the service to write "Hello World" to a file, then read it back.
+   *
+   * The reading back is not ceremony: it is the difference between a service
+   * that says it wrote a file and a file that is there. Note what this method
+   * does *not* have — no path, no permission, no file system. It has a name and
+   * an `await`, and the machinery on the other side did the only part a page is
+   * not allowed to do.
+   */
+  async writeHello() {
+    this.refused = "";
+    await this.during(async () => {
+      const made = await api.files.writeHello();
+      this.wrote = `files.writeHello() → ${made.bytes} bytes at ${made.path}`;
+      this.fileText = await api.files.read(made.path);
+      this.show(`wrote ${made.path}`);
     });
   }
 

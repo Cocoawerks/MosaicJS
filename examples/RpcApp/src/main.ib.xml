@@ -75,6 +75,24 @@
         </section>
 
         <section styleName="section">
+            <h2 styleName="heading">Doing something a page cannot</h2>
+            <p styleName="note">
+                Everything above moves data about. This writes a file on the
+                machine the service is running on — which is the whole reason
+                for a back end that is a real process. The page asks for it by
+                name and is told where it went; it never sees a path it did not
+                get from the answer.
+            </p>
+
+            <div styleName="row">
+                <Button text="files.writeHello()" enabled="{idle}" action="writeHello" />
+            </div>
+
+            <p styleName="reading">{wrote}</p>
+            <pre styleName="lines">{fileText}</pre>
+        </section>
+
+        <section styleName="section">
             <h2 styleName="heading">Waiting, and failing</h2>
             <p styleName="note">
                 A call is an ordinary `await`, so a slow one is an ordinary
