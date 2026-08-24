@@ -255,6 +255,18 @@ the compiler skips the directory.
 
 Configuration is ${CONFIG}, merged from the project root down to the app.`;
 
+/**
+ * There is no application here: no `info.json` in the directory a command was
+ * given, or in any above it.
+ *
+ * A class of its own so the top level can say that and stop. Every other way a
+ * command can be wrong is a matter of how it was written — an unknown option, a
+ * missing name — and the usage text answers those. This one it cannot: the
+ * command was written correctly and there is simply nothing here to run it
+ * against, so a screen of usage buries the one line that matters.
+ */
+class NoApplication extends Error {}
+
 /** Config keys naming a path, resolved against the file that declared them. */
 const PATH_KEYS = ["runtime", "runtimeRoot", "check"];
 
@@ -291,7 +303,7 @@ function loadConfig(from) {
   }
 
   if (chain.length === 0) {
-    throw new Error(`no ${CONFIG} in this directory or any above it`);
+    throw new NoApplication(`no ${CONFIG} in ${from} or any directory above it`);
   }
 
   const config = { ...DEFAULTS, root: chain[0].dir };
@@ -608,10 +620,7 @@ function resolveApp(arg) {
     );
   }
   if (!fs.existsSync(path.join(dir, CONFIG))) {
-    throw new Error(
-      `${dir} has no ${CONFIG} — run mosaic in an application directory, ` +
-        `or name one`,
-    );
+    throw new NoApplication(`no ${CONFIG} in ${dir}`);
   }
   return dir;
 }
@@ -2369,7 +2378,13 @@ async function main(argv) {
     process.chdir(config.root);
     app = layout(config, source);
   } catch (e) {
-    console.error(`mosaic: ${e.message}\n\n${USAGE}`);
+    // The usage text answers a command written wrongly. It has no answer for a
+    // directory that holds no application, so that one is said on its own.
+    console.error(
+      e instanceof NoApplication
+        ? `mosaic: ${e.message}`
+        : `mosaic: ${e.message}\n\n${USAGE}`,
+    );
     return 1;
   }
 

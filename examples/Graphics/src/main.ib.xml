@@ -1,0 +1,78 @@
+<!-- Graphics — two drawn components, hosted by a page that never mentions a
+     canvas. Each is a Canvas subclass with a paint(g); the markup treats them
+     as it treats a Button. -->
+
+<interface>
+    <div styleName="app">
+        <h1 styleName="title">Graphics2d</h1>
+
+        <div styleName="row">
+            <Dial outlet="dial" width="140" height="140" value="0.42"/>
+            <Dial width="140" height="140" value="0.75" color="#e66100" label="CPU"/>
+        </div>
+
+        <div styleName="plot">
+            <Sparkline outlet="spark"/>
+        </div>
+
+        <div styleName="row">
+            <Button text="Less" action="less"/>
+            <Button text="More" intent="primary" action="more"/>
+        </div>
+
+        <p styleName="hint">{opsHint}</p>
+
+        <!-- The drawing itself, written out. Nothing renders this: it is the
+             operations list as it stands, which is a value like any other. -->
+        <pre styleName="ops">{opsList}</pre>
+    </div>
+
+    <style>
+        .app {
+            font-family: system-ui, sans-serif;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .title {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+        .row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* The sparkline is given no size of its own, so it takes this. */
+        .plot {
+            width: 320px;
+            height: 80px;
+        }
+
+        .hint {
+            color: #666;
+            font-size: 0.8rem;
+            margin: 0;
+        }
+
+        .ops {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            color: #303030;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 0.6rem 0.8rem;
+            margin: 0;
+            /* A long drawing scrolls rather than stretching the page. */
+            max-height: 14rem;
+            overflow: auto;
+        }
+    </style>
+</interface>
