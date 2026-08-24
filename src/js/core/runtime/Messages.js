@@ -1,21 +1,27 @@
 // Messages — the strings an application says, in whichever language it is
 // being read in.
 //
-//   <Button text="{MESSAGES.Save}"/>
-//   <h1>{MESSAGES.WelcomeBack}</h1>
+//   <Button text="{MESSAGES.save}"/>
+//   <h1>{MESSAGES.welcomeBack}</h1>
 //
 // `MESSAGES` is reserved in `.ib.xml` markup: a binding whose path starts with
 // it is not read from the controller at all, but looked up here. Reserved, and
 // spelled in capitals, because `messages` is a perfectly ordinary thing for a
 // controller to hold — a chat log, a list of validation messages — and a
 // collision would be silent: the binding would read the application's own
-// array, find no `Save` on it, and draw nothing.
+// array, find no `save` on it, and draw nothing.
 //
-// The key is the English. `{MESSAGES.Save}` in a build that carries no French
-// draws "Save", not an empty space and not "MESSAGES.Save", because the key is
-// already the string a reader can read. An application is therefore
-// translatable before it is translated, and a key nobody has got to yet is a
-// sentence in English rather than a hole in the page.
+// A key resolves in three steps: the active locale's catalog, then the default
+// catalog (`locales/default.json` — the message each key stands for, usually
+// English), then the key itself. So `{MESSAGES.save}` draws the default text
+// wherever a locale has no translation of its own, and a key nobody has written
+// a default for yet draws its own name rather than a hole in the page.
+//
+// A key may be a short name (`save`) with its English in `default.json`, or the
+// English string itself (`{MESSAGES.Save}`) with no default file at all — both
+// work, because a missing default falls through to the key. The short-key form
+// keeps a long sentence out of the markup and gives every locale, English
+// included, one file to translate.
 //
 // Switching locale is what the theme does with a stylesheet: every translated
 // string in the document is written again, and nothing is redrawn and no state
@@ -38,12 +44,17 @@ const PLACEHOLDER = /\{([\p{L}\p{N}_]+)\}/gu;
 export class Messages {
   /**
    * @param {object} [catalogs] `{locale: {key: translation}}`. The locale a
-   *   key is missing from falls back to the key, which is the English.
+   *   key is missing from falls back to the default catalog, then to the key.
    * @param {string} [locale] Which one to start in.
+   * @param {object} [defaults] `{key: message}` — the default (usually English)
+   *   text of each key, from `locales/default.json`. Consulted for any key the
+   *   active locale does not translate. Empty when an application keys on the
+   *   English itself, which is what leaves the fallback the key.
    */
-  constructor(catalogs = {}, locale = "en") {
+  constructor(catalogs = {}, locale = "en", defaults = {}) {
     this.catalogs = catalogs;
     this._locale = locale;
+    this.defaults = defaults;
 
     /**
      * The places in the document a message has been put, so that changing
@@ -97,12 +108,12 @@ export class Messages {
   /**
    * What `key` says in the current locale.
    *
-   * The key itself when nothing says otherwise — an untranslated key, an
-   * unknown locale, a catalog that was never loaded. There is no such thing as
-   * a missing message, only one that is still in English.
+   * The active locale first, then the default catalog (`default.json`), then
+   * the key itself — so there is no such thing as a missing message, only one
+   * that is still in its default language, or one whose key is its own default.
    */
   get(key) {
-    return this.catalogs[this._locale]?.[key] ?? key;
+    return this.catalogs[this._locale]?.[key] ?? this.defaults[key] ?? key;
   }
 
   /**
@@ -128,16 +139,18 @@ export class Messages {
   }
 
   /**
-   * Take a whole set of catalogs and the locale to read them in.
+   * Take a whole set of catalogs, the locale to read them in, and the default
+   * texts to fall back to (`default.json`).
    *
    * What `messages.js` calls — the module mosaic generates from the `locales`
-   * an `info.json` names. It is a method rather than two assignments so that
-   * calling it again is a complete swap: catalogs replaced, locale set, and
-   * whatever is already on the page written again.
+   * an `info.json` names. It is a method rather than three assignments so that
+   * calling it again is a complete swap: catalogs replaced, locale set,
+   * defaults replaced, and whatever is already on the page written again.
    */
-  install(catalogs, locale = this._locale) {
+  install(catalogs, locale = this._locale, defaults = this.defaults) {
     this.catalogs = catalogs;
     this._locale = locale;
+    this.defaults = defaults;
     this.retranslate();
     return this;
   }

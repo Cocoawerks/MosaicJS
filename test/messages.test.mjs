@@ -52,6 +52,7 @@ function catalogs() {
     en: {},
     fr: { Save: "Enregistrer", Search: "Rechercher", WelcomeBack: "Bon retour" },
   };
+  MESSAGES.defaults = {};
   MESSAGES.bound = new Map();
   MESSAGES.dependents = new Set();
   MESSAGES.registered = new WeakSet();
@@ -110,6 +111,46 @@ test("a placeholder may be named in the language it sits in", () => {
 test("an unknown locale is refused rather than silently English", () => {
   const messages = new Messages({ en: {} }, "en");
   assert.throws(() => messages.setLocale("de"), /no locale "de" in this build/);
+});
+
+test("a short key falls back to its default when the locale lacks it", () => {
+  // The default.json model: keys are names, and default.json holds the English.
+  const messages = new Messages(
+    { en: {}, ru: { title: "Студия" } },
+    "en",
+    { title: "Studio", save: "Save" },
+  );
+
+  // English (the current locale) has no file of its own, so both keys come
+  // from the defaults.
+  assert.equal(messages.get("title"), "Studio");
+  assert.equal(messages.get("save"), "Save");
+
+  // Russian translates one key; the other still falls through to the default.
+  messages.setLocale("ru");
+  assert.equal(messages.get("title"), "Студия");
+  assert.equal(messages.get("save"), "Save");
+
+  // A key nobody wrote a default for is still its own name, not a hole.
+  assert.equal(messages.get("missing"), "missing");
+});
+
+test("a locale's own translation wins over the default", () => {
+  const messages = new Messages(
+    { fr: { save: "Enregistrer" } },
+    "fr",
+    { save: "Save" },
+  );
+  assert.equal(messages.get("save"), "Enregistrer");
+});
+
+test("install replaces the defaults along with the catalogs", () => {
+  const messages = new Messages();
+  messages.install({ en: {} }, "en", { greeting: "Hello" });
+  assert.equal(messages.get("greeting"), "Hello");
+
+  messages.install({ en: {} }, "en", { greeting: "Hi" });
+  assert.equal(messages.get("greeting"), "Hi");
 });
 
 // ------------------------------------------------------- the compiler ---

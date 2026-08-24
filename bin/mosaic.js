@@ -109,11 +109,18 @@ const THEME_MODULE = "theme.js";
  * Where an application keeps its translations, one JSON file per locale, named
  * for it: `locales/fr.json`.
  *
- * A catalog is flat — `{"Save": "Enregistrer"}` — because the key is the
- * English. `{MESSAGES.Save}` in the markup finds "Save" here, and a key with
- * nothing under it stays the English it already is.
+ * A catalog is flat — `{"save": "Enregistrer"}` — mapping a key to its text in
+ * that language. The key may be a short name whose default (usually English)
+ * text is in `default.json`, or the English string itself with no default file
+ * at all: a key the active locale and `default.json` both lack stays the key.
  */
 const LOCALES = "locales";
+/**
+ * The catalog of default texts, keyed the same as every locale: what each key
+ * says when the active locale does not translate it. Usually English, and not a
+ * locale one can switch to — the fallback beneath all of them.
+ */
+const DEFAULT_LOCALE = "default";
 /** The module an application's catalogs are written into, beside its bundle. */
 const MESSAGES_MODULE = "messages.js";
 /**
@@ -268,9 +275,12 @@ the compiler skips the directory.
 
 "locales" in ${CONFIG} names the languages a build carries — \`["en", "fr"]\` —
 and "locale" which of them it opens in, defaulting to the first. Each is a flat
-\`${LOCALES}/<name>.json\` of key to translation, where the key is the English:
-markup says \`{${MESSAGES_ROOT}.Save…}\`, and a language with no file for it reads
-in the keys themselves. \`setLocale\` swaps between them with nothing fetched.
+\`${LOCALES}/<name>.json\` of key to translation. A key resolves in the active
+language first, then \`${LOCALES}/${DEFAULT_LOCALE}.json\` — the default (usually
+English) text of each key — then the key itself. So markup can say
+\`{${MESSAGES_ROOT}.save}\` with the English in \`${DEFAULT_LOCALE}.json\`, or
+\`{${MESSAGES_ROOT}.Save}\` with the English as the key and no default file at all.
+\`setLocale\` swaps between the languages with nothing fetched.
 
 Configuration is ${CONFIG}, merged from the project root down to the app.`;
 
@@ -1297,14 +1307,8 @@ function linkThemes(app, specifiers) {
  */
 function writeMessages(config, app, runtime, frameworks = []) {
   const names = config.locales ?? [];
-  if (!Array.isArray(names) || names.length === 0) return null;
-
-  const chosen = config.locale ?? names[0];
-  if (!names.includes(chosen)) {
-    throw new Error(
-      `${CONFIG}: "locale" is "${chosen}", which is not one of the ` +
-        `"locales" this build carries — ${names.join(", ")}`,
-    );
+  if (!Array.isArray(names)) {
+    throw new Error(`${CONFIG}: "locales" must be a list of language names`);
   }
 
   // A framework's own strings first, the application's last.
@@ -1312,7 +1316,7 @@ function writeMessages(config, app, runtime, frameworks = []) {
   // A framework says things of its own — a Drawer's close button, a
   // SearchField's placeholder — and they are as much part of it as its
   // stylesheet is. They are read first so that an application naming the same
-  // key wins: what a component calls "Close" in an application that words it
+  // key wins: what a component calls "close" in an application that words it
   // differently is the application's business, and overriding a framework
   // string should not mean forking the framework.
   const sources = [
@@ -1320,20 +1324,55 @@ function writeMessages(config, app, runtime, frameworks = []) {
     path.join(app.source, LOCALES),
   ];
 
-  const catalogs = {};
-  for (const name of names) {
-    // Absent is allowed everywhere, and is how English usually looks: every
-    // key is already the string it stands for, so there is nothing to write.
-    catalogs[name] = {};
+  // Merge every `<name>.json` found across the sources into one catalog for
+  // that name. Absent is allowed everywhere: a locale with no file is one in
+  // which every key falls back to its default, and a build with no `default.json`
+  // is one in which every key falls back to itself.
+  const gather = (name) => {
+    const catalog = {};
+    let found = false;
     for (const dir of sources) {
       const file = path.join(dir, `${name}.json`);
       if (!fs.existsSync(file)) continue;
+      found = true;
       try {
-        Object.assign(catalogs[name], JSON.parse(fs.readFileSync(file, "utf8")));
+        Object.assign(catalog, JSON.parse(fs.readFileSync(file, "utf8")));
       } catch (e) {
         throw new Error(`${file}: ${e.message}`);
       }
     }
+    return { catalog, found };
+  };
+
+  // The default texts — `default.json` — sit beneath every locale rather than
+  // being one of them, so they are gathered on their own and never appear in
+  // the switchable list.
+  const defaults = gather(DEFAULT_LOCALE).catalog;
+
+  const catalogs = {};
+  for (const name of names) {
+    if (name === DEFAULT_LOCALE) {
+      throw new Error(
+        `${CONFIG}: "${DEFAULT_LOCALE}" is the fallback catalog, not a locale ` +
+          `to switch to — list the real languages in "locales" and put their ` +
+          `defaults in ${LOCALES}/${DEFAULT_LOCALE}.json`,
+      );
+    }
+    catalogs[name] = gather(name).catalog;
+  }
+
+  // Nothing to install: no languages named and no defaults to fall back to.
+  if (names.length === 0 && Object.keys(defaults).length === 0) return null;
+
+  // Which language to open in. `locale` names it, defaulting to the first
+  // listed; an application with only a `default.json` and no `locales` opens in
+  // the defaults themselves.
+  const chosen = config.locale ?? names[0] ?? DEFAULT_LOCALE;
+  if (names.length > 0 && !names.includes(chosen)) {
+    throw new Error(
+      `${CONFIG}: "locale" is "${chosen}", which is not one of the ` +
+        `"locales" this build carries — ${names.join(", ")}`,
+    );
   }
 
   const module = path.join(app.outdir, MESSAGES_MODULE);
@@ -1342,11 +1381,16 @@ function writeMessages(config, app, runtime, frameworks = []) {
     `// Generated by mosaic from ${CONFIG}. Written fresh on every build —\n` +
       `// edits here are lost; the catalogs are in ${LOCALES}/.\n` +
       `//\n` +
-      `// The application's strings, in every language this build carries. They\n` +
-      `// are in the bundle rather than fetched: a page that has to ask for its\n` +
-      `// own words draws once in the wrong language and again in the right one.\n` +
+      `// The application's strings, in every language this build carries, over\n` +
+      `// the default texts in ${LOCALES}/${DEFAULT_LOCALE}.json. They are in the\n` +
+      `// bundle rather than fetched: a page that has to ask for its own words\n` +
+      `// draws once in the wrong language and again in the right one.\n` +
       `import { MESSAGES } from ${JSON.stringify(runtime)};\n\n` +
-      `MESSAGES.install(${JSON.stringify(catalogs, null, 2)}, ${JSON.stringify(chosen)});\n`,
+      `MESSAGES.install(\n` +
+      `  ${JSON.stringify(catalogs, null, 2).split("\n").join("\n  ")},\n` +
+      `  ${JSON.stringify(chosen)},\n` +
+      `  ${JSON.stringify(defaults, null, 2).split("\n").join("\n  ")},\n` +
+      `);\n`,
   );
 
   return { module, names, locale: chosen };
