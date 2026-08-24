@@ -14,9 +14,9 @@
 //     paint(g) {
 //       const {width, height} = this;
 //       g.setStroke({width: 8, cap: Cap.ROUND});
-//       g.setPaint("#dfdfdf");
+//       g.setColor("#dfdfdf");
 //       g.drawArc(8, 8, width - 16, height - 16, 225, -270);
-//       g.setPaint("#1c71d8");
+//       g.setColor("#1c71d8");
 //       g.drawArc(8, 8, width - 16, height - 16, 225, -270 * this.value);
 //     }
 //   }

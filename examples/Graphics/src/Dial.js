@@ -29,18 +29,18 @@ export default class Dial extends Canvas {
     g.setStroke({ width: 10, cap: Cap.ROUND });
 
     // The track.
-    g.setPaint("#e0e0e0");
+    g.setColor("#e0e0e0");
     g.drawArc(...box, START, SWEEP);
 
     // And how much of it is filled.
     if (value > 0) {
-      g.setPaint(this.color);
+      g.setColor(this.color);
       g.drawArc(...box, START, SWEEP * value);
     }
 
     // The reading, centred on the dial. `setTextAlign` is honoured by the
     // surface, so this needs no measuring.
-    g.setPaint("#303030");
+    g.setColor("#303030");
     g.setFont(`600 ${Math.round(height / 6)}px system-ui, sans-serif`);
     g.setTextAlign("center");
     g.setTextBaseline("middle");

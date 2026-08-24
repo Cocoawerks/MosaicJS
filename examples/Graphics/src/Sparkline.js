@@ -45,7 +45,7 @@ export default class Sparkline extends Canvas {
     g.fill(area);
 
     // And the line itself.
-    g.setPaint(this.color);
+    g.setColor(this.color);
     g.setStroke({ width: 2, cap: Cap.ROUND, join: Join.ROUND });
     g.drawPolyline(xs, ys);
 

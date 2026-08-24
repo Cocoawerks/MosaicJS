@@ -7,7 +7,7 @@
 //       .lineTo(0, 20)
 //       .close();
 //
-//   g.setPaint("#3584e4");
+//   g.setColor("#3584e4");
 //   g.fill(arrow);
 //
 // A path is recorded once and can be drawn any number of times, at any

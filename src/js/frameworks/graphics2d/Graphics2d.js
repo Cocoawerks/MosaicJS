@@ -9,9 +9,9 @@
 // — and neither the painting code nor this class knows which.
 //
 //   paint(g) {
-//     g.setPaint("#1c71d8");
+//     g.setColor("#1c71d8");
 //     g.fillRoundRect(8, 8, 120, 40, 8, 8);
-//     g.setPaint("white");
+//     g.setColor("white");
 //     g.setFont("13px system-ui");
 //     g.drawString("Hello", 20, 33);
 //   }
@@ -110,22 +110,30 @@ export default class Graphics2d {
   }
 
   /**
-   * What both drawing and filling use — a CSS colour, or a gradient from
-   * {@link linearGradient} / {@link radialGradient}.
+   * What both drawing and filling use.
    *
    * One paint for both, as Java2D has it, rather than Canvas's separate
    * `strokeStyle` and `fillStyle`. A drawing that wants an outline in one
-   * colour and a fill in another says so by setting the paint twice, which is
+   * colour and a fill in another says so by setting the colour twice, which is
    * what the Java original would do.
+   *
+   * `setColor` for a colour and {@link Graphics2d#setPaint} for a gradient —
+   * the same method under two names, as `java.awt.Graphics2D` has it. Nearly
+   * every drawing sets colours, so that is the name to reach for; the operation
+   * they both record is `setPaint`, because the field can hold either and an
+   * operation named for a colour should not be found carrying a gradient.
+   */
+  setColor(color) {
+    return this.setPaint(color);
+  }
+
+  /**
+   * The general one: a CSS colour string, or a gradient from
+   * {@link linearGradient} / {@link radialGradient}.
    */
   setPaint(paint) {
     this.state.paint = paint;
     return this.push(Op.SET_PAINT, { paint });
-  }
-
-  /** Java2D spells it `setColor` as well, and so do most callers. */
-  setColor(paint) {
-    return this.setPaint(paint);
   }
 
   getPaint() {
