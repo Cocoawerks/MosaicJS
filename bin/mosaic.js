@@ -38,7 +38,9 @@ import { dispatch, methodsOf } from "../src/js/frameworks/rpc/dispatch.js";
 import { findServices, registrySource } from "../src/js/frameworks/rpc/services.js";
 import {
   BUN_DIR,
+  BUN_ENTRY,
   DESKTOP_DIR,
+  MAIN_TEMPLATE,
   findElectrobun,
   installDependencies,
   writeProject,
@@ -166,10 +168,28 @@ const DEFAULTS = {
   // listed here and never has to be: the runtime is vendored by the compiler
   // and Electrobun is installed by `desktop`, both without being asked.
   dependencies: {},
-  // The window `desktop` opens: `width`, `height`, `x`, `y`, any of them, over
-  // the default. This is the whole of what an application says about its native
-  // side — the main process is generated, so there is nowhere else to say it.
-  window: {},
+  // What a desktop build is made into.
+  //
+  // `cef` bundles Chromium rather than using the system webview, and applies to
+  // every run: an application that needs it needs it while it is being written
+  // too. The other three are about shipping, so `desktop prod` is the only
+  // thing that reads them.
+  //
+  // No credentials here. Signing and notarising are done with an identity and
+  // an Apple account, which are secrets and belong in the environment —
+  // ELECTROBUN_DEVELOPER_ID, and ELECTROBUN_APPLEID with either
+  // ELECTROBUN_APPLEIDPASS and ELECTROBUN_TEAMID or the ELECTROBUN_APPLEAPI*
+  // key. An `info.json` is committed; those must not be.
+  desktop: {
+    /** Bundle Chromium instead of using the system webview. Hundreds of MB. */
+    cef: false,
+    /** Sign the build. Needs ELECTROBUN_DEVELOPER_ID. */
+    codesign: false,
+    /** Notarise it with Apple, which requires signing it first. */
+    notarize: false,
+    /** Also produce a disk image to hand it over in. */
+    dmg: false,
+  },
   // Both relative to the application directory, not the project root.
   main_file: `${SRC}/${ENTRY}`,
   outdir: "build",
@@ -181,6 +201,7 @@ const USAGE = `usage: mosaic <command> [dir] [options]
 
 commands:
   init <name>        create a new application in ./<name>
+  init desktop       write the main process this app's window is opened by
   install            install what "dependencies" in ${CONFIG} names
   install framework <name>
                      copy a framework into ./${FRAMEWORKS} and name it in ${CONFIG}
@@ -188,7 +209,7 @@ commands:
                      copy a theme's stylesheet into ./${THEMES}
   compile            compile the application and bundle it
   web [dev|prod]     compile, then serve it in a browser, rebuilding on every edit
-  desktop [dev|prod] compile, then run it as a native desktop app
+  desktop [dev|prod] run it as a native desktop app, or build one
   check              compile, then run the headless browser test
   clean              delete the application's build directory
 
@@ -205,7 +226,14 @@ The page reaches them with the rpc framework — \`install framework rpc\`.
 \`web\` and \`desktop\` take a mode. \`dev\`, the default, keeps up with
 the edits: everything from \`main_file\`'s directory down is watched — the
 \`${BUN_DIR}/\` included — and every change rebuilds and runs it again.
-\`prod\` is not implemented yet.
+
+\`desktop prod\` builds instead of running: an application bundle for this
+machine's platform, left in the build directory, with the page's bundle
+minified and the app packed into an archive. What else it is made into is
+"desktop" in ${CONFIG} — \`codesign\`, \`notarize\`, \`dmg\`, and \`cef\`
+to bundle Chromium rather than use the system webview. Signing reads its
+identity from the environment, never from ${CONFIG}. \`web prod\` is not
+implemented yet.
 
 options:
   --port <n>         port for \`web\` (default 3000)
@@ -519,6 +547,49 @@ function init(name) {
 }
 
 /**
+ * Write the main process an application opens its window with.
+ *
+ * The one file `desktop` needs and does not generate. It is written into the
+ * application's own `bun/`, once: run again, it says the file is there and
+ * leaves it alone, because by then it is not this template any more — it is
+ * whatever the author made of it.
+ *
+ * Order does not matter. Run before anything has been built, and `desktop` will
+ * find it; run after, and the next build picks it up. What is never touched is
+ * the generated project, which is rewritten from the application every time
+ * anyway.
+ */
+function initDesktop() {
+  const source = resolveApp(null);
+  const config = loadConfig(source);
+  const app = layout(config, source);
+
+  const file = path.join(app.bunDir, BUN_ENTRY);
+  const say = path.relative(source, file);
+
+  if (fs.existsSync(file)) {
+    console.log(`${say} is already there — left as it is`);
+    return 0;
+  }
+
+  const name = config.app_name ?? app.name;
+  fs.mkdirSync(app.bunDir, { recursive: true });
+  fs.writeFileSync(
+    file,
+    MAIN_TEMPLATE.split("{{NAME}}")
+      .join(name)
+      .split("{{TITLE}}")
+      .join(JSON.stringify(name)),
+  );
+
+  console.log(`created ${say}`);
+  console.log("");
+  console.log("    it is yours now — the window, and anything else native");
+  console.log("    mosaic desktop");
+  return 0;
+}
+
+/**
  * Resolve the application a command was pointed at.
  *
  * An application is a directory with an `info.json`, and that is all a command
@@ -608,7 +679,7 @@ function parseArgs(argv) {
     throw new Error(`unknown command \`${args.command}\``);
   }
   if (args.command === "init" && !args.entry)
-    throw new Error("`init` needs a name");
+    throw new Error("`init` needs a name, or `desktop`");
   if (args.subject && !args.name)
     throw new Error(`\`install ${args.subject}\` needs a name`);
 
@@ -621,9 +692,17 @@ function parseArgs(argv) {
     );
   }
   if (MODE_COMMANDS.includes(args.command)) args.mode ??= "dev";
-  if (args.mode === "prod") {
+
+  // A `prod` build is the one that ships, and nobody reads the bundle in it.
+  // `--minify` stays an option for the other modes, where a readable build is
+  // worth more than a smaller one.
+  if (args.mode === "prod") args.minify = true;
+  // `desktop prod` builds the thing you ship. `web prod` does not exist yet,
+  // and saying so is better than quietly serving a dev build and calling it
+  // production.
+  if (args.mode === "prod" && args.command !== "desktop") {
     throw new Error(
-      `\`${args.command} prod\` is not implemented yet — only \`dev\``,
+      `\`${args.command} prod\` is not implemented yet — only \`${args.command} dev\``,
     );
   }
 
@@ -1985,6 +2064,165 @@ function shippedTheme(name) {
 }
 
 /**
+ * Build the application into something this platform can install and run.
+ *
+ * Electrobun's `stable` channel, which is its production one: `dev` is what a
+ * `desktop dev` run uses and carries the machinery for reloading, and `canary`
+ * is a pre-release channel an application would have to have opinions about
+ * updates to want. A `prod` build is the one you hand to somebody.
+ *
+ * Nothing is launched. What comes out is an application bundle for the platform
+ * this ran on — mosaic cross-compiles nothing, and neither does Electrobun —
+ * beside whatever that platform is installed from.
+ */
+async function build(config, app, { dir, run, log }) {
+  const shipping = { ...(config.desktop ?? {}) };
+
+  // Credentials are read by Electrobun from the environment, deep into a build
+  // that has already taken a minute. Checked here instead, where the answer
+  // costs nothing and names the variable that is missing.
+  const needed = [];
+  if (shipping.codesign) needed.push("ELECTROBUN_DEVELOPER_ID");
+  if (shipping.notarize) {
+    needed.push("ELECTROBUN_APPLEID");
+    // Apple takes either an app-specific password with a team, or an API key.
+    const byKey = process.env.ELECTROBUN_APPLEAPIKEY;
+    if (!byKey) needed.push("ELECTROBUN_APPLEIDPASS", "ELECTROBUN_TEAMID");
+  }
+  const missing = needed.filter((name) => !process.env[name]);
+  if (missing.length > 0) {
+    throw new Error(
+      `"desktop" in ${CONFIG} asks for ${
+        shipping.notarize ? "signing and notarising" : "signing"
+      }, and the environment does not carry ${missing.join(", ")}.\n` +
+        "    They are credentials, so they belong in the environment rather " +
+        `than in ${CONFIG}.`,
+    );
+  }
+
+  log?.("==> building for this platform");
+  const asked = ["cef", "codesign", "notarize", "dmg"].filter(
+    (k) => shipping[k],
+  );
+  if (asked.length > 0) log?.(`    ${asked.join(", ")}`);
+
+  const started = Date.now();
+  const proc = run("build", "--env=stable");
+  const code = await proc.exited;
+  if (code !== 0) throw new Error(`\`electrobun build\` failed (exit ${code})`);
+
+  // Where Electrobun leaves it: a build directory named for the channel and the
+  // platform, and an `artifacts/` beside it holding the installable forms.
+  const built = path.join(dir, "build", `stable-${platformTag()}`);
+  const artifacts = path.join(dir, "artifacts");
+  const say = (p) => path.relative(config.root, p) || ".";
+
+  unpack({ dir, built, artifacts, log });
+
+  log?.(`    built in ${Math.round((Date.now() - started) / 1000)}s`);
+
+  for (const [what, where] of [
+    ["bundle", built],
+    ["artifacts", artifacts],
+  ]) {
+    if (!fs.existsSync(where)) continue;
+    log?.(`    ${what} ${say(where)}`);
+    for (const name of fs.readdirSync(where).sort()) {
+      const full = path.join(where, name);
+      const size = fs.statSync(full).isDirectory() ? "" : ` (${bytes(full)})`;
+      log?.(`        ${name}${size}`);
+    }
+  }
+
+  return 0;
+}
+
+/**
+ * Replace the self-extracting bundle with the application it holds.
+ *
+ * What a `stable` build leaves in the build directory is not the app: it is a
+ * small bundle carrying the app as a compressed tarball, which unpacks itself
+ * into Application Support on first run and starts the real one from there.
+ * That is how an application ships and updates itself in the field, and it is
+ * the wrong thing to be handed by a build — the app appears to start, quit and
+ * start again, and what runs afterwards is a copy somewhere else.
+ *
+ * So the tarball is unpacked here, and what it holds replaces the extractor.
+ * The result is the same bundle that would have existed after a first run, and
+ * it runs when opened. The compressed form stays in `artifacts/`, which is
+ * where the thing you upload belongs.
+ *
+ * Done with the tools Electrobun already installed: its own `zig-zstd`, and
+ * tar. Nothing is added to the project for this.
+ */
+function unpack({ dir, built, artifacts, log }) {
+  if (!fs.existsSync(artifacts)) return;
+  const compressed = fs
+    .readdirSync(artifacts)
+    .filter((n) => n.endsWith(".app.tar.zst"))
+    .map((n) => path.join(artifacts, n))[0];
+  if (!compressed) return;
+
+  const zstd = path.join(
+    dir,
+    "node_modules",
+    "electrobun",
+    `dist-${platformTag()}`,
+    "zig-zstd",
+  );
+  if (!fs.existsSync(zstd)) return;
+
+  const tar = path.join(dir, "build", `${path.basename(compressed, ".zst")}`);
+  const decompressed = Bun.spawnSync(
+    [zstd, "decompress", "-i", compressed, "-o", tar, "--no-timing"],
+    { stdout: "ignore", stderr: "inherit" },
+  );
+  if (!decompressed.success) {
+    log?.("    (left the self-extracting bundle: it could not be unpacked)");
+    return;
+  }
+
+  try {
+    // The extractor bundle goes first: the tarball holds an `.app` of the same
+    // name, and untarring over it would merge the two.
+    for (const name of fs.readdirSync(built)) {
+      if (name.endsWith(".app")) {
+        fs.rmSync(path.join(built, name), { recursive: true, force: true });
+      }
+    }
+    const untarred = Bun.spawnSync(["tar", "-xf", tar, "-C", built], {
+      stdout: "ignore",
+      stderr: "inherit",
+    });
+    if (!untarred.success) throw new Error("tar failed");
+
+    // The compressed copy Electrobun leaves beside the app is the same one in
+    // `artifacts/`. One of them is what you upload; the other is clutter next
+    // to the thing you run.
+    for (const name of fs.readdirSync(built)) {
+      if (name.endsWith(".tar.zst")) fs.rmSync(path.join(built, name));
+    }
+  } finally {
+    fs.rmSync(tar, { force: true });
+  }
+}
+
+/** How Electrobun names the platform it is building for. */
+function platformTag() {
+  const os = { darwin: "macos", win32: "win", linux: "linux" }[process.platform];
+  const arch = { arm64: "arm64", x64: "x64" }[process.arch];
+  return `${os ?? process.platform}-${arch ?? process.arch}`;
+}
+
+/** A file's size, said the way a person reads it. */
+function bytes(file) {
+  const n = fs.statSync(file).size;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
  * Run the application as a native desktop app.
  *
  * The Electrobun project is generated into the build directory and thrown away
@@ -2000,7 +2238,8 @@ function shippedTheme(name) {
  */
 async function desktop(config, app, args) {
   const dir = path.join(app.outdir, DESKTOP_DIR);
-  const project = writeProject({ app, config, dir });
+  const prod = args.mode === "prod";
+  const project = writeProject({ app, config, dir, prod });
   const log = args.quiet ? null : (...a) => console.log(...a);
 
   log?.(`==> desktop ${path.relative(config.root, dir) || "."}`);
@@ -2027,6 +2266,18 @@ async function desktop(config, app, args) {
   // have no node at all. Run it under bun when bun can be found, and fall back
   // to the shebang only when it cannot.
   const bun = Bun.which("bun");
+  const run = (...argv) =>
+    Bun.spawn(bun ? [bun, electrobun, ...argv] : [electrobun, ...argv], {
+      cwd: dir,
+      stdin: "inherit",
+      stdout: "inherit",
+      stderr: "inherit",
+    });
+
+  // `prod` builds rather than runs, and that is the whole difference: the same
+  // generated project, handed to Electrobun with a channel instead of a window.
+  if (prod) return await build(config, app, { dir, run, log });
+
   const command = bun ? [bun, electrobun, "dev"] : [electrobun, "dev"];
 
   const launch = () =>
@@ -2101,6 +2352,14 @@ async function main(argv) {
     args = parseArgs(argv);
     // `init` creates the application the other commands need, so it runs
     // before any of them is resolved.
+    // `init desktop` is about an application that already exists, so unlike
+    // `init <name>` it is resolved against one rather than creating a
+    // directory. The word wins over a directory of the same name, which is a
+    // trade worth making: `desktop` is a thing to add to an app far more often
+    // than it is a name to give one.
+    if (args.command === "init" && args.entry === DESKTOP_DIR) {
+      return initDesktop();
+    }
     if (args.command === "init") return init(args.entry);
     source = resolveApp(args.entry);
     config = loadConfig(source);
