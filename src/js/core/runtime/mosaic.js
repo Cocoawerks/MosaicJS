@@ -29,6 +29,17 @@ export { refresh } from "./refresh.js";
 // controller, a control to a control. One way each; two facing make it two.
 export { bind, bindTwoWay, canPush, observeKey } from "./bind.js";
 export { bindText } from "./bindText.js";
+// What the application says, in whichever language it is read in. `MESSAGES` is
+// reserved in markup: `{MESSAGES.Save}` is a lookup here rather than a read off
+// the controller, and the key is the English.
+export {
+  Messages,
+  MESSAGES,
+  bindMessage,
+  locale,
+  locales,
+  setLocale,
+} from "./Messages.js";
 export { bindAttr } from "./bindAttr.js";
 export { bindProp } from "./bindProp.js";
 export { clearBindings } from "./clearBindings.js";

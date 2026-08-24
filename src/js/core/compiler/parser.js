@@ -18,11 +18,13 @@
 //   { style, markup: Node[] }
 //   Node = { kind: "text", text }
 //        | { kind: "bind", path, line }
+//        | { kind: "message", key, line }        // `{MESSAGES.Save}`
 //        | { kind: "element", line, name, attrs, outlet, actions, children }
 //   Attr = { name, value: { kind: "empty" }
 //                        | { kind: "static", text }
 //                        | { kind: "template", parts } }
 //   StrPart = { kind: "text", text } | { kind: "bind", path }
+//                                    | { kind: "message", key }
 //   Action  = { event, method }   // event is null for a bare method name
 
 import {
@@ -31,6 +33,7 @@ import {
   isIdent,
   isPath,
   MARKUP_EXT,
+  MESSAGES_ROOT,
   OUTLET_ATTR,
   ROOT_TAG,
   STYLE_NAME_ATTR,
@@ -226,7 +229,7 @@ class Parser {
       if (this.peek() === "{") {
         flush();
         const line = this.line();
-        out.push({ kind: "bind", path: this.parseBinding(), line });
+        out.push(this.parseBindingNode(line));
         continue;
       }
 
@@ -392,7 +395,7 @@ class Parser {
           parts.push({ kind: "text", text });
           text = "";
         }
-        parts.push({ kind: "bind", path: this.parseBinding() });
+        parts.push(this.parseBindingNode());
         continue;
       }
       text += this.peek();
@@ -411,8 +414,11 @@ class Parser {
   }
 
   /**
-   * Consume `{path}`. The contents must be a dotted property path — this is
-   * a binding to the controller, not an expression language.
+   * Consume `{…}` and return what was between the braces, trimmed.
+   *
+   * What it may be is decided by {@link Parser#parseBindingNode}: a path to
+   * read off the controller, or a message to look up. The two are held to
+   * different rules, so neither is applied here.
    */
   parseBinding() {
     this.expect("{");
@@ -423,18 +429,69 @@ class Parser {
     }
     if (this.eof || this.peek() !== "}")
       throw this.err("unterminated `{` — expected `}`");
-    const path = this.src.slice(start, this.pos).trim();
+    const raw = this.src.slice(start, this.pos).trim();
     this.pos++; // `}`
 
-    if (path === "") throw this.err("empty binding `{}`");
-    if (!isPath(path)) {
+    if (raw === "") throw this.err("empty binding `{}`");
+    return raw;
+  }
+
+  /**
+   * A binding, as one of the two things it may be: a path read off the
+   * controller, or a message looked up by key.
+   *
+   * `MESSAGES` is reserved — see {@link MESSAGES_ROOT} — and everything after
+   * it is the key.
+   *
+   * A path has to be a path: `{count}`, `{user.name}`, identifiers and dots,
+   * because it is walked across an object. A message key is walked across
+   * nothing — it is looked up whole — so it is taken exactly as written, spaces
+   * and apostrophes and full stops and all:
+   *
+   *   {MESSAGES.Save}
+   *   {MESSAGES.Open picture…}
+   *   {MESSAGES.Open a file, or type something and save it.}
+   *
+   * Which is the point of keying on the English. A key that has to be an
+   * identifier is not English — it is `OpenPicture`, and a build with no
+   * translation of it draws `OpenPicture` on the screen. Written as the
+   * sentence it stands for, an untranslated key is the sentence, and the
+   * catalog for the language it was written in is a file nobody has to keep.
+   */
+  parseBindingNode(line) {
+    const raw = this.parseBinding();
+    const prefix = `${MESSAGES_ROOT}.`;
+
+    if (!raw.startsWith(prefix)) {
+      if (raw === MESSAGES_ROOT) {
+        throw this.err(
+          `\`{${MESSAGES_ROOT}}\` names no message — ${MESSAGES_ROOT} is ` +
+            `reserved, and a binding under it is a message to look up, like ` +
+            `{${MESSAGES_ROOT}.Save}`,
+        );
+      }
+      if (!isPath(raw)) {
+        throw this.err(
+          `\`{${raw}}\` is not a property path — bindings read a value from ` +
+            `the controller, like {count} or {user.name}; compute anything ` +
+            `else in a controller method`,
+        );
+      }
+      return line === undefined
+        ? { kind: "bind", path: raw }
+        : { kind: "bind", path: raw, line };
+    }
+
+    const key = raw.slice(prefix.length).trim();
+    if (key === "") {
       throw this.err(
-        `\`{${path}}\` is not a property path — bindings read a value from the ` +
-          `controller, like {count} or {user.name}; compute anything else ` +
-          `in a controller method`,
+        `\`{${raw}}\` names no message — say which, like {${MESSAGES_ROOT}.Save}`,
       );
     }
-    return path;
+
+    return line === undefined
+      ? { kind: "message", key }
+      : { kind: "message", key, line };
   }
 
   /**

@@ -18,7 +18,7 @@ export default class SearchField extends TextBase {
 
   /** "Search", unless the application words it differently. */
   get placeholder() {
-    return this.get("placeholder", "Search");
+    return this.get("placeholder", this.message("Search"));
   }
 
   set placeholder(value) {
@@ -71,7 +71,7 @@ export default class SearchField extends TextBase {
       <button
         styleName="Search-reset"
         type="button"
-        aria-label="Clear search"
+        aria-label={this.message("Clear search")}
         aria-hidden={empty ? "true" : "false"}
         style={{ display: empty ? "none" : "block" }}
         tabindex={empty ? "-1" : "0"}
@@ -86,6 +86,6 @@ export default class SearchField extends TextBase {
   }
 
   inputExtras() {
-    return { "aria-label": "Search" };
+    return { "aria-label": this.message("Search") };
   }
 }

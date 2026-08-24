@@ -1,0 +1,17 @@
+{
+  "Internationalization": "Internationalisierung",
+  "Choose a language. Everything below is translated, and nothing you have typed is lost.": "Wählen Sie eine Sprache. Alles Folgende wird übersetzt, und nichts von dem, was Sie eingegeben haben, geht verloren.",
+  "Your details": "Ihre Angaben",
+  "Your name": "Ihr Name",
+  "Type your name": "Geben Sie Ihren Namen ein",
+  "A component with strings of its own": "Eine Komponente mit eigenen Wörtern",
+  "Send me updates": "Schicken Sie mir Neuigkeiten",
+  "Save…": "Speichern…",
+  "Reset": "Zurücksetzen",
+  "Reading in {language}.": "Gelesen auf {language}.",
+  "Hello, {name}.": "Hallo, {name}.",
+  "Nobody has said who they are yet.": "Es hat noch niemand gesagt, wer er ist.",
+  "Saved as {name}.": "Gespeichert unter {name}.",
+  "nobody": "niemand",
+  "Everything was put back.": "Alles wurde zurückgesetzt."
+}

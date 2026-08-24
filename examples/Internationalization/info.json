@@ -1,0 +1,9 @@
+{
+  "app_name": "Internationalization",
+  "version": "0.1.0",
+  "theme": "aristo",
+  "main_file": "src/main.js",
+  "frameworks": ["ui"],
+  "locales": ["en", "fr", "es", "de", "ru"],
+  "locale": "en"
+}

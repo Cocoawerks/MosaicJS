@@ -10,6 +10,7 @@
 // view redraws — reading the path here is also what marks it worth watching, so
 // assigning to it draws the view again and the prop is worked out afresh.
 import { display, notifierFor, readPath } from "./private/bindings.js";
+import { MESSAGES } from "./Messages.js";
 import { observe } from "./private/observe.js";
 
 /**
@@ -23,19 +24,31 @@ import { observe } from "./private/observe.js";
  */
 export function bindProp(controller, parts) {
   // A literal piece is a plain string and a bound one is `{path}`, which is
-  // the shape `attrValue` reads too.
+  // the shape `attrValue` reads too. A `{MESSAGES.Key}` piece carries a key
+  // instead, and there is nothing on the controller to watch for it: what a
+  // message says changes with the locale, and that is not this controller's
+  // business — see `MESSAGES.retranslate`.
   for (const part of parts) {
     if (typeof part === "string") continue;
+    if (part.key !== undefined) {
+      MESSAGES.dependOn(controller);
+      continue;
+    }
     observe(controller, part.path.split(".")[0], notifierFor(controller));
   }
 
   if (parts.length === 1 && typeof parts[0] !== "string") {
-    return readPath(controller, parts[0].path);
+    const only = parts[0];
+    return only.key !== undefined
+      ? MESSAGES.get(only.key)
+      : readPath(controller, only.path);
   }
   return parts
-    .map((part) =>
-      typeof part === "string" ? part : display(readPath(controller, part.path)),
-    )
+    .map((part) => {
+      if (typeof part === "string") return part;
+      if (part.key !== undefined) return MESSAGES.get(part.key);
+      return display(readPath(controller, part.path));
+    })
     .join("");
 }
 

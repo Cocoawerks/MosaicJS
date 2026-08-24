@@ -266,7 +266,7 @@ export default class Drawer extends Component {
           <CloseButton
             iconOnly="true"
             icon={Close}
-            tooltip="Close"
+            tooltip={this.message("Close")}
             ref={(button) => (this.closeButton = button)}
             onPress={() => this.close()}
           />

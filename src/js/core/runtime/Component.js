@@ -7,6 +7,7 @@
 import { clearBindings } from "./clearBindings.js";
 import { BROWSER_EVENTS } from "./events.js";
 import { coerceValue } from "./coerce.js";
+import { MESSAGES } from "./Messages.js";
 import { redraw } from "./redraw.js";
 import { refresh } from "./refresh.js";
 import { notify } from "./private/observe.js";
@@ -177,6 +178,33 @@ export class Component {
    */
   changed(name) {
     notify(this, name);
+  }
+
+  /**
+   * One of this component's own strings, in whichever language the application
+   * is being read in.
+   *
+   *   tooltip={this.message("Close")}
+   *   placeholder={this.message("Search")}
+   *
+   * What `{MESSAGES.Close}` is to markup, this is to a component that draws
+   * itself: the key is the English, so a component says what it means and a
+   * build with no translation of it says exactly that. A framework's own
+   * strings are its own — they are drawn by its components, not by the
+   * application's markup, and this is where they are looked up.
+   *
+   * Reading one is also what makes this component follow the locale: nothing
+   * about a drawn string is a property anything could observe, so the
+   * component is remembered instead, and a change of locale draws it again.
+   * That is the same bargain `bindProp` makes, with the locale in place of an
+   * assignment.
+   *
+   * @param {string} key The English.
+   * @param {object} [params] Values for any `{name}` the message leaves open.
+   */
+  message(key, params) {
+    MESSAGES.dependOn(this);
+    return params ? MESSAGES.format(key, params) : MESSAGES.get(key);
   }
 
   /**

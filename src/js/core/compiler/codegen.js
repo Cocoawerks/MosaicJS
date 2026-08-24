@@ -30,6 +30,7 @@ export function generate(comp, opts) {
 
   const imports = ["h", "Fragment"];
   if (usesTextBinding(comp.markup)) imports.push("bindText");
+  if (usesMessage(comp.markup)) imports.push("bindMessage");
   if (usesAttrBinding(comp.markup, false)) imports.push("bindAttr");
   if (usesAttrBinding(comp.markup, true)) imports.push("bindProp");
   if (hasStyle) imports.push("addStyles");
@@ -140,6 +141,21 @@ function usesTextBinding(nodes) {
 }
 
 /**
+ * Does the tree contain `{MESSAGES.Key}` in text?
+ *
+ * Text position only: a message inside an attribute rides along in the
+ * `bindAttr` call that attribute already needed, as one more part of the value,
+ * and emits no call of its own.
+ */
+function usesMessage(nodes) {
+  return nodes.some(
+    (n) =>
+      n.kind === "message" ||
+      (n.kind === "element" && usesMessage(n.children)),
+  );
+}
+
+/**
  * Does the tree contain `{path}` inside an attribute value — on a component
  * when `onComponent` is true, and on plain markup when it is false? The two
  * compile to different calls: a component's prop is read, an element's
@@ -194,6 +210,11 @@ class Ctx {
     // `refresh(controller)` can re-read the path and update it.
     if (node.kind === "bind") {
       return `${lineMarker(node.line)}bindText(this, ${jsString(node.path)})`;
+    }
+    // A message takes no controller: `MESSAGES` is reserved, and what the key
+    // says depends on the locale rather than on anything a controller holds.
+    if (node.kind === "message") {
+      return `${lineMarker(node.line)}bindMessage(${jsString(node.key)})`;
     }
     return lineMarker(node.line) + this.elementExpr(node, indent);
   }
@@ -260,11 +281,14 @@ class Ctx {
         const parts = withScope
           ? [...a.value.parts, { kind: "text", text: ` ${classScope}` }]
           : a.value.parts;
-        const items = parts.map((p) =>
-          p.kind === "text"
-            ? jsString(p.text)
-            : `{ path: ${jsString(p.path)} }`,
-        );
+        const items = parts.map((p) => {
+          if (p.kind === "text") return jsString(p.text);
+          // A part that names a message is looked up rather than read, which
+          // is what `key` says instead of `path` — the two may sit in one
+          // value: title="{MESSAGES.SavedAt} {time}".
+          if (p.kind === "message") return `{ key: ${jsString(p.key)} }`;
+          return `{ path: ${jsString(p.path)} }`;
+        });
         // A binding keeps an attribute of *this* markup up to date, and
         // `bindAttr` declares one of those. A component's prop is not part of
         // the markup — what a Button does with `text` is the Button's own —

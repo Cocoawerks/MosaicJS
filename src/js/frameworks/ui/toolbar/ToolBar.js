@@ -314,8 +314,8 @@ export default class ToolBar extends Component {
             icon={ChevronsRight}
             iconOnly
             toggle
-            tooltip="More"
-            aria-label="More"
+            tooltip={this.message("More")}
+            aria-label={this.message("More")}
             ref={(item) => (this.overflowButton = item)}
           />
         </div>

@@ -236,7 +236,7 @@ export default class SnackBar extends Component {
       <CloseButton
         iconOnly="true"
         icon={Close}
-        tooltip="Close"
+        tooltip={this.message("Close")}
         onPress={() => this.close()}
       />
     );

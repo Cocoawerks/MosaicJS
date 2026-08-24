@@ -133,6 +133,18 @@ export function isPath(s) {
 }
 
 /**
+ * The one name a binding may start with that is not the controller's.
+ *
+ * `{MESSAGES.Save}` is a translation, looked up in the application's messages
+ * rather than read off the controller. Reserved, so a controller may not have a
+ * property that answers to it, and in capitals so that it cannot be mistaken
+ * for one: `messages` is an ordinary thing for a controller to hold — a chat
+ * log, a list of validation messages — and a page bound to the wrong one of
+ * those would draw nothing and say nothing about why.
+ */
+export const MESSAGES_ROOT = "MESSAGES";
+
+/**
  * A marker consumed by the source-map pass and then removed. Emitting it as a
  * comment keeps the intermediate output valid JavaScript.
  */

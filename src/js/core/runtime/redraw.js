@@ -11,6 +11,7 @@ import {
   readPath,
   track,
 } from "./private/bindings.js";
+import { MESSAGES } from "./Messages.js";
 import { drawInto, isComponentClass, withStyleName } from "./private/draw.js";
 import { flatten } from "./private/flatten.js";
 import { applyProps, setViewRedraw, VIEW } from "./private/scope.js";
@@ -97,7 +98,7 @@ function nsOf(parent) {
 
 function kindOf(vnode) {
   if (typeof vnode === "string" || typeof vnode === "number") return "text";
-  if (vnode.__ibBind === "text") return "text";
+  if (vnode.__ibBind === "text" || vnode.__ibBind === "message") return "text";
   if (vnode.type === Fragment) return "fragment";
   if (isComponentClass(vnode.type) || typeof vnode.type === "function")
     return "component";
@@ -106,6 +107,11 @@ function kindOf(vnode) {
 
 /** The text a text-ish vnode should display. */
 function textOf(vnode, controller) {
+  // A message is looked up rather than read: `MESSAGES` is reserved, and what
+  // it says depends on the locale rather than on the controller.
+  if (vnode.__ibBind === "message") {
+    return { value: MESSAGES.get(vnode.key), bind: vnode };
+  }
   if (vnode.__ibBind === "text") {
     const value = display(readPath(vnode.controller, vnode.path));
     return { value, bind: vnode };
@@ -144,7 +150,11 @@ function patch(parent, dom, oldV, newV, controller) {
     case "text": {
       const { value, bind } = textOf(newV, controller);
       if (dom.textContent !== value) dom.textContent = value;
-      if (bind)
+      // A patched node is the node the message now lives in, so it is
+      // registered again — the registry is keyed by node, so re-registering
+      // replaces rather than accumulates.
+      if (bind?.__ibBind === "message") MESSAGES.bind({ node: dom, key: bind.key });
+      else if (bind)
         track(bind.controller, { kind: "text", node: dom, path: bind.path });
       return dom;
     }

@@ -6,6 +6,7 @@
 // this shows up — an icon that is in the DOM and invisible.
 import { Fragment } from "./Fragment.js";
 import { attrValue, display, readPath, track } from "./private/bindings.js";
+import { MESSAGES } from "./Messages.js";
 import { drawInto, isComponentClass, withStyleName } from "./private/draw.js";
 import { flatten } from "./private/flatten.js";
 import { applyProps, rememberView, scopeFor } from "./private/scope.js";
@@ -28,6 +29,16 @@ export function render(vnode, controller = {}, ns = null) {
   }
   if (typeof vnode === "string" || typeof vnode === "number") {
     return document.createTextNode(String(vnode));
+  }
+  if (vnode.__ibBind === "message") {
+    // Not read from the controller: `MESSAGES` is reserved, and the key is
+    // looked up in the application's messages. Remembered there rather than in
+    // the controller's bindings, because a message depends on the locale and
+    // on nothing the controller holds — changing locale writes it again, and
+    // no redraw is involved.
+    const node = document.createTextNode(MESSAGES.get(vnode.key));
+    MESSAGES.bind({ node, key: vnode.key });
+    return node;
   }
   if (vnode.__ibBind === "text") {
     // The binding carries its own controller: it was captured at compile time

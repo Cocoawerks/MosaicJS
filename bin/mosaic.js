@@ -34,6 +34,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { compileAll } from "../src/js/core/compiler/build.js";
 import { componentName } from "../src/js/core/compiler/compile.js";
 import { scope as scopeCss } from "../src/js/core/compiler/css.js";
+import { MESSAGES_ROOT } from "../src/js/core/compiler/js.js";
 import { dispatch, methodsOf } from "../src/js/frameworks/rpc/dispatch.js";
 import { findServices, registrySource } from "../src/js/frameworks/rpc/services.js";
 import {
@@ -104,6 +105,17 @@ const SUBJECTS = [FRAMEWORK_SUBJECT, THEME_SUBJECT];
 const THEMES = "themes";
 /** The module a framework's themes are written into, beside its index. */
 const THEME_MODULE = "theme.js";
+/**
+ * Where an application keeps its translations, one JSON file per locale, named
+ * for it: `locales/fr.json`.
+ *
+ * A catalog is flat — `{"Save": "Enregistrer"}` — because the key is the
+ * English. `{MESSAGES.Save}` in the markup finds "Save" here, and a key with
+ * nothing under it stays the English it already is.
+ */
+const LOCALES = "locales";
+/** The module an application's catalogs are written into, beside its bundle. */
+const MESSAGES_MODULE = "messages.js";
 /**
  * How a theme names its dark counterpart: `aristo` and `aristo_dark` are one
  * theme in two lights, and a build that carries the first carries the second
@@ -202,7 +214,8 @@ const USAGE = `usage: mosaic <command> [dir] [options]
 commands:
   init <name>        create a new application in ./<name>
   init desktop       write the main process this app's window is opened by
-  install            install what "dependencies" in ${CONFIG} names
+  install            bun install: beside the app, or into the desktop project
+                     when there is one
   install framework <name>
                      copy a framework into ./${FRAMEWORKS} and name it in ${CONFIG}
   install theme <name>
@@ -252,6 +265,12 @@ and the toolkit it runs on, which no app has to name. The main process is
 generated too — the title and "window" in ${CONFIG} are all it takes. A
 \`${BUN_DIR}/\` beside \`main_file\` holds the app's services and nothing else;
 the compiler skips the directory.
+
+"locales" in ${CONFIG} names the languages a build carries — \`["en", "fr"]\` —
+and "locale" which of them it opens in, defaulting to the first. Each is a flat
+\`${LOCALES}/<name>.json\` of key to translation, where the key is the English:
+markup says \`{${MESSAGES_ROOT}.Save…}\`, and a language with no file for it reads
+in the keys themselves. \`setLocale\` swaps between them with nothing fetched.
 
 Configuration is ${CONFIG}, merged from the project root down to the app.`;
 
@@ -1257,6 +1276,111 @@ function linkThemes(app, specifiers) {
 }
 
 /**
+ * Write the application's messages: the catalogs `info.json` named, as a module
+ * that installs them.
+ *
+ *   "locales": ["en", "fr"],
+ *   "locale": "fr"
+ *
+ * Each name is a file in `locales/` beside the application — `locales/fr.json`
+ * — holding a flat object of key to translation. The key is the English, so
+ * `en.json` is usually absent and always optional: a locale with no file is a
+ * locale in which every key is still itself, which is exactly what English is.
+ *
+ * `locale` says which to start in, and defaults to the first named. It is the
+ * same arrangement as `theme`, and for the same reason: what a build carries is
+ * a list, what it opens in is one of them, and `setLocale` moves between them
+ * without anything being fetched.
+ *
+ * @returns {object|null} `{module, names, locale}`, or null for an application
+ *   that names no locales.
+ */
+function writeMessages(config, app, runtime, frameworks = []) {
+  const names = config.locales ?? [];
+  if (!Array.isArray(names) || names.length === 0) return null;
+
+  const chosen = config.locale ?? names[0];
+  if (!names.includes(chosen)) {
+    throw new Error(
+      `${CONFIG}: "locale" is "${chosen}", which is not one of the ` +
+        `"locales" this build carries — ${names.join(", ")}`,
+    );
+  }
+
+  // A framework's own strings first, the application's last.
+  //
+  // A framework says things of its own — a Drawer's close button, a
+  // SearchField's placeholder — and they are as much part of it as its
+  // stylesheet is. They are read first so that an application naming the same
+  // key wins: what a component calls "Close" in an application that words it
+  // differently is the application's business, and overriding a framework
+  // string should not mean forking the framework.
+  const sources = [
+    ...frameworks.map((framework) => path.join(framework.input, LOCALES)),
+    path.join(app.source, LOCALES),
+  ];
+
+  const catalogs = {};
+  for (const name of names) {
+    // Absent is allowed everywhere, and is how English usually looks: every
+    // key is already the string it stands for, so there is nothing to write.
+    catalogs[name] = {};
+    for (const dir of sources) {
+      const file = path.join(dir, `${name}.json`);
+      if (!fs.existsSync(file)) continue;
+      try {
+        Object.assign(catalogs[name], JSON.parse(fs.readFileSync(file, "utf8")));
+      } catch (e) {
+        throw new Error(`${file}: ${e.message}`);
+      }
+    }
+  }
+
+  const module = path.join(app.outdir, MESSAGES_MODULE);
+  fs.writeFileSync(
+    module,
+    `// Generated by mosaic from ${CONFIG}. Written fresh on every build —\n` +
+      `// edits here are lost; the catalogs are in ${LOCALES}/.\n` +
+      `//\n` +
+      `// The application's strings, in every language this build carries. They\n` +
+      `// are in the bundle rather than fetched: a page that has to ask for its\n` +
+      `// own words draws once in the wrong language and again in the right one.\n` +
+      `import { MESSAGES } from ${JSON.stringify(runtime)};\n\n` +
+      `MESSAGES.install(${JSON.stringify(catalogs, null, 2)}, ${JSON.stringify(chosen)});\n`,
+  );
+
+  return { module, names, locale: chosen };
+}
+
+/**
+ * Make the application's bootstrap import its messages, as `linkThemes` does
+ * for the theme: the catalogs belong to the application, and no module of it
+ * names them.
+ *
+ * Imports are evaluated before the module that declares them runs, so the
+ * catalogs are installed before the first line of application code — and well
+ * before anything draws.
+ */
+function linkMessages(app, messages) {
+  if (!messages) return;
+
+  const specifier =
+    "./" +
+    path
+      .relative(path.dirname(app.entry), messages.module)
+      .split(path.sep)
+      .join("/");
+
+  const source = fs.readFileSync(app.entry, "utf8");
+  fs.writeFileSync(
+    app.entry,
+    `// The locales ${CONFIG} named, linked in by mosaic: the catalogs are the\n` +
+      `// application's, and nothing imports them by hand.\n` +
+      `import ${JSON.stringify(specifier)};\n\n${source.trimStart()}`,
+  );
+}
+
+/**
  * Write a framework's index: the module its subpath export names, re-exporting
  * every component compiled into it.
  *
@@ -1430,6 +1554,17 @@ async function compileInto(config, app, args) {
   }
 
   linkThemes(app, themes);
+
+  // The application's own strings, in every language it carries.
+  const messages = writeMessages(config, app, vendored.specifier, frameworks);
+  linkMessages(app, messages);
+  if (messages) {
+    const others = messages.names.filter((n) => n !== messages.locale);
+    frameworkStats.push(
+      `    ${LOCALES}  ${messages.locale}` +
+        (others.length > 0 ? ` (+${others.join(", ")} to switch to)` : ""),
+    );
+  }
 
   log("==> bundling");
   // `throw: false`: a thrown build carries only "Bundle failed", and the
@@ -1626,6 +1761,77 @@ async function loadServices(app) {
   const services = loaded.default ?? {};
 
   return { services, methods: methodsOf(services) };
+}
+
+/** The port `web` was asked for is being listened on by something else. */
+class PortInUse extends Error {
+  constructor(port) {
+    super(`port ${port} is already in use`);
+    this.port = port;
+  }
+}
+
+/**
+ * What is listening on `port`, as near as can be told: `"node (pid 4821)"`, or
+ * null when it cannot be told at all.
+ *
+ * Best effort, and never worth failing over: `lsof` is not on every machine,
+ * and a port held by another user's process will not name itself to this one.
+ * Knowing that the thing in the way is another mosaic is most of the answer,
+ * though, so it is worth asking.
+ */
+function whatHasPort(port) {
+  const lsof = Bun.which("lsof");
+  if (!lsof) return null;
+
+  try {
+    const found = Bun.spawnSync([lsof, "-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-F", "cp"], {
+      stdout: "pipe",
+      stderr: "ignore",
+    });
+    // `-F cp` writes one field per line: `p<pid>` then `c<command>`.
+    const lines = new TextDecoder().decode(found.stdout).trim().split("\n");
+    const pid = lines.find((l) => l.startsWith("p"))?.slice(1);
+    const command = lines.find((l) => l.startsWith("c"))?.slice(1);
+    if (!command) return null;
+    return pid ? `${command} (pid ${pid})` : command;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Say that the port is taken, in the terms someone can act on.
+ *
+ * A port in use is the one failure of `web` that is nobody's mistake — a server
+ * left running in another window, another application that likes 3000 as much
+ * as this one does — so it is answered with what is there and what to do about
+ * it, rather than with a stack trace through Bun's listen call.
+ */
+function reportPortInUse(port) {
+  const holder = whatHasPort(port);
+
+  console.error(`mosaic: port ${port} is already in use.`);
+  if (holder) console.error(`    ${holder} is listening on it.`);
+  console.error(
+    `    Serve on another port with \`--port ${port + 1}\`, or stop what is there.`,
+  );
+  // The likeliest cause by far, and the one whose fix is not "pick another
+  // port": a `web` from an earlier session that is still up.
+  console.error(`    A \`mosaic web\` left running in another window will do this.`);
+}
+
+/**
+ * Start the server, turning the one error worth explaining into one that says
+ * so. Everything else is a real failure and travels as it is.
+ */
+function listen(root, port, onResult = null, services = null) {
+  try {
+    return serve(root, port, onResult, services);
+  } catch (e) {
+    if (e?.code !== "EADDRINUSE") throw e;
+    throw new PortInUse(port);
+  }
 }
 
 function serve(root, port, onResult = null, services = null) {
@@ -1902,27 +2108,86 @@ function watchSources(config, app, args, onRebuilt = null) {
  * Install what the application says it depends on.
  *
  * `bun install`, with `dependencies` in `info.json` standing in for the
- * package.json an application does not have. It is the same install `desktop`
- * does for itself, said as a command — for the first checkout of a project, for
- * a CI step that wants the download over with before the build, and for
- * changing a version and having it take effect without running the app.
+ * package.json an application does not have — for the first checkout of a
+ * project, for a CI step that wants the download over with before the build,
+ * and for changing a version and having it take effect without running the app.
  *
  * Asked for, it is done: unlike the install `desktop` performs on its way to
  * launching, this one does not decide the dependencies look current and skip.
+ *
+ * Where they land depends on what the application is, and it is looked at
+ * rather than assumed. A desktop app's dependencies belong to the project
+ * `desktop` generates, because that project is what is bundled and shipped and
+ * what Electrobun has to be found in. A page's are ordinary dependencies of an
+ * ordinary directory, and go where anyone would look for them — beside the
+ * application, where the bundler resolves imports from.
+ *
+ * Presuming the first of those cost every page an error: writing the desktop
+ * project needs a main process, and a page has none to write.
  */
 async function install(config, app, args) {
-  const dir = path.join(app.outdir, DESKTOP_DIR);
-  const project = writeProject({ app, config, dir });
   const log = args.quiet ? null : (...a) => console.log(...a);
 
-  // There is always something to install even when the application named
-  // nothing: what a desktop app is built out of is not its own dependency, but
-  // it does have to be here.
+  if (fs.existsSync(path.join(app.bunDir, BUN_ENTRY))) {
+    return installDesktop(config, app, log);
+  }
+  return installPage(config, app, log);
+}
+
+/**
+ * A desktop app: install into the project `desktop` generates.
+ *
+ * There is always something to install even when the application named
+ * nothing: what a desktop app is built out of is not its own dependency, but
+ * it does have to be here.
+ */
+async function installDesktop(config, app, log) {
+  const dir = path.join(app.outdir, DESKTOP_DIR);
+  const project = writeProject({ app, config, dir });
+
   log?.(`==> installing into ${path.relative(config.root, dir) || "."}`);
   await installDependencies({ ...project, needsInstall: true, log: null });
 
   const names = Object.keys(project.dependencies);
   log?.(`    ${names.length > 0 ? names.join(", ") : "nothing declared"}`);
+  return 0;
+}
+
+/**
+ * A page: `bun install` where the application is, told what to install by
+ * `info.json`.
+ *
+ * The dependencies are read from `info.json` and handed to bun as `name@version`
+ * arguments, which leaves the package.json to bun. Mosaic writing one would be
+ * a generated file in a source tree — a file someone will edit, and then find
+ * overwritten — and bun already writes the two lines it needs when given
+ * packages and finding none there.
+ *
+ * An application whose package.json says more than `info.json` can is not
+ * argued with: what is passed is what `info.json` declares, and everything else
+ * already in the file is installed along with it, as a plain `bun install`
+ * would.
+ */
+async function installPage(config, app, log) {
+  const dir = app.source;
+  const declared = config.dependencies ?? {};
+  const packages = Object.entries(declared).map(([name, version]) =>
+    version ? `${name}@${version}` : name,
+  );
+
+  // Nothing declared and no package.json to fall back on. Said rather than
+  // done: bun has nothing to install from and reports as much, which is a
+  // failure where this is an application that simply depends on nothing.
+  if (packages.length === 0 && !fs.existsSync(path.join(dir, "package.json"))) {
+    log?.(`==> nothing to install — ${CONFIG} declares no dependencies`);
+    return 0;
+  }
+
+  log?.(`==> installing into ${path.relative(config.root, dir) || "."}`);
+  await installDependencies({ dir, packages, needsInstall: true, log: null });
+
+  const names = Object.keys(declared);
+  log?.(`    ${names.length > 0 ? names.join(", ") : "package.json"}`);
   return 0;
 }
 
@@ -2490,10 +2755,19 @@ async function main(argv) {
     }
   }
 
-  let server =
-    args.command === "check"
-      ? serve(checkRoot, 0, reportResult)
-      : serve(app.source, args.port, null, rpc?.services ?? null);
+  // `check` asks for port 0 — whatever is free — so it is the one path here
+  // that cannot collide with anything.
+  let server;
+  try {
+    server =
+      args.command === "check"
+        ? serve(checkRoot, 0, reportResult)
+        : listen(app.source, args.port, null, rpc?.services ?? null);
+  } catch (e) {
+    if (!(e instanceof PortInUse)) throw e;
+    reportPortInUse(e.port);
+    return 1;
+  }
 
   if (args.command === "check") {
     let code;
@@ -2528,7 +2802,18 @@ async function main(argv) {
         console.error(`mosaic: the application's services could not be loaded`);
         report(e);
       }
-      server = serve(app.source, port, null, rpc?.services ?? null);
+      try {
+        server = listen(app.source, port, null, rpc?.services ?? null);
+      } catch (e) {
+        if (!(e instanceof PortInUse)) throw e;
+        // The port was ours a moment ago, so something took it in the gap
+        // between stopping and starting. There is no serving on from here and
+        // nothing to wait for, so it is said and the run ends — rather than
+        // watching on with nothing listening, which looks like the rebuild
+        // silently failing.
+        reportPortInUse(e.port);
+        process.exit(1);
+      }
     };
     const watched = watchSources(config, app, args, restart);
     console.log(

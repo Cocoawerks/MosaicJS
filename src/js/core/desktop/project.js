@@ -546,19 +546,28 @@ export function writeProject({ app, config, dir, prod = false }) {
  * is done. Deleting the build directory therefore costs an install and nothing
  * else.
  */
-export async function installDependencies({ dir, needsInstall, log }) {
+export async function installDependencies({
+  dir,
+  needsInstall,
+  log,
+  packages = [],
+}) {
   if (!needsInstall) return true;
 
   const bun = Bun.which("bun");
   if (!bun) {
     throw new Error(
-      "`desktop` installs the app's dependencies with bun, and bun is not on " +
+      "installing an app's dependencies is done with bun, and bun is not on " +
         "PATH.\n    Install it from https://bun.sh.",
     );
   }
 
   log?.("==> installing dependencies");
-  const proc = Bun.spawn([bun, "install"], {
+  // Named packages are handed straight to bun, which is what lets an
+  // application declare its dependencies in info.json and keep no package.json
+  // of its own: bun writes the one it needs. With none named this is the plain
+  // install, against whatever package.json is already there.
+  const proc = Bun.spawn([bun, "install", ...packages], {
     cwd: dir,
     stdout: "inherit",
     stderr: "inherit",

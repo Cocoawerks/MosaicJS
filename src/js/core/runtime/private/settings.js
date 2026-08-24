@@ -57,6 +57,7 @@ const RESERVED = new Set([
   "self",
   "controller",
   "needsDisplay",
+  "message",
   "bindEvents",
   "isAttached",
   "listeners",
