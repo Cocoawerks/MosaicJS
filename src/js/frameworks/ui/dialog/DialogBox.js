@@ -280,17 +280,19 @@ export default class DialogBox extends Component {
   }
 
   /**
-   * Say that it opened, and that it closed. Hooks of their own as well as the
-   * action, so a kind of dialog that means something else by its action — a
-   * message box's is the button that was pressed — can still hear these.
+   * Say that it opened, and that it closed — two events rather than one action
+   * carrying a boolean. In markup they are `action="open:method"` and
+   * `action="close:method"` (compiled to `openAction`/`closeAction`); in
+   * JavaScript they are `onOpen` and `onClose`. `action` is left free for what a
+   * dialog means by it — a message box's is the button that was pressed.
    */
   reportOpen() {
-    this.props.action?.(this.self, true);
+    this.props.openAction?.(this.self);
     this.props.onOpen?.(this.self);
   }
 
   reportClose() {
-    this.props.action?.(this.self, false);
+    this.props.closeAction?.(this.self);
     this.props.onClose?.(this.self);
   }
 

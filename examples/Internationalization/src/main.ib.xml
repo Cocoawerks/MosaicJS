@@ -1,9 +1,10 @@
 <!-- Internationalization — every word on this page is a message.
 
-     `MESSAGES` is reserved in markup: `{MESSAGES.Save…}` is not read from the
-     controller, it is looked up in the application's messages. The key is the
-     English, which is why there is no `locales/en.json` in this application and
-     never needs to be — English is what the markup already says.
+     `MESSAGES` is reserved in markup: `{MESSAGES.save}` is not read from the
+     controller, it is looked up in the application's messages. The key is a
+     short name, and `locales/default.json` holds the message each one stands
+     for — usually English. A locale with no translation of a key falls back to
+     that default, and a key with no default at all falls back to its own name.
 
      The point of the page is what happens when the language changes: the
      labels change and nothing else does. What is typed in the field stays
@@ -13,9 +14,9 @@
 
 <interface>
     <div styleName="app">
-        <h1 styleName="title">{MESSAGES.Internationalization}</h1>
+        <h1 styleName="title">{MESSAGES.title}</h1>
 
-        <p styleName="lede">{MESSAGES.Choose a language. Everything below is translated, and nothing you have typed is lost.}</p>
+        <p styleName="lede">{MESSAGES.lede}</p>
 
         <!-- The language chooser. Each button is a locale the build carries;
              `info.json` named them, and mosaic put every catalog in the bundle,
@@ -30,29 +31,29 @@
 
         <p styleName="reading">{reading}</p>
 
-        <Box title="{MESSAGES.Your details}">
+        <Box title="{MESSAGES.yourDetails}">
             <label styleName="field">
-                <span styleName="label">{MESSAGES.Your name}</span>
+                <span styleName="label">{MESSAGES.yourName}</span>
                 <TextField outlet="nameField" action="change:typed"
-                           placeholder="{MESSAGES.Type your name}"/>
+                           placeholder="{MESSAGES.typeYourName}"/>
             </label>
 
             <!-- Not one string of this is the application's. A SearchField says
                  "Search" and "Clear search" itself, and the ui framework ships
                  the translations beside its components. -->
             <label styleName="field">
-                <span styleName="label">{MESSAGES.A component with strings of its own}</span>
+                <span styleName="label">{MESSAGES.componentStrings}</span>
                 <SearchField outlet="searchField"/>
             </label>
 
-            <CheckBox outlet="updates" text="{MESSAGES.Send me updates}"/>
+            <CheckBox outlet="updates" text="{MESSAGES.sendUpdates}"/>
         </Box>
 
         <p styleName="greeting">{greeting}</p>
 
         <div styleName="row">
-            <Button text="{MESSAGES.Save…}" intent="primary" action="save"/>
-            <Button text="{MESSAGES.Reset}" action="reset"/>
+            <Button text="{MESSAGES.save}" intent="primary" action="save"/>
+            <Button text="{MESSAGES.reset}" action="reset"/>
         </div>
 
         <p styleName="status">{status}</p>

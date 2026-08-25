@@ -74,6 +74,12 @@ export function compileAll(sources, opts = {}) {
     sourcemap: opts.sourcemap,
     minify: opts.minify,
     icons: opts.icons ?? [],
+    // Where images are emitted beside the bundle, and the set that collects
+    // them — the same directory and set for every job, wherever it was
+    // compiled from, since the whole build bundles into one file there. Absent,
+    // an image is inlined as a data URL instead. See inlineImageImports.
+    assetDir: opts.assetDir ?? null,
+    assets: opts.assets ?? null,
   });
 
   // Destinations are known before anything is written, so a `<Button/>` in one

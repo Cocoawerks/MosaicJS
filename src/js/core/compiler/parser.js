@@ -443,20 +443,20 @@ class Parser {
    * `MESSAGES` is reserved — see {@link MESSAGES_ROOT} — and everything after
    * it is the key.
    *
-   * A path has to be a path: `{count}`, `{user.name}`, identifiers and dots,
-   * because it is walked across an object. A message key is walked across
-   * nothing — it is looked up whole — so it is taken exactly as written, spaces
-   * and apostrophes and full stops and all:
+   * Both are names rather than text. A path is walked across an object, so it
+   * is identifiers and dots: `{count}`, `{user.name}`. A message key is looked
+   * up whole, but it is still a name — a short one — not the sentence it stands
+   * for:
    *
-   *   {MESSAGES.Save}
-   *   {MESSAGES.Open picture…}
-   *   {MESSAGES.Open a file, or type something and save it.}
+   *   {MESSAGES.save}
+   *   {MESSAGES.openPicture}
+   *   {MESSAGES.dialog.close}
    *
-   * Which is the point of keying on the English. A key that has to be an
-   * identifier is not English — it is `OpenPicture`, and a build with no
-   * translation of it draws `OpenPicture` on the screen. Written as the
-   * sentence it stands for, an untranslated key is the sentence, and the
-   * catalog for the language it was written in is a file nobody has to keep.
+   * The message each key stands for lives in `locales/default.json`, and every
+   * other language beside it. Keeping the sentence out of the markup is the
+   * point: a heading is `{MESSAGES.title}` however long the title is, and a
+   * message with a full stop or an ellipsis in it — `Open a file…` — is a value
+   * in a catalog rather than a key that has to carry the punctuation.
    */
   parseBindingNode(line) {
     const raw = this.parseBinding();
@@ -467,7 +467,7 @@ class Parser {
         throw this.err(
           `\`{${MESSAGES_ROOT}}\` names no message — ${MESSAGES_ROOT} is ` +
             `reserved, and a binding under it is a message to look up, like ` +
-            `{${MESSAGES_ROOT}.Save}`,
+            `{${MESSAGES_ROOT}.save}`,
         );
       }
       if (!isPath(raw)) {
@@ -485,7 +485,18 @@ class Parser {
     const key = raw.slice(prefix.length).trim();
     if (key === "") {
       throw this.err(
-        `\`{${raw}}\` names no message — say which, like {${MESSAGES_ROOT}.Save}`,
+        `\`{${raw}}\` names no message — say which, like {${MESSAGES_ROOT}.save}`,
+      );
+    }
+
+    // A key is a name, not the sentence it stands for: one word, or a dotted
+    // path of them. The message itself — spaces, punctuation, an ellipsis and
+    // all — is the value in `locales/default.json` this key looks up.
+    if (!isPath(key)) {
+      throw this.err(
+        `\`{${raw}}\` is not a message key — a key is a short name like ` +
+          `{${MESSAGES_ROOT}.save} or {${MESSAGES_ROOT}.dialog.close}, and the ` +
+          `message it stands for goes in locales/default.json`,
       );
     }
 

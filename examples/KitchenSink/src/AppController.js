@@ -763,7 +763,7 @@ export default class AppController {
       <UndoBar
         text="Message moved to the bin"
         onUndo={() => this.note("brought it back")}
-        onClosed={() => this.countBars()}
+        onClose={() => this.countBars()}
       />,
     );
     this.countBars();

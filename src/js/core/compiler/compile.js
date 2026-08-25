@@ -144,9 +144,14 @@ function compileJs(src, file, stem, runtime, opts = {}) {
   // An icon is markup, and becomes the component that draws it — so `h` is
   // needed for an icon just as it is for anything else drawn here.
   const [inlined] = inlineSvgImports(withCss, opts.icons ?? [], scope);
-  // A raster image cannot be drawn, only pointed at, so it becomes the data
-  // URL that points at it — a string, needing nothing from the runtime.
-  const [withImages] = inlineImageImports(inlined, path.dirname(file));
+  // A raster image cannot be drawn, only pointed at. Given somewhere to put it
+  // (`assetDir`, the directory the bundle lands in) it is emitted as a file
+  // beside the bundle and pointed at by a URL; otherwise it is inlined as a
+  // data URL. Either way it becomes a string, needing nothing from the runtime.
+  const [withImages] = inlineImageImports(inlined, path.dirname(file), {
+    assetDir: opts.assetDir ?? null,
+    assets: opts.assets ?? null,
+  });
 
   const needed = ["h", "Fragment"];
   if (hasCss) needed.push("addStyles");

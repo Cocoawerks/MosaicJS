@@ -117,6 +117,24 @@ export class Component {
    */
 
   /**
+   * Cocoa's `awakeFromNib`, for a component woken from an `.ib.xml` (a "mib").
+   *
+   * It runs once, after the markup has finished drawing — so every outlet the
+   * markup named is assigned and every control the file placed can be reached —
+   * and before the component is on screen. That is the moment the constructor
+   * cannot be: an outlet is a `ref` the runtime assigns as it draws, which is
+   * after the object it assigns onto has been constructed. Code that has to see
+   * a sibling control — show a dialog placed with `outlet="…"`, join two
+   * controls with a binding — belongs here rather than in the constructor.
+   *
+   * A no-op by default; override without calling `super`. It fires on a page's
+   * controller and on a composed view's controller as well as on a Component
+   * that draws itself, so a plain `.ib.xml` controller may declare it too.
+   * Children wake before their parents, as a nib's objects do.
+   */
+  awakeFromMib() {}
+
+  /**
    * A setting's current value: an override once one has been assigned — even
    * `null`, which is how a caller clears one — then the prop, then the default.
    *
@@ -185,12 +203,13 @@ export class Component {
    * is being read in.
    *
    *   tooltip={this.message("Close")}
-   *   placeholder={this.message("Search")}
+   *   aria-label={this.message("clearSearch")}
    *
-   * What `{MESSAGES.Close}` is to markup, this is to a component that draws
-   * itself: the key is the English, so a component says what it means and a
-   * build with no translation of it says exactly that. A framework's own
-   * strings are its own — they are drawn by its components, not by the
+   * What `{MESSAGES.close}` is to markup, this is to a component that draws
+   * itself. A key is a name: a single English word — `"Close"` — is already its
+   * own key, and a phrase is a short one — `"clearSearch"` — with the words it
+   * stands for in the framework's `locales/default.json`. Either way a
+   * framework's own strings are its own, drawn by its components rather than the
    * application's markup, and this is where they are looked up.
    *
    * Reading one is also what makes this component follow the locale: nothing

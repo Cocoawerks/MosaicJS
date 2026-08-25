@@ -30,8 +30,8 @@ export { refresh } from "./refresh.js";
 export { bind, bindTwoWay, canPush, observeKey } from "./bind.js";
 export { bindText } from "./bindText.js";
 // What the application says, in whichever language it is read in. `MESSAGES` is
-// reserved in markup: `{MESSAGES.Save}` is a lookup here rather than a read off
-// the controller, and the key is the English.
+// reserved in markup: `{MESSAGES.save}` is a lookup here rather than a read off
+// the controller, keyed by a short name whose text is in locales/default.json.
 export {
   Messages,
   MESSAGES,

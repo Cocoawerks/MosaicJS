@@ -363,7 +363,7 @@ export default class ColorChooserPanel extends Component {
     const color = this.current;
 
     return (
-      <div styleName="ccp-root" role="group" aria-label={this.message("Colour chooser")}>
+      <div styleName="ccp-root" role="group" aria-label={this.message("colourChooser")}>
         {this.drawPalette()}
 
         <div styleName="ccp-custom">
@@ -371,7 +371,7 @@ export default class ColorChooserPanel extends Component {
             <canvas
               styleName="ccp-sv"
               ref={(el) => (this.svCanvas = el)}
-              aria-label={this.message("Saturation and brightness")}
+              aria-label={this.message("saturationBrightness")}
             />
             <canvas
               styleName="ccp-hue"

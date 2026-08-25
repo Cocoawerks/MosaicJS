@@ -1,0 +1,17 @@
+{
+  "title": "Internationalization",
+  "lede": "Choose a language. Everything below is translated, and nothing you have typed is lost.",
+  "yourDetails": "Your details",
+  "yourName": "Your name",
+  "typeYourName": "Type your name",
+  "componentStrings": "A component with strings of its own",
+  "sendUpdates": "Send me updates",
+  "save": "Save…",
+  "reset": "Reset",
+  "readingIn": "Reading in {language}.",
+  "hello": "Hello, {name}.",
+  "noName": "Nobody has said who they are yet.",
+  "savedAs": "Saved as {name}.",
+  "nobody": "nobody",
+  "everythingReset": "Everything was put back."
+}

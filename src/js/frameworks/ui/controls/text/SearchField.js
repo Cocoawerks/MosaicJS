@@ -71,7 +71,7 @@ export default class SearchField extends TextBase {
       <button
         styleName="Search-reset"
         type="button"
-        aria-label={this.message("Clear search")}
+        aria-label={this.message("clearSearch")}
         aria-hidden={empty ? "true" : "false"}
         style={{ display: empty ? "none" : "block" }}
         tabindex={empty ? "-1" : "0"}

@@ -191,26 +191,32 @@ test("a component's prop takes one too", () => {
   assert.match(out, /text: bindProp\(this, \[\{ key: "Save" \}\]\)/);
 });
 
-test("everything after MESSAGES is the key, dots included", () => {
-  const out = compile("<p>{MESSAGES.dialog.Save}</p>");
-  assert.match(out, /bindMessage\("dialog\.Save"\)/);
+test("a key may be a dotted path of names", () => {
+  const out = compile("<p>{MESSAGES.dialog.save}</p>");
+  assert.match(out, /bindMessage\("dialog\.save"\)/);
 });
 
-test("a key is the English, spaces and punctuation and all", () => {
-  // The point of keying on English: a path has to be a path because it is
-  // walked across an object; a key is looked up whole, so it is a sentence.
-  const out = compile("<p>{MESSAGES.Open a file, or save it.}</p>");
-  assert.match(out, /bindMessage\("Open a file, or save it\."\)/);
-
-  const attr = compile('<Button text="{MESSAGES.Open picture…}"/>');
-  assert.match(attr, /\{ key: "Open picture…" \}/);
+test("a key is a name, not the sentence it stands for", () => {
+  // A key is looked up whole, but it is still a short name — the message with
+  // its spaces and full stops and ellipsis is the value in default.json, not
+  // the key. So a sentence in the markup is refused, and points at where the
+  // message belongs.
+  assert.throws(
+    () => compile("<p>{MESSAGES.Open a file, or save it.}</p>"),
+    /is not a message key.*default\.json/s,
+  );
+  assert.throws(
+    () => compile('<Button text="{MESSAGES.Open picture…}"/>'),
+    /is not a message key/,
+  );
 });
 
 test("a key may be written in any script", () => {
-  // Nothing about a key is an identifier — it is looked up whole — so an
-  // application whose source language is not English keys on its own.
-  const out = compile("<p>{MESSAGES.Привет}</p>");
-  assert.match(out, /bindMessage\("Привет"\)/);
+  // A key is a name, not an English word — `\\p{L}` is every letter Unicode
+  // has — so an application whose source language is not English keys on its
+  // own words.
+  const out = compile("<p>{MESSAGES.привет}</p>");
+  assert.match(out, /bindMessage\("привет"\)/);
 });
 
 test("a path is still held to being a path", () => {

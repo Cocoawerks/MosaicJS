@@ -8,6 +8,7 @@
 // an arbitrary expression rather than a property path. `styleName`,
 // `outlet` and `action` mean the same thing in both.
 
+import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -626,6 +627,19 @@ const IMAGE_TYPES = new Map([
 ]);
 
 /**
+ * The size, in bytes, at which an image stops being inlined and is emitted as a
+ * file beside the bundle instead.
+ *
+ * Below it, a data URL is the better trade: one fewer request, and the third
+ * again that base64 costs is a few bytes on a small glyph. At or above it that
+ * overhead is real and the picture is worth caching on its own, so it is
+ * written out and pointed at. 12 KB is the line — a little above the 4–8 KB
+ * other bundlers draw, since a mosaic build is one payload and an inlined image
+ * that never changes is still cheap to carry.
+ */
+const INLINE_LIMIT = 12 * 1024;
+
+/**
  * Replace an image import with the image.
  *
  *   import logo from "./logo.png";
@@ -647,7 +661,17 @@ const IMAGE_TYPES = new Map([
  * @param dir the importing file's directory, which the specifier is relative to
  * @returns `[code, foundAny]`
  */
-export function inlineImageImports(code, dir) {
+export function inlineImageImports(code, dir, opts = {}) {
+  // An image at or above INLINE_LIMIT is emitted as a file beside the bundle
+  // and pointed at by a URL worked out from where the bundle itself is loaded —
+  // so a 636 KB icon rides in the build rather than a third again as much
+  // base64 in the payload. A smaller one is inlined as the data URL it always
+  // was, one fewer request for a few bytes' overhead. And with no `assetDir` at
+  // all — the `check` page loads the modules unbundled, so there is no one
+  // bundle to be relative to — every image is inlined, whatever its size.
+  const assetDir = opts.assetDir ?? null;
+  const assets = opts.assets ?? null;
+
   let out = "";
   let found = false;
 
@@ -676,12 +700,62 @@ export function inlineImageImports(code, dir) {
 
     const markerEnd = line.lastIndexOf("*/");
     out += markerEnd === -1 ? "" : line.slice(0, markerEnd + 2);
-    out += `const ${name} = ${jsString(`data:${type};base64,${data.toString("base64")}`)};`;
+    // A small image is inlined wherever it can be; only one at or above the
+    // limit is written out, and only where there is a bundle to sit beside.
+    if (assetDir && data.length >= INLINE_LIMIT) {
+      out += `const ${name} = ${assetReference(file, data, assetDir, assets)};`;
+    } else {
+      out += `const ${name} = ${jsString(`data:${type};base64,${data.toString("base64")}`)};`;
+    }
+    // Kept on one line, whichever branch: the source was one line, and the map
+    // that leads back to it is by line.
     if (line.endsWith("\n")) out += "\n";
     found = true;
   }
 
   return [out, found];
+}
+
+/**
+ * Emit `image` beside the bundle and give back the expression the compiled
+ * module reads its URL from.
+ *
+ * The file is named for its own content — `AppIcon-4f3a2b1c.png` — so two
+ * images that happen to share a base name do not collide, an image imported
+ * from two places is written once, and a cache never serves a stale one after
+ * the picture changes. Its bytes settle the name, so the same picture always
+ * lands on the same one and a rebuild overwrites rather than piles up.
+ *
+ * The URL is `new URL("./name", import.meta.url)`: `import.meta.url` is the
+ * bundle's own address wherever it is served from, so the reference finds the
+ * file beside it without the page having to know where in the site the bundle
+ * sits — which a page-relative path could not, the page being at the app root
+ * and the bundle a directory down. Bun leaves this form alone, so the compiler
+ * owns both halves: it writes the file and it writes the reference.
+ *
+ * @param {string} file the source image's path, for its extension and errors
+ * @param {Buffer} data its bytes, already read
+ * @param {string} assetDir where the bundle lands, so the file goes beside it
+ * @param {Set<string>|null} assets collects what was written, so the build can
+ *   keep these files when it prunes the intermediate modules away
+ * @returns {string} a JavaScript expression: the image's URL at run time
+ */
+function assetReference(file, data, assetDir, assets) {
+  const ext = path.extname(file).toLowerCase();
+  const stem = path.basename(file, path.extname(file));
+  const digest = createHash("sha256").update(data).digest("hex").slice(0, 8);
+  const asset = `${stem}-${digest}${ext}`;
+
+  const dest = path.join(assetDir, asset);
+  // Written once per build: the content hash means an identical picture always
+  // names the same file, so a second writer would only write the same bytes.
+  if (!assets || !assets.has(dest)) {
+    fs.mkdirSync(assetDir, { recursive: true });
+    fs.writeFileSync(dest, data);
+    assets?.add(dest);
+  }
+
+  return `new URL(${jsString(`./${asset}`)}, import.meta.url).href`;
 }
 
 /** Where an icon lives, searched nearest first. */

@@ -73,11 +73,6 @@ export default class SnackBar extends Component {
     userClosable: { type: Boolean, default: true },
     /** A font-icon class name, or an icon component, drawn before what it says. */
     icon: { type: String },
-    /**
-     * Called when the bar has gone, whichever closed it. `CloseEvent` in
-     * Java, which a subclass here hears through {@link SnackBar#reportClose}.
-     */
-    action: { type: Function },
   };
 
   constructor() {
@@ -118,6 +113,7 @@ export default class SnackBar extends Component {
 
   attached() {
     this.setLifespan();
+    this.reportOpen();
   }
 
   detached() {
@@ -169,12 +165,19 @@ export default class SnackBar extends Component {
   }
 
   /**
-   * Say the bar has gone. A hook of its own rather than the action alone, so a
-   * subclass can hear it without taking the action away from an application —
-   * the same arrangement PopOver has for opening.
+   * Say the bar has appeared, and that it has gone — an `open` and a `close`
+   * event, the way PopOver and DialogBox read: `action="open:method"` /
+   * `action="close:method"` in markup (compiled to `openAction`/`closeAction`),
+   * `onOpen`/`onClose` in JavaScript. `action` is left for what a bar is for.
    */
+  reportOpen() {
+    this.props.openAction?.(this.self);
+    this.props.onOpen?.(this.self);
+  }
+
   reportClose() {
-    this.props.action?.(this.self);
+    this.props.closeAction?.(this.self);
+    this.props.onClose?.(this.self);
   }
 
   // --- drawing -------------------------------------------------------------

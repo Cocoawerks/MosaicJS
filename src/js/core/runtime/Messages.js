@@ -11,17 +11,16 @@
 // collision would be silent: the binding would read the application's own
 // array, find no `save` on it, and draw nothing.
 //
-// A key resolves in three steps: the active locale's catalog, then the default
-// catalog (`locales/default.json` — the message each key stands for, usually
-// English), then the key itself. So `{MESSAGES.save}` draws the default text
-// wherever a locale has no translation of its own, and a key nobody has written
-// a default for yet draws its own name rather than a hole in the page.
+// A key is a short name — `save`, `openPicture`, `dialog.close` — not the
+// sentence it stands for. The message each key stands for lives in
+// `locales/default.json` (usually English), and every other language beside it.
 //
-// A key may be a short name (`save`) with its English in `default.json`, or the
-// English string itself (`{MESSAGES.Save}`) with no default file at all — both
-// work, because a missing default falls through to the key. The short-key form
-// keeps a long sentence out of the markup and gives every locale, English
-// included, one file to translate.
+// A key resolves in three steps: the active locale's catalog, then the default
+// catalog (`default.json`), then the key itself. So `{MESSAGES.save}` draws the
+// default text wherever a locale has no translation of its own, and a key
+// nobody has written a default for yet draws its own name rather than a hole in
+// the page. A single-word key that is already its own English — a framework's
+// `"Close"` — needs no default at all: it falls through to itself.
 //
 // Switching locale is what the theme does with a stylesheet: every translated
 // string in the document is written again, and nothing is redrawn and no state

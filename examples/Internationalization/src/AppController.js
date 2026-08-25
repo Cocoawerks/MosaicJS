@@ -85,13 +85,13 @@ export default class AppController {
    * the markup binds to the result as it would to any other property.
    */
   retitle() {
-    this.reading = MESSAGES.format("Reading in {language}.", {
+    this.reading = MESSAGES.format("readingIn", {
       language: ENDONYMS[MESSAGES.locale],
     });
 
     this.greeting = this.name
-      ? MESSAGES.format("Hello, {name}.", { name: this.name })
-      : MESSAGES.get("Nobody has said who they are yet.");
+      ? MESSAGES.format("hello", { name: this.name })
+      : MESSAGES.get("noName");
 
     // `status` is left as it is: it says what the last button did, and it was
     // said in whatever language was being read at the time. Translating it
@@ -107,7 +107,7 @@ export default class AppController {
   }
 
   save() {
-    this.status = MESSAGES.format("Saved as {name}.", {
+    this.status = MESSAGES.format("savedAs", {
       name: this.name || MESSAGES.get("nobody"),
     });
   }
@@ -117,7 +117,7 @@ export default class AppController {
     this.searchField.value = "";
     this.updates.value = false;
     this.name = "";
-    this.status = MESSAGES.get("Everything was put back.");
+    this.status = MESSAGES.get("everythingReset");
     this.retitle();
   }
 }

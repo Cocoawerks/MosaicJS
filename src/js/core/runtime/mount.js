@@ -80,7 +80,15 @@ export function mount(component, target, props = {}, controller = EMPTY) {
   // as much that page at the last of them as at the first, and something
   // written there — a `<Bind/>` after the markup it joins up — has to be able
   // to find the page it is in by looking upward.
-  for (const node of nodes) node.__ibCtl = controller;
+  //
+  // And only where nothing else has claimed it, for the reason `__ibView`
+  // above is guarded. A root may itself be a composed `.ib.xml` with a
+  // controller of its own — a page whose markup opens with `<PublishView/>` —
+  // and `render` has already tagged that node with it. Written over, that
+  // view's scope was not reachable from its own node: `attachTree` found the
+  // page's controller there, told it a second time, and the composed view was
+  // never told at all, so its `awakeFromMib` and `attached` never ran.
+  for (const node of nodes) node.__ibCtl ??= controller;
 
   // A page draws itself again the way a composed view does, so a value reaches
   // a component's prop here too — `<Button text="{label}"/>` in a page is the
@@ -105,6 +113,19 @@ export function mount(component, target, props = {}, controller = EMPTY) {
   target.textContent = "";
   target.appendChild(dom);
   for (const node of nodes) attachTree(node);
+
+  // And the page itself, if the walk did not reach it. A page is told through
+  // whichever root carries its controller, and a page whose every root is a
+  // composed view — `<PublishView/>` and `<WelcomeDialog/>` and nothing else —
+  // carries it on none of them: each of those nodes belongs to the view drawn
+  // there. The page is on screen just the same, and its `attached()` is where
+  // a controller joins its outlets together, which is exactly what a page made
+  // of composed views has to do.
+  if (controller && !controller.isAttached) {
+    controller.isAttached = true;
+    controller.awakeFromMib?.();
+    controller.attached?.();
+  }
 
   const unmount = () => {
     for (const node of nodes) discard(node);

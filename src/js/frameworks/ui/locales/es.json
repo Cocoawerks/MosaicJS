@@ -2,8 +2,8 @@
   "Close": "Cerrar",
   "More": "Más",
   "Search": "Buscar",
-  "Clear search": "Borrar búsqueda",
-  "Colour chooser": "Selector de color",
-  "Saturation and brightness": "Saturación y brillo",
+  "clearSearch": "Borrar búsqueda",
+  "colourChooser": "Selector de color",
+  "saturationBrightness": "Saturación y brillo",
   "Hue": "Tono"
 }

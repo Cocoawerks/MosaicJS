@@ -38,19 +38,7 @@ export default class UndoBar extends SnackBar {
     this.close();
   }
 
-  /**
-   * Also tell whoever showed it that it has gone, whichever way it went.
-   *
-   * `reportClose` is the hook the base class keeps for exactly this — a
-   * subclass hearing about a close without taking `action` away from an
-   * application. Which is what it is for here: `action` is a directive in
-   * markup and JSX alike, so it takes a method name and never a function,
-   * and a caller working in JavaScript needs some other way to be told.
-   */
-  reportClose() {
-    super.reportClose();
-    this.props.onClosed?.(this.self);
-  }
+  // Whoever showed it hears the close through the base class's `onClose`.
 }
 
 

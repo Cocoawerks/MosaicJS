@@ -22,6 +22,10 @@ export function attachTree(node) {
       view.redrawWanted = false;
       view.needsDisplay();
     }
+    // awakeFromNib's moment: the markup has drawn, so every outlet is
+    // assigned, and children have woken already (depth first) — then the
+    // node is announced on screen.
+    view.awakeFromMib?.();
     view.attached?.();
   }
 
@@ -34,6 +38,7 @@ export function attachTree(node) {
   const scope = node.__ibCtl;
   if (scope && !scope.isAttached) {
     scope.isAttached = true;
+    scope.awakeFromMib?.();
     scope.attached?.();
   }
 }

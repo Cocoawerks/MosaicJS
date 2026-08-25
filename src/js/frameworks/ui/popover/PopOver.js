@@ -25,6 +25,11 @@
 //   <Button text="Colour…" outlet="colourButton" action="showColours"/>
 //
 //   showColours(button) { this.colours.show(button); }
+//
+// It fires an `open` and a `close` event — `action="open:method"` and
+// `action="close:method"` in markup, `onOpen`/`onClose` in JavaScript — each
+// handed the popover. `action` itself is left for what a popover is for (a
+// menu's is the item chosen).
 import { Component } from "mosaic";
 
 import "./popover.css";
@@ -256,14 +261,21 @@ export default class PopOver extends Component {
   }
 
   /**
-   * Say that it opened, or that it closed. A kind of popover whose action
-   * means something else — a menu's is the item that was chosen — says so
-   * here instead, and keeps `onOpen` and `onClose`, which never mean anything
-   * but what they say.
+   * Say that it opened, or that it closed — two events rather than one action
+   * carrying a boolean. In markup they are `action="open:method"` and
+   * `action="close:method"` (compiled to `openAction`/`closeAction`); in
+   * JavaScript they are `onOpen` and `onClose`. `action` is left free for what
+   * a popover is *for* — a menu's is the item that was chosen (see Menu, which
+   * overrides this) — rather than being spent on open/close.
    */
   reportOpen(open) {
-    this.props.action?.(this.self, open);
-    (open ? this.props.onOpen : this.props.onClose)?.(this.self);
+    if (open) {
+      this.props.openAction?.(this.self);
+      this.props.onOpen?.(this.self);
+    } else {
+      this.props.closeAction?.(this.self);
+      this.props.onClose?.(this.self);
+    }
   }
 
   /**

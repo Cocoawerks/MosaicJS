@@ -1,8 +1,8 @@
 {
-  "Files": "Fichiers",
-  "Open…": "Ouvrir…",
-  "Open picture…": "Ouvrir une image…",
-  "Save…": "Enregistrer…",
-  "Close picture": "Fermer l'image",
-  "Open a file, or type something and save it.": "Ouvrez un fichier, ou tapez quelque chose et enregistrez-le."
+  "title": "Fichiers",
+  "open": "Ouvrir…",
+  "openPicture": "Ouvrir une image…",
+  "save": "Enregistrer…",
+  "closePicture": "Fermer l'image",
+  "placeholder": "Ouvrez un fichier, ou tapez quelque chose et enregistrez-le."
 }

@@ -5,6 +5,8 @@
 //   mosaic compile [dir]                compile the app and bundle it
 //   mosaic web [dev] [dir]              the same, then serve it, rebuilding
 //                                       and restarting on every change
+//   mosaic watch [dir]                  the same without the server: build, then
+//                                       rebuild on every change
 //   mosaic desktop [dev] [dir]          the same, run as a native desktop app
 //   mosaic check [dir]                  the same, then run the browser test
 //   mosaic clean [dir]                  delete the app's build directory
@@ -229,6 +231,7 @@ commands:
                      copy a theme's stylesheet into ./${THEMES}
   compile            compile the application and bundle it
   web [dev|prod]     compile, then serve it in a browser, rebuilding on every edit
+  watch              compile, then rebuild on every edit — no server, no browser
   desktop [dev|prod] run it as a native desktop app, or build one
   check              compile, then run the headless browser test
   clean              delete the application's build directory
@@ -255,7 +258,14 @@ to bundle Chromium rather than use the system webview. Signing reads its
 identity from the environment, never from ${CONFIG}. \`web prod\` is not
 implemented yet.
 
+\`watch\` is \`web\` with the server taken out: it compiles, then watches the same
+trees and rebuilds on every change, so a build stays current for something else
+to serve, load or ship. \`--outdir\` says where that build lands, overriding
+"outdir" in ${CONFIG} — which is what lets the output go somewhere another tool
+is watching, rather than the app's own \`build/\`.
+
 options:
+  --outdir <path>    where the build lands, overriding "outdir" in ${CONFIG}
   --port <n>         port for \`web\` (default 3000)
   --page <path>      page for \`check\`, relative to the current directory
   --no-open          don't launch a browser
@@ -275,12 +285,11 @@ the compiler skips the directory.
 
 "locales" in ${CONFIG} names the languages a build carries — \`["en", "fr"]\` —
 and "locale" which of them it opens in, defaulting to the first. Each is a flat
-\`${LOCALES}/<name>.json\` of key to translation. A key resolves in the active
-language first, then \`${LOCALES}/${DEFAULT_LOCALE}.json\` — the default (usually
-English) text of each key — then the key itself. So markup can say
-\`{${MESSAGES_ROOT}.save}\` with the English in \`${DEFAULT_LOCALE}.json\`, or
-\`{${MESSAGES_ROOT}.Save}\` with the English as the key and no default file at all.
-\`setLocale\` swaps between the languages with nothing fetched.
+\`${LOCALES}/<name>.json\` of key to translation. A key is a short name, not a
+sentence: markup says \`{${MESSAGES_ROOT}.save}\`, and the message it stands for
+goes in \`${LOCALES}/${DEFAULT_LOCALE}.json\` — the default (usually English) text.
+A key resolves in the active language first, then \`${DEFAULT_LOCALE}.json\`, then
+the key itself. \`setLocale\` swaps between the languages with nothing fetched.
 
 Configuration is ${CONFIG}, merged from the project root down to the app.`;
 
@@ -658,6 +667,11 @@ function parseArgs(argv) {
   const args = {
     command: null,
     entry: null,
+    // Where the build lands, when it is not what `info.json` says. Resolved
+    // against the directory the command was run from, which is the one the
+    // person typing it is standing in — the run moves to the project root
+    // before anything is built.
+    outdir: null,
     port: 3000,
     page: null,
     open: true,
@@ -680,6 +694,10 @@ function parseArgs(argv) {
       args.port = Number(argv[++i]);
       if (!Number.isInteger(args.port))
         throw new Error("`--port` needs a number");
+    } else if (a === "--outdir") {
+      args.outdir = argv[++i];
+      if (!args.outdir) throw new Error("`--outdir` needs a path");
+      args.outdir = path.resolve(args.outdir);
     } else if (a === "--page") {
       args.page = argv[++i];
       if (!args.page) throw new Error("`--page` needs a path");
@@ -710,9 +728,16 @@ function parseArgs(argv) {
 
   if (!args.command) throw new Error("missing command");
   if (
-    !["init", "install", "compile", "web", "desktop", "check", "clean"].includes(
-      args.command,
-    )
+    ![
+      "init",
+      "install",
+      "compile",
+      "web",
+      "watch",
+      "desktop",
+      "check",
+      "clean",
+    ].includes(args.command)
   ) {
     throw new Error(`unknown command \`${args.command}\``);
   }
@@ -720,6 +745,13 @@ function parseArgs(argv) {
     throw new Error("`init` needs a name, or `desktop`");
   if (args.subject && !args.name)
     throw new Error(`\`install ${args.subject}\` needs a name`);
+
+  // Watching is the whole of `watch`. `--no-watch` asks it to be `compile`,
+  // which is a command of its own — said rather than quietly building once and
+  // exiting from something that was told to keep going.
+  if (args.command === "watch" && !args.watch) {
+    throw new Error("`watch --no-watch` is `mosaic compile`");
+  }
 
   // Only the two commands that run an application have anything to say about
   // how. Silently accepting `mosaic compile prod` would be promising something.
@@ -753,8 +785,23 @@ function parseArgs(argv) {
  * is self-contained — its directory holds its sources, its output and the page
  * that loads them, with nothing above it needed.
  */
+/**
+ * A path as it is worth reading: relative to the project when it is inside it,
+ * and said outright when it is not. A `--outdir` somewhere else entirely is
+ * named by a climb of `../` otherwise, which is longer than the path it stands
+ * for and says less.
+ */
+function within(root, target) {
+  const relative = path.relative(root, target);
+  if (relative === "") return ".";
+  return relative.startsWith("..") ? target : relative;
+}
+
 function layout(config, source) {
-  const outdir = path.join(source, config.outdir);
+  // Relative to the application, as `info.json` states it — unless `--outdir`
+  // named a place outright, in which case that is where the build goes and
+  // resolving leaves it alone.
+  const outdir = path.resolve(source, config.outdir);
   const main = path.join(source, config.main_file);
 
   if (!fs.existsSync(main)) {
@@ -1293,9 +1340,10 @@ function linkThemes(app, specifiers) {
  *   "locale": "fr"
  *
  * Each name is a file in `locales/` beside the application — `locales/fr.json`
- * — holding a flat object of key to translation. The key is the English, so
- * `en.json` is usually absent and always optional: a locale with no file is a
- * locale in which every key is still itself, which is exactly what English is.
+ * — a flat object of key to translation, where a key is a short name. The text
+ * each key stands for is in `locales/default.json` (usually English), so a
+ * locale with no file of its own is one in which every key falls back to that
+ * default — which is why `en.json` is usually absent when default.json is it.
  *
  * `locale` says which to start in, and defaults to the first named. It is the
  * same arrangement as `theme`, and for the same reason: what a build carries is
@@ -1530,7 +1578,7 @@ async function compileInto(config, app, args) {
   // as where they will be, not where they are for the moment.
   const settled = (p) =>
     app.finalOutdir ? p.split(app.outdir).join(app.finalOutdir) : p;
-  const relative = (p) => path.relative(config.root, settled(p)) || ".";
+  const relative = (p) => within(config.root, settled(p));
 
   const frameworks = frameworkSources(config, app);
   const sources = [
@@ -1551,8 +1599,19 @@ async function compileInto(config, app, args) {
   // behind — there is nothing here from any earlier run to leave.
   const vendored = vendorRuntime(config, app);
 
+  // Images are emitted beside the bundle and pointed at by a URL, rather than
+  // inlined as data URLs that swell the payload by a third. The exception is
+  // `check`, whose page loads the compiled modules unbundled: there is no one
+  // bundle for `import.meta.url` to be relative to, so a null `assetDir` leaves
+  // those images inlined and reachable. `assets` collects what was written, so
+  // pruning the intermediate modules leaves the images standing.
+  const assets = new Set();
+  const assetDir = args.command === "check" ? null : path.dirname(app.outfile);
+
   log(`==> compiling ${relative(app.sourceRoot)}`);
   const written = compileAll(sources, {
+    assetDir,
+    assets,
     // Not source. The build this run will end up as — it is not written to
     // during the run, the staging directory is, so it has to be named or the
     // build sitting there from last time is walked as source — and the `bun/`
@@ -1647,7 +1706,7 @@ async function compileInto(config, app, args) {
 
   let removed = 0;
   if (!(args.keepModules || args.command === "check")) {
-    removed = pruneModules(app);
+    removed = pruneModules(app, assets);
   }
 
   // The whole run in one place: what compiled, what it bundled to, and what was
@@ -1658,6 +1717,15 @@ async function compileInto(config, app, args) {
   log(
     `    ${relative(app.outfile)}  ${(bytes / 1024).toFixed(1)} KB${args.minify ? ", minified" : ""}`,
   );
+  if (assets.size > 0) {
+    const assetBytes = [...assets].reduce(
+      (sum, file) => sum + fs.statSync(file).size,
+      0,
+    );
+    log(
+      `    ${assets.size} image${assets.size === 1 ? "" : "s"} beside it  ${(assetBytes / 1024).toFixed(1)} KB`,
+    );
+  }
   if (removed > 0) log(`    ${removed} intermediate modules removed`);
 }
 
@@ -1704,10 +1772,13 @@ async function writeBundle(outputs, app) {
  * The map is unaffected: Bun writes the sources into it, so the bundle stays
  * debuggable with nothing beside it.
  */
-function pruneModules(app) {
+function pruneModules(app, assets = null) {
   const keep = new Set(
     [app.outfile, `${app.outfile}.map`].map((p) => path.resolve(p)),
   );
+  // The images emitted beside the bundle are not intermediate — the page loads
+  // them at run time — so they are kept while the modules are swept away.
+  if (assets) for (const asset of assets) keep.add(path.resolve(asset));
 
   let removed = 0;
   const walk = (dir) => {
@@ -1735,6 +1806,16 @@ const CONTENT_TYPES = {
   ".map": "application/json; charset=utf-8",
   ".xml": "application/xml; charset=utf-8",
   ".svg": "image/svg+xml",
+  // Images the compiler emits beside the bundle, so `web` serves them as what
+  // they are rather than a generic download.
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".avif": "image/avif",
+  ".bmp": "image/bmp",
+  ".ico": "image/x-icon",
 };
 
 /** Serve `root` as static files; a directory serves its index.html. */
@@ -2681,6 +2762,9 @@ async function main(argv) {
     if (args.command === "init") return init(args.entry);
     source = resolveApp(args.entry);
     config = loadConfig(source);
+    // Said on the command line, it wins over the config: already absolute, so
+    // it means the same thing after the chdir below.
+    if (args.outdir) config.outdir = args.outdir;
     // Paths in the config are relative to the config that declared them, and
     // are absolute by now; the application's directory is where the rest of a
     // run is anchored.
@@ -2736,6 +2820,20 @@ async function main(argv) {
   }
 
   if (args.command === "compile") return 0;
+
+  // `web` without the server: the build is kept current and nothing is served.
+  // What picks it up — another server, a packager, a browser opened by hand —
+  // is somebody else's business, which is the point of the command.
+  if (args.command === "watch") {
+    console.log(`==> build ${within(config.root, app.outdir)}`);
+    const watched = watchSources(config, app, args);
+    console.log(
+      `    watching ${watched.map((d) => path.relative(config.root, d) || ".").join(", ")}`,
+    );
+    console.log("    Ctrl-C to stop");
+    // Nothing is listening, so nothing holds the process up: the watches do.
+    return await new Promise(() => {});
+  }
 
   if (args.command === "desktop") {
     try {

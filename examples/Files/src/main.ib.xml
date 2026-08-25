@@ -7,17 +7,17 @@
 
 <interface>
     <div styleName="app">
-        <h1 styleName="title">{MESSAGES.Files}</h1>
+        <h1 styleName="title">{MESSAGES.title}</h1>
 
         <div styleName="bar">
-            <Button text="{MESSAGES.Open…}" action="open"/>
-            <Button text="{MESSAGES.Open picture…}" action="openImage"/>
+            <Button text="{MESSAGES.open}" action="open"/>
+            <Button text="{MESSAGES.openPicture}" action="openImage"/>
             <TextField outlet="nameField" placeholder="untitled.txt"/>
-            <Button text="{MESSAGES.Save…}" intent="primary" action="save"/>
+            <Button text="{MESSAGES.save}" intent="primary" action="save"/>
         </div>
 
         <textarea styleName="editor" outlet="editor" spellcheck="false"
-                  placeholder="{MESSAGES.Open a file, or type something and save it.}"
+                  placeholder="{MESSAGES.placeholder}"
                   action="input:edited"></textarea>
 
         <p styleName="status">{status}</p>
@@ -26,7 +26,7 @@
              straight into an <img> — which is what that mode is for. -->
         <div styleName="preview {previewState}">
             <img styleName="picture" src="{image}" alt="The picture that was opened"/>
-            <Button text="{MESSAGES.Close picture}" action="clearImage"/>
+            <Button text="{MESSAGES.closePicture}" action="clearImage"/>
         </div>
     </div>
 
