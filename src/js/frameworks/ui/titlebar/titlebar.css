@@ -57,8 +57,8 @@
    Ported from crosswordstudio.web's publish title styling. */
 .v-TitleBar-label[contenteditable="true"] {
   cursor: text;
-  padding: 4px 4px;
-  border-radius: 6px;
+  padding: 6px 2px;
+  border-radius: 3px;
   background: transparent;
   outline: none;
   font-weight: bold;

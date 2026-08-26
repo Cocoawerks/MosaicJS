@@ -216,10 +216,7 @@ class Parser {
           );
         }
         if (this.startsWithTag("style")) {
-          const body = this.parseRawBlock("style");
-          if (comp.style.trim() !== "")
-            throw this.err("duplicate <style> block");
-          comp.style = body;
+          this.parseStyle(comp);
           continue;
         }
         out.push(this.parseElement(comp));
@@ -247,13 +244,73 @@ class Parser {
   }
 
   /**
-   * Consume `<tag ...> ... </tag>` verbatim, returning the body. Neither CSS
-   * nor JavaScript is markup, so neither is parsed as any.
+   * The component's `<style>` block: the CSS scoped to it and carried into the
+   * bundle (see codegen). Its body may be written inline —
+   *
+   *   <style> .box { padding: 8px; } </style>
+   *
+   * — or kept in a file beside the markup and sourced in, which is the same
+   * thing said in its own file:
+   *
+   *   <style src="./widget.css"/>
+   *
+   * The file is read at compile time by whoever holds the markup's path, so its
+   * text lands in `comp.style` the same as an inline block would; `src` records
+   * the path for that step. A plain quoted path, not a `{binding}` — there is
+   * nothing to bind against when the build runs.
    */
-  parseRawBlock(tag) {
-    const gt = this.src.indexOf(">", this.pos);
-    if (gt === -1) throw this.err(`unterminated <${tag}> tag`);
-    this.pos = gt + 1;
+  parseStyle(comp) {
+    if (comp.style.trim() !== "" || comp.styleSrc != null)
+      throw this.err("duplicate <style> block");
+
+    const line = this.line();
+    this.expect("<");
+    this.parseTagName(); // "style"
+
+    let src = null;
+    let selfClosing = false;
+    for (;;) {
+      this.skipWs();
+      if (this.eof) throw this.err("unterminated <style> tag");
+      if (this.startsWith("/>")) {
+        this.pos += 2;
+        selfClosing = true;
+        break;
+      }
+      if (this.peek() === ">") {
+        this.pos++;
+        break;
+      }
+      const attr = this.parseAttr();
+      if (attr.name !== "src")
+        throw this.err(`<style>: unexpected attribute \`${attr.name}\``);
+      if (attr.value.kind !== "static")
+        throw this.err("`src` on <style> is a plain path, not a `{binding}`");
+      if (attr.value.text.trim() === "")
+        throw this.err("`src` on <style> is empty");
+      src = attr.value.text.trim();
+    }
+
+    if (src != null) {
+      // Sourced from a file: no inline CSS as well. Both an empty
+      // `<style src=…></style>` and a self-closing `<style src=…/>` are fine.
+      if (!selfClosing && this.readRawTo("style").trim() !== "")
+        throw this.err("<style src=…> already names a file; it cannot also hold CSS");
+      comp.styleSrc = src;
+      comp.styleSrcLine = line;
+      return;
+    }
+
+    // Inline, unless it is an empty `<style/>` that carries nothing.
+    comp.style = selfClosing ? "" : this.readRawTo("style");
+  }
+
+  /**
+   * Consume verbatim from the current position up to `</tag>`, returning what
+   * was between — for a block whose body is not markup, like CSS. The opening
+   * tag has already been read.
+   */
+  readRawTo(tag) {
     const close = `</${tag}>`;
     const end = this.src.indexOf(close, this.pos);
     if (end === -1) throw this.err(`missing ${close}`);

@@ -84,7 +84,24 @@ export function compileFile(file, opts) {
 function compileIb(src, runtime, stem, dest, opts, file) {
   const components = opts.components ?? new Map();
   const name = opts.name ?? componentName(stem);
-  return generate(parse(src), {
+  const ast = parse(src);
+
+  // `<style src="./x.css"/>` sources the scoped stylesheet from a file beside
+  // the markup rather than writing it inline. It is read here, where the
+  // markup's own path is known, and lands in `style` so codegen scopes and
+  // carries it exactly as an inline block.
+  if (ast.styleSrc != null) {
+    const cssPath = path.resolve(path.dirname(file), ast.styleSrc);
+    try {
+      ast.style = fs.readFileSync(cssPath, "utf8");
+    } catch {
+      throw new Error(
+        `${file}: <style src="${ast.styleSrc}"> cannot be read (${cssPath})`,
+      );
+    }
+  }
+
+  return generate(ast, {
     minify: opts.minify,
     styleNames: opts.styleNames,
     runtime,

@@ -111,6 +111,53 @@ test("compiling an .ib.xml file writes the module and its map", () => {
   expect(map.sourcesContent[0]).toContain("styleName");
 });
 
+test("<style src> is the same as an inline <style> block", () => {
+  const dir = tempDir();
+  const outdir = path.join(dir, "build");
+  const css = ".box { color: rebeccapurple; padding: 8px; }";
+  const opts = { root: dir, outdir, runtime: "src/js/runtime/mosaic.js" };
+  // The scoped stylesheet, with the two things that legitimately differ between
+  // two files taken out: the component-named const, and the scope class, which
+  // is a hash of the file's own source.
+  const sheet = (dest) =>
+    fs
+      .readFileSync(dest, "utf8")
+      .split("\n")
+      .find((l) => l.startsWith("const CSS_"))
+      .replace(/CSS_\w+/, "CSS")
+      .replace(/\.box\.[a-z][a-z0-9]{6}/g, ".box.SCOPE");
+
+  fs.writeFileSync(path.join(dir, "Widget.css"), css);
+  fs.writeFileSync(
+    path.join(dir, "Sourced.ib.xml"),
+    '<interface><style src="./Widget.css"/><div styleName="box">hi</div></interface>\n',
+  );
+  fs.writeFileSync(
+    path.join(dir, "Inline.ib.xml"),
+    `<interface><style>${css}</style><div styleName="box">hi</div></interface>\n`,
+  );
+
+  const sourced = sheet(compileFile(path.join(dir, "Sourced.ib.xml"), opts));
+  // The sourced sheet is scoped and carried exactly as the inline one is.
+  expect(sourced).toContain("rebeccapurple");
+  expect(sourced).toBe(sheet(compileFile(path.join(dir, "Inline.ib.xml"), opts)));
+});
+
+test("<style src> naming a file that cannot be read is an error", () => {
+  const dir = tempDir();
+  fs.writeFileSync(
+    path.join(dir, "Bad.ib.xml"),
+    '<interface><style src="./missing.css"/></interface>\n',
+  );
+  expect(() =>
+    compileFile(path.join(dir, "Bad.ib.xml"), {
+      root: dir,
+      outdir: path.join(dir, "build"),
+      runtime: "src/js/runtime/mosaic.js",
+    }),
+  ).toThrow(/missing\.css/);
+});
+
 test("compiling a js file rewrites its jsx and inlines its css", () => {
   const dir = tempDir();
   fs.writeFileSync(path.join(dir, "card.css"), ".card { color: red; }\n");
