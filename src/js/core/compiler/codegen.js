@@ -21,8 +21,8 @@ import {
  *              source, and a lookup for component tags: `name -> specifier`
  *              for a module imported by path, or `{specifier, named: true}`
  *              for one a package exports under its own name.
- *              `controller` is the specifier of the controller module written
- *              beside this one, when there is one.
+ *              `owner` is the specifier of the owner module written beside
+ *              this one, when there is one.
  */
 export function generate(comp, opts) {
   const scope = scopeClass(opts.hash);
@@ -73,12 +73,15 @@ export function generate(comp, opts) {
 
   // `props` carries initial values only — it is forwarded to child components
   // and is otherwise the controller's business. There is no reactivity.
-  // A page's own controller, written beside it: `Foo.ib.xml` is paired with the
-  // `FooController.js` next to it. The runtime builds one per drawn instance
-  // and calls the page against it, so the bindings, outlets and actions in
-  // this markup are that controller's rather than the page's above it.
-  if (opts.controller) {
-    out += `import ${opts.name}Controller from ${jsString(opts.controller)};\n\n`;
+  // A page's own controller, written beside it: by default `Foo.ib.xml` is
+  // paired with the `FooController.js` next to it, or `<interface owner='X'>`
+  // points at an owner module of its own. (`owner` is the markup's word for it;
+  // the runtime calls what a page draws against its controller.) The runtime
+  // builds one per drawn instance and calls the page against it, so the
+  // bindings, outlets and actions in this markup are that controller's rather
+  // than the page's above it.
+  if (opts.owner) {
+    out += `import ${opts.name}Controller from ${jsString(opts.owner)};\n\n`;
   }
 
   out += `export default function ${opts.name}(props = {}) {\n`;
@@ -104,7 +107,7 @@ export function generate(comp, opts) {
   if (usesAttrBinding(comp.markup, true)) {
     out += `${opts.name}.redraws = true;\n`;
   }
-  if (opts.controller) {
+  if (opts.owner) {
     out += `${opts.name}.controller = ${opts.name}Controller;\n`;
   }
   return out;

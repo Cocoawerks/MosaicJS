@@ -19,7 +19,7 @@ import { Component } from "mosaic";
 import "./list.css";
 
 export default class ListItem extends Component {
-  static props = {
+  static properties = {
     /** Where this row sits in the list. */
     index: { type: Number, default: 0 },
   };

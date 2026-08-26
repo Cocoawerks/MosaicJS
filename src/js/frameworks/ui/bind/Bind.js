@@ -63,7 +63,7 @@ function whatItHas(controller) {
 }
 
 export default class Bind extends Component {
-  static props = {
+  static properties = {
     /** The property that pushes, as a path from the controller. */
     source: { type: String, default: "" },
     /** The property that follows, likewise. */
@@ -132,7 +132,7 @@ export default class Bind extends Component {
     const controller = this.controllerAbove();
     if (!controller) {
       throw new Error(
-        `<Bind source="${this.source}"/> is not inside anything that has a ` +
+        `<Bind source="${this.source}"/> is not inside anything that has an ` +
           `controller. A Bind reads its paths from the page's controller, so ` +
           `it belongs in a .ib.xml that has one — a Foo.ib.xml with a ` +
           `FooController.js beside it.`,
@@ -223,7 +223,7 @@ export default class Bind extends Component {
 
     // A compiled `.ib.xml`'s scope, wherever it is: looked for all the way up
     // before anything else is considered. A component standing between this
-    // tag and its page has a `controller` of its own — itself, as it happens —
+    // tag and its page has an `controller` of its own — itself, as it happens —
     // and taking that one because it came first would hand the Bind an object
     // with none of the page's outlets on it.
     for (let node = this.node; node; node = node.parentNode) {

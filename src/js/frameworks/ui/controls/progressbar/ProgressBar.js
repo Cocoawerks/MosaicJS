@@ -16,11 +16,11 @@ import "./progressbar.css";
 export default class ProgressBar extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `ProgressBar`. See Component.styleName.
+   * naming when it says `ProgressBar`. See Component.primaryStyleName.
    */
-  static styleName = "v-ProgressBar";
+  static primaryStyleName = "v-ProgressBar";
 
-  static props = {
+  static properties = {
     /** Whether the bar says only that work is running, not how far along. */
     indeterminate: { type: Boolean, default: false },
     /** Where the track starts. */

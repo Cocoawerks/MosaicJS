@@ -30,11 +30,11 @@ const MENU_GAP = 9;
 export default class MenuBarItem extends TitleBarButton {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `MenuBarItem`. See Component.styleName.
+   * naming when it says `MenuBarItem`. See Component.primaryStyleName.
    */
-  static styleName = "v-MenuBarItem";
+  static primaryStyleName = "v-MenuBarItem";
 
-  static props = {
+  static properties = {
     /** A menu bar item latches while its menu is up. */
     toggle: { type: Boolean, default: true },
     /**

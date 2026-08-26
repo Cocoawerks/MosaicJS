@@ -36,7 +36,7 @@ const DEFINITIONS = {
 const CARET_DELAY = 10;
 
 export default class MaskedTextField extends TextBase {
-  static props = {
+  static properties = {
     /** Whether the text can be read but not changed. */
     readOnly: { type: Boolean, default: false },
     /** Off by default, as the Java version sets it. */

@@ -2,19 +2,12 @@
 // current state and `needsDisplay()` patches the DOM to match. A toggle button
 // latches on and off each time it is pressed; otherwise a press fires its action.
 import Control from "../Control.js";
+import { Intent } from "../../themes/Intent.js";
 import "./button.css";
 
-/** Visual intent, matching Intent.java (lower-cased, as its toString() does). */
-/** Visual intent (lower-cased, as its toString() does). */
-export const Intent = Object.freeze({
-  DEFAULT: "default",
-  PRIMARY: "primary",
-  DANGER: "danger",
-  SUCCESS: "success",
-  WARNING: "warning",
-  INFO: "info",
-  INVERSE: "inverse",
-});
+// Intent lives in its own module now, shared with the snackbar; re-exported
+// here so `import Button, { Intent }` keeps working.
+export { Intent };
 
 /** Latched state of a toggle button, matching ButtonState.java. */
 /** Latched state of a toggle button. */
@@ -28,13 +21,10 @@ const ACTIVATION_KEYS = new Set(["Enter", " ", "Spacebar"]);
  *   (`onClick` in JS). A toggle button fires it each time it latches on or off.
  */
 export default class Button extends Control {
-  /**
-   * The class this component draws its root with — what a stylesheet is
-   * naming when it says `Button`. See Component.styleName.
-   */
-  static styleName = "v-Button";
 
-  static props = {
+  static primaryStyleName = "v-Button";
+
+  static properties = {
     /** @public The button's text. */
     text: { type: String, default: "" },
     /** @public One of {@link Intent}, */

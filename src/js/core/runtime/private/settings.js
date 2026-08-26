@@ -1,4 +1,4 @@
-// Declared settings: turning a component's `static props` into accessors.
+// Declared settings: turning a component's `static properties` into accessors.
 //
 // A component's props already reach it — markup attributes and JSX props land
 // in `this.props`, and `get()` reads them. What an accessor adds is the four
@@ -7,7 +7,7 @@
 // repaint. Written by hand that is four lines per setting and the same four
 // lines in every component; declared, it is one:
 //
-//   static props = {
+//   static properties = {
 //     text:    { type: String },
 //     toggle:  { type: Boolean, default: false },
 //     minValue: { type: Number, default: 0 },
@@ -51,6 +51,7 @@ const RESERVED = new Set([
   "set",
   "bool",
   "props",
+  "properties",
   "overrides",
   "node",
   "nodes",
@@ -90,8 +91,8 @@ function declaredSettings(type) {
     t && t !== Function.prototype;
     t = Object.getPrototypeOf(t)
   ) {
-    if (Object.prototype.hasOwnProperty.call(t, "props"))
-      chain.unshift(t.props);
+    if (Object.prototype.hasOwnProperty.call(t, "properties"))
+      chain.unshift(t.properties);
   }
   return Object.assign({}, ...chain);
 }

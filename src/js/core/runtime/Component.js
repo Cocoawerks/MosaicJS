@@ -17,7 +17,7 @@ export { BROWSER_EVENTS };
 
 /**
  * A mounted component: the markup it drew, plus the bindings beneath it.
- * `mount` creates one and hands it to the controller as `this.view`, so a
+ * `mount` creates one and hands it to the controller as `this.view`, so an
  * controller stays a plain class:
  *
  *   class Counter {
@@ -42,7 +42,7 @@ export class Component {
   /**
    * The settings this component takes, and what each one is.
    *
-   *   static props = {
+   *   static properties = {
    *     text:     { type: String },
    *     toggle:   { type: Boolean, default: false },
    *     minValue: { type: Number, default: 0 },
@@ -57,7 +57,7 @@ export class Component {
    * accessor, and declaring it here is how it still says what type it takes:
    * one written by hand always wins over the one this would define.
    */
-  static props = {};
+  static properties = {};
 
   /**
    * The class this kind of component draws its root with — its primary style
@@ -78,7 +78,7 @@ export class Component {
    * guessed at. A component drawn as a kind of another — a LoadingButton is a
    * Button — declares nothing and inherits that one's.
    */
-  static styleName = null;
+  static primaryStyleName = null;
 
   /**
    *
@@ -91,7 +91,7 @@ export class Component {
 
     /**
      * Holds the properties of the component.
-     * Not the `static props` a component declares — that is the schema, and
+     * Not the `static properties` a component declares — that is the schema, and
      * what a page sets.
      */
     this.props = coerceProps(props) ?? {};

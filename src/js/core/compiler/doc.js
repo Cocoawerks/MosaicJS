@@ -18,7 +18,7 @@
 // a visibility tag is private and left out. A directory named `private` is
 // skipped whole.
 //
-// A Component additionally lists the props its `static props` declares, its
+// A Component additionally lists the props its `static properties` declares, its
 // superclasses' included; a class shows its ancestry, linking any ancestor that
 // is documented here too.
 import * as fs from "node:fs";
@@ -244,7 +244,7 @@ function classify(subject, block, model) {
   // A static field like `styleName` — documented only when marked.
   m = /^static\s+([A-Za-z0-9_$]+)\s*=/.exec(subject);
   if (m) {
-    if (m[1] === "props" || !vis) return;
+    if (m[1] === "properties" || !vis) return;
     addUnique(model.properties, {
       name: m[1],
       kind: "static",
@@ -323,9 +323,9 @@ function addUnique(list, item) {
 
 // --- props ------------------------------------------------------------------
 
-/** Parse `static props = { … }` into `[{name, type, default, description}]`. */
+/** Parse `static properties = { … }` into `[{name, type, default, description}]`. */
 function parseProps(src) {
-  const at = src.search(/static\s+props\s*=\s*\{/);
+  const at = src.search(/static\s+properties\s*=\s*\{/);
   if (at === -1) return [];
   const open = src.indexOf("{", at);
   const body = braced(src, open);

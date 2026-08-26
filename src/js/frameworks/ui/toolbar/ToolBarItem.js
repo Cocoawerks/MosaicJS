@@ -22,11 +22,11 @@ import "./toolbar-item.css";
 export default class ToolBarItem extends Button {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `ToolBarItem`. See Component.styleName.
+   * naming when it says `ToolBarItem`. See Component.primaryStyleName.
    */
-  static styleName = "v-ToolBarItem";
+  static primaryStyleName = "v-ToolBarItem";
 
-  static props = {
+  static properties = {
     /**
      * Whether the application has taken the item out of the bar. A hidden
      * item takes no room and never reaches the overflow menu — it is not

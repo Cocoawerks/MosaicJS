@@ -714,6 +714,7 @@ function scaffold(name) {
 
      The markup itself has no logic and no JavaScript: everything dynamic is a
      binding to the controller, which is AppController.js beside this file.
+     (Point at a different module with <interface owner='./SomeName'>.)
 
        <div styleName="box">        a class comes from styleName, never class
        <View styleName="box">       the same thing, spelled as a component
@@ -1848,12 +1849,22 @@ function writeFrameworkIndex(framework, modules, theme) {
  * mistake in the sources it was given. A cause chain is followed to the end.
  */
 function report(e) {
-  console.error(`mosaic: ${e?.message ?? e}`);
-  if (e?.stack) console.error(e.stack);
-  for (let cause = e?.cause; cause; cause = cause.cause) {
-    console.error(`caused by: ${cause.message ?? cause}`);
-    if (cause.stack) console.error(cause.stack);
-  }
+  // Stacks are for chasing a bug in mosaic, not for a mistake in the project
+  // being built, so they are kept for `MOSAIC_DEBUG` and out of the way
+  // otherwise. A wrapped error often repeats what its wrapper already said —
+  // `compileAll` prefixes the file, the inner error is the rest — so a cause
+  // whose message is already contained in one printed is not said twice.
+  const debug = !!process.env.MOSAIC_DEBUG;
+  const said = [];
+  const say = (label, err) => {
+    const message = err?.message ?? String(err);
+    if (said.some((m) => m.includes(message) || message.includes(m))) return;
+    said.push(message);
+    console.error(`${label}${message}`);
+    if (debug && err?.stack) console.error(err.stack);
+  };
+  say("mosaic: ", e);
+  for (let cause = e?.cause; cause; cause = cause.cause) say("caused by: ", cause);
 }
 
 /**

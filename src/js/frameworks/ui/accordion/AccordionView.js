@@ -23,9 +23,9 @@ import "./accordion.css";
 export default class AccordionView extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `AccordionView`. See Component.styleName.
+   * naming when it says `AccordionView`. See Component.primaryStyleName.
    */
-  static styleName = "v-accordionPanel";
+  static primaryStyleName = "v-accordionPanel";
 
   constructor(props) {
     super(props);

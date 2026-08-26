@@ -12,9 +12,9 @@ const ACTIVATION_KEYS = new Set(["Enter", " ", "Spacebar"]);
 export default class Switch extends ToggleControl {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `Switch`. See Component.styleName.
+   * naming when it says `Switch`. See Component.primaryStyleName.
    */
-  static styleName = "v-Switch";
+  static primaryStyleName = "v-Switch";
 
   // --- value ---------------------------------------------------------------
 

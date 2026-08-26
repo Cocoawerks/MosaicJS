@@ -13,11 +13,11 @@ import "./box.css";
 export default class Box extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `Box`. See Component.styleName.
+   * naming when it says `Box`. See Component.primaryStyleName.
    */
-  static styleName = "v-Box";
+  static primaryStyleName = "v-Box";
 
-  static props = {
+  static properties = {
     /** The heading. A box with none is drawn without one. */
     title: { type: String, default: "" },
   };

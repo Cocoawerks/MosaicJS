@@ -10,7 +10,7 @@
 import { Component } from "mosaic";
 
 export default class Option extends Component {
-  static props = {
+  static properties = {
     /** Whether the entry can be chosen. */
     enabled: { type: Boolean, default: true },
   };

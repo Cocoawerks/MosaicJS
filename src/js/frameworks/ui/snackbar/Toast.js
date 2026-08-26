@@ -13,11 +13,11 @@ import "./snackbar.css";
 export default class Toast extends SnackBar {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `Toast`. See Component.styleName.
+   * naming when it says `Toast`. See Component.primaryStyleName.
    */
-  static styleName = "v-Toast";
+  static primaryStyleName = "v-Toast";
 
-  static props = {
+  static properties = {
     /** The line it says. */
     text: { type: String, default: "" },
     /** A toast has no close button: it takes itself away. */

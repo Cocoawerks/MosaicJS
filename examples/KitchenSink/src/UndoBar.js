@@ -11,7 +11,7 @@ import {Button, SnackBar} from "mosaic/frameworks/ui";
 import "./undo-bar.css";
 
 export default class UndoBar extends SnackBar {
-  static props = {
+  static properties = {
     /** What it says happened. */
     text: { type: String, default: "" },
     /** It asks a question, so it waits to be answered rather than going. */

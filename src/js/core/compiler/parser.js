@@ -35,6 +35,7 @@ import {
   MARKUP_EXT,
   MESSAGES_ROOT,
   OUTLET_ATTR,
+  OWNER_ATTR,
   ROOT_TAG,
   STYLE_NAME_ATTR,
 } from "./js.js";
@@ -61,7 +62,7 @@ export class ParseError extends Error {}
 export function parse(src) {
   const p = new Parser(src);
   const comp = { style: "", markup: [] };
-  comp.markup = unwrapRoot(trimEdges(p.parseNodes(null, comp)));
+  comp.markup = unwrapRoot(trimEdges(p.parseNodes(null, comp)), comp);
   checkNames(comp.markup);
   return comp;
 }
@@ -77,13 +78,29 @@ export function parse(src) {
  * hoisted before this runs, and so is a file of nothing but comments — the one
  * `mosaic init` writes, which has no markup in it yet.
  */
-function unwrapRoot(nodes) {
+function unwrapRoot(nodes, comp = {}) {
   const content = nodes.filter(
     (node) => node.kind !== "text" || node.text.trim() !== "",
   );
   if (content.length === 0) return [];
 
   const [first] = content;
+  if (first.kind === "element" && first.name === ROOT_TAG) {
+    // `<interface owner='./path/to/Owner'>` points the page at the object it
+    // draws against, freeing it from the `FooController.js` convention. A static
+    // value only — an owner is a module path resolved at compile time, not
+    // something a binding computes.
+    const attr = first.attrs?.find((a) => a.name === OWNER_ATTR);
+    if (attr) {
+      if (attr.value?.kind !== "static" || attr.value.text.trim() === "") {
+        throw new ParseError(
+          `\`${OWNER_ATTR}\` on <${ROOT_TAG}> is a path to an owner module, ` +
+            `so it must be a plain string like ${OWNER_ATTR}="./Controller"`,
+        );
+      }
+      comp.owner = attr.value.text.trim();
+    }
+  }
   if (first.kind !== "element" || first.name !== ROOT_TAG) {
     throw new ParseError(
       `an ${MARKUP_EXT} file is one <${ROOT_TAG}> and its content — ` +

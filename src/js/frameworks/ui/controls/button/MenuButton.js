@@ -19,11 +19,11 @@ const ACTIVATION_KEYS = new Set(["Enter", " ", "Spacebar"]);
 export default class MenuButton extends Button {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `MenuButton`. See Component.styleName.
+   * naming when it says `MenuButton`. See Component.primaryStyleName.
    */
-  static styleName = "v-MenuButton";
+  static primaryStyleName = "v-MenuButton";
 
-  static props = {
+  static properties = {
     /** A menu button latches while its menu is up. */
     toggle: { type: Boolean, default: true },
   };

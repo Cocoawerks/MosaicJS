@@ -12,7 +12,7 @@ export const TextFieldType = Object.freeze({
 });
 
 export default class TextField extends TextBase {
-  static props = {
+  static properties = {
     /** Which kind of input it is, one of TextFieldType. */
     type: { type: String, default: TextFieldType.TEXT },
     /** Whether the text can be read but not changed. */

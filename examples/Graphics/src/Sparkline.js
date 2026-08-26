@@ -8,7 +8,7 @@
 import { Canvas, Cap, Join, Path, linearGradient } from "mosaic/frameworks/graphics2d";
 
 export default class Sparkline extends Canvas {
-  static props = {
+  static properties = {
     /** The numbers being plotted. Assigning them repaints. */
     values: { type: Array, default: [] },
     /** The line's colour. */

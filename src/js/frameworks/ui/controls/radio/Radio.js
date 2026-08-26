@@ -9,11 +9,11 @@ import "./radio.css";
 export default class Radio extends ToggleControl {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `Radio`. See Component.styleName.
+   * naming when it says `Radio`. See Component.primaryStyleName.
    */
-  static styleName = "v-Radio";
+  static primaryStyleName = "v-Radio";
 
-  static props = {
+  static properties = {
     /** Whether this is the group's chosen option. */
     selected: { type: Boolean, default: false },
   };

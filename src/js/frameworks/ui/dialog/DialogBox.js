@@ -76,11 +76,11 @@ export function removeOpenListener(listener) {
 export default class DialogBox extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `DialogBox`. See Component.styleName.
+   * naming when it says `DialogBox`. See Component.primaryStyleName.
    */
-  static styleName = "v-Dialog";
+  static primaryStyleName = "v-Dialog";
 
-  static props = {
+  static properties = {
     /** What the header reads. */
     title: { type: String, default: "" },
     /**

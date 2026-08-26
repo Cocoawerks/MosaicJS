@@ -182,7 +182,7 @@ export function compileAll(sources, opts = {}) {
 }
 
 /**
- * The class a component declares as its own — `static styleName = "v-Dialog"`.
+ * The class a component declares as its own — `static primaryStyleName = "v-Dialog"`.
  *
  * Read out of the source with a pattern rather than by importing the module:
  * the compiler compiles, it does not run what it compiles, and a component
@@ -200,6 +200,6 @@ function declaredStyleName(file) {
   } catch {
     return null;
   }
-  const match = /static\s+styleName\s*=\s*["']([^"']+)["']/.exec(source);
+  const match = /static\s+primaryStyleName\s*=\s*["']([^"']+)["']/.exec(source);
   return match ? match[1] : null;
 }

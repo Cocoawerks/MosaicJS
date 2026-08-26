@@ -12,7 +12,7 @@ import Control from "./Control.js";
 let nextId = 0;
 
 export default class ToggleControl extends Control {
-  static props = {
+  static properties = {
     /** The label beside the indicator. */
     text: { type: String, default: "" },
   };

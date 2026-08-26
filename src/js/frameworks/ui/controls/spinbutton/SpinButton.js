@@ -28,11 +28,11 @@ const REPEAT_PERIOD = 100;
 export default class SpinButton extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `SpinButton`. See Component.styleName.
+   * naming when it says `SpinButton`. See Component.primaryStyleName.
    */
-  static styleName = "v-SpinButton";
+  static primaryStyleName = "v-SpinButton";
 
-  static props = {
+  static properties = {
     /** Whether the control can be worked. */
     enabled: { type: Boolean, default: true },
     /** The lowest number it will take. */

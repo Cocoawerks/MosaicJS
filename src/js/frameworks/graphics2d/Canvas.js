@@ -7,7 +7,7 @@
 // the same reason: painting code that names no canvas can be replayed onto
 // something that is not one.
 //   export default class Dial extends Canvas {
-//     static props = { value: {type: Number, default: 0} };
+//     static properties = { value: {type: Number, default: 0} };
 //     paint(g) {
 //       const {width, height} = this;
 //       g.setStroke({width: 8, cap: Cap.ROUND});
@@ -32,11 +32,11 @@ import "./canvas.css";
 export default class Canvas extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `Canvas`. See Component.styleName.
+   * naming when it says `Canvas`. See Component.primaryStyleName.
    */
-  static styleName = "v-Canvas";
+  static primaryStyleName = "v-Canvas";
 
-  static props = {
+  static properties = {
     /**
      * How big the drawing surface is, in CSS pixels. Left unset, the canvas
      * fills whatever holds it and is repainted whenever that changes size —

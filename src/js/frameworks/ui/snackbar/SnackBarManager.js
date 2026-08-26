@@ -14,7 +14,7 @@
 // bars there are.
 import { Component, mount } from "mosaic";
 
-import { Intent } from "../controls/button/Button.js";
+import { Intent } from "../themes/Intent.js";
 import { SnackBarAnimationState } from "./SnackBar.js";
 import Toast from "./Toast.js";
 import "./snackbar.css";
@@ -41,7 +41,7 @@ const ENTER_DELAY = 25;
  * DOM — and their animations — while it happens.
  */
 export class SnackBarLayer extends Component {
-  static props = {
+  static properties = {
     /** The manager whose bars these are. */
     manager: { type: Object },
   };

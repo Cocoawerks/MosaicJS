@@ -6,7 +6,7 @@
 import { Component } from "mosaic";
 
 export default class Tab extends Component {
-  static props = {
+  static properties = {
     /** What the tab reads in the bar. */
     title: { type: String, default: "" },
   };

@@ -42,11 +42,11 @@ const MARGIN = 8;
 export default class ComboBox extends Control {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `ComboBox`. See Component.styleName.
+   * naming when it says `ComboBox`. See Component.primaryStyleName.
    */
-  static styleName = "v-ComboBox";
+  static primaryStyleName = "v-ComboBox";
 
-  static props = {
+  static properties = {
     /**
      * Draw the entries as a Mosaic Menu rather than as the platform's own
      * list — a macOS popup button rather than a combo box.

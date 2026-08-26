@@ -11,7 +11,7 @@ const START = 225;
 const SWEEP = -270;
 
 export default class Dial extends Canvas {
-  static props = {
+  static properties = {
     /** How far round, 0 to 1. */
     value: { type: Number, default: 0 },
     /** What the filled part is drawn in. */

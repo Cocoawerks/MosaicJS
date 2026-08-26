@@ -94,9 +94,12 @@ function compileIb(src, runtime, stem, dest, opts, file) {
     const cssPath = path.resolve(path.dirname(file), ast.styleSrc);
     try {
       ast.style = fs.readFileSync(cssPath, "utf8");
-    } catch {
+    } catch (e) {
+      // The caller (compileAll) already prefixes the markup's own path, so this
+      // says only what went wrong with the stylesheet it points at.
+      const why = e?.code === "ENOENT" ? "no such file" : e.message;
       throw new Error(
-        `${file}: <style src="${ast.styleSrc}"> cannot be read (${cssPath})`,
+        `<style src="${ast.styleSrc}"> could not be read — ${why}: ${cssPath}`,
       );
     }
   }
@@ -107,7 +110,7 @@ function compileIb(src, runtime, stem, dest, opts, file) {
     runtime,
     name,
     hash: hash(src),
-    controller: controllerFor(name, file, dest),
+    owner: ownerFor(name, file, dest, ast.owner),
     resolve: (name) => {
       const target = components.get(name);
       if (!target) {
@@ -129,23 +132,47 @@ function compileIb(src, runtime, stem, dest, opts, file) {
 }
 
 /**
- * The controller written beside a page: `Foo.ib.xml` is paired with a
- * `FooController.js` next to it, if there is one — that is the whole of the
- * arrangement, and a page with no such file has no controller of its own.
+ * The owner written beside a page — the object it draws against. By default
+ * `Foo.ib.xml` is paired with a `FooController.js` next to it, and a page with
+ * no such file has no owner of its own.
  *
- * The specifier is written to where the *compiled* page lands, since that is
- * what will do the importing.
+ * `<interface owner='./path/to/Thing'>` names the owner instead: a module path,
+ * resolved relative to the markup the way a JS import is — a sibling
+ * `Controller`, a `../shared/AppOwner`, anywhere the source tree reaches. This
+ * frees the owner's name and location from the page's. If the path resolves to
+ * nothing, the default `FooController.js` convention is tried, so naming an
+ * owner is an override, not a requirement.
  *
+ * The specifier is written from where the *compiled* page lands, since that is
+ * what will do the importing. Compilation mirrors the source tree, so a path
+ * that resolves from the markup resolves the same way between their compiled
+ * selves — the `.jsx` an owner may be written as becomes `.js` there.
+ *
+ * @param {string} name The page's component name — `Foo` for `Foo.ib.xml`.
+ * @param {string} file The markup's own path.
+ * @param {string} dest Where the compiled page lands.
+ * @param {string|null} [owner] The path from `<interface owner='…'>`, if any.
  * @returns {string|null} What the compiled page should import, or null.
  */
-function controllerFor(name, file, dest) {
+function ownerFor(name, file, dest, owner = null) {
   if (!file) return null;
-  for (const ext of [".js", ".jsx"]) {
-    const source = path.join(path.dirname(file), `${name}Controller${ext}`);
-    if (!fs.existsSync(source)) continue;
-    // Where that source itself compiles to, so the two sit as they do now.
-    const compiled = path.join(path.dirname(dest), `${name}Controller.js`);
-    return relativeSpecifier(compiled, path.dirname(dest));
+  // The owner is a module path. An extension is optional — `.js`/`.jsx` written
+  // on the end is taken off so the same search adds it back, rather than
+  // turning `Controller.js` into a `Controller.js.js` that is never found.
+  const named = owner ? owner.replace(/\.jsx?$/, "") : null;
+  // The named path is tried first; the convention is the fallback, so a named
+  // owner that resolves to nothing falls back rather than failing.
+  const bases = named ? [named, `${name}Controller`] : [`${name}Controller`];
+  for (const base of bases) {
+    for (const ext of [".js", ".jsx"]) {
+      const source = path.join(path.dirname(file), `${base}${ext}`);
+      if (!fs.existsSync(source)) continue;
+      // Where that source itself compiles to. The tree is mirrored, so the
+      // owner's compiled self sits at the same offset from the page's — the
+      // base path carries straight over, only its extension settling to `.js`.
+      const compiled = path.join(path.dirname(dest), `${base}.js`);
+      return relativeSpecifier(compiled, path.dirname(dest));
+    }
   }
   return null;
 }

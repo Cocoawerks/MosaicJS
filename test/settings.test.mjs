@@ -1,4 +1,4 @@
-// Declared settings: `static props` turning into accessors.
+// Declared settings: `static properties` turning into accessors.
 // Build first: `mosaic compile examples/Counter_component --keep-modules`.
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -9,7 +9,7 @@ const { Component } =
 
 test("a declared setting reads as the type it was declared to be", () => {
   class Thing extends Component {
-    static props = {
+    static properties = {
       text: { type: String },
       on: { type: Boolean, default: false },
       size: { type: Number, default: 5 },
@@ -39,13 +39,13 @@ test("a declared setting reads as the type it was declared to be", () => {
 
 test("a subclass inherits its parent's settings and may narrow them", () => {
   class Base extends Component {
-    static props = {
+    static properties = {
       size: { type: Number, default: 1 },
       on: { type: Boolean },
     };
   }
   class Narrow extends Base {
-    static props = { size: { type: Number, default: 9 } };
+    static properties = { size: { type: Number, default: 9 } };
   }
   assert.equal(new Base().size, 1);
   assert.equal(new Narrow().size, 9);
@@ -59,7 +59,7 @@ test("a subclass inherits its parent's settings and may narrow them", () => {
 test("a hand-written accessor wins over the declared one", () => {
   const seen = [];
   class Written extends Component {
-    static props = { size: { type: Number, default: 0 } };
+    static properties = { size: { type: Number, default: 0 } };
     get size() {
       return 42;
     }
@@ -79,7 +79,7 @@ test("half a hand-written accessor keeps the other half", () => {
   // the declaration fills the missing half back in.
   const seen = [];
   class HalfSet extends Component {
-    static props = { size: { type: Number, default: 4 } };
+    static properties = { size: { type: Number, default: 4 } };
     set size(value) {
       seen.push(value);
       this.set("size", Number(value) * 2);
@@ -92,7 +92,7 @@ test("half a hand-written accessor keeps the other half", () => {
   assert.equal(h.size, 10, "and reads what the hand-written setter stored");
 
   class HalfGet extends Component {
-    static props = { size: { type: Number, default: 4 } };
+    static properties = { size: { type: Number, default: 4 } };
     get size() {
       return 99;
     }
@@ -105,14 +105,14 @@ test("half a hand-written accessor keeps the other half", () => {
 
 test("a setting may not take a name the component needs", () => {
   class Clash extends Component {
-    static props = { click: { type: String } };
+    static properties = { click: { type: String } };
   }
   assert.throws(() => new Clash(), /cannot be a setting/);
 
   // Only a prototype-level data property can be caught from here — a field
   // assigned in a constructor is set after the accessors are defined.
   class Shadowed extends Component {
-    static props = { size: { type: Number } };
+    static properties = { size: { type: Number } };
   }
   Object.defineProperty(Shadowed.prototype, "size", {
     value: 3,

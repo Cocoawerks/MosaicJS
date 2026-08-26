@@ -22,7 +22,7 @@ const GAP = 12;
  *   and the new colour. Bound bare: `action="method"` (`onChange` in JS).
  */
 export default class ColorWell extends Button {
-  static props = {
+  static properties = {
     /** A well shows a colour, and never a label: there is nothing to say. */
     iconOnly: { type: Boolean, default: true },
   };

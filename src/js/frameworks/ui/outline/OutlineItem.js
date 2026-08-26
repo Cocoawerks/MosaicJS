@@ -21,11 +21,11 @@ const DEEPEST_LEVEL = 20;
 export default class OutlineItem extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `OutlineItem`. See Component.styleName.
+   * naming when it says `OutlineItem`. See Component.primaryStyleName.
    */
-  static styleName = "v-OutlineItem";
+  static primaryStyleName = "v-OutlineItem";
 
-  static props = {
+  static properties = {
     /** What the row reads. */
     text: { type: String, default: "" },
     /** What the view reports when this row is the selected one. */

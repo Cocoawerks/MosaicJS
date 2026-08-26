@@ -23,11 +23,11 @@ import "./tab.css";
 export default class TabView extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `TabView`. See Component.styleName.
+   * naming when it says `TabView`. See Component.primaryStyleName.
    */
-  static styleName = "v-TabPanel";
+  static primaryStyleName = "v-TabPanel";
 
-  static props = {
+  static properties = {
     /** Which tab is chosen, counting from the first. */
     selectedIndex: { type: Number, default: 0 },
   };

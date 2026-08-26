@@ -42,11 +42,11 @@ const PUSH_MS = 220;
 export default class Drawer extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `Drawer`. See Component.styleName.
+   * naming when it says `Drawer`. See Component.primaryStyleName.
    */
-  static styleName = "v-Drawer";
+  static primaryStyleName = "v-Drawer";
 
-  static props = {
+  static properties = {
     /** What the header reads. */
     title: { type: String, default: "" },
     /**

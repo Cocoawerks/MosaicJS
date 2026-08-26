@@ -13,7 +13,8 @@
 // and nothing else there is Toast, which is this with the text drawn for it.
 import { Component } from "mosaic";
 
-import Button, { Intent } from "../controls/button/Button.js";
+import Button from "../controls/button/Button.js";
+import { Intent } from "../themes/Intent.js";
 import Close from "svg:close";
 import "./snackbar.css";
 
@@ -59,11 +60,11 @@ const DEFAULT_LIFESPAN = 5;
 export default class SnackBar extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `SnackBar`. See Component.styleName.
+   * naming when it says `SnackBar`. See Component.primaryStyleName.
    */
-  static styleName = "v-SnackBar";
+  static primaryStyleName = "v-SnackBar";
 
-  static props = {
+  static properties = {
     /** One of Intent, which decides the face it wears. */
     intent: { type: String, default: Intent.DEFAULT },
     /**

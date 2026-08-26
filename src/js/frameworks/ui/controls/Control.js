@@ -8,7 +8,7 @@ export default class Control extends Component {
     super(props);
   }
 
-  static props = {
+  static properties = {
     /** @public The id the control's focusable element carries.
      * Used for referencing the underlying <input>:
      *

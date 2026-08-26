@@ -72,11 +72,11 @@ function releasePointer(element, pointerId) {
 export default class SplitView extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `SplitView`. See Component.styleName.
+   * naming when it says `SplitView`. See Component.primaryStyleName.
    */
-  static styleName = "v-SplitView";
+  static primaryStyleName = "v-SplitView";
 
-  static props = {
+  static properties = {
     /** Which way the panes sit — one of Orientation. */
     orientation: { type: String, default: Orientation.HORIZONTAL },
     /** Which pane stretches — one of SplitViewFlex. */

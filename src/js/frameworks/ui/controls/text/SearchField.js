@@ -10,9 +10,9 @@ import "./search.css";
 export default class SearchField extends TextBase {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `SearchField`. See Component.styleName.
+   * naming when it says `SearchField`. See Component.primaryStyleName.
    */
-  static styleName = "v-Search";
+  static primaryStyleName = "v-Search";
 
   /** "Search", unless the application words it differently. */
   get placeholder() {

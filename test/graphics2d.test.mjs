@@ -293,7 +293,7 @@ function stubEnvironment() {
 
 /** A canvas that paints one rectangle and counts how often it was asked to. */
 class Swatch extends Canvas {
-  static props = { color: { type: String, default: "red" } };
+  static properties = { color: { type: String, default: "red" } };
 
   constructor(controller) {
     super(controller);

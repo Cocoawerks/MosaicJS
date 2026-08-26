@@ -93,11 +93,11 @@ export function closeTransientPopOvers() {
 export default class PopOver extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `PopOver`. See Component.styleName.
+   * naming when it says `PopOver`. See Component.primaryStyleName.
    */
-  static styleName = "v-PopOver";
+  static primaryStyleName = "v-PopOver";
 
-  static props = {
+  static properties = {
     /** One of PopOverOrientation. */
     orientation: { type: String, default: PopOverOrientation.BOTTOM_CENTER },
     /** Whether the callout triangle is drawn. `setHasCallout` in Java. */
@@ -157,7 +157,7 @@ export default class PopOver extends Component {
    * Which side it should sit on, and which edge lines up — one of
    * PopOverOrientation.
    *
-   * Written by hand rather than left to `static props` because a side it was
+   * Written by hand rather than left to `static properties` because a side it was
    * pushed off is no longer the side it was told to use: what it settled on
    * last time is forgotten here, and worked out again the next time it is
    * shown.

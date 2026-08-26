@@ -32,11 +32,11 @@ const MAX_TITLE_WIDTH_PX = 300;
 export default class TitleBar extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `TitleBar`. See Component.styleName.
+   * naming when it says `TitleBar`. See Component.primaryStyleName.
    */
-  static styleName = "v-TitleBar";
+  static primaryStyleName = "v-TitleBar";
 
-  static props = {
+  static properties = {
     /** The title, centred on the bar. */
     title: { type: String, default: "" },
     /**

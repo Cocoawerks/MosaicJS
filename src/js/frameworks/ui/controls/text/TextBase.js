@@ -18,11 +18,11 @@ import "./text.css";
 export default class TextBase extends Control {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `TextBase`. See Component.styleName.
+   * naming when it says `TextBase`. See Component.primaryStyleName.
    */
-  static styleName = "v-Text";
+  static primaryStyleName = "v-Text";
 
-  static props = {
+  static properties = {
     /** Whether the browser may complete the field. */
     autocomplete: { type: Boolean, default: false },
     /** Whether every keystroke is reported, or only Enter and leaving. */

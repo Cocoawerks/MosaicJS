@@ -15,11 +15,11 @@ let nextId = 0;
 export default class AccordionSection extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `AccordionSection`. See Component.styleName.
+   * naming when it says `AccordionSection`. See Component.primaryStyleName.
    */
-  static styleName = "v-accordionSection";
+  static primaryStyleName = "v-accordionSection";
 
-  static props = {
+  static properties = {
     /** The heading on the section's own line. */
     title: { type: String, default: "" },
     /** What the view reports when this section is opened or closed. */

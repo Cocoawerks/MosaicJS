@@ -17,7 +17,7 @@ import MenuItem from "./MenuItem.js";
 import "./menu.css";
 
 export default class MenuItemSeparator extends MenuItem {
-  static props = {
+  static properties = {
     /**
      * Always: a separator is one by being one. Declared so the menu reading
      * its vnode's props finds it stated there, as it would on an item that

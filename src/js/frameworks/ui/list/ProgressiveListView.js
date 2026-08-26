@@ -13,11 +13,11 @@ import "./list.css";
 export default class ProgressiveListView extends ListView {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `ProgressiveListView`. See Component.styleName.
+   * naming when it says `ProgressiveListView`. See Component.primaryStyleName.
    */
-  static styleName = "v-ProgressiveList";
+  static primaryStyleName = "v-ProgressiveList";
 
-  static props = {
+  static properties = {
     /**
      * How tall a row is. A number when they are all the same; a function of
      * the row's index when they are not — `getItemHeight(int)` in Java.

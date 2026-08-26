@@ -31,11 +31,11 @@ function isMenuItem(type) {
 export default class Menu extends PopOver {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `Menu`. See Component.styleName.
+   * naming when it says `Menu`. See Component.primaryStyleName.
    */
-  static styleName = "v-Menu";
+  static primaryStyleName = "v-Menu";
 
-  static props = {
+  static properties = {
     /**
      * Whether the menu's left edge lines up with the anchor's rather than
      * being centred on it — what a menu dropped from a bar wants.

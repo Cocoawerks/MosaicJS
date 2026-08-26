@@ -55,6 +55,15 @@ export function stemOf(file) {
  */
 export const ROOT_TAG = "interface";
 
+/**
+ * Points a page at the owner it draws against, on its root tag —
+ * `<interface owner='./path/to/Owner'>`. The value is a module path resolved
+ * relative to the markup, as a JS import is, so the owner may live anywhere the
+ * source tree reaches. Overrides the `FooController.js` convention, so an
+ * owner's name and location need not follow the page's.
+ */
+export const OWNER_ATTR = "owner";
+
 /** The built-in view element. */
 export const VIEW_TAG = "View";
 
