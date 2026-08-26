@@ -1,4 +1,5 @@
 import {
+  ButtonState,
   Intent,
   setTheme,
   SnackBarManager,
@@ -224,7 +225,7 @@ export default class AppController {
    * @param {object} button The toggle Button, latched on or off.
    */
   toggleClicked(button) {
-    this.note(`the toggle button is ${button.on ? "on" : "off"}`);
+    this.note(`the toggle button is ${button.buttonState === ButtonState.ON ? "on" : "off"}`);
   }
 
   /**
@@ -605,7 +606,7 @@ export default class AppController {
    */
   barButtonClicked(button) {
     this.bar = button.toggle
-      ? `${button.text} (${button.on ? "on" : "off"})`
+      ? `${button.text} (${button.buttonState === ButtonState.ON ? "on" : "off"})`
       : button.text;
     this.note(`title bar: ${this.bar}`);
   }

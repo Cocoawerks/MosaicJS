@@ -1,23 +1,13 @@
 // TitleBar, ported from GWT Mosaic (client/components/TitleBar.java): a short
+// TitleBar: a short
 // full-width strip above the toolbar, with document actions against the left
 // edge, the title centred on the bar and whoever is signed in against the
 // right.
-//
 // The Java version takes its three regions as `@UiChild` slots. There are no
 // slots here, so a child says which region it belongs to and the bar reads it
-// — the same arrangement Tab and MenuItem are read by:
-//
-//   <TitleBar title="Settings">
-//       <TitleBarButton slot="actions" text="Back" icon="fa-chevron-left"
-//                       action="goBack"/>
-//       <SaveStatus/>
-//       <TitleBarButton slot="trailing" text="Ada" icon="fa-user"
-//                       action="showAccount"/>
-//   </TitleBar>
 //
 // A child that names no slot goes beside the title, which is where the Java
 // version's `status` slot put a save pill.
-//
 // The bar owns only the strip: its height, the rule under it, and where the
 // three regions sit. What goes in them is the caller's, and styled by them.
 import { Component } from "mosaic";
@@ -37,6 +27,11 @@ const SIDE_GAP_PX = 16;
  */
 const MAX_TITLE_WIDTH_PX = 300;
 
+/**
+ * @fires TitleBar#edit — when an editable title is committed with a change;
+ *   the handler is given the bar and the new text. `action="edit:method"` in
+ *   markup, `onEdit` in JavaScript.
+ */
 export default class TitleBar extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -47,10 +42,15 @@ export default class TitleBar extends Component {
   static props = {
     /** The title, centred on the bar. */
     title: { type: String, default: "" },
+    /**
+     * Whether the title can be renamed in place: a double-click turns it into
+     * a field, and committing a change fires its `edit` event.
+     */
+    editable: { type: Boolean, default: false },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /** The last minimum width written, so a no-op resize restyles nothing. */
     this.appliedMinWidth = -1;
@@ -129,12 +129,48 @@ export default class TitleBar extends Component {
     bar.style.minWidth = `${minWidth}px`;
   }
 
+  /**
+   * Say the title was renamed. `edit` is its own event so it does not spend the
+   * bar's `action` — the same arrangement PopOver and DialogBox read by.
+   *
+   * @param {string} text The committed title.
+   * @fires TitleBar#edit
+   */
+  reportEdit(text) {
+    this.props.editAction?.(this.self, text);
+    this.props.onEdit?.(this.self, text);
+  }
+
+  /**
+   * Commit a renamed title. Read on blur — the title is `contenteditable` while
+   * editable, so this is where an edit-in-place settles. The trimmed text is
+   * reported only when it changed; the scroll is snapped back to the start so a
+   * long, ellipsised title reads from its beginning again rather than wherever
+   * typing left it.
+   */
+  commitTitle(event) {
+    const text = event.target.innerText.trim();
+    event.target.scrollLeft = 0;
+    if (text !== this.title) this.reportEdit(text);
+  }
+
+  /** Enter commits the title rather than inserting a newline. */
+  titleKeyDown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.target.blur();
+    }
+  }
+
   // --- drawing -------------------------------------------------------------
 
   // The title carries its full text as a hover tooltip, since a long one is
-  // cut with an ellipsis rather than widening the bar.
+  // cut with an ellipsis rather than widening the bar. When `editable`, the
+  // label itself is `contenteditable`: click in and type, and it commits on
+  // blur.
   draw() {
     const title = this.title;
+    const editable = this.editable;
 
     return (
       <div styleName="v-TitleBar">
@@ -152,7 +188,10 @@ export default class TitleBar extends Component {
           <span
             styleName="v-TitleBar-label"
             title={title || null}
-            style={{ display: title ? "" : "none" }}
+            style={{ display: title || editable ? "" : "none" }}
+            contenteditable={editable ? "true" : null}
+            onblur={editable ? (event) => this.commitTitle(event) : null}
+            onkeydown={editable ? (event) => this.titleKeyDown(event) : null}
           >
             {title}
           </span>

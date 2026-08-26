@@ -1,24 +1,11 @@
 // OutlineView, ported from GWT Mosaic (client/components/OutlineView.java and
 // OutlineObject.java, with resources/outline/OutlineView.ui.xml): a tree of
+// OutlineView: a tree of
 // disclosable rows, one of which is selected.
-//
 // The view owns two things and the items own neither: which row is selected,
 // and which rows are open. That is what OutlineView.java does too — an item
-// asks `outlineView.selectedItem` rather than keeping its own — and it is the
-// arrangement RadioGroup already uses here, so an item never has to know about
-// its siblings.
-//
-// In markup the tree is the nesting:
-//
-//   <OutlineView outlet="places" action="chosen" value="inbox">
-//       <OutlineItem text="Mail" value="mail" expanded="true">
-//           <OutlineItem text="Inbox" value="inbox"/>
-//           <OutlineItem text="Sent" value="sent"/>
-//       </OutlineItem>
-//       <OutlineItem text="Files" value="files"/>
-//   </OutlineView>
-//
 // OutlineObject — the abstract base the Java version puts the child list on —
+// and which rows are open. That is what OutlineView.java does too
 // has no counterpart here. Its whole job is holding the items added to a node
 // and handing them their parent; in Mosaic the markup's nesting is that list
 // already, so the view reads the tree it was given rather than being told about
@@ -28,6 +15,11 @@ import { coerceProps, Component } from "mosaic";
 import OutlineItem from "./OutlineItem.js";
 import "./outline.css";
 
+/**
+ * @fires OutlineView#change — the selection changed; the handler is given the
+ *   outline, the selected value and the selected item. Bound bare:
+ *   `action="method"` (`onChange` in JS).
+ */
 export default class OutlineView extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -35,8 +27,8 @@ export default class OutlineView extends Component {
    */
   static styleName = "v-OutlineView";
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /**
      * The values of the rows that are open.
@@ -78,8 +70,8 @@ export default class OutlineView extends Component {
   }
 
   /**
-   * Tell whoever is listening that a row was selected — `SelectionEvent.fire`
    * in Java, and what `action` names in markup:
+   * Tell whoever is listening that a row was selected, and what `action` names in markup:
    *
    *   <OutlineView action="chosen"/>
    *
@@ -221,8 +213,8 @@ export default class OutlineView extends Component {
   // --- behaviour -----------------------------------------------------------
 
   /**
-   * A row was clicked, or its toggle was. An item reports; the view decides —
    * `setSelected` goes through `outlineView` in the Java version too.
+   * A row was clicked, or its toggle was. An item reports; the view decides.
    */
   select(value) {
     this.setValue(value, true);

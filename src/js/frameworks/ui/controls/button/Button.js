@@ -1,11 +1,13 @@
 // Button, ported from GWT Mosaic (client/components/Button.java + its
 // Button.ui.xml template). The Java version mutates a UiBinder-built DOM
+// Button. The Java version mutates a UiBinder-built DOM
 // through setters; here `draw()` states the markup for the current state and
 // `needsDisplay()` patches the DOM to match.
 import Control from "../Control.js";
 import "./button.css";
 
 /** Visual intent, matching Intent.java (lower-cased, as its toString() does). */
+/** Visual intent (lower-cased, as its toString() does). */
 export const Intent = Object.freeze({
   DEFAULT: "default",
   PRIMARY: "primary",
@@ -17,21 +19,22 @@ export const Intent = Object.freeze({
 });
 
 /** Latched state of a toggle button, matching ButtonState.java. */
+/** Latched state of a toggle button. */
 export const ButtonState = Object.freeze({ ON: "on", OFF: "off" });
 
 const ACTIVATION_KEYS = new Set(["Enter", " ", "Spacebar"]);
 
+/**
+ * @fires Button#click — pressed or activated from the keyboard; the handler is
+ *   given the button. Its sole action, so it binds bare: `action="method"`
+ *   (`onClick` in JS). A toggle button fires it each time it latches on or off.
+ */
 export default class Button extends Control {
   /**
    * The class this component draws its root with — what a stylesheet is
    * naming when it says `Button`. See Component.styleName.
    */
   static styleName = "v-Button";
-
-  constructor() {
-    super();
-    this.buttonState = ButtonState.OFF;
-  }
 
   // --- configuration -------------------------------------------------------
   // Java exposes getText/setText and friends; declared here instead, which is
@@ -83,25 +86,36 @@ export default class Button extends Control {
     super.enabled = value;
   }
 
-  /** `ButtonState.ON` while pressed, or while latched on for a toggle. */
-  get on() {
-    return this.buttonState === ButtonState.ON;
+  /**
+   * `ButtonState.ON` while pressed, or while latched on for a toggle, and
+   * `ButtonState.OFF` otherwise.
+   *
+   * The state itself, rather than a boolean beside it: there were two ways to
+   * ask the same question — `on` and `buttonState` — and a subclass wanting to
+   * hear about latching had to override a method and trust that nothing
+   * assigned the field behind it.
+   *
+   * A setter rather than `setButtonState`, so it is assigned like any other
+   * setting on a control: `button.buttonState = ButtonState.OFF`. A subclass
+   * that acts on the change overrides the setter and calls `super`, which is
+   * how MenuButton and MenuBarItem show and hide their menus.
+   */
+  get buttonState() {
+    return this.get("buttonState", ButtonState.OFF);
   }
 
-  set on(value) {
-    this.setButtonState(value ? ButtonState.ON : ButtonState.OFF);
-  }
-
-  setButtonState(state) {
-    if (this.buttonState === state) return;
-    this.buttonState = state;
-    this.needsDisplay();
+  set buttonState(value) {
+    if (this.buttonState === value) return;
+    // `set` repaints and tells whatever is watching, so there is nothing to do
+    // here that assigning a setting does not already do.
+    this.set("buttonState", value);
   }
 
   // --- behaviour -----------------------------------------------------------
   // Each method is named after the DOM event it handles, so the base class
   // binds it automatically; the markup declares no handlers.
 
+  /** @internal **/
   pointerDown(event) {
     if (!this.enabled) {
       event.preventDefault?.();
@@ -112,23 +126,27 @@ export default class Button extends Control {
     event.preventDefault?.();
 
     if (this.toggle) {
-      this.setButtonState(this.on ? ButtonState.OFF : ButtonState.ON);
+      this.buttonState =
+        this.buttonState === ButtonState.ON ? ButtonState.OFF : ButtonState.ON;
       this.fireAction();
     } else {
-      this.setButtonState(ButtonState.ON);
+      this.buttonState = ButtonState.ON;
     }
   }
 
+  /** @internal **/
   pointerUp() {
-    if (!this.toggle) this.setButtonState(ButtonState.OFF);
+    if (!this.toggle) this.buttonState = ButtonState.OFF;
   }
 
+  /** @internal **/
   pointerLeave() {
-    if (!this.toggle) this.setButtonState(ButtonState.OFF);
+    if (!this.toggle) this.buttonState = ButtonState.OFF;
   }
 
+  /** @internal **/
   blur() {
-    if (!this.toggle) this.setButtonState(ButtonState.OFF);
+    if (!this.toggle) this.buttonState = ButtonState.OFF;
   }
 
   /**
@@ -144,23 +162,27 @@ export default class Button extends Control {
    *
    * There is no page-scroll to head off either, which is the usual reason for
    * cancelling Space: a focused button consumes the key itself.
+    @internal
    */
   keyDown(event) {
     if (!this.enabled) return;
     if (!ACTIVATION_KEYS.has(event.key)) return;
 
     if (this.toggle) {
-      this.setButtonState(this.on ? ButtonState.OFF : ButtonState.ON);
+      this.buttonState =
+        this.buttonState === ButtonState.ON ? ButtonState.OFF : ButtonState.ON;
       this.fireAction();
     } else {
-      this.setButtonState(ButtonState.ON);
+      this.buttonState = ButtonState.ON;
     }
   }
 
+  /** @internal **/
   keyUp() {
-    if (!this.toggle) this.setButtonState(ButtonState.OFF);
+    if (!this.toggle) this.buttonState = ButtonState.OFF;
   }
 
+  /** @internal **/
   click(event) {
     if (!this.enabled) {
       event.preventDefault?.();
@@ -181,6 +203,7 @@ export default class Button extends Control {
   /**
    * The class list the Java version maintains through add/removeStyleName.
    * A subclass that changes what the button is adds to this.
+    @internal
    */
   buttonClasses() {
     return [
@@ -189,7 +212,7 @@ export default class Button extends Control {
       this.hasIcon ? null : "noIcon",
       this.iconOnly ? "iconOnly" : null,
       this.toggle ? "toggle" : null,
-      this.on ? "is-active" : null,
+      this.buttonState === ButtonState.ON ? "is-active" : null,
       ...this.controlClasses(),
     ];
   }
@@ -200,11 +223,13 @@ export default class Button extends Control {
    * — says what here, the way a TextBase gives a field `drawPrefix` and
    * `drawSuffix`. Drawn by the subclass, so the subclass's own sheet reaches
    * it in the ordinary scoped way.
+   @internal
    */
   drawSuffix() {
     return null;
   }
 
+  /** @internal **/
   draw() {
     return (
       <button
@@ -212,7 +237,7 @@ export default class Button extends Control {
         styleName={this.buttonClasses()}
         type={this.type}
         title={this.tooltip}
-        aria-pressed={this.toggle ? String(this.on) : null}
+        aria-pressed={this.toggle ? String(this.buttonState === ButtonState.ON) : null}
       >
         <div>
           {this.hasIcon ? this.drawIcon() : null}
@@ -223,13 +248,12 @@ export default class Button extends Control {
     );
   }
 
+  /** @internal **/
   drawIcon() {
     if (this.iconImage) {
       // setIconBase64() in Java: the image is painted as the icon's
-      // background. Only the picture is named here — how big the slot is and
-      // how the image is fitted into it are the stylesheet's, so an image icon
-      // is the size of the glyph beside it in a toolbar, a title bar or a
       // plain button alike. The Java version wrote a 30px width inline
+      // background. Only the picture is named here
       // instead, which no sheet could then correct: in a toolbar it made this
       // one icon wider than its neighbours and drew it past the 24px slot.
       return (

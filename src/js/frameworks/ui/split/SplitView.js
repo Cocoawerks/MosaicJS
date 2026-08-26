@@ -1,23 +1,13 @@
 // SplitView, ported from GWT Mosaic (client/components/SplitPanel.java, with
 // SplitDivider.java and the SplitDivider.ui.xml it binds): two panes with a
+// SplitView: two panes with a
 // draggable divider between them.
-//
-// Named for what the framework calls things that hold a view apiece —
 // ListView, OutlineView, TabView, DeckView — rather than for the Java class,
+// Named for what the framework calls things that hold a view apiece,
 // which is SplitPanel. References to that name below are to the Java file.
-//
 // One pane is elastic and takes whatever room is left; the other is the static
-// one, and its length is what the divider changes. `flex` says which is which —
-// a sidebar is a static pane on the left with the content flexing beside it:
-//
-//   <SplitView orientation="horizontal" flex="bottom_right"
-//              staticPaneLength="220" minStaticPaneLength="120"
-//              maxStaticPaneLength="400" outlet="split">
-//       <nav slot="topLeft">…the sidebar…</nav>
-//       <section slot="bottomRight">…the content…</section>
-//   </SplitView>
-//
 // The Java version takes its two panes as `@UiChild` slots. There are no slots
+// one, and its length is what the divider changes. `flex` says which is which. There are no slots
 // here, so a child says which pane it belongs to and the view reads it — the
 // arrangement TitleBar, DialogBox and MenuItem are read by. A child that names
 // neither goes in the top-left pane, which is the one a single child means.
@@ -79,6 +69,11 @@ function releasePointer(element, pointerId) {
   }
 }
 
+/**
+ * @fires SplitView#action — the divider was dragged; the handler is given the
+ *   split view and the new pane length. Bound bare: `action="method"`
+ *   (`onAction` in JS).
+ */
 export default class SplitView extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -106,8 +101,8 @@ export default class SplitView extends Component {
     maxStaticPaneLength: { type: Number, default: Number.MAX_VALUE },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /**
      * How long the static pane has been set to, or null while the length the

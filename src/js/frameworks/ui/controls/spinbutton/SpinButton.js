@@ -1,9 +1,8 @@
 // SpinButton, ported from GWT Mosaic (client/components/SpinButton.java): a
+// SpinButton: a
 // number in a field with a step down and a step up beside it.
-//
 //   <SpinButton minValue="0" maxValue="10" value="3" outlet="quantity"
 //               action="quantityChanged"/>
-//
 // The two buttons and the field are components of their own, composed here.
 // Typing is settled after a pause rather than on every keystroke: a field being
 // typed into passes through states that are not numbers, and a half-typed "1"
@@ -23,6 +22,11 @@ const TYPING_DELAY = 600;
 const REPEAT_DELAY = 400;
 const REPEAT_PERIOD = 100;
 
+/**
+ * @fires SpinButton#valueChanged — the value changed; the handler is given the
+ *   spin button and the new value. Bound bare: `action="method"`
+ *   (`onValueChanged` in JS).
+ */
 export default class SpinButton extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -41,8 +45,8 @@ export default class SpinButton extends Component {
     step: { type: Number, default: 1 },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.typingTimer = null;
     this.repeatTimer = null;
   }

@@ -2,7 +2,6 @@
 // Build first: `mosaic compile examples/Counter_component --keep-modules` — these
 // tests import the compiled modules themselves, which a plain compile prunes
 // once they are in the bundle.
-//
 // There is no layout here, so where the title lands is not what these check —
 // that is checked in a browser. What they check is which region a child goes
 // to, what the bar says about its title, and the arithmetic behind the width
@@ -225,13 +224,13 @@ test("pressing it drops its menu, and pressing it again puts it away", () => {
   const { items, viewOf } = menuBar(1);
 
   point(items()[0], "pointerdown");
-  assert.equal(viewOf(0).on, true, "the item latched");
+  assert.equal(viewOf(0).buttonState, "on", "the item latched");
   assert.equal(viewOf(0).menu.open, true, "and the menu is up");
   assert.equal(items()[0].getAttribute("aria-expanded"), "true");
 
   point(items()[0], "pointerdown");
   assert.equal(viewOf(0).menu.open, false);
-  assert.equal(viewOf(0).on, false, "and the item came back up");
+  assert.equal(viewOf(0).buttonState, "off", "and the item came back up");
 });
 
 test("its menu drops from the item rather than pointing at it", () => {
@@ -262,7 +261,7 @@ test("the item's action is what its menu chose, not the press", () => {
 
   viewOf(0).menu.choose("close");
   assert.deepEqual(chosen, ["close"]);
-  assert.equal(viewOf(0).on, false, "and choosing put the item back up");
+  assert.equal(viewOf(0).buttonState, "off", "and choosing put the item back up");
 });
 
 test("however the menu closes, the item comes back up with it", () => {
@@ -270,7 +269,7 @@ test("however the menu closes, the item comes back up with it", () => {
 
   point(items()[0], "pointerdown");
   viewOf(0).menu.hide();
-  assert.equal(viewOf(0).on, false);
+  assert.equal(viewOf(0).buttonState, "off");
   assert.equal(items()[0].getAttribute("aria-expanded"), "false");
 });
 
@@ -281,9 +280,9 @@ test("with one menu up, the pointer moving to a sibling takes it over", () => {
   point(items()[0], "pointerdown");
   point(items()[1], "pointerenter");
 
-  assert.equal(viewOf(0).on, false, "the first came up");
+  assert.equal(viewOf(0).buttonState, "off", "the first came up");
   assert.equal(viewOf(0).menu.open, false, "and its menu went");
-  assert.equal(viewOf(1).on, true, "the second went down");
+  assert.equal(viewOf(1).buttonState, "on", "the second went down");
   assert.equal(viewOf(1).menu.open, true, "and dropped its own");
 });
 
@@ -291,7 +290,7 @@ test("with nothing open, the pointer merely passing over opens nothing", () => {
   const { items, viewOf } = menuBar(2);
 
   point(items()[1], "pointerenter");
-  assert.equal(viewOf(1).on, false);
+  assert.equal(viewOf(1).buttonState, "off");
   assert.equal(viewOf(1).menu, undefined, "no menu was ever built");
 });
 

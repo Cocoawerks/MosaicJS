@@ -1,7 +1,6 @@
 // ToggleControl, ported from GWT Mosaic (client/components/ToggleControl.java).
 // The base of the controls that carry a label beside an indicator the user
 // flips: CheckBox here, Switch when it is ported.
-//
 // Java holds `labelLayer` and `indicatorLayer` as UiFields and wires
 // aria-labelledby to the label's generated id in `initToggle()`. Here the
 // markup is stated in each subclass's `draw()`, and what is shared is the
@@ -21,8 +20,8 @@ export default class ToggleControl extends Control {
     text: { type: String, default: "" },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.labelId = `mosaic-toggle-${++nextId}`;
   }
 }

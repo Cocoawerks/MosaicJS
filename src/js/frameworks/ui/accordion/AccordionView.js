@@ -1,9 +1,7 @@
 // AccordionView, ported from GWT Mosaic (client/components/AccordionPanel.java):
 // a column of titled sections, each of which opens to show what is under it.
-//
 // Any number of them may be open at once — an accordion here is a set of
 // disclosures sharing a column, not a set of tabs.
-//
 //   <AccordionView outlet="details" action="sectionToggled">
 //       <AccordionSection title="Delivery" value="delivery" expanded="true">
 //           <p>…</p>
@@ -17,6 +15,11 @@ import { coerceProps, Component } from "mosaic";
 import AccordionSection from "./AccordionSection.js";
 import "./accordion.css";
 
+/**
+ * @fires AccordionView#action — a section was expanded or collapsed; the
+ *   handler is given the accordion, the section's value and its expanded state.
+ *   Bound bare: `action="method"` (`onAction` in JS).
+ */
 export default class AccordionView extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -24,8 +27,8 @@ export default class AccordionView extends Component {
    */
   static styleName = "v-accordionPanel";
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /**
      * The values of the sections that are open.
@@ -107,6 +110,7 @@ export default class AccordionView extends Component {
   }
 
   /** Open every section, or shut every one — `expandAllSections` in Java. */
+  /** Open every section, or shut every one. */
   expandAll(expanded = true) {
     for (const section of this.sections) {
       if (expanded) this.expandedValues.add(section.value);

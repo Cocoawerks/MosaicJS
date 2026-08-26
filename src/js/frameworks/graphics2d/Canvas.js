@@ -1,5 +1,4 @@
 // Canvas — a component that is drawn rather than marked up.
-//
 // It wraps a <canvas> tag and asks its subclass one thing: implement
 // `paint(g)`. That is where the drawing happens, onto a {@link Graphics2d},
 // which records it as a list of operations; the component flushes that list
@@ -7,10 +6,8 @@
 // override `paint(Graphics)` and never touch the device — and it is here for
 // the same reason: painting code that names no canvas can be replayed onto
 // something that is not one.
-//
 //   export default class Dial extends Canvas {
 //     static props = { value: {type: Number, default: 0} };
-//
 //     paint(g) {
 //       const {width, height} = this;
 //       g.setStroke({width: 8, cap: Cap.ROUND});
@@ -20,9 +17,7 @@
 //       g.drawArc(8, 8, width - 16, height - 16, 225, -270 * this.value);
 //     }
 //   }
-//
 //   <Dial value="0.6"/>
-//
 // A repaint happens when the component is attached, when it is resized, and
 // whenever one of its declared settings is assigned — `dial.value = 0.8` puts
 // the drawing right, the way assigning to a property redraws a marked-up
@@ -57,8 +52,8 @@ export default class Canvas extends Component {
     autoClear: { type: Boolean, default: true },
   };
 
-  constructor(controller) {
-    super(controller);
+  constructor(props) {
+    super(props);
 
     /** The <canvas> tag, once it has been drawn. */
     this.canvasNode = null;

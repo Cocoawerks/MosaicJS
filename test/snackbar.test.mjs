@@ -147,7 +147,7 @@ test("it says so when it goes, whoever closed it", () => {
   const bars = manager();
   const closed = [];
   bars.show(
-    h(SnackBar, { action: () => closed.push("gone") }, h("span", {}, "Saved")),
+    h(SnackBar, { onClose: () => closed.push("gone") }, h("span", {}, "Saved")),
   );
 
   bars.bars[0].view.close();
@@ -260,7 +260,7 @@ test("a dismissal is answered promptly", async () => {
 test("closing twice closes it once", async () => {
   const bars = manager();
   const closed = [];
-  bars.show(h(Toast, { text: "Saved", action: () => closed.push("gone") }));
+  bars.show(h(Toast, { text: "Saved", onClose: () => closed.push("gone") }));
 
   const bar = bars.bars[0].view;
   bar.close();
@@ -271,7 +271,6 @@ test("closing twice closes it once", async () => {
 });
 
 // --- several bars at once ----------------------------------------------------
-//
 // A bar leaving redraws the layer's whole list. What keeps the others intact is
 // that the layer draws them keyed, so the patcher finds each by name rather
 // than by where it sat — without that, every bar after the one that went was

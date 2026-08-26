@@ -1,11 +1,8 @@
 // AccordionSection, ported from GWT Mosaic
 // (client/components/AccordionSection.java + its AccordionSection.ui.xml
 // template): one titled section of an accordion, and what is under it.
-//
-// A section does not own whether it is open — the view does, and says so through
-// props — so pressing its header asks the view rather than deciding for itself.
-// That is the arrangement RadioGroup, OutlineView and Menu already use here; the
 // Java version keeps the state on the section, which is the same thing said the
+// A section does not own whether it is open, which is the same thing said the
 // other way round.
 import { Component } from "mosaic";
 
@@ -37,8 +34,8 @@ export default class AccordionSection extends Component {
     expanded: { type: Boolean, default: false },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     const id = ++nextId;
     /** The header and what it opens name each other, so both need an id. */

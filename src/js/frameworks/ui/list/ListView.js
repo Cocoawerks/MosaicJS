@@ -1,14 +1,12 @@
 // ListView, ported from GWT Mosaic (client/components/ListView.java): a
+// ListView: a
 // scrolling list of rows, one per thing it was given.
-//
 // The Java version is abstract over two types — the datum and the row — and an
 // application implements `createItem`. Here the row is a component, and the
 // list is told which kind by being given one in its markup:
-//
 //   <ListView outlet="people" emptyText="Nobody here">
 //       <PersonItem/>
 //   </ListView>
-//
 // The list draws one of those per datum, handing each its own. Code that would
 // rather say it in JavaScript passes the class as `item`.
 import { Component } from "mosaic";
@@ -36,8 +34,8 @@ export default class ListView extends Component {
     emptyText: { type: String, default: "" },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /** What the list holds. */
     this.items = [];

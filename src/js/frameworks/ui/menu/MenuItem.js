@@ -1,9 +1,7 @@
 // MenuItem, ported from GWT Mosaic (client/components/MenuItem.java + its
-// MenuItem.ui.xml template): one line of a menu.
-//
-// An item does not own whether it is the active one — the menu does, and says
-// so through props — so pointing at one asks the menu rather than deciding for
 // itself. That is the same arrangement as the Java version, where
+// MenuItem: one line of a menu.
+// An item does not own whether it is the active one, where
 // `menu.setActiveItem(this)` is what a pointer entering an item does.
 import Control from "../controls/Control.js";
 import "./menu.css";
@@ -26,6 +24,16 @@ export default class MenuItem extends Control {
     value: { type: String, default: "" },
     /** A font-icon class name, or an icon component, drawn before it. */
     icon: { type: String },
+    /**
+     * An image URL or data: URI, drawn in the icon slot instead — the same
+     * third form a Button takes.
+     *
+     * A menu built from things that are buttons elsewhere has to accept every
+     * icon they wear, or a line loses its picture on the way in. The overflow
+     * menu of a ToolBar is the case that matters: its items are Buttons, and a
+     * bar whose icons are images had lines that read as text alone.
+     */
+    iconImage: { type: String },
     /** Whether it is a rule between items rather than an item. */
     separator: { type: Boolean, default: false },
 
@@ -93,7 +101,25 @@ export default class MenuItem extends Control {
    * menu of plain lines reads as a list rather than as a column of icons that
    * are all missing.
    */
+  /** Whether anything is drawn in the icon slot, as Button says it. */
+  get hasIcon() {
+    return !!(this.icon || this.iconImage);
+  }
+
   drawIcon() {
+    // A picture, painted as the slot's background — Button's `iconImage`,
+    // drawn the same way here. Only the picture is named; the size of the slot
+    // and how the image is fitted into it are the stylesheet's.
+    if (this.iconImage) {
+      return (
+        <i
+          styleName={["icon", "iconImage"]}
+          style={{ backgroundImage: `url(${this.iconImage})` }}
+          aria-hidden="true"
+        />
+      );
+    }
+
     const icon = this.icon;
     if (!icon) return null;
 
@@ -124,7 +150,7 @@ export default class MenuItem extends Control {
       <li
         styleName={[
           "v-MenuItem",
-          this.icon ? "hasIcon" : null,
+          this.hasIcon ? "hasIcon" : null,
           this.active ? "active" : null,
           ...this.controlClasses(),
         ]}

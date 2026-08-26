@@ -13,6 +13,8 @@ export function attachTree(node) {
   const children = node.childNodes ? [...node.childNodes] : [];
   for (const child of children) attachTree(child);
 
+  // A drawn component gets `attached()` — it is on the page, its nodes can be
+  // measured. That is a component's lifecycle hook, not a controller's.
   const view = node.__ibView;
   if (view && !view.isAttached) {
     view.isAttached = true;
@@ -22,24 +24,18 @@ export function attachTree(node) {
       view.redrawWanted = false;
       view.needsDisplay();
     }
-    // awakeFromNib's moment: the markup has drawn, so every outlet is
-    // assigned, and children have woken already (depth first) — then the
-    // node is announced on screen.
-    view.awakeFromMib?.();
     view.attached?.();
   }
 
-  // A compiled `.ib.xml` draws against a scope of its own rather than a component
-  // instance — its controller — and that is where a page's own code lives. It
-  // is told the same thing at the same moment: outlets are assigned as the
-  // markup draws, so `attached()` is the first point at which a controller can
-  // see every control the page placed, which is what joining two of them
-  // together needs.
+  // A compiled `.ib.xml` draws against a scope of its own rather than a
+  // component instance — its controller — and that gets `awakeFromMib()`
+  // instead: the markup has drawn, so every outlet is assigned and every
+  // control the file placed can be reached, which is what joining two of them
+  // together needs. A controller has no `attached()`; that is a component's.
   const scope = node.__ibCtl;
-  if (scope && !scope.isAttached) {
+  if (scope && scope !== view && !scope.isAttached) {
     scope.isAttached = true;
     scope.awakeFromMib?.();
-    scope.attached?.();
   }
 }
 

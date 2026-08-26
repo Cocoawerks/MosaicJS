@@ -2,7 +2,6 @@
 // Build first: `mosaic compile examples/Counter_component --keep-modules` — these
 // tests import the compiled modules themselves, which a plain compile prunes
 // once they are in the bundle.
-//
 // There is no layout here, so how far the panel slides is not what these check
 // — that is checked in the browser, by the KitchenSink's own page. What they
 // check is what it does: what puts it out and what puts it away, that the page
@@ -147,17 +146,21 @@ test("and says it is closed at once, since nothing waits on a panel going", asyn
   assert.deepEqual(seen, ["close"]);
 });
 
-test("the action hears both, with which it was", async () => {
+test("open and close are their own events; the general action stays silent", async () => {
   reset();
   const seen = [];
-  const { view } = make({ action: (_, open) => seen.push(open) });
+  const { view } = make({
+    openAction: () => seen.push("open"),
+    closeAction: () => seen.push("close"),
+    action: () => seen.push("action"),
+  });
 
   view.show();
   await slid();
-  assert.deepEqual(seen, [true]);
+  assert.deepEqual(seen, ["open"]);
 
   view.close();
-  assert.deepEqual(seen, [true, false]);
+  assert.deepEqual(seen, ["open", "close"]);
 });
 
 test("closing one that is already away reports nothing", () => {
@@ -349,7 +352,6 @@ test("a drawer closed before it is out asks for no focus", async () => {
 });
 
 // --- handing the keyboard back -----------------------------------------------
-//
 // A modal dialog gets this from the platform: `showModal()` remembers what was
 // focused and returns to it on close. A drawer is an ordinary element, so it
 // keeps the place itself.

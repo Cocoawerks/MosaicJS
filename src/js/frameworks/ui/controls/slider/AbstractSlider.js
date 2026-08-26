@@ -2,13 +2,13 @@
 // what a slider with one knob and a slider with two have in common — the track,
 // the filled range behind the knobs, the bounds and step, and the pointer and
 // keyboard work that moves a knob about.
-//
 // A subclass says how many knobs there are and what the slider's value means:
 // Slider has one and is worth a number, RangeSlider has two and is worth a span.
 import Control from "../Control.js";
 import "./slider.css";
 
 /** Which way a slider runs, matching Orientation.java. */
+/** Which way a slider runs. */
 export const Orientation = Object.freeze({
   HORIZONTAL: "horizontal",
   VERTICAL: "vertical",
@@ -56,6 +56,12 @@ const STEPS = {
   vertical: { ArrowDown: -1, Down: -1, ArrowUp: 1, Up: 1 },
 };
 
+/**
+ * @fires AbstractSlider#valueChanged — the value changed by the user; the
+ *   handler is given the slider and the new value. Bound bare: `action="method"`
+ *   (`onValueChanged` in JS). A continuous slider fires as it is dragged; a
+ *   stepped one fires when the drag settles.
+ */
 export default class AbstractSlider extends Control {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -74,8 +80,8 @@ export default class AbstractSlider extends Control {
     step: { type: Number, default: 1 },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /** Every knob on the track, near end first. */
     this.handles = [];

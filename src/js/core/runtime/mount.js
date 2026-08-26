@@ -10,11 +10,19 @@ import { rememberView } from "./private/scope.js";
 const EMPTY = Symbol("no controller");
 
 export function mount(component, target, props = {}, controller = EMPTY) {
-  if (controller === EMPTY && isComponentClass(component)) controller = {};
-  // A Component subclass draws itself; it is its own controller.
+  // A Component subclass draws itself, so it is its own controller and needs
+  // no other. Mounting one with nothing said used to hand it an empty object
+  // to answer to, which is a controller that knows nothing and holds nothing —
+  // and the component then read its own state through something that was not
+  // it. A component without a controller is the ordinary case, not a gap to
+  // fill.
+  const said = controller !== EMPTY && controller !== null && controller !== undefined;
+
   if (isComponentClass(component)) {
-    const view = new component(controller === undefined ? null : controller);
-    if (controller && controller !== view) {
+    // Built from what it is being mounted with, the controller among the
+    // props: a component takes one object, and mounting is placing it.
+    const view = new component({...props,...(said ? { controller } : {}) });
+    if (said && controller !== view) {
       view.controller = controller;
       controller.view = view;
     }
@@ -50,7 +58,7 @@ export function mount(component, target, props = {}, controller = EMPTY) {
     controller = component?.controller ? new component.controller() : {};
   }
 
-  const view = new Component(controller);
+  const view = new Component({...props, controller });
   view.controller = controller;
   controller.view = view;
 
@@ -94,19 +102,18 @@ export function mount(component, target, props = {}, controller = EMPTY) {
   // a component's prop here too — `<Button text="{label}"/>` in a page is the
   // same thing it is anywhere else. Only a page that has such a prop, though:
   // `redraws` is what the compiler sets for a file with one, and a page
-  // without one keeps the binding pass it has always had. A page with more
-  // than one root has no single node to patch against and keeps it too.
-  if (
-    typeof component === "function" &&
-    component.redraws &&
-    nodes.length === 1 &&
-    nodes[0]?.nodeType === Node.ELEMENT_NODE
-  ) {
+  // without one keeps the binding pass it has always had. A single-root page is
+  // patched in place; a multi-root one is rebuilt — either way it is remembered,
+  // so a bound prop it hands a component is redone when the page's state changes.
+  if (typeof component === "function" && component.redraws && nodes.length > 0) {
+    const single =
+      nodes.length === 1 && nodes[0]?.nodeType === Node.ELEMENT_NODE;
     rememberView(controller, {
       fn: component,
       props,
       out: vnode,
-      node: nodes[0],
+      node: single ? nodes[0] : null,
+      nodes,
     });
   }
 
@@ -118,13 +125,13 @@ export function mount(component, target, props = {}, controller = EMPTY) {
   // whichever root carries its controller, and a page whose every root is a
   // composed view — `<PublishView/>` and `<WelcomeDialog/>` and nothing else —
   // carries it on none of them: each of those nodes belongs to the view drawn
-  // there. The page is on screen just the same, and its `attached()` is where
-  // a controller joins its outlets together, which is exactly what a page made
-  // of composed views has to do.
+  // there. The page is on screen just the same, and `awakeFromMib()` is where a
+  // controller joins its outlets together, which is exactly what a page made of
+  // composed views has to do. It is a controller, so it wakes and no more —
+  // `attached()` is a component's hook.
   if (controller && !controller.isAttached) {
     controller.isAttached = true;
     controller.awakeFromMib?.();
-    controller.attached?.();
   }
 
   const unmount = () => {

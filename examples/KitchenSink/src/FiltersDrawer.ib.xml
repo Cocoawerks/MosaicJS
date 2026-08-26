@@ -6,7 +6,7 @@
      page names this file and keeps an outlet on it. -->
 
 <interface>
-    <Drawer title="Filters" outlet="drawer" action="openChanged">
+    <Drawer title="Filters" outlet="drawer" action="open:onOpen close:onClose">
         <div styleName="body">
             <p styleName="note">
                 A drawer pushes the page aside rather than covering it: the room it

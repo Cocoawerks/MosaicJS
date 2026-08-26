@@ -32,14 +32,15 @@ export default class FiltersDrawerController {
   }
 
   /**
-   * The drawer came out, or went away. Passed on rather than acted on: where
+   * The drawer's open and close events. Passed on rather than acted on: where
    * it is showing is the page's business, not this controller's.
-   *
-   * @param {object} drawer The Drawer itself.
-   * @param {boolean} open Whether it is now out.
    */
-  openChanged(drawer, open) {
-    this.onOpenChange?.(open);
+  onOpen() {
+    this.onOpenChange?.(true);
+  }
+
+  onClose() {
+    this.onOpenChange?.(false);
   }
 
   /**

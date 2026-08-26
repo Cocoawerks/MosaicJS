@@ -1,7 +1,7 @@
 // ColorWell, ported from GWT Mosaic (client/components/ColorWell.java): a
+// ColorWell: a
 // Button whose face is the colour it holds. Pressing it opens a
 // ColorChooserPanel in a PopOver hung from the well.
-//
 // The popover is mounted beside the application rather than drawn inside the
 // well: a button may not hold a slider or a field, and the chooser has both.
 // That is what `RootPanel.get().add(popOver)` does for the Java version.
@@ -20,14 +20,18 @@ const CHOOSER_HEIGHT = 340;
 /** The gap the callout sits in, which a side has to have room for as well. */
 const GAP = 12;
 
+/**
+ * @fires ColorWell#change — a colour was picked; the handler is given the well
+ *   and the new colour. Bound bare: `action="method"` (`onChange` in JS).
+ */
 export default class ColorWell extends Button {
   static props = {
     /** A well shows a colour, and never a label: there is nothing to say. */
     iconOnly: { type: Boolean, default: true },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /** The colour it holds. */
     this.current = Color.white();
@@ -84,7 +88,7 @@ export default class ColorWell extends Button {
 
   /**
    * Pressing the well opens the chooser. A well's action means the colour
-   * changed — fired from {@link #setColor} when the chooser reports one — so
+   * changed — fired from {@link ColorWell.setColor} when the chooser reports one — so
    * the press itself says nothing to the application, which is what
    * `addActionHandler(e -> openChooser())` arranges for the Java version.
    */

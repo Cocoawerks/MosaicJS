@@ -1,7 +1,6 @@
 // Control, ported from GWT Mosaic (client/components/Control.java and the
-// IControl defaults it implements). A control is a focusable component that
+// Control. A control is a focusable component that
 // can be enabled or disabled and that fires an action.
-//
 // Java mutates the element through setters; here the state lives on the
 // component and `controlProps()` / `controlClasses()` feed it into `draw()`.
 import { Component } from "mosaic";
@@ -73,6 +72,7 @@ export default class Control extends Component {
    *   <Button text="Save" action="save" />
    *
    * which the compiler passes down as the `action` prop.
+   * @internal
    */
   fireAction(...args) {
     // `self` rather than `this`: a handler set up while drawing holds the
@@ -83,7 +83,7 @@ export default class Control extends Component {
 
   // --- drawing helpers -----------------------------------------------------
 
-  /** Classes every control carries; spread these into the root's class list. */
+  /** Classes every control carries; spread these into the root's class list. @internal */
   controlClasses() {
     return [this.enabled ? null : "is-disabled"];
   }
@@ -94,6 +94,7 @@ export default class Control extends Component {
    *   <button {...this.controlProps()}>…</button>
    *
    * `null` values are dropped by the runtime, so unset settings add nothing.
+   @internal
    */
   controlProps() {
     return {

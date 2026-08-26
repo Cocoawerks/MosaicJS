@@ -1,9 +1,7 @@
 // JSX transform for `.jsx` and `.js` sources.
-//
 // A `.jsx` file is ordinary JavaScript that may contain JSX expressions —
 // typically inside a `Component` subclass's `draw()` method. Only the JSX is
 // rewritten, into `h()` calls; every other byte is copied through untouched.
-//
 // Unlike `.ib.xml` markup, JSX here sits inside real JavaScript, so `{...}` holds
 // an arbitrary expression rather than a property path. `styleName`,
 // `outlet` and `action` mean the same thing in both.
@@ -690,23 +688,19 @@ export function inlineImageImports(code, dir, opts = {}) {
     }
 
     const [, name, spec] = match;
-    const file = path.join(dir, spec);
-    let data;
-    try {
-      data = fs.readFileSync(file);
-    } catch (e) {
-      throw new JsxError(`${file}: ${e.message}`);
-    }
+    const opts = { type, assetDir, assets };
 
     const markerEnd = line.lastIndexOf("*/");
     out += markerEnd === -1 ? "" : line.slice(0, markerEnd + 2);
-    // A small image is inlined wherever it can be; only one at or above the
-    // limit is written out, and only where there is a bundle to sit beside.
-    if (assetDir && data.length >= INLINE_LIMIT) {
-      out += `const ${name} = ${assetReference(file, data, assetDir, assets)};`;
-    } else {
-      out += `const ${name} = ${jsString(`data:${type};base64,${data.toString("base64")}`)};`;
-    }
+
+    // A glob — `import icons from "./icons/*.png"` — brings a whole folder in as
+    // one object keyed by file name, so a view that reaches for a dozen images
+    // writes one import and reads `{icons.save}` rather than importing and
+    // assigning each by hand. A plain spec is the one image it always was.
+    out += spec.includes("*")
+      ? `const ${name} = ${globImages(dir, spec, opts)};`
+      : `const ${name} = ${imageValue(path.join(dir, spec), opts)};`;
+
     // Kept on one line, whichever branch: the source was one line, and the map
     // that leads back to it is by line.
     if (line.endsWith("\n")) out += "\n";
@@ -714,6 +708,61 @@ export function inlineImageImports(code, dir, opts = {}) {
   }
 
   return [out, found];
+}
+
+/**
+ * The expression a compiled module reads one image's URL from: the file emitted
+ * beside the bundle when it is big enough to be worth it, or a data URL inlined
+ * when it is not (or when there is no bundle to sit beside — `check`).
+ *
+ * @param {string} file the image's path
+ * @param {object} opts `{ type, assetDir, assets }`
+ * @returns {string} a JavaScript expression
+ */
+function imageValue(file, { type, assetDir, assets }) {
+  let data;
+  try {
+    data = fs.readFileSync(file);
+  } catch (e) {
+    throw new JsxError(`${file}: ${e.message}`);
+  }
+  return assetDir && data.length >= INLINE_LIMIT
+    ? assetReference(file, data, assetDir, assets)
+    : jsString(`data:${type};base64,${data.toString("base64")}`);
+}
+
+/**
+ * A whole folder of images as one object, keyed by file name without the
+ * extension — `import icons from "./icons/*.png"` gives `{ save: …, print: … }`,
+ * so `{icons.save}` in markup reaches the one named `save.png`.
+ *
+ * The pattern is a directory and a `*.ext` — the common "every icon here" case,
+ * not full glob syntax. Keys are sorted so the object is the same build to build.
+ *
+ * @param {string} dir the importing file's directory
+ * @param {string} spec e.g. `./resources/*.png`
+ * @param {object} opts `{ type, assetDir, assets }`
+ * @returns {string} a JavaScript object literal
+ */
+function globImages(dir, spec, opts) {
+  const folder = path.join(dir, path.dirname(spec));
+  const ext = path.extname(spec).toLowerCase();
+  let names;
+  try {
+    names = fs.readdirSync(folder);
+  } catch (e) {
+    throw new JsxError(`${folder}: ${e.message}`);
+  }
+
+  const entries = names
+.filter((n) => path.extname(n).toLowerCase() === ext)
+.sort()
+.map((n) => {
+      const key = path.basename(n, path.extname(n));
+      return `${jsKey(key)}: ${imageValue(path.join(folder, n), opts)}`;
+    });
+
+  return `{ ${entries.join(", ")} }`;
 }
 
 /**

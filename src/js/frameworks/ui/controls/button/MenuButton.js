@@ -1,13 +1,11 @@
 // MenuButton, ported from GWT Mosaic (client/components/MenuButton.java): a
+// MenuButton: a
 // button that latches while a menu of its own is showing.
-//
 // The menu is mounted beside the application rather than drawn inside the
 // button, for the reason a colour well's chooser is: a button may not hold a
 // list of things that can be clicked. That is what `RootPanel.get().add(...)`
 // does for the Java version, whose Menu adds itself when it is built.
-//
 // In markup the items are the button's children:
-//
 //   <MenuButton text="Edit" action="edited">
 //       <MenuItem text="Cut" value="cut"/>
 //       <MenuItemSeparator/>
@@ -71,9 +69,13 @@ export default class MenuButton extends Button {
    * what latching means here. The button's action is what the *menu* chose,
    * so the press itself says nothing to the application.
    */
-  setButtonState(state) {
+  get buttonState() {
+    return super.buttonState;
+  }
+
+  set buttonState(value) {
     const was = this.buttonState;
-    super.setButtonState(state);
+    super.buttonState = value;
     if (this.buttonState === was) return;
 
     if (this.buttonState === ButtonState.ON) this.showMenu();
@@ -93,7 +95,8 @@ export default class MenuButton extends Button {
     // Primary button only; `button` is 0 for the primary pointer.
     if (event.button !== undefined && event.button !== 0) return;
     event.preventDefault?.();
-    this.setButtonState(this.on ? ButtonState.OFF : ButtonState.ON);
+    this.buttonState =
+      this.buttonState === ButtonState.ON ? ButtonState.OFF : ButtonState.ON;
   }
 
   /** And from the keyboard, on the keys that press a button. */
@@ -101,7 +104,8 @@ export default class MenuButton extends Button {
     if (!this.enabled) return;
     if (!ACTIVATION_KEYS.has(event.key)) return;
     event.preventDefault?.();
-    this.setButtonState(this.on ? ButtonState.OFF : ButtonState.ON);
+    this.buttonState =
+      this.buttonState === ButtonState.ON ? ButtonState.OFF : ButtonState.ON;
   }
 
   /** The click that follows a press has already been dealt with. */
@@ -120,7 +124,7 @@ export default class MenuButton extends Button {
 
   /** However the menu was dismissed, the button comes back up. */
   menuClosed() {
-    this.setButtonState(ButtonState.OFF);
+    this.buttonState = ButtonState.OFF;
     this.focusWas?.focus?.({ preventScroll: true });
     this.focusWas = null;
   }
@@ -140,7 +144,7 @@ export default class MenuButton extends Button {
     return {
       ...super.controlProps(),
       "aria-haspopup": "menu",
-      "aria-expanded": String(this.on),
+      "aria-expanded": String(this.buttonState === ButtonState.ON),
     };
   }
 

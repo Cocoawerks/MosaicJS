@@ -252,7 +252,6 @@ test("a parse error names the file and line", () => {
 });
 
 // --- what an application may name in its markup -----------------------------
-//
 // A component tag resolves to a module compiled somewhere in the build. Naming
 // one is what asks for it: the import is written for the application, and it
 // names that component's own module — not the framework's index, which names
@@ -327,7 +326,6 @@ test("a component of the application's own is imported by path", () => {
 });
 
 // --- a page's own controller -------------------------------------------------
-//
 // `Foo.ib.xml` is paired with the `FooController.js` written beside it: the page is
 // drawn against a controller of its own rather than against whatever drew it.
 
@@ -357,7 +355,6 @@ test("the pairing goes by the page's name, not by any controller nearby", () => 
 });
 
 // --- which frameworks are in scope -------------------------------------------
-//
 // A framework is reachable because `info.json` names it. Nothing is ambient:
 // an application that lists none cannot reach a component, which is what keeps
 // a build honest about where its components come from.
@@ -413,7 +410,6 @@ test("a name that is nowhere on disk says where it looked", () => {
 });
 
 // --- the theme ---------------------------------------------------------------
-//
 // A theme belongs to the application, not to any component: nothing in the
 // import graph names one, so the build has to link it in itself or every
 // `var(--…)` in the bundle resolves to nothing. Run against the real tool, since
@@ -538,7 +534,7 @@ test("and is not doubled in one that reads the theme itself", () => {
   // And each sheet once: a theme's opening comment is the cheapest thing to
   // count that a second copy would repeat.
   const light =
-    bundled.split("The Aristo theme, ported from GWT Mosaic").length - 1;
+    bundled.split("The Aristo theme").length - 1;
   const dark = bundled.split("Aristo Dark — the dark counterpart").length - 1;
   expect([light, dark]).toEqual([1, 1]);
 });

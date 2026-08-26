@@ -6,6 +6,7 @@
 // The counterpart to {@link FileReader}, and the same trick from the other end:
 // a browser saves a file when a link carrying `download` is clicked, so there
 // is a hidden anchor, made once and clicked from code.
+
 import { encodeText } from "./encode.js";
 
 export default class FileWriter {
@@ -19,11 +20,6 @@ export default class FileWriter {
   }
 
   constructor() {
-    /**
-     * The hidden anchor every save goes through. In the document for the
-     * reason {@link FileReader}'s input is: `download` has historically been
-     * ignored on a detached anchor in more than one browser.
-     */
     this.anchor = document.createElement("a");
     this.anchor.style.display = "none";
     document.body.appendChild(this.anchor);

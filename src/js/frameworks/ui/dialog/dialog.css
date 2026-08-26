@@ -1,6 +1,5 @@
 /*
  * Ported from GWT Mosaic: client/components/resources/dialogbox/style.css.
- *
  * The dialog's own chrome — the box, its header, main and footer — is drawn by
  * DialogBox and carries this sheet's scope in the ordinary way. Two things do
  * not, and are reached through `:global(...)`:
@@ -32,7 +31,7 @@
   /* Laid out only while it is up. The UA hides a closed `<dialog>` for us, but
      the `display` below is what a shown one needs and it would override that —
      leaving a closed dialog still boxed in the middle of the page: invisible at
-     opacity 0, and taking every press meant for what is behind it. The Java
+     opacity 0
      version never met this, because it took the dialog off the page as it
      closed; this one is drawn where its markup sits and stays there.
 

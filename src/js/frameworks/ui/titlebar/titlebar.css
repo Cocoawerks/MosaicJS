@@ -46,9 +46,31 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   line-height: 1;
+}
+
+/* An editable title renames in place — it carries `contenteditable`. Give it a
+   pointer that says so, room around the text, and the theme focus ring while it
+   is being edited. Only the editable one; a read-only label keeps its bare look.
+   Ported from crosswordstudio.web's publish title styling. */
+.v-TitleBar-label[contenteditable="true"] {
+  cursor: text;
+  padding: 4px 4px;
+  border-radius: 6px;
+  background: transparent;
+  outline: none;
+  font-weight: bold;
+}
+
+.v-TitleBar-label[contenteditable="true"]:focus {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 0;
+  /* While editing, drop the ellipsis so the whole title stays navigable; the box
+     stays overflow:hidden and scrolls to keep the caret in view. It is snapped
+     back to the start on blur — see TitleBar.commitTitle. */
+  text-overflow: clip;
 }
 
 .v-TitleBar-actions {

@@ -47,7 +47,7 @@ test("draws the ported markup: div.v-Text > div > i + input + i", () => {
   assert.equal(
     input.getAttribute("spellcheck"),
     "false",
-    "off, as in the Java version",
+    "off",
   );
   assert.equal(input.getAttribute("type"), "text");
 });

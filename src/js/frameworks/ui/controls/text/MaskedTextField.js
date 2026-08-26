@@ -2,12 +2,9 @@
 // It is drawn from the same template TextField is — resources/text/TextField.ui.xml
 // — so it adds no markup of its own and no stylesheet: the box, the input and
 // the two icon slots are TextBase's.
-//
 // A field that holds a shape, and lets the user fill only the places the shape
 // leaves open:
-//
 //   <MaskedTextField mask="(999) 999-9999" outlet="phone" action="dialled"/>
-//
 // The mask is read once into two lists that run beside each other, one entry
 // per position: `tests`, the pattern a position accepts or null where the mask
 // states a literal, and `buffer`, what is shown there now. Every move the
@@ -46,11 +43,12 @@ export default class MaskedTextField extends TextBase {
     /** Whether the text can be read but not changed. */
     readOnly: { type: Boolean, default: false },
     /** Off by default, as the Java version sets it. */
+    /** Off by default. */
     spellCheck: { type: Boolean, default: false },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /** A pattern per position, null where the mask states a literal. */
     this.tests = null;

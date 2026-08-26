@@ -1,17 +1,14 @@
 // Drawer, ported from GWT Mosaic (client/components/Drawer.java and the
-// resources/drawer/Drawer.ui.xml it binds): a panel docked against the right
+// Drawer: a panel docked against the right
 // edge of the window that slides in and *pushes* the page aside rather than
 // covering it.
-//
 // That push is the whole of what makes it a drawer rather than a popover: it
 // reserves its width by padding the document, and the page reflows into what is
 // left as the panel slides. The rest of the page stays live throughout — a
 // drawer is not modal — and Escape or the close button dismisses it.
-//
 // It is a surface, like a dialog or a popover: it is pinned to the window and
 // placed by the runtime, not by the markup around it. So it is the root of a
 // `.ib.xml` file of its own, and a page names that file:
-//
 //   <!-- FiltersDrawer.ib.xml -->        <!-- and in the page -->
 //   <Drawer title="Filters">          <FiltersDrawer outlet="filters"/>
 //       …what it holds…
@@ -37,6 +34,12 @@ const SLIDE_MS = 260;
 /** How long the push takes, which is what `drawer.css` transitions for. */
 const PUSH_MS = 220;
 
+/**
+ * @fires Drawer#open — it slid open; the handler is given the drawer.
+ *   `action="open:method"` (`onOpen` in JS).
+ * @fires Drawer#close — it slid shut, however it went; the handler is given the
+ *   drawer. `action="close:method"` (`onClose` in JS).
+ */
 export default class Drawer extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -55,8 +58,8 @@ export default class Drawer extends Component {
     push: { type: Boolean, default: true },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /** Whether it is out. */
     this.open = false;
@@ -181,13 +184,20 @@ export default class Drawer extends Component {
   }
 
   /**
-   * Say that it opened, or that it closed. Hooks of their own as well as the
-   * action, so a kind of drawer that means something else by its action can
-   * still hear these — the arrangement DialogBox and PopOver have.
+   * Say that it opened, and that it closed — two events rather than one action
+   * carrying a boolean, the way PopOver and DialogBox read. In markup they are
+   * `action="open:method"` and `action="close:method"` (compiled to
+   * `openAction`/`closeAction`); in JavaScript they are `onOpen` and `onClose`.
+   * `action` is left free for what a drawer means by it.
    */
   reportOpen(open) {
-    this.props.action?.(this.self, open);
-    (open ? this.props.onOpen : this.props.onClose)?.(this.self);
+    if (open) {
+      this.props.openAction?.(this.self);
+      this.props.onOpen?.(this.self);
+    } else {
+      this.props.closeAction?.(this.self);
+      this.props.onClose?.(this.self);
+    }
   }
 
   // --- pushing the page ------------------------------------------------------
@@ -211,11 +221,8 @@ export default class Drawer extends Component {
 
   /**
    * Tell whoever asked, on every frame of the slide, that the room they have
-   * is changing — the same work a window resize would give them.
-   *
-   * A resize event cannot stand in for this: the window has not changed size,
-   * only what is left of it, and anything listening for one would be told
    * nothing. `onLayoutFrame` in Java.
+   * is changing.
    */
   keepInStep() {
     const tell = this.props.onLayoutFrame;

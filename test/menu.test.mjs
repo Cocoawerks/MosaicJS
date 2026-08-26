@@ -274,7 +274,7 @@ test("what the menu chose is what the button reports", () => {
 
   assert.deepEqual(said, ["copy"]);
   assert.equal(view.menu.visible, false);
-  assert.equal(view.on, false, "and the button came back up");
+  assert.equal(view.buttonState, "off", "and the button came back up");
 });
 
 // --- the tooltip -------------------------------------------------------------
@@ -339,7 +339,6 @@ test("nor does one hanging off something disabled", async () => {
 });
 
 // --- MenuItemSeparator -------------------------------------------------------
-//
 // A rule written as what it is rather than as a setting on an item. The Java
 // version is a MenuItem subclass, and so is this — which is why the menu has to
 // take a kind of MenuItem for a line, not MenuItem itself.

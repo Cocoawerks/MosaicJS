@@ -1,30 +1,23 @@
 // DialogBox, ported from GWT Mosaic (client/components/DialogBox.java and the
-// resources/dialogbox/style.css it injects): a native `<dialog>` with a header
-// carrying its title and a close button, the caller's content below it, and a
-// footer for the buttons that settle it.
-//
 // The Java version builds its three regions as panels and takes `main` and
+// DialogBox: a native `<dialog>` with a header
+// carrying its title and a close button, the caller's content below it
 // `footer` as `@UiChild` slots. There are no slots here, so a child says which
 // region it belongs to and the dialog reads it — the arrangement TitleBar and
 // MenuItem are read by. A child that names none is content, which is what a
 // dialog mostly holds:
-//
 //   <!-- SettingsDialog.ib.xml -->
 //   <DialogBox title="Settings" outlet="dialog">
 //       <p>Whatever the dialog is about.</p>
 //       <Button slot="footer" text="Cancel" action="cancel"/>
 //       <Button slot="footer" text="Save" intent="primary" action="save"/>
 //   </DialogBox>
-//
 // with the behaviour beside it in SettingsDialogController.js, which the
 // compiler pairs with it by name. The page names the dialog as a tag and keeps
 // an outlet on it:
-//
 //   <SettingsDialog outlet="settings"/>
 //   <Button text="Settings…" action="showSettings"/>
-//
 //   showSettings() { this.settings.show(); }
-//
 // One departure from the Java version, and it is the same one PopOver made: a
 // Mosaic component already *is* what it draws, so nothing is added to a root
 // panel on the way up. The `<dialog>` is drawn where its markup sits and stays
@@ -47,8 +40,8 @@ const MEASURING = "is-measuring";
 
 /**
  * Anything that wants to know a dialog has opened, so a surface that is not
- * modal — a side panel, a drawer — can put itself away when one takes over.
  * `openListeners` in Java.
+ * modal.
  *
  * @type {Set<Function>}
  */
@@ -80,6 +73,12 @@ export function removeOpenListener(listener) {
   openListeners.delete(listener);
 }
 
+/**
+ * @fires DialogBox#open — it was shown; the handler is given the dialog.
+ *   `action="open:method"` (`onOpen` in JS).
+ * @fires DialogBox#close — it was closed, however it went; the handler is given
+ *   the dialog. `action="close:method"` (`onClose` in JS).
+ */
 export default class DialogBox extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -126,8 +125,8 @@ export default class DialogBox extends Component {
     height: { type: String, default: "" },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /** Whether it is up. */
     this.open = false;
@@ -140,9 +139,8 @@ export default class DialogBox extends Component {
     this.measuring = false;
 
     /**
-     * Consulted before every close — the close button, Escape, and a close
-     * asked for in code all pass through it. Returning false calls it off.
      * `setCloseApprover` in Java; null means every close is allowed.
+     * Consulted before every close; null means every close is allowed.
      *
      * @type {(() => boolean)|null}
      */
@@ -204,8 +202,8 @@ export default class DialogBox extends Component {
         // that is already the size it is going to be.
         this.measuring = false;
         this.needsDisplay();
-        // The close button takes first focus whatever the DOM order, which is
         // what the Java version's `autofocus` and its explicit `setFocus`
+        // The close button takes first focus whatever the DOM order
         // between them arrange.
         this.closeButton?.node?.focus?.();
         this.reportOpen();
@@ -323,17 +321,11 @@ export default class DialogBox extends Component {
   }
 
   /**
-   * Escape and Enter, which are the two keys a dialog owns.
-   *
    * Escape closes it, through the approver like every other close. The Java
+   * Escape and Enter
    * version let the UA's own "cancel" do the closing and only stopped the key
-   * travelling — which meant Escape went behind the approver's back, though
-   * `setCloseApprover` says it does not. Closing it here is what makes that
-   * true: `preventDefault` calls off the UA's own dismissal, so the dialog
-   * shuts once, by the one path every close takes.
-   *
-   * It goes no further either way: one press dismisses one dialog, so a dialog
    * opened over another absorbs its own — `absorbEscape` in Java.
+   * travelling.
    *
    * Enter presses the primary button, the way Return submits a form. Left
    * alone where a newline is what Enter means, and where something else has

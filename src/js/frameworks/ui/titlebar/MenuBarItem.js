@@ -1,25 +1,8 @@
 // MenuBarItem, ported from GWT Mosaic (client/components/MenuBarItem.java): a
+// MenuBarItem: a
 // TitleBarButton that drops a Menu. It latches while the menu is up and comes
-// back off however the menu closed — by a choice, a press outside or Escape.
-//
-// In markup the items are the nesting, as a MenuButton's are:
-//
-//   <TitleBar>
-//       <MenuBarItem slot="actions" text="File" action="chose">
-//           <MenuItem text="New" value="new"/>
-//           <MenuItem separator="true"/>
-//           <MenuItem text="Close" value="close"/>
-//       </MenuBarItem>
-//   </TitleBar>
-//
-// A bar of them behaves as one control: with a menu already up, moving the
-// pointer onto a sibling switches to that item's menu without a press — which
-// is what `openItem` below is for, and why it is the class's and not an
-// instance's.
-//
-// Much of this is MenuButton said again. The two cannot share it: a MenuButton
-// is a Button and this is a TitleBarButton, and what a menu bar item looks like
 // is the half that matters — the Java version makes the same choice.
+// back off however the menu closed.
 import { mount } from "mosaic";
 
 import { ButtonState } from "../controls/button/Button.js";
@@ -42,6 +25,11 @@ const ACTIVATION_KEYS = new Set(["Enter", " ", "Spacebar"]);
  */
 const MENU_GAP = 9;
 
+/**
+ * @fires MenuBarItem#action — an item in its menu was chosen; the handler is
+ *   given the bar item and the chosen value. Bound bare: `action="method"`
+ *   (`onAction` in JS).
+ */
 export default class MenuBarItem extends TitleBarButton {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -104,9 +92,13 @@ export default class MenuBarItem extends TitleBarButton {
    * Latching is what shows the menu, whatever did the latching — a press, a
    * key, or a sibling handing over.
    */
-  setButtonState(state) {
+  get buttonState() {
+    return super.buttonState;
+  }
+
+  set buttonState(value) {
     const was = this.buttonState;
-    super.setButtonState(state);
+    super.buttonState = value;
     if (this.buttonState === was) return;
 
     if (this.buttonState === ButtonState.ON) this.showMenu();
@@ -126,7 +118,8 @@ export default class MenuBarItem extends TitleBarButton {
     // Primary button only; `button` is 0 for the primary pointer.
     if (event.button !== undefined && event.button !== 0) return;
     event.preventDefault?.();
-    this.setButtonState(this.on ? ButtonState.OFF : ButtonState.ON);
+    this.buttonState =
+      this.buttonState === ButtonState.ON ? ButtonState.OFF : ButtonState.ON;
   }
 
   /** And from the keyboard, on the keys that press a button. */
@@ -134,7 +127,8 @@ export default class MenuBarItem extends TitleBarButton {
     if (!this.enabled) return;
     if (!ACTIVATION_KEYS.has(event.key)) return;
     event.preventDefault?.();
-    this.setButtonState(this.on ? ButtonState.OFF : ButtonState.ON);
+    this.buttonState =
+      this.buttonState === ButtonState.ON ? ButtonState.OFF : ButtonState.ON;
   }
 
   /** The click that follows a press has already been dealt with. */
@@ -151,7 +145,7 @@ export default class MenuBarItem extends TitleBarButton {
     const open = MenuBarItem.openItem;
     if (!this.enabled || !open || open === this.self) return;
     open.hideMenu();
-    this.setButtonState(ButtonState.ON);
+    this.buttonState = ButtonState.ON;
   }
 
   // --- the menu ------------------------------------------------------------
@@ -176,7 +170,7 @@ export default class MenuBarItem extends TitleBarButton {
   /** However the menu was dismissed, the item comes back up. */
   menuClosed() {
     if (MenuBarItem.openItem === this.self) MenuBarItem.openItem = null;
-    this.setButtonState(ButtonState.OFF);
+    this.buttonState = ButtonState.OFF;
     this.focusWas?.focus?.({ preventScroll: true });
     this.focusWas = null;
   }
@@ -196,7 +190,7 @@ export default class MenuBarItem extends TitleBarButton {
     return {
       ...super.controlProps(),
       "aria-haspopup": "menu",
-      "aria-expanded": String(this.on),
+      "aria-expanded": String(this.buttonState === ButtonState.ON),
     };
   }
 

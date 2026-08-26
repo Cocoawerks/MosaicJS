@@ -1,22 +1,21 @@
 // ToolBar, ported from GWT Mosaic (client/components/ToolBar.java): a
+// ToolBar: a
 // horizontal bar of ToolBarItems with a rule along its bottom edge.
-//
 // In markup the items are the nesting, and anything else the bar should carry
 // goes in beside them:
-//
 //   <ToolBar>
 //       <ToolBarItem text="New" icon="fa-file" action="newDocument"/>
 //       <ToolBarItem text="Open" icon="fa-folder" action="open"/>
 //       <ToolBarFlex/>
 //       <ToolBarItem text="Share" icon="fa-share" action="share"/>
 //   </ToolBar>
-//
 // When the bar is too narrow to show every item it behaves like a macOS
 // NSToolbar: the items that no longer fit are pulled off the trailing edge into
 // an overflow ("»") button, whose menu lists them. The bar reflows itself
 // whenever its width changes.
 import { Component, h, mount } from "mosaic";
 
+import { ButtonState } from "../controls/button/Button.js";
 import Menu from "../menu/Menu.js";
 import MenuItem from "../menu/MenuItem.js";
 import ToolBarItem from "./ToolBarItem.js";
@@ -28,6 +27,10 @@ import "./toolbar.css";
 // writes the same path into the button by hand.
 import ChevronsRight from "svg:chevrons-right";
 
+/**
+ * The bar itself fires nothing; each ToolBarItem fires its own `click` (bound
+ * bare on the item: `action="method"`, `onClick` in JS), given the item.
+ */
 export default class ToolBar extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -35,8 +38,8 @@ export default class ToolBar extends Component {
    */
   static styleName = "v-ToolBar";
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /**
      * How many items, counting from the trailing edge, are in the overflow
@@ -250,7 +253,12 @@ export default class ToolBar extends Component {
         return h(MenuItem, {
           value: String(index),
           text: props.text ?? "",
+          // Both forms an item's icon may take. A ToolBarItem is a Button, so
+          // its picture may be a font class, an icon component or an image —
+          // and a line that carried only the first two lost the icon of every
+          // item drawn from a picture, which is what a ported toolbar's are.
           icon: props.icon ?? null,
+          iconImage: props.iconImage ?? null,
           enabled: view ? view.enabled : props.enabled !== false,
           action: () => view?.fireAction(),
         });
@@ -263,13 +271,16 @@ export default class ToolBar extends Component {
   showOverflowMenu(button) {
     const menu = this.menu ?? this.buildMenu();
     this.updateMenu();
-    if (button.on) menu.alignWith(button.node ?? this.overflowNode);
-    else menu.hide();
+    if (button.buttonState === ButtonState.ON) {
+      menu.alignWith(button.node ?? this.overflowNode);
+    } else {
+      menu.hide();
+    }
   }
 
   /** However the menu was dismissed, the button comes back up with it. */
   menuClosed() {
-    if (this.overflowButton) this.overflowButton.on = false;
+    if (this.overflowButton) this.overflowButton.buttonState = ButtonState.OFF;
   }
 
   // --- drawing -------------------------------------------------------------

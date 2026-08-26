@@ -86,7 +86,7 @@ test("a toggle latches and reports aria-pressed", () => {
 
   press(el);
   assert.equal(classesOf(el).includes("is-active"), false);
-  assert.equal(view.on, false);
+  assert.equal(view.buttonState, ButtonState.OFF);
 });
 
 test("the action fires once per activation, and never twice for a toggle", () => {
@@ -170,12 +170,12 @@ test("a toggle fires on the key going down, and not again on the click", () => {
   });
 
   el.dispatchEvent({ type: "keydown", key: " " });
-  assert.equal(view.on, true);
+  assert.equal(view.buttonState, ButtonState.ON);
   el.dispatchEvent({ type: "click" });
   el.dispatchEvent({ type: "keyup", key: " " });
 
   assert.equal(fired, 1);
-  assert.equal(view.on, true, "still latched on");
+  assert.equal(view.buttonState, ButtonState.ON, "still latched on");
 });
 
 test("a disabled button neither activates nor fires", () => {

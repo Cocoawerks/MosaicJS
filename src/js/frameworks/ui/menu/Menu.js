@@ -1,12 +1,10 @@
 // Menu, ported from GWT Mosaic (client/components/Menu.java): a popover holding
+// Menu: a popover holding
 // a list of items, one of which is active at a time.
-//
 // The Java version holds a PopOver and passes everything through to it; this one
 // is a PopOver, since that is what it draws. What it adds is the list, the
 // active item, and the keys that move between them.
-//
 // In markup the items are the nesting:
-//
 //   <Menu outlet="menu" action="chosen">
 //       <MenuItem text="Cut" value="cut"/>
 //       <MenuItemSeparator/>
@@ -27,6 +25,12 @@ function isMenuItem(type) {
   return type === MenuItem || type?.prototype instanceof MenuItem;
 }
 
+/**
+ * Inherits {@link PopOver}'s `open` and `close`, and gives `action` its own
+ * meaning:
+ * @fires Menu#action — an item was chosen; the handler is given the menu and
+ *   the item's value. Bound bare: `action="method"` (`onAction` in JS).
+ */
 export default class Menu extends PopOver {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -59,8 +63,8 @@ export default class Menu extends PopOver {
     panelClass: { type: String },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /** The item the pointer or the keyboard is on, or null. */
     this.activeValue = null;
@@ -118,8 +122,8 @@ export default class Menu extends PopOver {
 
   /**
    * Make the item carrying `value` the active one, or none of them. An item
-   * that holds a menu of its own opens it, and whatever was open closes —
    * `setActive` does both in the Java version.
+   * that holds a menu of its own opens it, and whatever was open closes.
    */
   activate(value) {
     if (this.activeValue === value) return;
@@ -385,6 +389,7 @@ export default class Menu extends PopOver {
   }
 
   /** The panel is the menu, as it is in Java: the list inside it is plumbing. */
+  /** The panel is the menu. */
   panelRole() {
     return "menu";
   }

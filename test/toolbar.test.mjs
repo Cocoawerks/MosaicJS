@@ -2,7 +2,6 @@
 // Build first: `mosaic compile examples/Counter_component --keep-modules` — these
 // tests import the compiled modules themselves, which a plain compile prunes
 // once they are in the bundle.
-//
 // There is no layout here, so what the bar measures has to be said out loud:
 // the tests that exercise overflow give the bar a width and its items one, and
 // what they check is which items it moved and what the menu then reads.
@@ -57,6 +56,18 @@ const overflowOf = (el) =>
 
 /** Whether an element is in the layout at all. */
 const showing = (el) => el.style.display !== "none";
+
+/** Every element at or under `root` that `matches`, in document order. */
+function find(root, matches) {
+  const found = [];
+  const walk = (node) => {
+    if (!node || node.nodeType !== 1) return;
+    if (matches(node)) found.push(node);
+    for (const child of node.childNodes ?? []) walk(child);
+  };
+  for (const child of root?.childNodes ?? []) walk(child);
+  return found;
+}
 
 /**
  * Give the bar a width, and its items one each, so `reflow` has something to
@@ -190,6 +201,54 @@ test("what left the bar is what the overflow menu reads", () => {
   );
 });
 
+test("a line wears the icon its item wears, in either form", () => {
+  // The two an item may have: a font class, and a picture. A ToolBarItem is a
+  // Button, so both are ordinary — and a menu that carried only the first left
+  // every picture-icon item reading as text alone.
+  const { view, el } = toolbar(
+    someItems({
+      save: { icon: "fa-save" },
+      share: { iconImage: "share.png" },
+    }),
+  );
+  measurable(el, 2 * ITEM_WIDTH + OVERFLOW_WIDTH);
+  view.reflow();
+
+  assert.deepEqual(
+    view.menu.items.map((item) => [item.props.icon, item.props.iconImage]),
+    [
+      ["fa-save", null],
+      [null, "share.png"],
+    ],
+  );
+});
+
+test("a picture icon is painted into the line's icon slot", () => {
+  const { view, el } = toolbar(someItems({ share: { iconImage: "share.png" } }));
+  measurable(el, 3 * ITEM_WIDTH + OVERFLOW_WIDTH);
+  view.reflow();
+
+  // The lines exist as DOM only once the menu is up.
+  click(overflowOf(el));
+
+  const lines = find(view.menuHost, (node) =>
+    classesOf(node).includes("v-MenuItem"),
+  );
+  assert.equal(lines.length, 1, "the one item that overflowed");
+
+  const [line] = lines;
+  const [slot] = find(line, (node) =>
+    (node.getAttribute("class") ?? "").includes("iconImage"),
+  );
+
+  assert.ok(slot, "the line drew a picture slot");
+  assert.equal(slot.style.backgroundImage, "url(share.png)");
+  assert.ok(
+    (line.getAttribute("class") ?? "").includes("hasIcon"),
+    "and the line says it has one, so the sheet can make room",
+  );
+});
+
 test("a hidden item is not in the bar, so it is not in the menu either", () => {
   const { view, el } = toolbar(someItems({ share: { hidden: "true" } }));
   measurable(el, 2 * ITEM_WIDTH + OVERFLOW_WIDTH);
@@ -232,7 +291,7 @@ test("the overflow button latches while its menu is up", () => {
   const button = overflowOf(el).childNodes[0];
   point(button, "pointerdown");
   click(button);
-  assert.equal(view.overflowButton.on, true, "it is down");
+  assert.equal(view.overflowButton.buttonState, "on", "it is down");
   assert.equal(view.menu.open, true, "and the menu is up");
 
   point(button, "pointerdown");
@@ -250,7 +309,7 @@ test("however the menu is dismissed, the button comes back up with it", () => {
   click(button);
   view.menu.hide();
 
-  assert.equal(view.overflowButton.on, false);
+  assert.equal(view.overflowButton.buttonState, "off");
 });
 
 test("an item that fits again comes back to the bar", () => {

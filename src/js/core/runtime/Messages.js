@@ -1,27 +1,22 @@
 // Messages — the strings an application says, in whichever language it is
 // being read in.
-//
 //   <Button text="{MESSAGES.save}"/>
 //   <h1>{MESSAGES.welcomeBack}</h1>
-//
 // `MESSAGES` is reserved in `.ib.xml` markup: a binding whose path starts with
 // it is not read from the controller at all, but looked up here. Reserved, and
 // spelled in capitals, because `messages` is a perfectly ordinary thing for a
 // controller to hold — a chat log, a list of validation messages — and a
 // collision would be silent: the binding would read the application's own
 // array, find no `save` on it, and draw nothing.
-//
 // A key is a short name — `save`, `openPicture`, `dialog.close` — not the
 // sentence it stands for. The message each key stands for lives in
 // `locales/default.json` (usually English), and every other language beside it.
-//
 // A key resolves in three steps: the active locale's catalog, then the default
 // catalog (`default.json`), then the key itself. So `{MESSAGES.save}` draws the
 // default text wherever a locale has no translation of its own, and a key
 // nobody has written a default for yet draws its own name rather than a hole in
 // the page. A single-word key that is already its own English — a framework's
 // `"Close"` — needs no default at all: it falls through to itself.
-//
 // Switching locale is what the theme does with a stylesheet: every translated
 // string in the document is written again, and nothing is redrawn and no state
 // is touched. A form half filled in stays half filled in; the labels change
@@ -51,8 +46,11 @@ export class Messages {
    *   English itself, which is what leaves the fallback the key.
    */
   constructor(catalogs = {}, locale = "en", defaults = {}) {
+    /** The `{locale: {key: text}}` catalogs this build carries. @private */
     this.catalogs = catalogs;
+    /** The locale being read in; the `locale` getter is its public face. @private */
     this._locale = locale;
+    /** The default (usually English) text of each key. @private */
     this.defaults = defaults;
 
     /**
@@ -68,6 +66,8 @@ export class Messages {
      * Entries live until their nodes leave the document and are dropped as
      * they are found gone, which is the bookkeeping `refresh` does for
      * `{path}` bindings and for the same reason.
+     *
+     * @private
      */
     this.bound = new Map();
 
@@ -84,8 +84,11 @@ export class Messages {
      * closed a hundred times is a hundred controllers, and a set holding each
      * one for the life of the page would be a leak that only shows up in an
      * application people use for a while.
+     *
+     * @private
      */
     this.dependents = new Set();
+    /** Controllers already in `dependents`, so each is added once. @private */
     this.registered = new WeakSet();
   }
 
@@ -150,14 +153,14 @@ export class Messages {
     this.catalogs = catalogs;
     this._locale = locale;
     this.defaults = defaults;
-    this.retranslate();
+    this._retranslate();
     return this;
   }
 
   /** Add or replace a catalog — how a framework contributes its own strings. */
   add(locale, catalog) {
     this.catalogs[locale] = { ...this.catalogs[locale], ...catalog };
-    if (locale === this._locale) this.retranslate();
+    if (locale === this._locale) this._retranslate();
     return this;
   }
 
@@ -176,7 +179,7 @@ export class Messages {
       );
     }
     this._locale = name;
-    this.retranslate();
+    this._retranslate();
     return name;
   }
 
@@ -187,8 +190,9 @@ export class Messages {
    * @param {object} entry `{node, key}` for a text node, or `{node, attr,
    *   render}` for an attribute — an attribute may be part message and part
    *   `{path}`, so it hands over how to work itself out rather than a key.
+   * @internal
    */
-  bind(entry) {
+  _bind(entry) {
     let parts = this.bound.get(entry.node);
     if (!parts) {
       parts = new Map();
@@ -199,11 +203,12 @@ export class Messages {
   }
 
   /**
-   * Remember that `controller` drew something a message decided, so a change
-   * of locale draws it again. Called by `bindProp`; applications do not call
-   * this.
+   * Draw `controller` again when the locale changes — call it when the
+   * controller read a message while drawing, so its output is re-worked from
+   * the new language. Called by `bindProp`; applications do not call this.
+   * @internal
    */
-  dependOn(controller) {
+  _redrawOnLocaleChange(controller) {
     if (!controller || this.registered.has(controller)) return;
     this.registered.add(controller);
     this.dependents.add(new WeakRef(controller));
@@ -212,8 +217,9 @@ export class Messages {
   /**
    * Write every bound message again, dropping the ones whose nodes have left
    * the document.
+   * @internal
    */
-  retranslate() {
+  _retranslate() {
     // The views that read a message rather than declaring one. Drawn again
     // first, so that the nodes they produce are in the document before the
     // pass below writes the messages that are in them.

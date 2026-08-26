@@ -1,31 +1,24 @@
 // PopOver, ported from GWT Mosaic (client/components/PopOver.java and the
-// PopOverPanel it wraps, with resources/popover/PopOverPanel.ui.xml): a floating
+// PopOver: a floating
 // panel that hangs off something on the page, with a callout pointing back at
 // what it belongs to.
-//
 // The Java version is two classes — PopOver, which is the thing an application
 // holds, and PopOverPanel, which is the element it draws and positions. There is
 // one here: a Mosaic component already *is* what it draws, so the panel's job is
 // `draw()` and its measuring is the component's own.
-//
 // Whatever it should hold is its children, so a popover of an application's own
 // is a `.ib.xml` file whose root is this component:
-//
 //   <!-- ColourPopOver.ib.xml -->
 //   <PopOver orientation="bottom_center">
 //       <h3>Pick a colour</h3>
 //       <Button text="Red" action="pick"/>
 //   </PopOver>
-//
 // with the behaviour beside it in ColourPopOverController.js, which the
 // compiler pairs with it by name. The page then names the popover as a tag and
 // keeps an outlet on it:
-//
 //   <ColourPopOver outlet="colours"/>
 //   <Button text="Colour…" outlet="colourButton" action="showColours"/>
-//
 //   showColours(button) { this.colours.show(button); }
-//
 // It fires an `open` and a `close` event — `action="open:method"` and
 // `action="close:method"` in markup, `onOpen`/`onClose` in JavaScript — each
 // handed the popover. `action` itself is left for what a popover is for (a
@@ -96,6 +89,12 @@ export function closeTransientPopOvers() {
   for (const popOver of [...openTransients]) popOver.hide();
 }
 
+/**
+ * @fires PopOver#open — it appeared; the handler is given the popover.
+ *   `action="open:method"` (`onOpen` in JS).
+ * @fires PopOver#close — it was dismissed, however it went; the handler is
+ *   given the popover. `action="close:method"` (`onClose` in JS).
+ */
 export default class PopOver extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -116,8 +115,8 @@ export default class PopOver extends Component {
     transient: { type: Boolean, default: true },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /** Whether it is on screen. */
     this.open = false;
@@ -378,8 +377,8 @@ export default class PopOver extends Component {
     if (!node || !this.anchorElement) return;
 
     // Measured now rather than a frame later: a popover is hidden with
-    // `visibility`, which still lays the element out, and reading its size
     // is what settles the layout to read. The Java version defers because
+    // `visibility`
     // it has just switched the panel on; nothing here has to wait.
     const frame = this.anchorElement.getBoundingClientRect();
     const width = node.offsetWidth;
@@ -485,8 +484,8 @@ export default class PopOver extends Component {
   }
 
   /**
-   * The same box, moved back inside the window if it hung over an edge — what
    * `adjustPosition` does in Java.
+   * The same box, moved back inside the window if it hung over an edge.
    */
   keepInWindow(left, top, width, height) {
     const right = window.innerWidth - left - width;

@@ -1,9 +1,7 @@
 // TabView, ported from GWT Mosaic (client/components/TabPanel.java + its
-// TabPanel.ui.xml template): a bar of tabs over a deck of cards, with a pill
+// TabView: a bar of tabs over a deck of cards, with a pill
 // that slides behind whichever tab is chosen.
-//
 // In markup the tabs are the nesting, each with what belongs under it:
-//
 //   <TabView outlet="tabs" action="tabChanged">
 //       <Tab title="Overview">
 //           <p>…</p>
@@ -18,6 +16,11 @@ import DeckView from "../deck/DeckView.js";
 import Tab from "./Tab.js";
 import "./tab.css";
 
+/**
+ * @fires TabView#change — the selected tab changed; the handler is given the
+ *   tab view, the new index and its title. Bound bare: `action="method"`
+ *   (`onChange` in JS).
+ */
 export default class TabView extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -30,8 +33,8 @@ export default class TabView extends Component {
     selectedIndex: { type: Number, default: 0 },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /**
      * Whether the pill should slide to where it is going.

@@ -1,5 +1,4 @@
 // Turning a vnode tree into DOM.
-//
 // Elements are created in the namespace they belong to. An `<svg>` and
 // everything inside it is not HTML: created with createElement it is an
 // unknown HTML element that lays out and paints nothing, which is the one way
@@ -37,7 +36,7 @@ export function render(vnode, controller = {}, ns = null) {
     // on nothing the controller holds — changing locale writes it again, and
     // no redraw is involved.
     const node = document.createTextNode(MESSAGES.get(vnode.key));
-    MESSAGES.bind({ node, key: vnode.key });
+    MESSAGES._bind({ node, key: vnode.key });
     return node;
   }
   if (vnode.__ibBind === "text") {
@@ -69,7 +68,9 @@ export function render(vnode, controller = {}, ns = null) {
   if (isComponentClass(type)) {
     // A nested Component subclass draws itself and owns its own redraws. Tagging the
     // node lets a later patch find the instance instead of recreating it.
-    const view = new type(null);
+    // What the tag says, handed over at construction: a component reads its
+    // own settings from the moment it exists.
+    const view = new type({...props, children });
     const dom = drawInto(view, { ...props, children });
     if (view.node) {
       view.node.__ibView = view;
@@ -125,20 +126,33 @@ export function render(vnode, controller = {}, ns = null) {
     // Kept only for a view that has a prop to work out — `type.redraws`, which
     // the compiler sets for a file with a bound prop in it. Everything else has
     // nothing a redraw would reach that the binding pass does not, and pays
-    // nothing for the difference. A view with more than one root has no single
-    // node to patch against and is left to the binding pass too.
-    if (
-      own !== controller &&
-      type.redraws &&
-      dom?.nodeType === Node.ELEMENT_NODE
-    ) {
-      rememberView(own, {
-        fn: type,
-        props: drawnWith,
-        out: produced,
-        node: dom,
-        applied,
-      });
+    // nothing for the difference.
+    //
+    // A single-root view is patched in place on redraw; a multi-root one has no
+    // one node to patch against and is rebuilt instead — but it is remembered
+    // either way, so a bound *prop* it hands a child (which is worked out at
+    // draw time, not written to the DOM) is redone when its scope changes. Its
+    // roots are captured now, before the fragment is inserted and emptied.
+    if (own !== controller && type.redraws) {
+      if (dom?.nodeType === Node.ELEMENT_NODE) {
+        rememberView(own, {
+          fn: type,
+          props: drawnWith,
+          out: produced,
+          node: dom,
+          nodes: [dom],
+          applied,
+        });
+      } else if (dom?.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+        rememberView(own, {
+          fn: type,
+          props: drawnWith,
+          out: produced,
+          node: null,
+          nodes: [...dom.childNodes],
+          applied,
+        });
+      }
     }
     // `outlet="colours"` on a composed view hands over that view's scope, not
     // the element it drew: what the page above has to say to it is `show(button)`

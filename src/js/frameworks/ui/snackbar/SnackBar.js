@@ -1,18 +1,15 @@
 // SnackBar, ported from GWT Mosaic (client/components/SnackBar.java and the
-// resources/snackbar/SnackBar.ui.xml it binds): a small bar that appears over
+// SnackBar: a small bar that appears over
 // the page to say something happened, and takes itself away again.
-//
 // A bar is shown through a SnackBarManager, which is what puts it on the page
 // and stacks it with whatever else is up — a bar never adds itself. What it
 // says is its children, so a bar of an application's own can be a `.ib.xml` file
 // whose root is this component:
-//
 //   <!-- SavedBar.ib.xml -->
 //   <SnackBar intent="success" icon="svg:check" userClosable="true">
 //       <span>Everything was saved</span>
 //       <Button text="Undo" action="undo"/>
 //   </SnackBar>
-//
 // and the page shows one with `this.bars.show(<SavedBar/>)`. For a line of text
 // and nothing else there is Toast, which is this with the text drawn for it.
 import { Component } from "mosaic";
@@ -39,8 +36,8 @@ export const SnackBarAnimationState = Object.freeze({
  * How long the fade out is given before the bar is taken off the page.
  *
  * It has to match the `transition-duration` on `.v-SnackBar-exit` in
- * snackbar.css: shorter and the bar is pulled out from under its own fade —
  * which is what the Java version did, taking it away at 400ms through a 500ms
+ * snackbar.css: shorter and the bar is pulled out from under its own fade, taking it away at 400ms through a 500ms
  * fade, so it vanished while still a fifth visible.
  *
  * Shorter than the Java version's half second, too. That length reads as a
@@ -54,6 +51,12 @@ const EXIT_DURATION = 200;
 /** How long a bar stays, in seconds, unless it is told otherwise. */
 const DEFAULT_LIFESPAN = 5;
 
+/**
+ * @fires SnackBar#open — it appeared on the page; the handler is given the bar.
+ *   `action="open:method"` (`onOpen` in JS).
+ * @fires SnackBar#close — it has gone, however it went; the handler is given the
+ *   bar. `action="close:method"` (`onClose` in JS).
+ */
 export default class SnackBar extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
@@ -75,8 +78,8 @@ export default class SnackBar extends Component {
     icon: { type: String },
   };
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /**
      * Where it is in its coming and going. A field the bar draws rather than
@@ -95,8 +98,8 @@ export default class SnackBar extends Component {
   // --- how long it stays ---------------------------------------------------
 
   /**
-   * Start the clock, or stop it. Called when the bar lands on the page —
    * `onAttach` in Java — and again by anything that changes its lifespan.
+   * Start the clock, or stop it. Called when the bar lands on the page.
    *
    * @param {number} [seconds] How long it has left; its own lifespan by default.
    */

@@ -1,6 +1,5 @@
 /*
  * Ported from GWT Mosaic: client/components/resources/menu/style.css.
- *
  * Both modules of the port import this sheet: the menu draws the panel and its
  * list, an item draws its own line. The panel itself is a PopOver, drawn by
  * that module, so the rules that reach it go through :global.
@@ -131,6 +130,27 @@
        beside them. The amount belongs to the face, so the theme states it. */
   position: relative;
   top: var(--label-cap-offset);
+}
+
+/*
+ * An icon that is a picture rather than a glyph.
+ *
+ * The slot above is `fit-content`, which is the size of what is in it — right
+ * for a glyph and for an svg, and nothing at all for an image, which is empty
+ * and painted with a background. So a picture slot is given the square the
+ * glyph beside it would have drawn in: `1em` of the line's own size, which
+ * follows the menu's face rather than being a number stated twice.
+ */
+.v-MenuItem i.icon.iconImage {
+  display: inline-flex;
+  width: 1em;
+  height: 1em;
+  /* Contained rather than `100%`: that sets the width alone and leaves the
+     height to the picture, so anything not square is drawn past the slot and
+     clipped. Contained, the whole picture sits inside the square. */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
 /* An icon that is a drawing rather than a glyph takes the line's own colour.

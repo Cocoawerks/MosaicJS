@@ -2,7 +2,6 @@
 // Build first: `mosaic compile examples/Counter_component --keep-modules` — these
 // tests import the compiled modules themselves, which a plain compile prunes
 // once they are in the bundle.
-//
 // There is no native `<dialog>` behind the shim, so what `showModal()` does to
 // the top layer is not what these check — that is checked in the browser, by
 // the example's own page. What they check is what the dialog does: what it
@@ -191,13 +190,17 @@ test("opening reports once it is up, not while it is being measured", async () =
   assert.deepEqual(seen, ["open"]);
 });
 
-test("the action hears opening and closing, with which it was", async () => {
+test("open and close each fire once; the general action stays silent", async () => {
   const seen = [];
-  const { view } = await open({ action: (_, open) => seen.push(open) });
+  const { view } = await open({
+    openAction: () => seen.push("open"),
+    closeAction: () => seen.push("close"),
+    action: () => seen.push("action"),
+  });
 
-  assert.deepEqual(seen, [true]);
+  assert.deepEqual(seen, ["open"]);
   view.forceClose();
-  assert.deepEqual(seen, [true, false]);
+  assert.deepEqual(seen, ["open", "close"]);
 });
 
 test("showing twice does nothing the second time", async () => {

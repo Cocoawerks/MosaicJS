@@ -1,8 +1,7 @@
-// TabView and DeckView, ported from GWT Mosaic (TabPanel) and GWT (DeckPanel).
+// TabView and DeckView and GWT (DeckPanel).
 // Build first: `mosaic compile examples/Counter_component --keep-modules` — these
 // tests import the compiled modules themselves, which a plain compile prunes
 // once they are in the bundle.
-//
 // There is no layout here, so where the pill lands is not what these check —
 // that is checked in a browser. What they check is which card is showing, what
 // the bar says about itself, and that a card put away is not thrown away.
@@ -34,7 +33,7 @@ const keyDown = (el, key) => {
 function deck(props = {}) {
   const host = document.createElement("div");
   const view = mount(DeckView, host, {
-    ...props,
+...props,
     children: [h("p", {}, "one"), h("p", {}, "two"), h("p", {}, "three")],
   }).view;
   const el = host.childNodes[0];
@@ -44,8 +43,8 @@ function deck(props = {}) {
 /** Which cards are showing, by what they read. */
 const showing = (cards) =>
   cards
-    .filter((card) => classesOf(card).includes("is-showing"))
-    .map((card) => card.textContent);
+.filter((card) => classesOf(card).includes("is-showing"))
+.map((card) => card.textContent);
 
 test("a deck draws every card and shows one", () => {
   const { el, cards } = deck();
@@ -103,7 +102,7 @@ test("the markup may say which card starts on top", () => {
 function tabs(props = {}) {
   const host = document.createElement("div");
   const view = mount(TabView, host, {
-    ...props,
+...props,
     children: [
       h(Tab, { title: "Overview" }, h("p", {}, "first")),
       h(Tab, { title: "Details" }, h("input", {})),

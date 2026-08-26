@@ -87,7 +87,7 @@ export function track(controller, entry) {
   // rather than beside the render, because a patch re-tracks the same
   // attribute and this is the one place both go through.
   if (entry.kind === "attr" && entry.parts.some((p) => p.key !== undefined)) {
-    MESSAGES.bind({
+    MESSAGES._bind({
       node: entry.node,
       attr: entry.name,
       render: () => attrValue(entry.parts, controller),

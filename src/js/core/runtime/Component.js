@@ -1,12 +1,11 @@
 // Component — the base class every Mosaic component extends.
-//
 // It owns four things: the settings pattern (`get`/`set`), the drawing entry
 // point (`needsDisplay`), automatic event binding, and the attached/detached
 // lifecycle. The drawing and patching machinery itself lives in the runtime,
 // which this module and the components below it share.
 import { clearBindings } from "./clearBindings.js";
 import { BROWSER_EVENTS } from "./events.js";
-import { coerceValue } from "./coerce.js";
+import { coerceProps, coerceValue } from "./coerce.js";
 import { MESSAGES } from "./Messages.js";
 import { redraw } from "./redraw.js";
 import { refresh } from "./refresh.js";
@@ -35,6 +34,7 @@ export class Component {
    * `draw()` — and inside anything it calls — is that proxy. Handing it out is
    * what makes a control's action arrive with something that is not the
    * control, so anything passing itself outward passes this instead.
+    @internal
    */
   get self() {
     return this[SELF] ?? this;
@@ -81,24 +81,62 @@ export class Component {
    */
   static styleName = null;
 
-  constructor(controller) {
+  /**
+   * A component is built from what it is placed with.
+   *
+   *   new Button({ text: "Save", intent: Intent.PRIMARY })
+   *
+   * The same object a tag hands it — `<Button text="Save"/>` is these props —
+   * so a component built by hand and one drawn from markup begin the same
+   * way, and a subclass that reads a setting in its own constructor reads
+   * what it was given rather than a default it is corrected from a moment
+   * later.
+   *
+   * `controller` is one of them: whose properties the bindings read. A
+   * component placed without one answers for itself.
+   *
+   * @param {object} props What it was placed with, `controller` among them.
+   */
+  constructor(props = {}) {
     // Once per class, the first time one is built: the accessors its
     // settings ask for, minus any the class writes itself.
     prepareSettings(new.target);
 
-    /** Whose properties bindings read; a drawn view answers for itself. */
-    this.controller = controller ?? this;
-    /** The root DOM node, set once the tree is rendered. */
+    /**
+     * What it was placed with, and where `get()` reads a setting from when
+     * nothing has been assigned over it.
+     *
+     * Not the `static props` a component declares — that is the schema, and
+     * what a page sets. This is what it was last handed, kept so a redraw has
+     * something to replay. The two share a name and are different slots, so a
+     * documented component listed both under Properties: one the surface, one
+     * the working out, and no way to tell which was which.
+     *
+     * @internal
+     */
+    this.props = coerceProps(props) ?? {};
+    /** Whose properties bindings read; a drawn view answers for itself. @internal */
+    this.controller = this.props.controller ?? this;
+    /** The root DOM node, set once the tree is rendered. @internal */
     this.node = null;
-    /** Props from the last draw, replayed on redraw. */
-    this.props = {};
-    /** Every top-level node this view put in the document. */
+    /** Every top-level node this view put in the document. @internal */
     this.nodes = [];
-    /** Listeners this component attached, per node, so they can be moved. */
+    /**
+     * The last tree this view drew, kept so a redraw has something to compare
+     * against and can patch what changed rather than building it all again.
+     *
+     * Declared here rather than appearing when something first assigns it, so
+     * that what a component holds is said in one place — `destroy()` already
+     * put it back to this.
+     *
+     * @internal
+     */
+    this.vtree = undefined;
+    /** Listeners this component attached, per node, so they can be moved. @private */
     this.listeners = new Map();
-    /** Settings assigned through `set()`, taking precedence over props. */
+    /** Settings assigned through `set()`, taking precedence over props. @private */
     this.overrides = {};
-    /** Whether `attached()` has been called and `detached()` has not. */
+    /** Whether `attached()` has been called and `detached()` has not. @private */
     this.isAttached = false;
   }
 
@@ -114,25 +152,11 @@ export class Component {
    *                 gone; release anything else it owns (timers, observers).
    *
    * `attached()` runs once per insertion, not on every redraw.
-   */
-
-  /**
-   * Cocoa's `awakeFromNib`, for a component woken from an `.ib.xml` (a "mib").
    *
-   * It runs once, after the markup has finished drawing — so every outlet the
-   * markup named is assigned and every control the file placed can be reached —
-   * and before the component is on screen. That is the moment the constructor
-   * cannot be: an outlet is a `ref` the runtime assigns as it draws, which is
-   * after the object it assigns onto has been constructed. Code that has to see
-   * a sibling control — show a dialog placed with `outlet="…"`, join two
-   * controls with a binding — belongs here rather than in the constructor.
-   *
-   * A no-op by default; override without calling `super`. It fires on a page's
-   * controller and on a composed view's controller as well as on a Component
-   * that draws itself, so a plain `.ib.xml` controller may declare it too.
-   * Children wake before their parents, as a nib's objects do.
+   * A component has no `awakeFromMib()` — that is a controller's hook, for the
+   * `.ib.xml` scope the runtime wakes once its outlets are assigned. A component
+   * draws itself and measures itself in `attached()` instead.
    */
-  awakeFromMib() {}
 
   /**
    * A setting's current value: an override once one has been assigned — even
@@ -193,6 +217,7 @@ export class Component {
    *   handleMoved() { …; this.changed("value"); }
    *
    * @param {string} name The property that is now worth something else.
+    @internal
    */
   changed(name) {
     notify(this, name);
@@ -220,9 +245,10 @@ export class Component {
    *
    * @param {string} key The English.
    * @param {object} [params] Values for any `{name}` the message leaves open.
+     @internal
    */
   message(key, params) {
-    MESSAGES.dependOn(this);
+    MESSAGES._redrawOnLocaleChange(this);
     return params ? MESSAGES.format(key, params) : MESSAGES.get(key);
   }
 
@@ -238,6 +264,7 @@ export class Component {
    *
    * @param {*} value What was assigned.
    * @returns {boolean} What it means.
+   * @internal
    */
   bool(value) {
     return !!coerceValue(value);
@@ -251,6 +278,7 @@ export class Component {
    *
    * The listener resolves the method when the event fires, so a method can be
    * replaced after mounting.
+   * @internal
    */
   bindEvents() {
     const targets = this.nodes.filter(
@@ -298,6 +326,7 @@ export class Component {
    * component itself — alive.
    *
    * A subclass may implement `detached()` to do its own cleanup.
+   @internal
    */
   destroy() {
     // Listeners go first, so an overridden detached() cannot leave any behind.

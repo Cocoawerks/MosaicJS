@@ -1,7 +1,6 @@
 // LoadingButton, ported from GWT Mosaic (client/components/LoadingButton.java):
 // a Button that shows a spinner in its icon slot while something it started is
 // still running, and refuses to be pressed again meanwhile.
-//
 // The spinner waits before appearing. Work that finishes quickly never shows
 // one, which is the point: a spinner that flashes for 80ms reads as a glitch.
 import Button from "./Button.js";
@@ -20,8 +19,8 @@ export function getLoadingDelay() {
 }
 
 export default class LoadingButton extends Button {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     /** Whether work is running. The spinner may not be showing yet. */
     this.isLoading = false;
     this.timer = null;

@@ -2,7 +2,6 @@
 // Build first: `mosaic compile examples/Counter_component --keep-modules` — these
 // tests import the compiled modules themselves, which a plain compile prunes
 // once they are in the bundle.
-//
 // There is no layout here, so where a popover lands is not what these check —
 // that is checked in the browser, by the example's own page. What they check is
 // what it does: when it is up, what puts it away, and whose controller its
@@ -120,15 +119,19 @@ test("it starts away, shows against something, and puts itself away", () => {
   assert.equal(view.visible, false);
 });
 
-test("opening and closing reaches the action, once each way", () => {
+test("open and close each fire once, and the general action stays silent", () => {
   const said = [];
-  const { view, anchor } = open({ action: (popover, open) => said.push(open) });
+  const { view, anchor } = open({
+    openAction: () => said.push("open"),
+    closeAction: () => said.push("close"),
+    action: () => said.push("action"),
+  });
 
   view.show(anchor);
   view.show(anchor); // already up: nothing said
   view.hide();
   view.hide(); // already away: nothing said
-  assert.deepEqual(said, [true, false]);
+  assert.deepEqual(said, ["open", "close"]);
 });
 
 test("a press outside puts it away; a press inside, or on its anchor, does not", () => {
@@ -208,7 +211,6 @@ test("closeTransientPopOvers puts away everything that dismisses itself", () => 
 });
 
 // --- which side it lands on --------------------------------------------------
-//
 // There is no layout here, so the anchor is given a rect of its own and the
 // popover a size: what these check is the choice of side, which is arithmetic.
 
@@ -400,7 +402,6 @@ test("a popover told to draw no callout draws none either way", () => {
 });
 
 // --- a popover of an application's own ---------------------------------------
-//
 // `Foo.ib.xml` whose root is a PopOver, with `FooController.js` beside it: the
 // compiler pairs the two, and the runtime gives each drawn one a controller of
 // its own. These stand in for the compiled pair — a function with a

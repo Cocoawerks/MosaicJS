@@ -8,7 +8,7 @@
 
 /* The chevron is this module's drawing (Button's `drawSuffix` slot), so these
    rules are scoped in the ordinary way. The class is on an `<i>` around the
-   SVG rather than on the SVG itself, which is also how the Java version puts
+   SVG rather than on the SVG itself
    it: an SVG element's className is an SVGAnimatedString, not a string. */
 .chevron {
   flex: 0 0 auto;

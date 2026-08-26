@@ -1,9 +1,10 @@
 // ColorChooserPanel, ported from GWT Mosaic
 // (client/components/ColorChooserPanel.java): a palette of presets above, and
+// ColorChooserPanel
+//: a palette of presets above, and
 // below it a saturation/brightness square with a hue strip beside it, an
-// opacity slider, and a hex entry with a preview.
-//
 // The Java version draws the two pickers on `Canvas` widgets and paints them
+// opacity slider
 // through CanvasGraphics. Here they are `<canvas>` elements the component draws
 // on itself: the painting is the same arithmetic, without a widget in between.
 import { Component } from "mosaic";
@@ -33,9 +34,14 @@ function clamp01(value) {
   return value < 0 ? 0 : value > 1 ? 1 : value;
 }
 
+/**
+ * @fires ColorChooserPanel#change — the chosen colour changed; the handler is
+ *   given the panel and the new colour. Bound bare: `action="method"`
+ *   (`onChange` in JS).
+ */
 export default class ColorChooserPanel extends Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     /** The colour it is showing. */
     this.current = Color.white();

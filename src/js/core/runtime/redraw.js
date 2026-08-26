@@ -153,7 +153,7 @@ function patch(parent, dom, oldV, newV, controller) {
       // A patched node is the node the message now lives in, so it is
       // registered again — the registry is keyed by node, so re-registering
       // replaces rather than accumulates.
-      if (bind?.__ibBind === "message") MESSAGES.bind({ node: dom, key: bind.key });
+      if (bind?.__ibBind === "message") MESSAGES._bind({ node: dom, key: bind.key });
       else if (bind)
         track(bind.controller, { kind: "text", node: dom, path: bind.path });
       return dom;
@@ -461,24 +461,54 @@ function sameProps(a = {}, b = {}) {
  */
 function redrawComposedView(scope) {
   const record = scope?.[VIEW];
-  const node = record?.node;
-  if (!record || !node?.parentNode) return false;
+  if (!record) return false;
+  const nodes = record.nodes ?? (record.node ? [record.node] : []);
+  const anchor = nodes[0];
+  if (!anchor?.parentNode) return false;
 
   // Re-registered against whichever nodes survive, as a drawn component's are.
   if (Object.prototype.hasOwnProperty.call(scope, BINDINGS))
     scope[BINDINGS].length = 0;
 
   const produced = record.fn.call(scope, record.props);
-  const patched = patch(node.parentNode, node, record.out, produced, scope);
 
-  record.out = produced;
-  record.node = patched;
-  if (patched?.nodeType === Node.ELEMENT_NODE) {
-    patched.__ibFn = record.fn;
-    patched.__ibOut = produced;
-    patched.__ibCtl = scope;
+  // One root: patch it in place, so focus, scroll and a press in progress
+  // survive, as a single-root view always has.
+  if (nodes.length === 1 && record.node) {
+    const patched = patch(anchor.parentNode, anchor, record.out, produced, scope);
+    record.out = produced;
+    record.node = patched;
+    record.nodes = [patched];
+    if (patched?.nodeType === Node.ELEMENT_NODE) {
+      patched.__ibFn = record.fn;
+      patched.__ibOut = produced;
+      patched.__ibCtl = scope;
+    }
+    attachTree(patched);
+    return true;
   }
-  attachTree(patched);
+
+  // More than one root: there is no single node to patch against, so the roots
+  // are rebuilt in place — the same fallback `redraw` makes for a multi-root
+  // drawn component. This is what lets a bound prop a multi-root `.ib.xml` view
+  // hands a child update at all: it is worked out afresh here.
+  const parent = anchor.parentNode;
+  const before = nodes[nodes.length - 1].nextSibling;
+  const dom = render(produced, scope);
+  const fresh =
+    dom?.nodeType === Node.DOCUMENT_FRAGMENT_NODE
+      ? [...dom.childNodes]
+      : [dom];
+  parent.insertBefore(dom, before);
+  for (const old of nodes) discard(old);
+
+  for (const node of fresh) {
+    if (node?.nodeType === Node.ELEMENT_NODE) node.__ibCtl = scope;
+  }
+  record.out = produced;
+  record.node = fresh.length === 1 ? fresh[0] : null;
+  record.nodes = fresh;
+  for (const node of fresh) attachTree(node);
   return true;
 }
 
