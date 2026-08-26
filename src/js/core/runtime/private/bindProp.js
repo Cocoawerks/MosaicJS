@@ -7,9 +7,9 @@
 // handed over as the plain thing it is. What makes it stay right is that the
 // view redraws — reading the path here is also what marks it worth watching, so
 // assigning to it draws the view again and the prop is worked out afresh.
-import { display, notifierFor, readPath } from "./private/bindings.js";
-import { MESSAGES } from "./Messages.js";
-import { observe } from "./private/observe.js";
+import { display, notifierFor, readPath } from "./bindings.js";
+import { MESSAGES } from "../Messages.js";
+import { observe } from "./observe.js";
 
 /**
  * The value of a bound prop, and the mark that says to draw again when it

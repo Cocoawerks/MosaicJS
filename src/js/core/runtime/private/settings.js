@@ -17,8 +17,8 @@
 // by hand — a value that has to be clamped, a knob that has to move, a timer
 // that has to start. A hand-written one always wins; declaring the setting
 // beside it is how it says what type and default it takes.
-import { BROWSER_EVENTS } from "../events.js";
-import { coerceValue } from "../coerce.js";
+import { BROWSER_EVENTS } from "./events.js";
+import { coerceValue } from "./coerce.js";
 
 /** Classes whose accessors have been defined, so it is done once each. */
 const prepared = new WeakSet();

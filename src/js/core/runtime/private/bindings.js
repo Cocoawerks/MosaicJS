@@ -2,7 +2,7 @@
 // read off a controller, and how assigning to one gets back to the DOM.
 
 import { MESSAGES } from "../Messages.js";
-import { refresh } from "../refresh.js";
+import { refresh } from "./refresh.js";
 import { observe } from "./observe.js";
 
 /**

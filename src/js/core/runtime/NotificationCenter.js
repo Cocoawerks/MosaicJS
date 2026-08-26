@@ -60,7 +60,7 @@ export class NotificationCenter {
   #byName = new Map();
 
   /**
-   * Hear about `name` until the returned function is called.
+   * @public Listen for `name` until the returned function is called.
    *
    * `sender` narrows a subscription to notifications posted by one object,
    * which is what to reach for when many things post the same name and only
@@ -95,7 +95,7 @@ export class NotificationCenter {
   }
 
   /**
-   * Hear about the next `name` and no more: `observe` with `once`.
+   * @public Listen the next `name` and no more: `observe` with `once`.
    *
    * @param {string} name
    * @param {(note: Notification) => void} handler
@@ -107,7 +107,7 @@ export class NotificationCenter {
   }
 
   /**
-   * Subscribe an object by naming the method to call on it — the Cocoa
+   * @public Subscribe an object by naming the method to call on it — the Cocoa
    * spelling, and the one to use when the subscriptions are dropped together
    * by observer rather than one token at a time.
    *
@@ -151,7 +151,7 @@ export class NotificationCenter {
   }
 
   /**
-   * Drop subscriptions made with `addObserver`.
+   * @public Drop subscriptions made with `addObserver`.
    *
    * With just an observer, every subscription it made goes — which is the call
    * to make from a `detached()`, and the reason to subscribe by observer in
@@ -188,7 +188,7 @@ export class NotificationCenter {
   }
 
   /**
-   * Announce that something happened, and return once every observer has been
+   * @public Announce that something happened, and return once every observer has been
    * told. Posting a notification nobody observes is not an error and does
    * nothing — that is the point of the arrangement.
    *
@@ -234,7 +234,7 @@ export class NotificationCenter {
   }
 
   /**
-   * Whether anything is listening for `name` — a poster with expensive detail
+   * @public Whether anything is listening for `name` — a poster with expensive detail
    * to gather can ask before gathering it.
    *
    * @param {string} name
@@ -249,7 +249,7 @@ export class NotificationCenter {
   }
 
   /**
-   * Every notification name something is currently observing. For a diagnostic
+   * @public Every notification name something is currently observing. For a diagnostic
    * or a test; nothing in the runtime reads it.
    *
    * @returns {string[]}
@@ -259,7 +259,7 @@ export class NotificationCenter {
   }
 
   /**
-   * Forget every subscription. A test's way back to a clean center — an
+   * @public Forget every subscription. A test's way back to a clean center — an
    * application dropping everything at once is dropping subscriptions its own
    * code did not make.
    */

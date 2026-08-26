@@ -4,7 +4,7 @@
 // `Labelled.ib.xml` beside it, and nothing has to be written as a class. What
 // makes it a component rather than an include is this — it draws against a
 // scope of its own, and the tag's attributes are what that scope starts with.
-import { coerceProps } from "../coerce.js";
+import { coerceProps } from "./coerce.js";
 
 /**
  * Props the runtime uses itself. They are how a component is placed rather

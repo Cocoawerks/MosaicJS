@@ -1,8 +1,8 @@
 // Drawing a component's tree, and recognising a component class.
-import { coerceProps } from "../coerce.js";
+import { coerceProps } from "./coerce.js";
 import { Component } from "../Component.js";
-import { Fragment } from "../Fragment.js";
-import { render } from "../render.js";
+import { Fragment } from "./Fragment.js";
+import { render } from "./render.js";
 import { observe, recordReads, stateKeys } from "./observe.js";
 
 export function drawInto(view, props) {

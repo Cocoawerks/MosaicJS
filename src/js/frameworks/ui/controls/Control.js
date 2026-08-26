@@ -9,23 +9,29 @@ export default class Control extends Component {
   }
 
   static props = {
-    /** The id the control's focusable element carries. */
+    /** @public The id the control's focusable element carries.
+     * Used for referencing the underlying <input>:
+     *
+     * <label for="the-control-id> </label>
+     *
+     * <TextField controlId="the-control-id" />
+     * */
     controlId: { type: String },
-    /** The control's name, as a form reads it. */
+    /** @public The control's name, as a form reads it. */
     name: { type: String },
   };
 
 
   // --- enablement ----------------------------------------------------------
 
+  /**
+   * @public Whether the control can be operated. A disabled control drops
+   * focus and leaves the tab order.
+   */
   get enabled() {
     return this.get("enabled", true);
   }
 
-  /**
-   * Disabling drops focus and takes the control out of the tab order, as
-   * IControl.setEnabled does.
-   */
   set enabled(value) {
     const enabled = this.bool(value);
     this.overrides.enabled = enabled;
@@ -35,7 +41,7 @@ export default class Control extends Component {
 
   // --- identity and accessibility -----------------------------------------
 
-  /** 0 when enabled, -1 when not, unless something set it explicitly. */
+  /** @public 0 when enabled, -1 when not, unless something set it explicitly. */
   get tabIndex() {
     return this.get("tabIndex", this.enabled ? 0 : -1);
   }
@@ -47,7 +53,8 @@ export default class Control extends Component {
   // --- focus ---------------------------------------------------------------
 
   /**
-   * Move focus to this control, or away from it — `setFocus(false)` blurs.
+   * @public Move focus to this control, or away from it — `setFocus(false)`
+   * blurs.
    *
    * Named after Java's setFocus rather than `focus()`/`blur()` on purpose:
    * those names belong to the event handlers a component may implement, so
@@ -61,6 +68,7 @@ export default class Control extends Component {
     else node.blur?.();
   }
 
+  /** @public True if this control currently holds the keyboard focus. */
   get focused() {
     return !!this.node && this.node === this.node.ownerDocument?.activeElement;
   }
@@ -73,7 +81,6 @@ export default class Control extends Component {
    *   <Button text="Save" action="save" />
    *
    * which the compiler passes down as the `action` prop.
-   * @internal
    */
   fireAction(...args) {
     // `self` rather than `this`: a handler set up while drawing holds the
@@ -95,7 +102,6 @@ export default class Control extends Component {
    *   <button {...this.controlProps()}>…</button>
    *
    * `null` values are dropped by the runtime, so unset settings add nothing.
-   @internal
    */
   controlProps() {
     return {

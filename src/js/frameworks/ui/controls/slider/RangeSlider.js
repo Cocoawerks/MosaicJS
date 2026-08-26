@@ -7,7 +7,7 @@
 // `minValueForHandle` and `maxValueForHandle` are for. A press on the track
 // takes whichever knob is nearer, so the span can be widened from either end.
 import AbstractSlider from "./AbstractSlider.js";
-import SliderHandle from "./SliderHandle.js";
+import SliderHandle from "./private/SliderHandle.js";
 
 export default class RangeSlider extends AbstractSlider {
   createHandles() {

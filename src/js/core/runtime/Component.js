@@ -3,12 +3,12 @@
 // point (`needsDisplay`), automatic event binding, and the attached/detached
 // lifecycle. The drawing and patching machinery itself lives in the runtime,
 // which this module and the components below it share.
-import { clearBindings } from "./clearBindings.js";
-import { BROWSER_EVENTS } from "./events.js";
-import { coerceProps, coerceValue } from "./coerce.js";
+import { clearBindings } from "./private/clearBindings.js";
+import { BROWSER_EVENTS } from "./private/events.js";
+import { coerceProps, coerceValue } from "./private/coerce.js";
 import { MESSAGES } from "./Messages.js";
-import { redraw } from "./redraw.js";
-import { refresh } from "./refresh.js";
+import { redraw } from "./private/redraw.js";
+import { refresh } from "./private/refresh.js";
 import { notify } from "./private/observe.js";
 import { prepareSettings } from "./private/settings.js";
 import { SELF } from "./private/observe.js";
@@ -34,7 +34,6 @@ export class Component {
    * `draw()` — and inside anything it calls — is that proxy. Handing it out is
    * what makes a control's action arrive with something that is not the
    * control, so anything passing itself outward passes this instead.
-    @internal
    */
   get self() {
     return this[SELF] ?? this;
@@ -83,7 +82,7 @@ export class Component {
 
   /**
    *
-   * @param {object} props What it was placed with, `controller` among them.
+   * @param {object} props
    */
   constructor(props = {}) {
     // Once per class, the first time one is built: the accessors its
@@ -94,10 +93,8 @@ export class Component {
      * Holds the properties of the component.
      * Not the `static props` a component declares — that is the schema, and
      * what a page sets.
-     * @internal
      */
     this.props = coerceProps(props) ?? {};
-    /** @internal */
     this.controller = this.props.controller ?? this;
     /** The root DOM node, set once the tree is rendered. @internal */
     this.node = null;
@@ -110,8 +107,6 @@ export class Component {
      * Declared here rather than appearing when something first assigns it, so
      * that what a component holds is said in one place — `destroy()` already
      * put it back to this.
-     *
-     * @internal
      */
     this.vtree = undefined;
     /** Listeners this component attached, per node, so they can be moved. @private */
@@ -148,6 +143,8 @@ export class Component {
    * one, since a getter takes a name and no parameters.
    *
    *   get text() { return this.get("text", ""); }
+   *
+   * @public
    */
   get(name, fallback) {
     if (Object.prototype.hasOwnProperty.call(this.overrides, name)) {
@@ -170,6 +167,8 @@ export class Component {
    * Markup has only text to say a boolean with, so `toggle="false"` arrives
    * as a string that is truthy. Doing it here means no setter has to know
    * that, and none of them can forget.
+   *
+   * @public
    */
   set(name, value) {
     this.overrides[name] = coerceValue(value);
@@ -183,23 +182,12 @@ export class Component {
   }
 
   /**
-   * Announce that one of this component's properties now holds a different
-   * value — for a property that is not backed by a setting.
-   *
-   * Normally that announcement comes from `set()`, which makes it while storing
-   * the value. But some components hold a value elsewhere: a Slider's `value` is
-   * a getter over the knob that carries it, so dragging the knob never assigns
-   * the property. With nothing stored, there was nothing to observe, and a
-   * binding onto that value stayed silent all through the drag — the very moment
-   * it exists to report.
-   *
-   * This is the announcement alone: it writes no setting and triggers no redraw,
-   * since whatever changed the value has already taken care of both.
+   *  Post that a property has changed without setting it. For example with
+   *  a Slider:
    *
    *   handleMoved() { …; this.changed("value"); }
    *
    * @param {string} name The property whose value has changed.
-    @internal
    */
   changed(name) {
     notify(this, name);
@@ -227,7 +215,6 @@ export class Component {
    *
    * @param {string} key The English.
    * @param {object} [params] Values for any `{name}` the message leaves open.
-     @internal
    */
   message(key, params) {
     MESSAGES._redrawOnLocaleChange(this);
@@ -246,7 +233,6 @@ export class Component {
    *
    * @param {*} value What was assigned.
    * @returns {boolean} What it means.
-   * @internal
    */
   bool(value) {
     return !!coerceValue(value);
@@ -260,7 +246,6 @@ export class Component {
    *
    * The listener resolves the method when the event fires, so a method can be
    * replaced after mounting.
-   * @internal
    */
   bindEvents() {
     const targets = this.nodes.filter(
@@ -308,7 +293,6 @@ export class Component {
    * component itself — alive.
    *
    * A subclass may implement `detached()` to do its own cleanup.
-   @internal
    */
   destroy() {
     // Listeners go first, so an overridden detached() cannot leave any behind.
@@ -339,6 +323,8 @@ export class Component {
    * observed, so assigning to it already does this. What observation cannot
    * see is a change that assigns nothing — mutating an object or an array in
    * place, `this.items.push(x)` — and that is what this is for.
+   *
+   * @public
    */
   needsDisplay() {
     if (typeof this.draw === "function") {

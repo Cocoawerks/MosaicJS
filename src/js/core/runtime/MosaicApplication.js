@@ -1,5 +1,5 @@
 // The application entry point.
-import { mount } from "./mount.js";
+import { mount } from "./private/mount.js";
 
 /**
  * The application entry point.

@@ -7,7 +7,7 @@
 // default, so a drag reports every step of the way; off, and it reports once,
 // where the knob comes to rest.
 import AbstractSlider from "./AbstractSlider.js";
-import SliderHandle from "./SliderHandle.js";
+import SliderHandle from "./private/SliderHandle.js";
 
 export default class Slider extends AbstractSlider {
   /** One knob, which is the slider's whole value. */

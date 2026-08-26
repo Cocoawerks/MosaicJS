@@ -4,12 +4,12 @@
 // unknown HTML element that lays out and paints nothing, which is the one way
 // this shows up — an icon that is in the DOM and invisible.
 import { Fragment } from "./Fragment.js";
-import { attrValue, display, readPath, track } from "./private/bindings.js";
-import { MESSAGES } from "./Messages.js";
-import { drawInto, isComponentClass, withStyleName } from "./private/draw.js";
-import { flatten } from "./private/flatten.js";
-import { applyProps, rememberView, scopeFor } from "./private/scope.js";
-import { applyRef, setAttribute } from "./private/props.js";
+import { attrValue, display, readPath, track } from "./bindings.js";
+import { MESSAGES } from "../Messages.js";
+import { drawInto, isComponentClass, withStyleName } from "./draw.js";
+import { flatten } from "./flatten.js";
+import { applyProps, rememberView, scopeFor } from "./scope.js";
+import { applyRef, setAttribute } from "./props.js";
 
 /** The SVG namespace, and the element that hands the document back to HTML. */
 export const SVG_NS = "http://www.w3.org/2000/svg";

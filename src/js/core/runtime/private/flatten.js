@@ -3,12 +3,12 @@
 // levels every child list through it as a vnode is made, and the patcher asks
 // it again when it lines a drawing up against the nodes already there.
 
-import { Fragment } from "../Fragment.js";
+import { Fragment } from "./Fragment.js";
 
 /**
  * Flatten a child list, dropping null, undefined and booleans.
  *
- * A fragment is levelled out too: its children belong to whatever holds the
+ * A fragment is leveled out too: its children belong to whatever holds the
  * fragment, and `render` draws them straight into it. Left whole, a fragment
  * would be one entry standing for however many nodes it drew — and a patch
  * lines entries up against nodes one for one, so every child after it would be

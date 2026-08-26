@@ -35,34 +35,37 @@ export default class Button extends Control {
   static styleName = "v-Button";
 
   static props = {
-    /** Button text */
+    /** @public The button's text. */
     text: { type: String, default: "" },
+    /** @public One of {@link Intent}, */
     intent: { type: String, default: Intent.DEFAULT },
+    /** @public  */
     icon: { type: String },
-    /** An image URL or data: URI, drawn in the icon slot instead. */
+    /** @public An image URL or data: URI, drawn in the icon slot instead. */
     iconImage: { type: String },
-    /** Whether the label is dropped and only the icon shown. */
+    /** @public Whether the label is dropped and only the icon shown. */
     iconOnly: { type: Boolean, default: false },
-    /** Whether the button latches on and off rather than firing once. */
+    /** @public Whether the button latches on and off rather than firing once. */
     toggle: { type: Boolean, default: false },
-    /** The `type` attribute the button carries. */
+    /** @public The `type` attribute the button carries. */
     type: { type: String, default: "button" },
   };
 
   /**
-   * Shown as the native `title`. The Java version can also render a styled
-   * popover; that needs the Tooltip component, which is not ported yet.
+   * @public Shown as the native `title`. The Java version can also render a
+   * styled popover; that needs the Tooltip component, which is not ported yet.
    */
   get tooltip() {
     return this.get("tooltip", null);
   }
 
+  /** @public **/
   set tooltip(value) {
     this.set("tooltip", value || null);
   }
 
   /**
-   * As Control, plus: a disabled button cannot stay pressed.
+   * @public As Control, plus: a disabled button cannot stay pressed.
    *
    * The getter has to be redeclared alongside the setter — a class that defines
    * only one half of an accessor shadows the inherited other half, and reads
@@ -72,14 +75,15 @@ export default class Button extends Control {
     return super.enabled;
   }
 
+  /** @public **/
   set enabled(value) {
     if (!value) this.buttonState = ButtonState.OFF;
     super.enabled = value;
   }
 
   /**
-   * `ButtonState.ON` while pressed, or while latched on for a toggle, and
-   * `ButtonState.OFF` otherwise.
+   * `ButtonState.ON` while pressed, or while latched on for a toggle,
+   * and `ButtonState.OFF` otherwise.
    *
    * The state itself, rather than a boolean beside it: there were two ways to
    * ask the same question — `on` and `buttonState` — and a subclass wanting to
@@ -90,11 +94,13 @@ export default class Button extends Control {
    * setting on a control: `button.buttonState = ButtonState.OFF`. A subclass
    * that acts on the change overrides the setter and calls `super`, which is
    * how MenuButton and MenuBarItem show and hide their menus.
+   * @public
    */
   get buttonState() {
     return this.get("buttonState", ButtonState.OFF);
   }
 
+  /** @public **/
   set buttonState(value) {
     if (this.buttonState === value) return;
     // `set` repaints and tells whatever is watching, so there is nothing to do
@@ -106,7 +112,6 @@ export default class Button extends Control {
   // Each method is named after the DOM event it handles, so the base class
   // binds it automatically; the markup declares no handlers.
 
-  /** @internal **/
   pointerDown(event) {
     if (!this.enabled) {
       event.preventDefault?.();
@@ -125,25 +130,20 @@ export default class Button extends Control {
     }
   }
 
-  /** @internal **/
   pointerUp() {
     if (!this.toggle) this.buttonState = ButtonState.OFF;
   }
 
-  /** @internal **/
   pointerLeave() {
     if (!this.toggle) this.buttonState = ButtonState.OFF;
   }
 
-  /** @internal **/
   blur() {
     if (!this.toggle) this.buttonState = ButtonState.OFF;
   }
 
   /**
    * Enter or Space going down: the button takes its pressed face.
-   *
-    @internal
    */
   keyDown(event) {
     if (!this.enabled) return;
@@ -158,12 +158,10 @@ export default class Button extends Control {
     }
   }
 
-  /** @internal **/
   keyUp() {
     if (!this.toggle) this.buttonState = ButtonState.OFF;
   }
 
-  /** @internal **/
   click(event) {
     if (!this.enabled) {
       event.preventDefault?.();
@@ -176,14 +174,14 @@ export default class Button extends Control {
 
   // --- drawing -------------------------------------------------------------
 
-  /** Whether anything is drawn in the icon slot. */
+  /**
+   * Whether anything is drawn in the icon slot.
+   * @public
+   * */
   get hasIcon() {
     return !!(this.icon || this.iconImage);
   }
 
-  /**
-    @internal
-   */
   buttonClasses() {
     return [
       "v-Button",
@@ -196,14 +194,10 @@ export default class Button extends Control {
     ];
   }
 
-  /**
-   @internal
-   */
   drawSuffix() {
     return null;
   }
 
-  /** @internal **/
   draw() {
     return (
       <button
@@ -222,7 +216,6 @@ export default class Button extends Control {
     );
   }
 
-  /** @internal **/
   drawIcon() {
     if (this.iconImage) {
       // setIconBase64() in Java: the image is painted as the icon's

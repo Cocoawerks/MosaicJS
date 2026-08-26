@@ -5,9 +5,9 @@
 // what changed, so a value reaches a child component as readily as it reaches a
 // text node. Anything else has no function to re-run, and its `{path}`
 // bindings are pushed back into the DOM one at a time.
-import { attrValue, BINDINGS, display, readPath } from "./private/bindings.js";
-import { setAttribute } from "./private/props.js";
-import { redrawView } from "./private/scope.js";
+import { attrValue, BINDINGS, display, readPath } from "./bindings.js";
+import { setAttribute } from "./props.js";
+import { redrawView } from "./scope.js";
 
 export function refresh(controller) {
   // A view draws itself again, which reaches everything its markup holds.

@@ -17,9 +17,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./dom-shim.mjs";
 
-import { mount } from "../src/js/core/runtime/mount.js";
-import { h } from "../src/js/core/runtime/h.js";
-import { Fragment } from "../src/js/core/runtime/Fragment.js";
+import { mount } from "../src/js/core/runtime/private/mount.js";
+import { h } from "../src/js/core/runtime/private/h.js";
+import { Fragment } from "../src/js/core/runtime/private/Fragment.js";
 
 /** A compiled `.ib.xml` with a controller beside it, as the compiler emits one. */
 function composed(controller) {

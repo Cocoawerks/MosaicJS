@@ -27,7 +27,7 @@
 import { isObservable, observe, unobserve } from "./private/observe.js";
 
 /**
- * Make `target[targetKey]` follow `source[sourceKey]`.
+ * @public Make `target[targetKey]` follow `source[sourceKey]`.
  *
  * The target is brought into agreement at once — binding two things together
  * and leaving them disagreeing until the next change would be a trap — and
@@ -68,7 +68,7 @@ export function bind(
 }
 
 /**
- * Bind two properties to each other, so a change to either reaches the other:
+ * @public Bind two properties to each other, so a change to either reaches the other:
  * `bind` twice, facing.
  *
  * `to` is what a value becomes going from the first to the second, and `from`
@@ -213,7 +213,7 @@ function at(what, which, root, path) {
 }
 
 /**
- * Watch one property, without binding anything to it.
+ * @public Watch one property, without binding anything to it.
  *
  * What a `<Bind/>` uses to wait for what it names: an outlet is a property of
  * the controller like any other, so a tag whose path leads nowhere yet can
@@ -225,6 +225,7 @@ export function observeKey(target, key, run) {
   observe(target, key, run);
 }
 
+/** @public **/
 observeKey.stop = function stop(target, key, run) {
   unobserve(target, key, run);
 };

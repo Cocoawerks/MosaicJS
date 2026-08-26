@@ -31,6 +31,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { compileAll } from "../src/js/core/compiler/build.js";
 import { componentName } from "../src/js/core/compiler/compile.js";
+import { generateDocs } from "../src/js/core/compiler/doc.js";
 import { scope as scopeCss } from "../src/js/core/compiler/css.js";
 import { MESSAGES_ROOT } from "../src/js/core/compiler/js.js";
 import { dispatch, methodsOf } from "../src/js/frameworks/rpc/dispatch.js";
@@ -360,6 +361,7 @@ options:
                      for \`doc\`, where the documentation lands and nothing else
   --port <n>         port for \`web\` (default 3000)
   --page <path>      page for \`check\`, relative to the current directory
+  --title <text>     index heading for \`doc\` (default: the folder's name + " Documentation")
   --no-open          don't launch a browser
   --no-watch         don't rebuild when sources change
   --no-sourcemap     skip source maps
@@ -384,6 +386,89 @@ A key resolves in the active language first, then \`${DEFAULT_LOCALE}.json\`, th
 the key itself. \`setLocale\` swaps between the languages with nothing fetched.
 
 Configuration is ${CONFIG}, merged from the project root down to the app.`;
+
+/**
+ * One line per option, keyed by flag, so a command's help can name only the
+ * options it takes. Kept together with the command table below and the full
+ * USAGE so the three say the same thing.
+ */
+const OPTION_HELP = {
+  "--outdir": `--outdir <path>    where output lands, overriding "outdir" in ${CONFIG}`,
+  "--port": "--port <n>         port for the server (default 3000)",
+  "--page": "--page <path>      page to load, relative to the current directory",
+  "--title": '--title <text>     index heading (default: the folder\'s name + " Documentation")',
+  "--no-open": "--no-open          don't launch a browser",
+  "--no-watch": "--no-watch         don't rebuild when sources change",
+  "--no-sourcemap": "--no-sourcemap     skip source maps",
+  "--quiet": "--quiet            only report failures",
+  "--keep-modules": "--keep-modules     leave the compiled modules the bundle was built from",
+  "--minify": "--minify           minify the bundle",
+};
+
+/**
+ * What each command is and which options reach it, so `mosaic <command> --help`
+ * answers for that command alone rather than the whole tool.
+ */
+const COMMAND_HELP = {
+  init: {
+    usage: "mosaic init <name>  |  mosaic init desktop",
+    blurb: "Create a new application in ./<name>, or write the desktop main process.",
+    options: [],
+  },
+  install: {
+    usage:
+      "mosaic install  |  mosaic install framework <name>  |  mosaic install theme <name>",
+    blurb: "bun install (beside the app, or into the desktop project), or copy a framework or theme in.",
+    options: ["--quiet"],
+  },
+  compile: {
+    usage: "mosaic compile [watch] [dir]",
+    blurb: "Compile the application and bundle it. `watch` rebuilds on every edit.",
+    options: ["--outdir", "--minify", "--keep-modules", "--no-sourcemap", "--no-watch", "--quiet"],
+  },
+  web: {
+    usage: "mosaic web [dev|prod] [dir]",
+    blurb: "Compile, then serve it in a browser, rebuilding on every edit.",
+    options: ["--outdir", "--port", "--no-open", "--no-watch", "--no-sourcemap", "--quiet"],
+  },
+  desktop: {
+    usage: "mosaic desktop [dev|prod] [dir]",
+    blurb: "Run it as a native desktop app, or build one.",
+    options: ["--outdir", "--no-watch", "--no-sourcemap", "--quiet"],
+  },
+  check: {
+    usage: "mosaic check [dir]",
+    blurb: "Compile, then run the headless browser test.",
+    options: ["--outdir", "--page", "--no-open", "--keep-modules", "--no-sourcemap", "--quiet"],
+  },
+  doc: {
+    usage: "mosaic doc [dir]",
+    blurb:
+      "Document the application's sources — every `.js` from `main_file`'s directory down, a `private/` folder skipped — into HTML, reading the JSDoc comments already in it. It needs no build and no bootstrap, so `mosaic doc` on a framework documents the framework. Output lands in `<build>/" +
+      DOC_DIR +
+      "/`, or wherever `--outdir` names.",
+    options: ["--outdir", "--title", "--quiet"],
+  },
+  clean: {
+    usage: "mosaic clean [dir]",
+    blurb: "Delete the application's build directory.",
+    options: [],
+  },
+};
+
+/**
+ * Help for one command — its synopsis, what it does, and only the options it
+ * takes — or the full USAGE when the command is unknown or absent.
+ */
+function commandHelp(command) {
+  const spec = COMMAND_HELP[command];
+  if (!spec) return USAGE;
+
+  const lines = [`usage: ${spec.usage}`, "", spec.blurb, "", "options:"];
+  for (const flag of spec.options) lines.push(`  ${OPTION_HELP[flag]}`);
+  lines.push("  -h, --help         this text");
+  return lines.join("\n");
+}
 
 /**
  * There is no application here: no `info.json` in the directory a command was
@@ -897,6 +982,9 @@ function parseArgs(argv) {
     } else if (a === "--page") {
       args.page = argv[++i];
       if (!args.page) throw new Error("`--page` needs a path");
+    } else if (a === "--title") {
+      args.title = argv[++i];
+      if (!args.title) throw new Error("`--title` needs a value");
     } else if (a === "--no-open") args.open = false;
     else if (a === "--no-watch") args.watch = false;
     else if (a === "--no-sourcemap") args.sourcemap = false;
@@ -904,7 +992,9 @@ function parseArgs(argv) {
     else if (a === "--keep-modules") args.keepModules = true;
     else if (a === "--minify") args.minify = true;
     else if (a === "-h" || a === "--help") {
-      console.log(USAGE);
+      // A command already named narrows the help to that command; `--help`
+      // on its own is the whole tool.
+      console.log(commandHelp(args.command));
       process.exit(0);
     } else if (a.startsWith("-")) throw new Error(`unknown option \`${a}\``);
     else if (!args.command) args.command = a;
@@ -2861,6 +2951,43 @@ function componentName(stem) {
 // classes all called the same thing.
 
 export function load(app) {
+  // Only what an author marks \`@public\` is documented. \`@internal\` is dropped
+  // already (excludeInternal); this makes the surface opt-in rather than
+  // opt-out, so a method, accessor or prop reaches a page only when it says to.
+  //
+  // TypeDoc reads \`@public\` as a visibility modifier and records it as the
+  // \`isPublic\` flag on the reflection — a method, an accessor and an object
+  // literal's property each carry it — so that is what is asked, not the tag.
+  const isPublic = (reflection) => reflection.flags?.isPublic === true;
+
+  // Reflection kinds, as TypeDoc numbers them (a generated plugin imports
+  // nothing — see componentName). A class member is a property, a method or an
+  // accessor whose parent is the class itself; a prop entry, whose parent is
+  // the \`static props\` object, is filtered separately when the table is built.
+  const CLASS = 128,
+    PROPERTY = 1024,
+    METHOD = 2048,
+    ACCESSOR = 262144;
+
+  app.converter.on("resolveEnd", (context) => {
+    const project = context.project;
+    const doomed = [];
+    for (const reflection of Object.values(project.reflections)) {
+      if (reflection.parent?.kind !== CLASS) continue;
+      if (
+        reflection.kind !== PROPERTY &&
+        reflection.kind !== METHOD &&
+        reflection.kind !== ACCESSOR
+      )
+        continue;
+      // \`static props\` is the component's public surface, turned into a table
+      // below and filtered there prop by prop; the member itself stays.
+      if (reflection.name === "props" && reflection.flags?.isStatic) continue;
+      if (!isPublic(reflection)) doomed.push(reflection);
+    }
+    for (const reflection of doomed) project.removeReflection(reflection);
+  });
+
   app.converter.on("createDeclaration", (context, reflection) => {
     if (reflection.name !== "default") return;
 
@@ -2982,6 +3109,9 @@ export function load(app) {
         (child) => child.name === "props" && child.flags?.isStatic,
       );
       for (const prop of own?.type?.declaration?.children ?? []) {
+        // A prop is documented only when it is marked \`@public\`, the same rule
+        // the members follow.
+        if (!isPublic(prop)) continue;
         gathered.set(prop.name, {
 ...detailOf(prop),
           says: summaryOf(prop),
@@ -2998,7 +3128,20 @@ export function load(app) {
       if (!own) continue;
 
       const props = propsOf(reflection);
-      if (props.size === 0) continue;
+      if (props.size === 0) {
+        // Nothing public to show — take the raw \`props\` member off the page
+        // rather than leaving its object literal to render on its own.
+        project.removeReflection(own);
+        continue;
+      }
+
+      // The \`props\` member still renders its declared type — the object
+      // literal — so a non-public prop would show there even though it is kept
+      // out of the table. Trim the literal to the public props as well.
+      if (own.type?.declaration?.children) {
+        own.type.declaration.children =
+          own.type.declaration.children.filter((child) => isPublic(child));
+      }
 
       const rows = [...props]
 .sort(([a], [b]) => a.localeCompare(b))
@@ -3165,64 +3308,17 @@ async function documentation(config, app, args) {
   // a command whose only output is documentation has nowhere else to mean, so
   // unlike everywhere else it does not move the build directory.
   const outdir = args.outdir ?? path.join(app.outdir, DOC_DIR);
-  const docs = config.doc ?? {};
-  if (typeof docs !== "object" || Array.isArray(docs)) {
-    throw new Error(`${CONFIG}: "doc" must be an object of TypeDoc options`);
-  }
 
-  const { command, fetched } = findTypedoc(app);
-  if (fetched) log("==> fetching typedoc");
+  // Every `.js` under the application's own source tree — the folder
+  // `main_file` sits in — read as it is, with no build and no dependency. A
+  // directory named `private` is left out, and each file is documented for
+  // what it is: a class, a module of functions, or a Mosaic component.
+  const inputDir = app.sourceRoot;
 
-  // The generated configuration sits in the build directory, beside the
-  // documentation rather than in it: what is written here is mosaic's working
-  // out, and what is published is the pages.
-  fs.mkdirSync(app.outdir, { recursive: true });
-  fs.writeFileSync(path.join(app.outdir, DOC_PLUGIN), DOC_PLUGIN_SOURCE);
-  const places = placeFrameworks(config, docs, app.outdir);
-  const barrels = writeFrameworkBarrels(places, app.outdir);
-  const tsconfig = writeDocTsconfig(config, app, app.outdir, docs, places, barrels);
-  const known = await knownTags(command, app.outdir);
-  // `@fires` is added to the block tags so TypeDoc recognises it rather than
-  // warning, and to the excluded tags so the section it introduces — what a
-  // component emits — is dropped from the page rather than printed. Both lists
-  // are built onto TypeDoc's own so nothing it excludes by default comes back.
-  const blockTags = known
-    ? [...known.blockTags,...DOC_BLOCK_TAGS.filter((tag) => !known.blockTags.includes(tag))]
-    : null;
-  const excludeTags = known
-    ? [...known.excludeTags,...DOC_BLOCK_TAGS.filter((tag) => !known.excludeTags.includes(tag))]
-    : null;
-  const options = writeDocOptions(
-    config, app, app.outdir, docs, places, outdir, blockTags, excludeTags,
-  );
-
-  log(`==> documenting ${within(config.root, app.sourceRoot)}`);
-  const named = Object.keys(docs);
-  if (named.length > 0) log(`    ${CONFIG} "doc": ${named.join(", ")}`);
-
-  // Written fresh. TypeDoc leaves what it wrote before, so a page for a module
-  // that has since been deleted would stay in the output for ever, with the
-  // index that no longer names it the only sign of it.
-  fs.rmSync(outdir, { recursive: true, force: true });
-  fs.mkdirSync(outdir, { recursive: true });
-
-  const proc = Bun.spawn([...command, "--options", options], {
-    cwd: config.root,
-    stdin: "inherit",
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-
-  const code = await proc.exited;
-  if (code !== 0) {
-    throw new Error(
-      `typedoc exited ${code} — nothing was written to ${outdir}`,
-    );
-  }
-
-  const index = path.join(outdir, "index.html");
+  log(`==> documenting ${within(config.root, inputDir)}`);
+  const { count, index } = generateDocs(inputDir, outdir, { title: args.title });
   log("==> documented");
-  log(`    ${within(config.root, fs.existsSync(index) ? index : outdir)}`);
+  log(`    ${count} file${count === 1 ? "" : "s"} → ${within(config.root, index)}`);
   return 0;
 }
 

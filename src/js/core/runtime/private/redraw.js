@@ -10,13 +10,13 @@ import {
   display,
   readPath,
   track,
-} from "./private/bindings.js";
-import { MESSAGES } from "./Messages.js";
-import { drawInto, isComponentClass, withStyleName } from "./private/draw.js";
-import { flatten } from "./private/flatten.js";
-import { applyProps, setViewRedraw, VIEW } from "./private/scope.js";
-import { attachTree, discard } from "./private/lifecycle.js";
-import { applyRef, setAttribute } from "./private/props.js";
+} from "./bindings.js";
+import { MESSAGES } from "../Messages.js";
+import { drawInto, isComponentClass, withStyleName } from "./draw.js";
+import { flatten } from "./flatten.js";
+import { applyProps, setViewRedraw, VIEW } from "./scope.js";
+import { attachTree, discard } from "./lifecycle.js";
+import { applyRef, setAttribute } from "./props.js";
 
 export function redraw(view) {
   const anchor = view.nodes[0];

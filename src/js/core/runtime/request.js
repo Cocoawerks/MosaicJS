@@ -188,7 +188,7 @@ function signalFor(options) {
  */
 export class Request {
   /**
-   * Set what every request sends unless it says otherwise. Merged into what is
+   * @public Set what every request sends unless it says otherwise. Merged into what is
    * already configured, so two calls each setting one thing keep both.
    *
    * @param {{baseUrl?: string, headers?: object, credentials?: string,
@@ -215,7 +215,7 @@ export class Request {
   }
 
   /**
-   * Forget everything configured: no base URL, no headers, `fetch`'s own
+   * @public Forget everything configured: no base URL, no headers, `fetch`'s own
    * credentials, no timeout. What a test does between cases, and what an
    * application does when it no longer knows who is using it.
    */
@@ -227,7 +227,7 @@ export class Request {
     return Request.settings;
   }
 
-  /** What is configured now — for a test putting it back, or a page reading it. */
+  /** @public What is configured now — for a test putting it back, or a page reading it. */
   static get settings() {
     return { ...defaults, headers: { ...defaults.headers } };
   }
@@ -235,7 +235,7 @@ export class Request {
   // --- the methods ----------------------------------------------------------
 
   /**
-   * Fetch something. `data` is the query string, since a GET has no body.
+   * @public Fetch something. `data` is the query string, since a GET has no body.
    *
    *   await Request.get("/api/notes", { since: "2026-01-01", tag: ["a", "b"] });
    *
@@ -249,7 +249,7 @@ export class Request {
   }
 
   /**
-   * Send something and make something. `data` is the body, as JSON.
+   * @public Send something and make something. `data` is the body, as JSON.
    *
    * @param {string} url
    * @param {object} [data]   the body
@@ -261,7 +261,7 @@ export class Request {
   }
 
   /**
-   * Replace something. `data` is the body, as JSON.
+   * @public `data` is the body, as JSON.
    *
    * @param {string} url
    * @param {object} [data]
@@ -273,7 +273,7 @@ export class Request {
   }
 
   /**
-   * Change part of something. `data` is the body, as JSON.
+   * @public `data` is the body, as JSON.
    *
    * @param {string} url
    * @param {object} [data]
@@ -285,7 +285,7 @@ export class Request {
   }
 
   /**
-   * Remove something. `data` is the query string, as it is for a GET — a
+   * @public `data` is the query string, as it is for a GET — a
    * DELETE that needs a body is rare enough to be worth saying out loud, and
    * `Request.send("DELETE", url, body, { body: true })` is how.
    *

@@ -1,10 +1,10 @@
 // Putting a component into the document.
-import { Component } from "./Component.js";
+import { Component } from "../Component.js";
 import { coerceProps } from "./coerce.js";
-import { drawInto, isComponentClass } from "./private/draw.js";
-import { attachTree, discard, disposeTree } from "./private/lifecycle.js";
+import { drawInto, isComponentClass } from "./draw.js";
+import { attachTree, discard, disposeTree } from "./lifecycle.js";
 import { render } from "./render.js";
-import { rememberView } from "./private/scope.js";
+import { rememberView } from "./scope.js";
 
 /** What `mount` was given when it was given no controller at all. */
 const EMPTY = Symbol("no controller");

@@ -22,7 +22,7 @@
 // is touched. A form half filled in stays half filled in; the labels change
 // around it.
 
-import { refresh } from "./refresh.js";
+import { refresh } from "./private/refresh.js";
 
 /**
  * How a `{name}` inside a message is filled in — see {@link Messages#format}.
