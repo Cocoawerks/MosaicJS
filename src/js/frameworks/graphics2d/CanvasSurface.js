@@ -10,6 +10,8 @@
 import { Op, WindingRule } from "./ops.js";
 import { Seg } from "./Path.js";
 
+/** @import Path from "./Path.js" */
+
 /** Degrees as Java2D means them, into radians as a canvas does. */
 function radians(degrees) {
   // Java measures anticlockwise from three o'clock with y up; a canvas

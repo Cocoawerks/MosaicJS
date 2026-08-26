@@ -1,4 +1,4 @@
-// Box, ported from GWT Mosaic (client/components/Box.java): a titled group, in
+// Box: a titled group, in
 // the manner of Cocoa's NSBox — a bordered region with its title straddling the
 // top edge, holding whatever belongs together.
 //

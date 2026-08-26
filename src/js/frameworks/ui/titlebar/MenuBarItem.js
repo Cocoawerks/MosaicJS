@@ -1,8 +1,5 @@
-// MenuBarItem, ported from GWT Mosaic (client/components/MenuBarItem.java): a
-// MenuBarItem: a
-// TitleBarButton that drops a Menu. It latches while the menu is up and comes
-// is the half that matters — the Java version makes the same choice.
-// back off however the menu closed.
+// MenuBarItem: a TitleBarButton that drops a Menu. It latches while the menu is
+// up and comes back off however the menu closed.
 import { mount } from "mosaic";
 
 import { ButtonState } from "../controls/button/Button.js";

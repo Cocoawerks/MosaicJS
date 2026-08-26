@@ -1,5 +1,4 @@
-// Slider, ported from GWT Mosaic (client/components/Slider.java): one knob on a
-// track, worth a number between a minimum and a maximum.
+// Slider: one knob on a track, worth a number between a minimum and a maximum.
 //
 //   <Slider minValue="0" maxValue="100" value="40" step="5"
 //           outlet="volume" action="volumeChanged"/>

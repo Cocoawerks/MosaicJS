@@ -1,12 +1,6 @@
-// ColorChooserPanel, ported from GWT Mosaic
-// (client/components/ColorChooserPanel.java): a palette of presets above, and
-// ColorChooserPanel
-//: a palette of presets above, and
-// below it a saturation/brightness square with a hue strip beside it, an
-// The Java version draws the two pickers on `Canvas` widgets and paints them
-// opacity slider
-// through CanvasGraphics. Here they are `<canvas>` elements the component draws
-// on itself: the painting is the same arithmetic, without a widget in between.
+// ColorChooserPanel: a palette of presets above, and below it a
+// saturation/brightness square with a hue strip beside it and an opacity slider.
+// The two pickers are `<canvas>` elements the component paints on itself.
 import { Component } from "mosaic";
 
 import Slider from "../slider/Slider.js";

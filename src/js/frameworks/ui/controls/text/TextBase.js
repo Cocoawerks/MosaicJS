@@ -1,5 +1,5 @@
-// TextBase, ported from GWT Mosaic (client/components/TextBase.java): what
-// every text control has in common — the input it wraps, the value it carries,
+// TextBase: what every text control has in common — the input it wraps, the
+// value it carries,
 // and how it reports being typed in.
 //
 // A field reports twice over, and the two mean different things:

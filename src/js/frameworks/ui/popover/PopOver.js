@@ -1,11 +1,6 @@
-// PopOver, ported from GWT Mosaic (client/components/PopOver.java and the
-// PopOver: a floating
-// panel that hangs off something on the page, with a callout pointing back at
-// what it belongs to.
-// The Java version is two classes — PopOver, which is the thing an application
-// holds, and PopOverPanel, which is the element it draws and positions. There is
-// one here: a Mosaic component already *is* what it draws, so the panel's job is
-// `draw()` and its measuring is the component's own.
+// PopOver: a floating panel that hangs off something on the page, with a callout
+// pointing back at what it belongs to. The component is what it draws, so its
+// job is `draw()` and its measuring is its own.
 // Whatever it should hold is its children, so a popover of an application's own
 // is a `.ib.xml` file whose root is this component:
 //   <!-- ColourPopOver.ib.xml -->

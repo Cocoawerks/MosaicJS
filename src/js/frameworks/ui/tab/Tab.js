@@ -1,5 +1,4 @@
-// Tab, the counterpart of the `<c:tab title="…">` a TabPanel takes in UiBinder:
-// one tab's title, and what is under it.
+// Tab: one tab's title, and what is under it.
 //
 // It draws nothing of its own. A TabView reads the title off it for the bar and
 // hands what it holds to the deck below, exactly as Option is read by ComboBox

@@ -1,5 +1,4 @@
-// TitleBarButton, ported from GWT Mosaic
-// (client/components/TitleBarButton.java): a ToolBarItem-style button sized for
+// TitleBarButton: a ToolBarItem-style button sized for
 // a TitleBar — the same flat, borderless treatment and the same kinds of icon,
 // but laid out in a row, a small icon with its label beside it, and short
 // enough to sit inside the bar's height, where the toolbar's icon-over-label

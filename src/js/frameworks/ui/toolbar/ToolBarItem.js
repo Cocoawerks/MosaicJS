@@ -1,5 +1,5 @@
-// ToolBarItem, ported from GWT Mosaic (client/components/ToolBarItem.java): a
-// toolbar button that stacks its icon above a small label. It highlights on
+// ToolBarItem: a toolbar button that stacks its icon above a small label. It
+// highlights on
 // hover, darkens on press, and fires its action the way any other Button does.
 //
 //   <ToolBar>
@@ -12,9 +12,9 @@
 // the item out of the bar entirely, and `overflowed`, which the ToolBar sets
 // while reflowing and which moves the item into the overflow menu instead.
 //
-// The Java version also defers a toggle's action to the click rather than the
-// press. Here that is Button's business and Button fires on the press, as every
-// other toggle in this framework does; an item is no exception to it.
+// A toggle's action fires on the press — that is Button's business and Button
+// fires on the press, as every other toggle in this framework does; an item is
+// no exception to it.
 import Button from "../controls/button/Button.js";
 
 import "./toolbar-item.css";

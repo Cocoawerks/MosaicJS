@@ -1,15 +1,7 @@
-// OutlineView, ported from GWT Mosaic (client/components/OutlineView.java and
-// OutlineObject.java, with resources/outline/OutlineView.ui.xml): a tree of
-// OutlineView: a tree of
-// disclosable rows, one of which is selected.
-// The view owns two things and the items own neither: which row is selected,
-// and which rows are open. That is what OutlineView.java does too — an item
-// OutlineObject — the abstract base the Java version puts the child list on —
-// and which rows are open. That is what OutlineView.java does too
-// has no counterpart here. Its whole job is holding the items added to a node
-// and handing them their parent; in Mosaic the markup's nesting is that list
-// already, so the view reads the tree it was given rather than being told about
-// it a widget at a time.
+// OutlineView: a tree of disclosable rows, one of which is selected.
+// The view owns two things and the items own neither: which row is selected, and
+// which rows are open. The markup's nesting is the tree, so the view reads the
+// tree it was given rather than being told about it a row at a time.
 import { coerceProps, Component } from "mosaic";
 
 import OutlineItem from "./OutlineItem.js";

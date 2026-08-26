@@ -1,5 +1,4 @@
-// FileWriter, ported from GWT.Commons (commons/file/client/FileWriter.java):
-// handing the user a file to save.
+// FileWriter: handing the user a file to save.
 //
 //   await FileWriter.get().run(JSON.stringify(doc), "puzzle.json");
 //

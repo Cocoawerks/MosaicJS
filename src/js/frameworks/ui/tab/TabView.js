@@ -1,6 +1,5 @@
-// TabView, ported from GWT Mosaic (client/components/TabPanel.java + its
-// TabView: a bar of tabs over a deck of cards, with a pill
-// that slides behind whichever tab is chosen.
+// TabView: a bar of tabs over a deck of cards, with a pill that slides behind
+// whichever tab is chosen.
 // In markup the tabs are the nesting, each with what belongs under it:
 //   <TabView outlet="tabs" action="tabChanged">
 //       <Tab title="Overview">

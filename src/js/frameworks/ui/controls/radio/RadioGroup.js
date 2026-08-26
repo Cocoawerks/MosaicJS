@@ -1,5 +1,4 @@
-// RadioGroup, ported from GWT Mosaic (client/components/RadioGroup.java): the
-// list that owns which of its Radios is chosen.
+// RadioGroup: the list that owns which of its Radios is chosen.
 //
 // The group holds the value and hands each option its `selected`, so exactly
 // one can be chosen and a Radio never has to know about its siblings. In

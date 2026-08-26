@@ -1,12 +1,9 @@
-// CheckBox, ported from GWT Mosaic (client/components/CheckBox.java + its
-// CheckBox.ui.xml template). The Java version builds the DOM once with
-// UiBinder and then adds and removes the `checked` class through setValue();
-// here `draw()` states the markup for the current value and `needsDisplay()`
-// patches the DOM to match.
+// CheckBox: a box the user ticks and unticks. `draw()` states the markup for
+// the current value and `needsDisplay()` patches the DOM to match.
 //
-// It is a checkbox the way the Java one is: a focusable `div` with
-// `role="checkbox"`, not an `<input type="checkbox">`. The indicator and its
-// check mark are drawn by the stylesheet, so they can be themed.
+// It is a focusable `div` with `role="checkbox"` rather than an
+// `<input type="checkbox">`. The indicator and its check mark are drawn by the
+// stylesheet, so they can be themed.
 import ToggleControl from "../ToggleControl.js";
 import "./checkbox.css";
 

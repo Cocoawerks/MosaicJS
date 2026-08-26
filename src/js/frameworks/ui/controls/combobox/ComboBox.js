@@ -1,14 +1,11 @@
-// ComboBox, ported from GWT Mosaic (client/components/ComboBox.java + its
-// ComboBox.ui.xml template): a native `<select>` in a framed box, with a
-// chevron drawn beside it.
+// ComboBox: a native `<select>` in a framed box, with a chevron drawn beside it.
 //
 // The native control is the point — it brings the platform's own list, its
 // keyboard handling and its accessibility with it. What the component adds is
 // the frame, the chevron and the theme.
 //
-// Java takes its entries as child `Option` widgets appended to the select.
-// Here they are child components, or an `options` list for code that would
-// rather pass data:
+// Its entries are child `Option` components, or an `options` list for code that
+// would rather pass data:
 //
 //   <ComboBox outlet="colour" action="colourChanged">
 //       <Option text="Red" value="red"/>

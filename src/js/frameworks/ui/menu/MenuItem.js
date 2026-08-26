@@ -1,8 +1,6 @@
-// MenuItem, ported from GWT Mosaic (client/components/MenuItem.java + its
-// itself. That is the same arrangement as the Java version, where
 // MenuItem: one line of a menu.
-// An item does not own whether it is the active one, where
-// `menu.setActiveItem(this)` is what a pointer entering an item does.
+// An item does not own whether it is the active one — a pointer entering an
+// item asks the menu to make it active rather than deciding for itself.
 import Control from "../controls/Control.js";
 import "./menu.css";
 

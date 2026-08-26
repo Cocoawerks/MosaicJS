@@ -1,12 +1,10 @@
-// SliderHandle, ported from GWT Mosaic (client/components/SliderHandle.java):
-// one knob on a slider's track — the value it stands for, and the arithmetic
-// that turns that value into a position and a position back into a value.
+// SliderHandle: one knob on a slider's track — the value it stands for, and the
+// arithmetic that turns that value into a position and a position back into a
+// value.
 //
-// In Java a handle is a Component of its own, with the element and the event
-// handlers to go with it. Here the element is drawn by the slider, because a
-// stylesheet is scoped to the module that imports it and `.v-Slider .handle` is
-// the slider's rule. What is left is this: the state and the sums. The slider
-// owns the events and calls in.
+// The element is drawn by the slider, because a stylesheet is scoped to the
+// module that imports it and `.v-Slider .handle` is the slider's rule. What is
+// left here is the state and the sums; the slider owns the events and calls in.
 
 /** How far the knob overhangs the end of the track, in pixels. */
 export const OFFSET = 6;

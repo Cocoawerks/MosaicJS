@@ -1,4 +1,3 @@
-// Drawer, ported from GWT Mosaic (client/components/Drawer.java and the
 // Drawer: a panel docked against the right
 // edge of the window that slides in and *pushes* the page aside rather than
 // covering it.

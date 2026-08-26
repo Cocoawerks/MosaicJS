@@ -1,10 +1,7 @@
-// MenuButton, ported from GWT Mosaic (client/components/MenuButton.java): a
-// MenuButton: a
-// button that latches while a menu of its own is showing.
+// MenuButton: a button that latches while a menu of its own is showing.
 // The menu is mounted beside the application rather than drawn inside the
 // button, for the reason a colour well's chooser is: a button may not hold a
-// list of things that can be clicked. That is what `RootPanel.get().add(...)`
-// does for the Java version, whose Menu adds itself when it is built.
+// list of things that can be clicked.
 // In markup the items are the button's children:
 //   <MenuButton text="Edit" action="edited">
 //       <MenuItem text="Cut" value="cut"/>
@@ -31,7 +28,7 @@ export default class MenuButton extends Button {
     toggle: { type: Boolean, default: true },
   };
 
-  /** The menu, built the first time the button is pressed. */
+  /**  @internal **/
   buildMenu() {
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -55,7 +52,7 @@ export default class MenuButton extends Button {
     this.menu.addCloseException(this.node);
   }
 
-  /** The menu goes when the button does. */
+  /**  @internal **/
   detached() {
     this.unmountMenu?.();
     this.menuHost?.remove();
@@ -63,15 +60,6 @@ export default class MenuButton extends Button {
   }
 
   // --- behaviour -----------------------------------------------------------
-
-  /**
-   * Pressing it shows the menu, and pressing it again puts it away — which is
-   * what latching means here. The button's action is what the *menu* chose,
-   * so the press itself says nothing to the application.
-   */
-  get buttonState() {
-    return super.buttonState;
-  }
 
   set buttonState(value) {
     const was = this.buttonState;
@@ -86,6 +74,7 @@ export default class MenuButton extends Button {
    * A press flips the latch and nothing else. A Button fires its action when
    * it is pressed; this one's action is the item its menu chose, so the press
    * itself says nothing to the application.
+   * @internal
    */
   pointerDown(event) {
     if (!this.enabled) {
@@ -99,7 +88,7 @@ export default class MenuButton extends Button {
       this.buttonState === ButtonState.ON ? ButtonState.OFF : ButtonState.ON;
   }
 
-  /** And from the keyboard, on the keys that press a button. */
+  /** @internal */
   keyDown(event) {
     if (!this.enabled) return;
     if (!ACTIVATION_KEYS.has(event.key)) return;
@@ -108,7 +97,7 @@ export default class MenuButton extends Button {
       this.buttonState === ButtonState.ON ? ButtonState.OFF : ButtonState.ON;
   }
 
-  /** The click that follows a press has already been dealt with. */
+  /** @internal */
   click(event) {
     event.preventDefault?.();
   }
@@ -122,24 +111,26 @@ export default class MenuButton extends Button {
     this.menu.alignWith(this.node);
   }
 
-  /** However the menu was dismissed, the button comes back up. */
+  /** @internal */
   menuClosed() {
     this.buttonState = ButtonState.OFF;
     this.focusWas?.focus?.({ preventScroll: true });
     this.focusWas = null;
   }
 
-  /** An item was chosen: that is what a menu button has to report. */
+  /** @internal */
   chose(menu, value) {
     this.fireAction(value);
   }
 
   // --- drawing -------------------------------------------------------------
 
+  /** @internal */
   buttonClasses() {
     return ["v-MenuButton", ...super.buttonClasses()];
   }
 
+  /** @internal */
   controlProps() {
     return {
       ...super.controlProps(),
@@ -148,7 +139,7 @@ export default class MenuButton extends Button {
     };
   }
 
-  /** A button's children are its menu's items, not something it draws. */
+  /** @internal */
   draw() {
     const { children, ...rest } = this.props;
     this.props = rest;

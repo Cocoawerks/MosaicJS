@@ -1,5 +1,4 @@
-// RangeSlider, ported from GWT Mosaic (client/components/RangeSlider.java): two
-// knobs on one track, worth the span between them.
+// RangeSlider: two knobs on one track, worth the span between them.
 //
 //   <RangeSlider minValue="0" maxValue="100" start="20" end="80"
 //                outlet="priceRange" action="priceChanged"/>

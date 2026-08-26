@@ -1,6 +1,5 @@
-// TextField, ported from GWT Mosaic (client/components/TextField.java + its
-// TextField.ui.xml template): a single line of text, in a box that can carry
-// an icon at either end.
+// TextField: a single line of text, in a box that can carry an icon at either
+// end.
 import TextBase from "./TextBase.js";
 
 /** The kinds of input a field can be, matching TextFieldType.java. */

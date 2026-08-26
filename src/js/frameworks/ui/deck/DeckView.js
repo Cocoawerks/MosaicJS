@@ -1,11 +1,9 @@
-// DeckView, the counterpart of GWT's DeckPanel (com.google.gwt.user.client.ui):
-// a stack of cards of which one is on top.
+// DeckView: a stack of cards of which one is on top.
 //
 // Every card is drawn and stays drawn — the ones that are not showing are
 // hidden rather than thrown away, so a field half filled in on another card
-// still holds what was typed when it comes back round. That is what DeckPanel
-// does too, and it is the whole difference between a deck and simply drawing
-// whichever card is wanted.
+// still holds what was typed when it comes back round. That is the whole
+// difference between a deck and simply drawing whichever card is wanted.
 import { Component } from "mosaic";
 
 import "./deck.css";

@@ -1,11 +1,8 @@
-// DialogBox, ported from GWT Mosaic (client/components/DialogBox.java and the
-// The Java version builds its three regions as panels and takes `main` and
-// DialogBox: a native `<dialog>` with a header
-// carrying its title and a close button, the caller's content below it
-// `footer` as `@UiChild` slots. There are no slots here, so a child says which
-// region it belongs to and the dialog reads it — the arrangement TitleBar and
-// MenuItem are read by. A child that names none is content, which is what a
-// dialog mostly holds:
+// DialogBox: a native `<dialog>` with a header carrying its title and a close
+// button, and the caller's content below it. A child says which region it
+// belongs to and the dialog reads it — the arrangement TitleBar and MenuItem
+// are read by. A child that names none is content, which is what a dialog mostly
+// holds:
 //   <!-- SettingsDialog.ib.xml -->
 //   <DialogBox title="Settings" outlet="dialog">
 //       <p>Whatever the dialog is about.</p>
@@ -18,12 +15,9 @@
 //   <SettingsDialog outlet="settings"/>
 //   <Button text="Settings…" action="showSettings"/>
 //   showSettings() { this.settings.show(); }
-// One departure from the Java version, and it is the same one PopOver made: a
-// Mosaic component already *is* what it draws, so nothing is added to a root
-// panel on the way up. The `<dialog>` is drawn where its markup sits and stays
-// there — `showModal()` puts it in the top layer regardless of where in the
-// document it lives, which is the whole reason the Java version could get away
-// with reparenting it and the reason this one need not.
+// The `<dialog>` is drawn where its markup sits and stays there — `showModal()`
+// puts it in the top layer regardless of where in the document it lives, so it
+// need not be reparented.
 import { Component } from "mosaic";
 
 import Button from "../controls/button/Button.js";

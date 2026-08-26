@@ -1,10 +1,7 @@
-// OutlineItem, ported from GWT Mosaic (client/components/OutlineItem.java +
-// its OutlineItem.ui.xml template): one row of an OutlineView.
+// OutlineItem: one row of an OutlineView.
 //
 // A row does not own whether it is selected or open — the view does, and says
 // so through props — so a click asks the view rather than deciding for itself.
-// That is the same arrangement as the Java version, where setSelected() and the
-// item's level both go through `outlineView`.
 //
 // Its own rows are its children in the markup. The view reads that nesting and
 // hands each row back with what only the view knows: its level, and whether it

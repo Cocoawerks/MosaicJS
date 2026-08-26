@@ -1,5 +1,5 @@
-// AccordionView, ported from GWT Mosaic (client/components/AccordionPanel.java):
-// a column of titled sections, each of which opens to show what is under it.
+// AccordionView: a column of titled sections, each of which opens to show what
+// is under it.
 // Any number of them may be open at once — an accordion here is a set of
 // disclosures sharing a column, not a set of tabs.
 //   <AccordionView outlet="details" action="sectionToggled">

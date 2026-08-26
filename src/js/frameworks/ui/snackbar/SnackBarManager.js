@@ -1,5 +1,4 @@
-// SnackBarManager, ported from GWT Mosaic
-// (client/components/SnackBarManager.java): what puts a snackbar on the page,
+// SnackBarManager: what puts a snackbar on the page,
 // stacks it with whatever else is up, and takes it away again.
 //
 // An application holds one — a page's controller usually keeps it as a field —
@@ -9,8 +8,8 @@
 //   this.bars.toast("Everything was saved", Intent.SUCCESS);
 //   this.bars.show(<SavedBar/>);          // a bar of the application's own
 //
-// The Java version is a widget that adds itself to the RootPanel. This one owns
-// a layer it mounts on the body, and the layer draws the bars — so a bar is
+// It owns a layer it mounts on the body, and the layer draws the bars — so a bar
+// is
 // drawn the way everything else here is drawn, and the manager only says which
 // bars there are.
 import { Component, mount } from "mosaic";

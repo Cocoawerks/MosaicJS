@@ -82,18 +82,6 @@ export class Component {
   static styleName = null;
 
   /**
-   * A component is built from what it is placed with.
-   *
-   *   new Button({ text: "Save", intent: Intent.PRIMARY })
-   *
-   * The same object a tag hands it — `<Button text="Save"/>` is these props —
-   * so a component built by hand and one drawn from markup begin the same
-   * way, and a subclass that reads a setting in its own constructor reads
-   * what it was given rather than a default it is corrected from a moment
-   * later.
-   *
-   * `controller` is one of them: whose properties the bindings read. A
-   * component placed without one answers for itself.
    *
    * @param {object} props What it was placed with, `controller` among them.
    */
@@ -103,19 +91,13 @@ export class Component {
     prepareSettings(new.target);
 
     /**
-     * What it was placed with, and where `get()` reads a setting from when
-     * nothing has been assigned over it.
-     *
+     * Holds the properties of the component.
      * Not the `static props` a component declares — that is the schema, and
-     * what a page sets. This is what it was last handed, kept so a redraw has
-     * something to replay. The two share a name and are different slots, so a
-     * documented component listed both under Properties: one the surface, one
-     * the working out, and no way to tell which was which.
-     *
+     * what a page sets.
      * @internal
      */
     this.props = coerceProps(props) ?? {};
-    /** Whose properties bindings read; a drawn view answers for itself. @internal */
+    /** @internal */
     this.controller = this.props.controller ?? this;
     /** The root DOM node, set once the tree is rendered. @internal */
     this.node = null;
@@ -201,22 +183,22 @@ export class Component {
   }
 
   /**
-   * Say that one of this component's properties is now worth something else,
-   * for a property the component does not keep as a setting.
+   * Announce that one of this component's properties now holds a different
+   * value — for a property that is not backed by a setting.
    *
-   * `set()` is the ordinary way, and it tells whatever is watching as part of
-   * storing the value. Some components keep a value somewhere else entirely: a
-   * Slider's `value` is a getter over the knob that holds it, so dragging the
-   * knob never assigns the property at all. Nothing was there to observe, and a
-   * binding onto that value heard nothing while the user dragged — which is the
-   * one moment it was there for.
+   * Normally that announcement comes from `set()`, which makes it while storing
+   * the value. But some components hold a value elsewhere: a Slider's `value` is
+   * a getter over the knob that carries it, so dragging the knob never assigns
+   * the property. With nothing stored, there was nothing to observe, and a
+   * binding onto that value stayed silent all through the drag — the very moment
+   * it exists to report.
    *
-   * Only the telling: no setting is written and nothing is redrawn, because
-   * whatever moved the value has already done both.
+   * This is the announcement alone: it writes no setting and triggers no redraw,
+   * since whatever changed the value has already taken care of both.
    *
    *   handleMoved() { …; this.changed("value"); }
    *
-   * @param {string} name The property that is now worth something else.
+   * @param {string} name The property whose value has changed.
     @internal
    */
   changed(name) {

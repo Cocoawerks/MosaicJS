@@ -1,5 +1,5 @@
-// Toast, ported from GWT Mosaic (client/components/Toast.java): a snackbar of
-// one line of text and nothing else — no close button, since it goes on its own.
+// Toast: a snackbar of one line of text and nothing else — no close button,
+// since it goes on its own.
 //
 //   this.bars.toast("Everything was saved", Intent.SUCCESS);
 //

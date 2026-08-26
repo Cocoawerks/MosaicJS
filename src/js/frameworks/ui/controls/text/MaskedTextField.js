@@ -1,9 +1,6 @@
-// MaskedTextField, ported from GWT Mosaic (client/components/MaskedTextField.java).
-// It is drawn from the same template TextField is — resources/text/TextField.ui.xml
-// — so it adds no markup of its own and no stylesheet: the box, the input and
-// the two icon slots are TextBase's.
-// A field that holds a shape, and lets the user fill only the places the shape
-// leaves open:
+// MaskedTextField: a field that holds a shape, and lets the user fill only the
+// places the shape leaves open. It draws no markup of its own — the box, the
+// input and the two icon slots are TextBase's:
 //   <MaskedTextField mask="(999) 999-9999" outlet="phone" action="dialled"/>
 // The mask is read once into two lists that run beside each other, one entry
 // per position: `tests`, the pattern a position accepts or null where the mask

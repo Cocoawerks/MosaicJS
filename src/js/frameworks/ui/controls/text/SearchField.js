@@ -1,7 +1,5 @@
-// SearchField, ported from GWT Mosaic (client/components/SearchField.java +
-// its SearchField.ui.xml template): a text field with a magnifier before the
-// text and a clear button after it, shown only while there is something to
-// clear.
+// SearchField: a text field with a magnifier before the text and a clear button
+// after it, shown only while there is something to clear.
 import TextBase from "./TextBase.js";
 
 import Magnifier from "svg:search";

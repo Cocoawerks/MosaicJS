@@ -1,6 +1,4 @@
-// MenuItemSeparator, ported from GWT Mosaic
-// (client/components/MenuItemSeparator.java): the rule drawn between groups of
-// menu items.
+// MenuItemSeparator: the rule drawn between groups of menu items.
 //
 //   <Menu>
 //       <MenuItem text="Cut" value="cut"/>
@@ -9,10 +7,9 @@
 //       <MenuItem text="Paste" value="paste"/>
 //   </Menu>
 //
-// The Java version is a MenuItem subclass that turns off `canBeActive`, wears
-// `v-MenuItem-Separator` and calls itself a separator to a reader. This is the
-// same subclass: what it *is* rather than a setting on something else, so a rule
-// is written as a rule.
+// A MenuItem subclass that turns off `canBeActive`, wears `v-MenuItem-Separator`
+// and calls itself a separator to a reader — what it *is* rather than a setting
+// on something else, so a rule is written as a rule.
 //
 // `<MenuItem separator="true"/>` still says the same thing and is what the
 // framework used before this, so both work — see {@link MenuItem#separator}.

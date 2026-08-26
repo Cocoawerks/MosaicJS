@@ -1,16 +1,11 @@
-// SplitView, ported from GWT Mosaic (client/components/SplitPanel.java, with
-// SplitDivider.java and the SplitDivider.ui.xml it binds): two panes with a
-// SplitView: two panes with a
-// draggable divider between them.
-// ListView, OutlineView, TabView, DeckView — rather than for the Java class,
-// Named for what the framework calls things that hold a view apiece,
-// which is SplitPanel. References to that name below are to the Java file.
+// SplitView: two panes with a draggable divider between them.
+// Named for what the framework calls things that hold a view apiece — ListView,
+// OutlineView, TabView, DeckView.
 // One pane is elastic and takes whatever room is left; the other is the static
-// The Java version takes its two panes as `@UiChild` slots. There are no slots
-// one, and its length is what the divider changes. `flex` says which is which. There are no slots
-// here, so a child says which pane it belongs to and the view reads it — the
-// arrangement TitleBar, DialogBox and MenuItem are read by. A child that names
-// neither goes in the top-left pane, which is the one a single child means.
+// one, and its length is what the divider changes. `flex` says which is which. A
+// child says which pane it belongs to and the view reads it — the arrangement
+// TitleBar, DialogBox and MenuItem are read by. A child that names neither goes
+// in the top-left pane, which is the one a single child means.
 import { Component } from "mosaic";
 
 import { Orientation } from "../controls/slider/AbstractSlider.js";

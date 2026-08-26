@@ -1,24 +1,15 @@
-// FileReader, ported from GWT.Commons
-// (commons/file/client/FileReader.java, with FileReaderMode.java): asking the
-// user for a file and reading what is in it.
+// FileReader: asking the user for a file and reading what is in it.
 //
 //   const text = await FileReader.get().prompt(FileReaderMode.TEXT);
 //   if (text !== null) this.document = text;
 //
 // A browser will only open a file chooser for a real click on a real
 // `<input type="file">`, so there is one — hidden, made once, and clicked from
-// code. That is the whole trick, and it is why this is a singleton in Java and
-// stays one here: the input is reused, so a page that reads files does not
-// accumulate them.
+// code. That is the whole trick, and it is why this is a singleton: the input is
+// reused, so a page that reads files does not accumulate them.
 //
-// Four of the six Java files were JSInterop declarations — `File`,
-// `NativeFileReader`, `EventListener`, and the JSNI accessors that reached
-// `event.target.result` and `event.target.files[0]`. They exist to describe the
-// browser to Java. There is nothing to describe here, so they are gone, and
-// what is left is the two classes that were doing the work.
-//
-// `AsyncCallback<String>` becomes a promise, as `Request` does it: what an
-// `onSuccess` was for is what `await` is for.
+// The read resolves through a promise, so what a success callback was for is
+// what `await` is for.
 
 /** What the file is read as — `FileReaderMode.java`, whose names these are. */
 export const FileReaderMode = Object.freeze({

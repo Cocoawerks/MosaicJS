@@ -1,11 +1,8 @@
-// Radio, ported from GWT Mosaic (client/components/Radio.java + its
-// Radio.ui.xml template): one option in a RadioGroup.
+// Radio: one option in a RadioGroup.
 //
 // A radio does not own whether it is selected — one of a group is, and the
 // group says which. So `selected` arrives as a prop, and a click asks the
-// group to choose this one rather than deciding for itself. That is the same
-// arrangement as the Java version, where Radio.setSelected() goes through
-// `radioGroup`.
+// group to choose this one rather than deciding for itself.
 import ToggleControl from "../ToggleControl.js";
 import "./radio.css";
 

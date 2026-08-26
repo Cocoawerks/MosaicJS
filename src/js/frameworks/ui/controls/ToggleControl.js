@@ -1,10 +1,7 @@
-// ToggleControl, ported from GWT Mosaic (client/components/ToggleControl.java).
-// The base of the controls that carry a label beside an indicator the user
-// flips: CheckBox here, Switch when it is ported.
-// Java holds `labelLayer` and `indicatorLayer` as UiFields and wires
-// aria-labelledby to the label's generated id in `initToggle()`. Here the
-// markup is stated in each subclass's `draw()`, and what is shared is the
-// label's text and the id the root points at.
+// ToggleControl: the base of the controls that carry a label beside an
+// indicator the user flips — CheckBox and Switch.
+// The markup is stated in each subclass's `draw()`; what is shared is the
+// label's text and the id the root points at for `aria-labelledby`.
 import Control from "./Control.js";
 
 /**

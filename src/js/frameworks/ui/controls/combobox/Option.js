@@ -1,8 +1,6 @@
-// Option, ported from GWT Mosaic (client/components/Option.java): one entry in
-// a ComboBox.
+// Option: one entry in a ComboBox.
 //
-// Java wraps a DOM <option> in a widget with text/value/enabled accessors.
-// Here it is a component that draws one, so a ComboBox states its entries the
+// A component that draws a DOM `<option>`, so a ComboBox states its entries the
 // way the markup reads:
 //
 //   <ComboBox outlet="colour" action="colourChanged">

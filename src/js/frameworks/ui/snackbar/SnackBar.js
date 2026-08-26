@@ -1,4 +1,3 @@
-// SnackBar, ported from GWT Mosaic (client/components/SnackBar.java and the
 // SnackBar: a small bar that appears over
 // the page to say something happened, and takes itself away again.
 // A bar is shown through a SnackBarManager, which is what puts it on the page

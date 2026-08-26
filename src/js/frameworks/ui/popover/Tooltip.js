@@ -1,11 +1,8 @@
-// Tooltip, ported from GWT Mosaic (client/components/Tooltip.java): a popover
-// Tooltip: a popover
-// of a few words that shows itself when the pointer rests on something.
+// Tooltip: a popover of a few words that shows itself when the pointer rests on
+// something.
 // It is not drawn where it is used — it hangs off something already on the
 // page, so it is attached to that rather than nested in markup:
 //   Tooltip.attach(this.saveButton, "Save what has been typed");
-// which is what `new Tooltip(target, text)` does in Java, where a PopOver adds
-// itself to the RootPanel when it is built.
 import { mount } from "mosaic";
 
 import PopOver, { PopOverOrientation } from "./PopOver.js";

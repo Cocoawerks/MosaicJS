@@ -1,7 +1,6 @@
-// AbstractSlider, ported from GWT Mosaic (client/components/AbstractSlider.java):
-// what a slider with one knob and a slider with two have in common — the track,
-// the filled range behind the knobs, the bounds and step, and the pointer and
-// keyboard work that moves a knob about.
+// AbstractSlider: what a slider with one knob and a slider with two have in
+// common — the track, the filled range behind the knobs, the bounds and step,
+// and the pointer and keyboard work that moves a knob about.
 // A subclass says how many knobs there are and what the slider's value means:
 // Slider has one and is worth a number, RangeSlider has two and is worth a span.
 import Control from "../Control.js";

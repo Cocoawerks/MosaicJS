@@ -1,10 +1,7 @@
-// ColorWell, ported from GWT Mosaic (client/components/ColorWell.java): a
-// ColorWell: a
-// Button whose face is the colour it holds. Pressing it opens a
+// ColorWell: a Button whose face is the colour it holds. Pressing it opens a
 // ColorChooserPanel in a PopOver hung from the well.
 // The popover is mounted beside the application rather than drawn inside the
 // well: a button may not hold a slider or a field, and the chooser has both.
-// That is what `RootPanel.get().add(popOver)` does for the Java version.
 import { mount } from "mosaic";
 
 import Button from "../button/Button.js";

@@ -52,3 +52,6 @@ export { Request, RequestError } from "./request.js";
 export { addStyles } from "./addStyles.js";
 export { collectStyles } from "./collectStyles.js";
 export { MosaicApplication } from "./MosaicApplication.js";
+// Reading a value a server-rendered page handed the app up front through a
+// `<meta name="…">` tag — a CSRF token, the signed-in user.
+export { meta } from "./meta.js";

@@ -1,6 +1,4 @@
-// SpinButton, ported from GWT Mosaic (client/components/SpinButton.java): a
-// SpinButton: a
-// number in a field with a step down and a step up beside it.
+// SpinButton: a number in a field with a step down and a step up beside it.
 //   <SpinButton minValue="0" maxValue="10" value="3" outlet="quantity"
 //               action="quantityChanged"/>
 // The two buttons and the field are components of their own, composed here.

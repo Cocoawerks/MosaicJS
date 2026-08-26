@@ -1,11 +1,13 @@
-// Control, ported from GWT Mosaic (client/components/Control.java and the
-// Control. A control is a focusable component that
-// can be enabled or disabled and that fires an action.
-// Java mutates the element through setters; here the state lives on the
-// component and `controlProps()` / `controlClasses()` feed it into `draw()`.
+// Control: the base of the focusable components — one that can be enabled or
+// disabled and that fires an action. The state lives on the component, and
+// `controlProps()` / `controlClasses()` feed it into `draw()`.
 import { Component } from "mosaic";
 
 export default class Control extends Component {
+  constructor(props) {
+    super(props);
+  }
+
   static props = {
     /** The id the control's focusable element carries. */
     controlId: { type: String },
@@ -13,7 +15,6 @@ export default class Control extends Component {
     name: { type: String },
   };
 
-  // `get()` and `set()` come from Component.
 
   // --- enablement ----------------------------------------------------------
 

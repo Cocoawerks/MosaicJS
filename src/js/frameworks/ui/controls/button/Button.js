@@ -1,8 +1,6 @@
-// Button, ported from GWT Mosaic (client/components/Button.java + its
-// Button.ui.xml template). The Java version mutates a UiBinder-built DOM
-// Button. The Java version mutates a UiBinder-built DOM
-// through setters; here `draw()` states the markup for the current state and
-// `needsDisplay()` patches the DOM to match.
+// Button: a clickable command control. `draw()` states the markup for the
+// current state and `needsDisplay()` patches the DOM to match. A toggle button
+// latches on and off each time it is pressed; otherwise a press fires its action.
 import Control from "../Control.js";
 import "./button.css";
 
@@ -36,17 +34,10 @@ export default class Button extends Control {
    */
   static styleName = "v-Button";
 
-  // --- configuration -------------------------------------------------------
-  // Java exposes getText/setText and friends; declared here instead, which is
-  // the same API in the shape JavaScript expects. Only the settings whose
-  // assignment does something beyond storing it are written out below.
-
   static props = {
-    /** What the button reads. */
+    /** Button text */
     text: { type: String, default: "" },
-    /** One of Intent, which decides the face it wears. */
     intent: { type: String, default: Intent.DEFAULT },
-    /** A font-icon class name, e.g. "fa-check", or an icon component. */
     icon: { type: String },
     /** An image URL or data: URI, drawn in the icon slot instead. */
     iconImage: { type: String },
@@ -73,9 +64,9 @@ export default class Button extends Control {
   /**
    * As Control, plus: a disabled button cannot stay pressed.
    *
-   * The getter has to be redeclared alongside the setter — a class that
-   * defines only one half of an accessor shadows the inherited other half,
-   * and reads would come back undefined.
+   * The getter has to be redeclared alongside the setter — a class that defines
+   * only one half of an accessor shadows the inherited other half, and reads
+   * would come back undefined.
    */
   get enabled() {
     return super.enabled;
@@ -152,16 +143,6 @@ export default class Button extends Control {
   /**
    * Enter or Space going down: the button takes its pressed face.
    *
-   * What it does *not* do is call `preventDefault`. What it draws is a real
-   * `<button>`, and a real button already activates itself from the keyboard —
-   * Enter as the key goes down, Space as it comes up — by firing a click of its
-   * own. Cancelling the default is cancelling exactly that, and with the action
-   * hanging off `click` the button lit up under the key and then did nothing at
-   * all. The platform's own behaviour is left to happen, and this adds only the
-   * face it wears while the key is held.
-   *
-   * There is no page-scroll to head off either, which is the usual reason for
-   * cancelling Space: a focused button consumes the key itself.
     @internal
    */
   keyDown(event) {
@@ -201,8 +182,6 @@ export default class Button extends Control {
   }
 
   /**
-   * The class list the Java version maintains through add/removeStyleName.
-   * A subclass that changes what the button is adds to this.
     @internal
    */
   buttonClasses() {
@@ -218,11 +197,6 @@ export default class Button extends Control {
   }
 
   /**
-   * Drawn after the label, at the button's trailing edge. Nothing by default;
-   * a kind of button that carries something there — a menu bar item's chevron
-   * — says what here, the way a TextBase gives a field `drawPrefix` and
-   * `drawSuffix`. Drawn by the subclass, so the subclass's own sheet reaches
-   * it in the ordinary scoped way.
    @internal
    */
   drawSuffix() {
@@ -263,9 +237,7 @@ export default class Button extends Control {
         />
       );
     }
-    // An icon may be a component rather than a class — a compiled `svg:` icon
-    // is a function returning a vnode — which is what `setIcon(Widget)` takes
-    // in Java. Drawn inside the slot, so the sheet still finds `.icon`.
+
     if (typeof this.icon === "function") {
       const Icon = this.icon;
       return (

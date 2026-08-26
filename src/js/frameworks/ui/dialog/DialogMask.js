@@ -1,10 +1,9 @@
-// DialogMask, ported from GWT Mosaic (client/components/DialogMask.java): the
-// one shared overlay that dims the page behind everything modal.
+// DialogMask: the one shared overlay that dims the page behind everything modal.
 //
-// One overlay we own rather than each `<dialog>`'s own `::backdrop`, for the two
-// reasons the Java version gives: stacked modals would otherwise dim twice over,
-// and a backdrop is destroyed the moment its dialog closes, so a modal opening
-// straight after another would flash the dim off and on. This one lingers.
+// One overlay we own rather than each `<dialog>`'s own `::backdrop`, for two
+// reasons: stacked modals would otherwise dim twice over, and a backdrop is
+// destroyed the moment its dialog closes, so a modal opening straight after
+// another would flash the dim off and on. This one lingers.
 //
 // Nothing outside the framework calls it: a modal DialogBox raises it as it
 // opens and drops it as it closes.

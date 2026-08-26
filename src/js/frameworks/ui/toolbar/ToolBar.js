@@ -1,6 +1,4 @@
-// ToolBar, ported from GWT Mosaic (client/components/ToolBar.java): a
-// ToolBar: a
-// horizontal bar of ToolBarItems with a rule along its bottom edge.
+// ToolBar: a horizontal bar of ToolBarItems with a rule along its bottom edge.
 // In markup the items are the nesting, and anything else the bar should carry
 // goes in beside them:
 //   <ToolBar>

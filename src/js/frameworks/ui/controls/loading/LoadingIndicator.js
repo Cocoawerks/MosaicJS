@@ -1,6 +1,5 @@
-// LoadingIndicator, ported from GWT Mosaic
-// (client/components/LoadingIndicator.java): a spinner with an optional
-// message beneath it, in one of three states.
+// LoadingIndicator: a spinner with an optional message beneath it, in one of
+// three states.
 //
 // The states are what a wait actually looks like from a page's side: it is
 // running, it finished, or it failed. The spinner becomes a tick or a cross

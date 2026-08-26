@@ -1,8 +1,5 @@
-// ProgressiveListView, ported from GWT Mosaic
-// (client/components/ProgressiveListView.java): a list that draws only the rows
-// ProgressiveListView
-//: a list that draws only the rows
-// on screen, however many it holds.
+// ProgressiveListView: a list that draws only the rows on screen, however many
+// it holds.
 // Every row is given a height before it is drawn, so the list knows how tall it
 // is and where each row sits without measuring any of them. The scroller is
 // given that whole height, the rows in view are placed into it at their own

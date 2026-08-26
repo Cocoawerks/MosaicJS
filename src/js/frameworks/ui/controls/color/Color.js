@@ -1,9 +1,8 @@
-// Color, ported from GWT Mosaic (shared/graphics/Color.java): a colour as four
-// numbers, and the conversions a chooser needs to move between them.
+// Color: a colour as four numbers, and the conversions a chooser needs to move
+// between them.
 //
 // A value rather than a component: nothing here draws. Red, green and blue run
-// 0–255 as they do everywhere; alpha runs 0–100, which is what the Java version
-// stores and what the opacity slider shows.
+// 0–255; alpha runs 0–100, which is what the opacity slider shows.
 
 /** A number held between two others. */
 function clamp(value, low, high) {

@@ -1,14 +1,7 @@
-// ListItem, ported from GWT Mosaic (client/components/ListItem.java): one row of
-// a list, and what that row is worth.
+// ListItem: one row of a list, and what that row is worth.
 //
-// The Java version is abstract and builds a widget from its datum:
-//
-//   class PersonItem extends ListItem<Person> {
-//       protected Widget build(Person p) { return new Label(p.name); }
-//   }
-//
-// Here a row draws itself, which is what every other component does — so the
-// same thing is said by overriding `draw`:
+// A row draws itself, as every other component does — a subclass overrides
+// `draw`:
 //
 //   export default class PersonItem extends ListItem {
 //       draw() {

@@ -1,13 +1,10 @@
-// TitleBar, ported from GWT Mosaic (client/components/TitleBar.java): a short
-// TitleBar: a short
-// full-width strip above the toolbar, with document actions against the left
-// edge, the title centred on the bar and whoever is signed in against the
-// right.
-// The Java version takes its three regions as `@UiChild` slots. There are no
-// slots here, so a child says which region it belongs to and the bar reads it
+// TitleBar: a short full-width strip above the toolbar, with document actions
+// against the left edge, the title centred on the bar and whoever is signed in
+// against the right.
+// A child says which region it belongs to and the bar reads it.
 //
-// A child that names no slot goes beside the title, which is where the Java
-// version's `status` slot put a save pill.
+// A child that names no slot goes beside the title, which is where a save pill
+// goes.
 // The bar owns only the strip: its height, the rule under it, and where the
 // three regions sit. What goes in them is the caller's, and styled by them.
 import { Component } from "mosaic";

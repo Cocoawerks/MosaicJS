@@ -1,8 +1,5 @@
-// Menu, ported from GWT Mosaic (client/components/Menu.java): a popover holding
-// Menu: a popover holding
-// a list of items, one of which is active at a time.
-// The Java version holds a PopOver and passes everything through to it; this one
-// is a PopOver, since that is what it draws. What it adds is the list, the
+// Menu: a popover holding a list of items, one of which is active at a time.
+// It is a PopOver, since that is what it draws. What it adds is the list, the
 // active item, and the keys that move between them.
 // In markup the items are the nesting:
 //   <Menu outlet="menu" action="chosen">

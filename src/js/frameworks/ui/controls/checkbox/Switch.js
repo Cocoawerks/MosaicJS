@@ -1,11 +1,9 @@
-// Switch, ported from GWT Mosaic (client/components/Switch.java + its
-// Switch.ui.xml template). It sits beside CheckBox because it is the same
-// control worn differently: a checkbox whose indicator is a track with a knob
-// that slides, and whose stylesheet ships in the same place.
+// Switch: the same control as CheckBox worn differently — a checkbox whose
+// indicator is a track with a knob that slides, and whose stylesheet ships in
+// the same place.
 //
-// The Java version adds and removes a `checked` class on the root and lets the
-// stylesheet move the knob; here `draw()` states the class for the current
-// value and the runtime patches the DOM to match.
+// `draw()` states the `checked` class for the current value and the runtime
+// patches the DOM to match; the stylesheet moves the knob.
 import ToggleControl from "../ToggleControl.js";
 import "./switch.css";
 

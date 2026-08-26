@@ -1,5 +1,4 @@
-// ProgressBar, ported from GWT Mosaic (client/components/ProgressBar.java): a
-// track that fills as work is done.
+// ProgressBar: a track that fills as work is done.
 //
 //   <ProgressBar value="40" outlet="upload"/>
 //   <ProgressBar indeterminate/>

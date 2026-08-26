@@ -14,6 +14,11 @@
 // of that lives in CanvasSurface, which is the one module allowed to know it.
 
 /**
+ * @import Graphics2d from "./Graphics2d.js"
+ * @import Path from "./Path.js"
+ */
+
+/**
  * Every operation a {@link Graphics2d} can record.
  *
  * Grouped as the class is: state, transform, clip, shapes, text, images.

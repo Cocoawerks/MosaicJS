@@ -1,9 +1,6 @@
-// AccordionSection, ported from GWT Mosaic
-// (client/components/AccordionSection.java + its AccordionSection.ui.xml
-// template): one titled section of an accordion, and what is under it.
-// Java version keeps the state on the section, which is the same thing said the
-// A section does not own whether it is open, which is the same thing said the
-// other way round.
+// AccordionSection: one titled section of an accordion, and what is under it.
+// A section does not own whether it is open — the accordion holds that state and
+// hands it back, so a section reports a click rather than deciding for itself.
 import { Component } from "mosaic";
 
 import "./accordion.css";
