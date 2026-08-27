@@ -31,6 +31,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { compileAll } from "../src/js/core/compiler/build.js";
 import { componentName } from "../src/js/core/compiler/compile.js";
+import { ensureTeaVM, compileShared } from "../src/js/core/compiler/teavm.js";
 import { generateDocs } from "../src/js/core/compiler/doc.js";
 import { scope as scopeCss } from "../src/js/core/compiler/css.js";
 import { MESSAGES_ROOT } from "../src/js/core/compiler/js.js";
@@ -100,6 +101,8 @@ function homeSource() {
 const ENTRY = "main.js";
 /** Where an application's own modules live, relative to its directory. */
 const SRC = "src";
+/** The bare specifier the compiled shared (TeaVM) code is imported by. */
+const SHARED_SPECIFIER = "shared";
 /** Where frameworks land inside the vendored runtime package, and their subpath. */
 const FRAMEWORKS = "frameworks";
 /** What `install` is told to install, when it is not the dependencies. */
@@ -283,6 +286,13 @@ const DEFAULTS = {
   // Both relative to the application directory, not the project root.
   main_file: `${SRC}/${ENTRY}`,
   outdir: "build",
+  // A directory of server-side JVM code compiled to JavaScript by TeaVM and
+  // folded into the bundle. Absent by default: an application with no shared
+  // code names none. The directory holds `.java`; classes it marks `@JSExport`
+  // become importable — by the Java package they are in, so a class in
+  // `package units` is `import { Thing } from "units"`. No entry point to write:
+  // mosaic generates one that keeps the exports. See compiler/teavm.js.
+  shared: null,
   // The page `check` opens. Mosaic's own, unless an application names one.
   check: path.join(HOME, "test/browser-check.html"),
 };
@@ -483,7 +493,7 @@ function commandHelp(command) {
 class NoApplication extends Error {}
 
 /** Config keys naming a path, resolved against the file that declared them. */
-const PATH_KEYS = ["runtime", "runtimeRoot", "check"];
+const PATH_KEYS = ["runtime", "runtimeRoot", "check", "shared"];
 
 /**
  * Load an application's `info.json`, merging any further out that cover it. A
@@ -1634,6 +1644,145 @@ function usesFramework(framework, written, own) {
  * @param {object} app The application's layout, whose `entry` is the bootstrap.
  * @param {string[]} specifiers The theme modules to import, one per framework.
  */
+/**
+ * Compile the shared JVM tree with TeaVM and vendor it, so the bundle reaches it
+ * the way it reaches `mosaic` — but by the Java package the code declares rather
+ * than one catch-all name. A class in package `units` is imported from `"units"`;
+ * one in `geo.shapes`, from `"geo/shapes"`. The package the code is organised
+ * into is the package a page imports, and nothing has to be renamed in between.
+ *
+ * The jars are fetched on first use and cached; a JDK does the rest. TeaVM writes
+ * one module holding every `@JSExport` class; this vendors a small package per
+ * Java package that re-exports that package's classes from it.
+ *
+ * @returns {{ entry: string, classes: number, specifiers: string[] }}
+ */
+async function buildShared(config, app, args, log) {
+  if (!fs.existsSync(config.shared) || !fs.statSync(config.shared).isDirectory()) {
+    throw new Error(
+      `${CONFIG}: "shared" names ${config.shared}, which is not a directory`,
+    );
+  }
+
+  const classpath = await ensureTeaVM(log);
+  log("==> compiling shared");
+
+  const nodeModules = path.join(app.outdir, "node_modules");
+  // TeaVM's own output, kept out of the way under a dotted name: it is not what
+  // a page imports — the per-package packages beside it re-export from it.
+  const teavmDir = path.join(nodeModules, ".mosaic-shared");
+  fs.mkdirSync(teavmDir, { recursive: true });
+  const moduleFile = path.join(teavmDir, "shared.js");
+
+  const result = compileShared({
+    sharedDir: config.shared,
+    outFile: moduleFile,
+    classpath,
+    sourcemap: args.sourcemap,
+    log,
+  });
+
+  const specifiers = vendorSharedPackages(
+    config,
+    nodeModules,
+    moduleFile,
+    result.packages,
+  );
+  linkShared(app, specifiers);
+  return { entry: result.entry, classes: result.classes, specifiers };
+}
+
+/**
+ * Write, for each Java package, a package the bundler resolves by the package's
+ * own name — `units`, or `geo/shapes` for a dotted one — that re-exports that
+ * package's classes from TeaVM's single module.
+ *
+ * A dotted package becomes a subpath: `geo.shapes` is the `geo` package's
+ * `./shapes`, so `geo` and `geo.solids` share one `geo` and never collide.
+ *
+ * @returns {string[]} the specifiers a page may import, one per package.
+ */
+function vendorSharedPackages(config, nodeModules, moduleFile, packages) {
+  // Accumulated across packages that share a first segment: `geo.shapes` and
+  // `geo.solids` both write into `geo`, whose exports gather both subpaths.
+  const roots = new Map();
+  const specifiers = [];
+
+  for (const [pkg, classes] of Object.entries(packages)) {
+    if (classes.length === 0) continue;
+    // The default package has no name to import by; fall back to the catch-all.
+    const segments = pkg === "" ? [SHARED_SPECIFIER] : pkg.split(".");
+    const top = segments[0];
+    const sub = segments.slice(1).join("/");
+    const rootDir = path.join(nodeModules, top);
+
+    if (!roots.has(top)) roots.set(top, { dir: rootDir, exports: {} });
+    const root = roots.get(top);
+
+    // The re-export module: `index.js` for the package itself, `<sub>.js` for a
+    // subpath. It re-exports this package's classes from TeaVM's module.
+    const relFile = sub ? `${sub}.js` : "index.js";
+    const file = path.join(rootDir, relFile);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const toModule = relSpecifier(path.dirname(file), moduleFile);
+    fs.writeFileSync(
+      file,
+      `// The ${pkg || "default"} package's shared classes, re-exported from the\n` +
+        `// module TeaVM compiled. Written by mosaic; import from "${[top, sub].filter(Boolean).join("/")}".\n` +
+        `export { ${classes.join(", ")} } from ${JSON.stringify(toModule)};\n`,
+    );
+
+    root.exports[sub ? `./${sub}` : "."] = `./${relFile}`;
+    specifiers.push([top, sub].filter(Boolean).join("/"));
+  }
+
+  for (const [name, root] of roots) {
+    fs.writeFileSync(
+      path.join(root.dir, "package.json"),
+      JSON.stringify(
+        {
+          name,
+          version: config.version,
+          type: "module",
+          exports: root.exports,
+          // The re-exports pull in TeaVM's module, which sets up its runtime as
+          // it loads — a side effect the bundler must not drop before the page
+          // has said what it wants.
+          sideEffects: true,
+        },
+        null,
+        2,
+      ),
+    );
+  }
+  return specifiers;
+}
+
+/** A relative import specifier from `dir` to `file`, `./`-prefixed and POSIX. */
+function relSpecifier(dir, file) {
+  let rel = path.relative(dir, file).split(path.sep).join("/");
+  if (!rel.startsWith(".")) rel = `./${rel}`;
+  return rel;
+}
+
+/**
+ * Make the bootstrap import each shared package, so the code is in the bundle
+ * whether or not a page has reached for an export yet. Named imports a page
+ * writes work regardless; this only guarantees the code is carried.
+ */
+function linkShared(app, specifiers) {
+  if (specifiers.length === 0) return;
+  const imports = specifiers
+    .map((s) => `import ${JSON.stringify(s)};`)
+    .join("\n");
+  const source = fs.readFileSync(app.entry, "utf8");
+  fs.writeFileSync(
+    app.entry,
+    `${source.trimEnd()}\n\n// The shared code ${CONFIG} named, compiled by TeaVM and linked in by\n` +
+      `// mosaic. Import a class by its Java package, e.g. \`import { Units } from "units"\`.\n${imports}\n`,
+  );
+}
+
 function linkThemes(app, specifiers) {
   if (specifiers.length === 0) return;
 
@@ -1952,6 +2101,9 @@ async function compileInto(config, app, args) {
     skip: [
 ...(app.finalOutdir ? [app.finalOutdir] : []),
       app.bunDir,
+      // The shared Java tree, which TeaVM compiles — the JS walker has no
+      // business in it, whether it sits under the sources or off to the side.
+...(config.shared ? [config.shared] : []),
       // And a build directory inside a framework, which is output rather than
       // source however it got there. `mosaic doc` run on a framework writes
       // its working files into one, and without this the next application to
@@ -2004,6 +2156,16 @@ async function compileInto(config, app, args) {
   // The application's own strings, in every language it carries.
   const messages = writeMessages(config, app, vendored.specifier, frameworks);
   linkMessages(app, messages);
+
+  // Server-side JVM code, compiled to JavaScript by TeaVM and vendored as a
+  // package the bundle pulls in. Only when `info.json` names a `shared` tree.
+  if (config.shared) {
+    const shared = await buildShared(config, app, args, log);
+    const named = shared.specifiers.map((s) => `"${s}"`).join(", ");
+    frameworkStats.push(
+      `    shared  TeaVM ${shared.classes} methods${named ? `, imported from ${named}` : ""}`,
+    );
+  }
   if (messages) {
     const others = messages.names.filter((n) => n !== messages.locale);
     frameworkStats.push(
