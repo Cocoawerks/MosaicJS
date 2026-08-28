@@ -230,7 +230,14 @@ export function compileShared(opts) {
 
     const compiled = /Methods compiled:\s*(\d+)/.exec(out);
     const methods = Number(compiled?.[1] ?? 0);
-    writeCompileCache(key, outFile, { entry, classes: methods });
+    // The size and the export names are what a later build checks the cached
+    // module against, so they are recorded from the module as it is now.
+    writeCompileCache(key, outFile, {
+      entry,
+      classes: methods,
+      bytes: fs.statSync(outFile).size,
+      exports: readExports(outFile),
+    });
     return {
       entry,
       classes: methods,
@@ -271,14 +278,28 @@ function cacheKey(sources, jars, sourcemap) {
 /**
  * The cached module, copied into place at `outFile` on a hit; `null` on a miss.
  * The source map beside the module (`<name>.map`) comes along when it is there.
+ *
+ * A cached module is checked against its recorded size and export names before
+ * it is trusted, and thrown away when it does not match. A build killed while
+ * the cache was being written, or a disk that filled up, leaves a module that
+ * exists and is empty — and an empty module is a module that exports nothing,
+ * which is not a build failure but a page whose `import { Units } from "units"`
+ * cannot be resolved several steps later. Recompiling costs a minute; that
+ * error costs an afternoon.
  */
 function readCompileCache(key, outFile) {
+  const dir = cacheDirFor(key);
   try {
-    const dir = cacheDirFor(key);
     const module = path.join(dir, "shared.js");
     const metaFile = path.join(dir, "meta.json");
     if (!fs.existsSync(module) || !fs.existsSync(metaFile)) return null;
     const meta = JSON.parse(fs.readFileSync(metaFile, "utf8"));
+
+    if (fs.statSync(module).size !== meta.bytes) throw new Error("truncated");
+    const exported = new Set(readExports(module));
+    if ((meta.exports ?? []).some((name) => !exported.has(name))) {
+      throw new Error("missing exports");
+    }
 
     fs.mkdirSync(path.dirname(outFile), { recursive: true });
     fs.copyFileSync(module, outFile);
@@ -286,16 +307,30 @@ function readCompileCache(key, outFile) {
     if (fs.existsSync(map)) fs.copyFileSync(map, `${outFile}.map`);
     return meta;
   } catch {
+    // Whatever is under this key cannot be read or cannot be believed. Drop it,
+    // so the recompile that follows replaces it rather than tripping over it
+    // again on the next build.
+    fs.rmSync(dir, { recursive: true, force: true });
     return null;
   }
 }
 
-/** Save the freshly compiled module and its facts under `key`, best-effort. */
+/**
+ * Save the freshly compiled module and its facts under `key`, best-effort.
+ *
+ * The module goes in under a temporary name and is renamed into place, and
+ * `meta.json` — which is what {@link readCompileCache} validates against, and
+ * what makes the entry a hit at all — is written last. A run cut off partway
+ * through this leaves an entry that is ignored rather than one that is believed.
+ */
 function writeCompileCache(key, outFile, meta) {
   try {
     const dir = cacheDirFor(key);
     fs.mkdirSync(dir, { recursive: true });
-    fs.copyFileSync(outFile, path.join(dir, "shared.js"));
+    fs.rmSync(path.join(dir, "meta.json"), { force: true });
+    const tmp = path.join(dir, `.shared.${process.pid}.part`);
+    fs.copyFileSync(outFile, tmp);
+    fs.renameSync(tmp, path.join(dir, "shared.js"));
     const map = `${outFile}.map`;
     if (fs.existsSync(map)) fs.copyFileSync(map, path.join(dir, "shared.js.map"));
     fs.writeFileSync(path.join(dir, "meta.json"), JSON.stringify(meta));
