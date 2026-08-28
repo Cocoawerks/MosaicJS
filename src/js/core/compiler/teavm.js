@@ -115,11 +115,11 @@ async function download(artifact, lib) {
  * Compile a directory of shared `.java` into one JavaScript module.
  *
  * @param {object} opts
- * @param {string} opts.sharedDir  the directory of `.java` to compile.
+ * @param {string[]} opts.sharedDirs  the directories of `.java` to compile.
  * @param {string} opts.outFile    where to write the module.
  * @param {string[]} opts.classpath  the TeaVM jars, from {@link ensureTeaVM}.
- * @param {string} [opts.entry]    the entry class, `geo.Main` — found by name
- *                                 when omitted.
+ * @param {string[]} [opts.libs]   dependency jars the shared code imports, from
+ *                                 the surrounding project's resolved classpath.
  * @param {boolean} [opts.sourcemap]
  * @param {(msg: string) => void} [opts.log]
  * @returns {{ entry: string, classes: number, packages: Record<string, string[]> }}
@@ -127,16 +127,45 @@ async function download(artifact, lib) {
  *   `{ "units": ["Units"] }` — which is what lets a page import them by package.
  */
 export function compileShared(opts) {
-  const { sharedDir, outFile, classpath, sourcemap = false, log = () => {} } = opts;
+  const { sharedDirs, outFile, classpath, sourcemap = false, log = () => {} } = opts;
+
+  // The `.java` across every shared directory, compiled together as one program
+  // — so a class in one tree may reach one in another, and their exports land in
+  // a single module grouped by package.
+  const sources = sharedDirs.flatMap((dir) => javaSources(dir));
+  if (sources.length === 0) {
+    throw new Error(`shared: no .java files under ${sharedDirs.join(", ")}`);
+  }
+
+  // The libraries the shared code depends on, joining both classpaths — javac's,
+  // to resolve the imports, and TeaVM's, to translate whatever of them the code
+  // reaches. Two sources: any `.jar` dropped under a shared tree, picked up by
+  // being there, and the dependencies the surrounding JVM project resolves
+  // (`opts.libs`, from jvmdeps). What they hold still has to be TeaVM-translatable;
+  // a jar is not a way around that.
+  const jars = [...sharedDirs.flatMap((dir) => jarsUnder(dir)), ...(opts.libs ?? [])];
+
+  // TeaVM is whole-program and slow, so its output is cached against everything
+  // that decides it — the sources' mtimes, the dependency jars, the TeaVM
+  // version, and whether a source map was asked for. While none of those move,
+  // a rebuild (a watch especially) reuses the last module instead of running
+  // javac and TeaVM again. This is the only fast path there is: TeaVM tree-shakes
+  // one module from a single entry, so there is no recompiling just the files
+  // that changed — but there is skipping the whole compile when nothing did.
+  const key = cacheKey(sources, jars, sourcemap);
+  const cached = readCompileCache(key, outFile);
+  if (cached) {
+    log("==> shared unchanged, reusing compiled module");
+    return {
+      entry: cached.entry,
+      classes: cached.classes,
+      packages: exportsByPackage(outFile, sources),
+    };
+  }
 
   requireJdk();
 
-  const sources = javaSources(sharedDir);
-  if (sources.length === 0) {
-    throw new Error(`shared: no .java files under ${sharedDir}`);
-  }
-
-  const cp = classpath.join(path.delimiter);
+  const cp = [...classpath, ...jars].join(path.delimiter);
   const work = fs.mkdtempSync(path.join(os.tmpdir(), "mosaic-teavm-"));
   const classes = path.join(work, "classes");
   fs.mkdirSync(classes, { recursive: true });
@@ -165,9 +194,10 @@ export function compileShared(opts) {
 
     // The program classpath is passed one entry at a time: TeaVM's `-p` takes a
     // single path per flag, and everything the program links against — the
-    // compiled classes and every TeaVM jar — has to be on it, since that is the
-    // one source it reads translated classes from.
-    const program = [classes, ...classpath].flatMap((p) => ["-p", p]);
+    // compiled classes, every TeaVM jar, and any jar dropped under the shared
+    // tree — has to be on it, since that is the one source it reads translated
+    // classes from.
+    const program = [classes, ...classpath, ...jars].flatMap((p) => ["-p", p]);
     const args = [
       "-cp",
       cp,
@@ -199,14 +229,97 @@ export function compileShared(opts) {
     }
 
     const compiled = /Methods compiled:\s*(\d+)/.exec(out);
+    const methods = Number(compiled?.[1] ?? 0);
+    writeCompileCache(key, outFile, { entry, classes: methods });
     return {
       entry,
-      classes: Number(compiled?.[1] ?? 0),
+      classes: methods,
       packages: exportsByPackage(outFile, sources),
     };
   } finally {
     fs.rmSync(work, { recursive: true, force: true });
   }
+}
+
+// --- compile cache -------------------------------------------------------
+// TeaVM's output, cached in a stable place — a build stages into a fresh output
+// directory each time, so the module cannot be kept there between runs. It is
+// keyed by a hash of what decides the output, and holds the emitted module (and
+// its source map, when there is one) beside the small facts the return needs
+// that cannot be read back from the module — the entry name and method count.
+
+/** Where compiled shared modules are cached: `~/.mosaic/sharedcache/<key>`. */
+function cacheDirFor(key) {
+  return path.join(os.homedir(), ".mosaic", "sharedcache", key);
+}
+
+/**
+ * A key over everything that decides the compiled output: each source's path
+ * and mtime, the dependency jars, the TeaVM version, and the source-map flag.
+ * Any of them moving is a cache miss, which is a full recompile.
+ */
+function cacheKey(sources, jars, sourcemap) {
+  const parts = [
+    `teavm:${TEAVM_VERSION}`,
+    `sourcemap:${sourcemap ? 1 : 0}`,
+    ...sources.map((f) => `src:${f}:${statMtime(f)}`).sort(),
+    ...jars.map((f) => `jar:${f}:${statMtime(f)}`).sort(),
+  ];
+  return hash(parts.join("|"));
+}
+
+/**
+ * The cached module, copied into place at `outFile` on a hit; `null` on a miss.
+ * The source map beside the module (`<name>.map`) comes along when it is there.
+ */
+function readCompileCache(key, outFile) {
+  try {
+    const dir = cacheDirFor(key);
+    const module = path.join(dir, "shared.js");
+    const metaFile = path.join(dir, "meta.json");
+    if (!fs.existsSync(module) || !fs.existsSync(metaFile)) return null;
+    const meta = JSON.parse(fs.readFileSync(metaFile, "utf8"));
+
+    fs.mkdirSync(path.dirname(outFile), { recursive: true });
+    fs.copyFileSync(module, outFile);
+    const map = path.join(dir, "shared.js.map");
+    if (fs.existsSync(map)) fs.copyFileSync(map, `${outFile}.map`);
+    return meta;
+  } catch {
+    return null;
+  }
+}
+
+/** Save the freshly compiled module and its facts under `key`, best-effort. */
+function writeCompileCache(key, outFile, meta) {
+  try {
+    const dir = cacheDirFor(key);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.copyFileSync(outFile, path.join(dir, "shared.js"));
+    const map = `${outFile}.map`;
+    if (fs.existsSync(map)) fs.copyFileSync(map, path.join(dir, "shared.js.map"));
+    fs.writeFileSync(path.join(dir, "meta.json"), JSON.stringify(meta));
+  } catch {
+    // A cache that cannot be written is a slower next build, not a failed one.
+  }
+}
+
+/** A file's mtime in milliseconds, or 0 if it cannot be read. */
+function statMtime(file) {
+  try {
+    return fs.statSync(file).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+/** A small stable hash of `text`, hex — the same scheme jvmdeps caches by. */
+function hash(text) {
+  let h = 0;
+  for (let i = 0; i < text.length; i++) {
+    h = (Math.imul(31, h) + text.charCodeAt(i)) | 0;
+  }
+  return (h >>> 0).toString(16);
 }
 
 /**
@@ -271,6 +384,16 @@ function javaSources(dir, out = []) {
     const full = path.join(dir, name);
     if (fs.statSync(full).isDirectory()) javaSources(full, out);
     else if (name.endsWith(".java")) out.push(full);
+  }
+  return out;
+}
+
+/** Every `.jar` under `dir`, recursively — the dependencies picked up by being there. */
+function jarsUnder(dir, out = []) {
+  for (const name of fs.readdirSync(dir)) {
+    const full = path.join(dir, name);
+    if (fs.statSync(full).isDirectory()) jarsUnder(full, out);
+    else if (name.endsWith(".jar")) out.push(full);
   }
   return out;
 }

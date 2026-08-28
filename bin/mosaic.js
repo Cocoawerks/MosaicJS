@@ -32,6 +32,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { compileAll } from "../src/js/core/compiler/build.js";
 import { componentName } from "../src/js/core/compiler/compile.js";
 import { ensureTeaVM, compileShared } from "../src/js/core/compiler/teavm.js";
+import { projectClasspath } from "../src/js/core/compiler/jvmdeps.js";
 import { generateDocs } from "../src/js/core/compiler/doc.js";
 import { scope as scopeCss } from "../src/js/core/compiler/css.js";
 import { MESSAGES_ROOT } from "../src/js/core/compiler/js.js";
@@ -286,10 +287,10 @@ const DEFAULTS = {
   // Both relative to the application directory, not the project root.
   main_file: `${SRC}/${ENTRY}`,
   outdir: "build",
-  // A directory of server-side JVM code compiled to JavaScript by TeaVM and
-  // folded into the bundle. Absent by default: an application with no shared
-  // code names none. The directory holds `.java`; classes it marks `@JSExport`
-  // become importable — by the Java package they are in, so a class in
+  // Server-side JVM code compiled to JavaScript by TeaVM and folded into the
+  // bundle: a directory, or an array of directories, of `.java`. Absent by
+  // default — an application with no shared code names none. Classes it marks
+  // `@JSExport` become importable by the Java package they are in, so a class in
   // `package units` is `import { Thing } from "units"`. No entry point to write:
   // mosaic generates one that keeps the exports. See compiler/teavm.js.
   shared: null,
@@ -313,7 +314,7 @@ commands:
   web [dev|prod]     compile, then serve it in a browser, rebuilding on every edit
   desktop [dev|prod] run it as a native desktop app, or build one
   check              compile, then run the headless browser test
-  doc                document the application's sources with TypeDoc
+  doc                document the application's sources from their JSDoc
   clean              delete the application's build directory
 
 The argument is the application's directory — one with an ${CONFIG} in it —
@@ -355,16 +356,13 @@ that does not need a bootstrap: a framework is a tree of components with no
 \`<build>/${DOC_DIR}/\`, which a rebuild carries across rather than sweeping
 away, or wherever \`--outdir\` names.
 
-It runs TypeDoc, which is fetched with bunx unless the application or mosaic
-has one installed. TypeDoc wants a tsconfig.json and a typedoc.json; neither is
-an application's business, so both are generated into the build on every run
-from \`"doc"\` in ${CONFIG} — TypeDoc's own options, \`name\` and \`readme\`
-and the rest, said in the file the application already has. Two keys are read
-rather than passed on: \`compilerOptions\`, merged over the ones a JavaScript
-application needs, and \`include\`, the tsconfig patterns saying what to
-document. An application with no \`"doc"\` section is documented with nothing
-said. Types come from the JSDoc: \`@param {string} name\` documents a string,
-and the same line without the braces documents an \`any\`.
+Nothing is installed to do it: mosaic reads the sources itself. Visibility is
+opt-in — a \`@public\` declaration is documented, a \`@protected\` one is too and
+is marked as a subclass's, and anything unmarked is left out, as is a directory
+named \`private\`. Each file is documented for what it is: a class, a module of
+functions, or a Mosaic component, whose props its \`static properties\` declares.
+Types come from the JSDoc: \`@param {string} name\` documents a string, and the
+same line without the braces documents an \`any\`.
 
 options:
   --outdir <path>    where the build lands, overriding "outdir" in ${CONFIG};
@@ -396,6 +394,16 @@ A key resolves in the active language first, then \`${DEFAULT_LOCALE}.json\`, th
 the key itself. \`setLocale\` swaps between the languages with nothing fetched.
 
 Configuration is ${CONFIG}, merged from the project root down to the app.`;
+
+/**
+ * The short usage shown when a command is missing or wrong, or a run fails — the
+ * one line that says the shape of a command, and where the rest of it is. The
+ * full USAGE, with the command list and everything it explains, is for
+ * \`--help\` alone; a screen of it under every error buries the mistake.
+ */
+const BRIEF = `usage: mosaic <command> [dir] [options]
+
+Run \`mosaic --help\` for the commands and their options.`;
 
 /**
  * One line per option, keyed by flag, so a command's help can name only the
@@ -493,7 +501,7 @@ function commandHelp(command) {
 class NoApplication extends Error {}
 
 /** Config keys naming a path, resolved against the file that declared them. */
-const PATH_KEYS = ["runtime", "runtimeRoot", "check", "shared"];
+const PATH_KEYS = ["runtime", "runtimeRoot", "check"];
 
 /**
  * Load an application's `info.json`, merging any further out that cover it. A
@@ -535,7 +543,15 @@ function loadConfig(from) {
   for (const { dir, data } of chain) {
     for (const [key, value] of Object.entries(data)) {
       if (PATH_KEYS.includes(key)) config[key] = path.resolve(dir, value);
-      else if (key === "frameworks") {
+      else if (key === "shared") {
+        // One directory or several: a string is the one, an array the several,
+        // and either way it lands as a list of absolute directories — or null
+        // when the list is empty, so downstream only ever asks "is there any?".
+        const list = (Array.isArray(value) ? value : [value]).map((v) =>
+          path.resolve(dir, v),
+        );
+        config.shared = list.length > 0 ? list : null;
+      } else if (key === "frameworks") {
         // Each one, and whatever each is itself built on.
         config[key] = withFrameworkDependencies(
           value.map((entry) => resolveFramework(entry, dir)),
@@ -1658,13 +1674,18 @@ function usesFramework(framework, written, own) {
  * @returns {{ entry: string, classes: number, specifiers: string[] }}
  */
 async function buildShared(config, app, args, log) {
-  if (!fs.existsSync(config.shared) || !fs.statSync(config.shared).isDirectory()) {
-    throw new Error(
-      `${CONFIG}: "shared" names ${config.shared}, which is not a directory`,
-    );
+  const dirs = config.shared;
+  for (const dir of dirs) {
+    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+      throw new Error(`${CONFIG}: "shared" names ${dir}, which is not a directory`);
+    }
   }
 
   const classpath = await ensureTeaVM(log);
+  // The dependencies the shared code imports, resolved from the JVM project each
+  // tree sits in — its build already pins the versions and the transitive
+  // closure. Unioned across the trees, since two may share one project.
+  const libs = [...new Set(dirs.flatMap((dir) => projectClasspath(dir, log)))];
   log("==> compiling shared");
 
   const nodeModules = path.join(app.outdir, "node_modules");
@@ -1675,9 +1696,10 @@ async function buildShared(config, app, args, log) {
   const moduleFile = path.join(teavmDir, "shared.js");
 
   const result = compileShared({
-    sharedDir: config.shared,
+    sharedDirs: dirs,
     outFile: moduleFile,
     classpath,
+    libs,
     sourcemap: args.sourcemap,
     log,
   });
@@ -2101,9 +2123,9 @@ async function compileInto(config, app, args) {
     skip: [
 ...(app.finalOutdir ? [app.finalOutdir] : []),
       app.bunDir,
-      // The shared Java tree, which TeaVM compiles — the JS walker has no
-      // business in it, whether it sits under the sources or off to the side.
-...(config.shared ? [config.shared] : []),
+      // The shared Java trees, which TeaVM compiles — the JS walker has no
+      // business in them, whether they sit under the sources or off to the side.
+...(config.shared ?? []),
       // And a build directory inside a framework, which is output rather than
       // source however it got there. `mosaic doc` run on a framework writes
       // its working files into one, and without this the next application to
@@ -4034,8 +4056,7 @@ async function main(argv) {
     // Except for `doc`, where it names where the documentation goes and
     // nothing else. That command's only output is the documentation, so
     // moving the build directory as well would be moving something it does
-    // not write — and the generated TypeDoc configuration, which does belong
-    // in the build, would land in the middle of the published pages.
+    // not write.
     if (args.outdir && args.command !== "doc") config.outdir = args.outdir;
     // Paths in the config are relative to the config that declared them, and
     // are absolute by now; the application's directory is where the rest of a
@@ -4050,7 +4071,7 @@ async function main(argv) {
     console.error(
       e instanceof NoApplication
         ? `mosaic: ${e.message}`
-        : `mosaic: ${e.message}\n\n${USAGE}`,
+        : `mosaic: ${e.message}\n\n${BRIEF}`,
     );
     return 1;
   }
