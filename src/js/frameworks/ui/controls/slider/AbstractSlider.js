@@ -58,8 +58,9 @@ const STEPS = {
 /**
  * @fires AbstractSlider#valueChanged — the value changed by the user; the
  *   handler is given the slider and the new value. Bound bare: `action="method"`
- *   (`onValueChanged` in JS). A continuous slider fires as it is dragged; a
- *   stepped one fires when the drag settles.
+ *   (`onValueChanged` in JS). A continuous slider fires as it is dragged; one
+ *   that is not fires when the drag settles — and is not worth anything new
+ *   until then either, so a binding onto `value` hears it then and not before.
  */
 export default class AbstractSlider extends Control {
   /**
@@ -69,7 +70,17 @@ export default class AbstractSlider extends Control {
   static primaryStyleName = "v-Slider";
 
   static properties = {
-    /** Whether a drag is reported all the way or only where it comes to rest. */
+    /**
+     * Whether a drag is worth something all the way, or only where it comes
+     * to rest.
+     *
+     * On, and the slider is worth every place the knob passes through: the
+     * action fires throughout and anything bound to `value` follows it
+     * throughout. Off, and the knob follows the pointer while the slider goes
+     * on being worth what it was — the value is written once, on release, and
+     * reported once. A binding is not a second opinion about this: what the
+     * slider is worth is one number, and `continuous` says when it changes.
+     */
     continuous: { type: Boolean, default: true },
     /** The near end of the track. */
     minValue: { type: Number, default: 0 },
@@ -208,6 +219,21 @@ export default class AbstractSlider extends Control {
   }
 
   /**
+   * A knob is being dragged on a slider that is not continuous: it draws where
+   * the knob now is, and says nothing to anyone.
+   *
+   * What `handleMoved` does without the half that reports — no `changed`, so
+   * no binding hears of a value the slider is not yet worth, and no action.
+   *
+   * @param {object} handle The knob being dragged.
+   */
+  handleDragging(handle) {
+    handle.updatePosition();
+    this.updateRangeLayer();
+    this.updateAria();
+  }
+
+  /**
    * A knob moved. The slider redraws, and reports if it was asked to.
    *
    * @param {object} handle The knob that moved.
@@ -242,7 +268,9 @@ export default class AbstractSlider extends Control {
   updateAria() {
     for (const handle of this.handles) {
       if (!handle.element) continue;
-      handle.element.setAttribute("aria-valuenow", String(handle.value));
+      // Where the knob is, which is what someone listening to a drag should be
+      // told — not what the slider will settle on being worth.
+      handle.element.setAttribute("aria-valuenow", String(handle.shown));
       handle.element.setAttribute(
         "aria-valuemin",
         String(this.minValueForHandle(handle)),
@@ -273,9 +301,16 @@ export default class AbstractSlider extends Control {
 
     // A press on the knob itself drags it from where it was taken hold of;
     // a press on the track jumps it there first.
+    //
+    // Jumps the knob, and — on a slider that is not continuous — no more than
+    // the knob: the press may be the beginning of a drag, and a slider that
+    // took the value here would have changed twice for one gesture, which is
+    // the thing `continuous="false"` is asking it not to do. It is committed
+    // on release with the rest of the gesture.
     const onKnob = this.handle.element?.contains?.(event.target);
     if (onKnob) this.handle.grab(event);
-    else this.handle.calcValue(event, true);
+    else if (this.continuous) this.handle.calcValue(event, true);
+    else this.handle.dragToward(event);
 
     // Capture, but no focus: dragging a knob is not a reason to ring it, and
     // the Java version does not focus it either. Tab is what focuses a
@@ -286,17 +321,50 @@ export default class AbstractSlider extends Control {
     this.setActive(this.handle, true);
   }
 
+  /**
+   * A continuous slider is worth every place the knob passes through. One
+   * that is not moves the knob and stays worth what it was — see
+   * SliderHandle.pending — until the drag settles.
+   */
   pointerMove(event) {
     if (!this.enabled || !this.dragging || !this.handle) return;
-    this.handle.calcValue(event, this.continuous);
+    if (this.continuous) this.handle.calcValue(event, true);
+    else this.handle.dragToward(event);
   }
 
   pointerUp(event) {
     if (this.handle) {
       this.setActive(this.handle, false);
       releasePointer(this.handle.element, event.pointerId);
-      // Not continuous: the move is reported once, where it came to rest.
-      if (this.dragging && !this.continuous) this.fireAction(this.value);
+      // Not continuous: the drag has settled, so this is where the slider
+      // becomes worth where the knob ended up, and where the move is reported
+      // — once, for the whole gesture.
+      //
+      // The value first and the action after it: a handler asking the slider
+      // what it is worth should be told the new answer, and anything bound to
+      // it has already been brought up to date by the time the action runs.
+      //
+      // Reported whether or not the knob ended up anywhere new, as it was
+      // before: a drag that comes back to where it started is still a drag
+      // the user made.
+      if (this.dragging && !this.continuous) {
+        this.handle.commit();
+        this.fireAction(this.value);
+      }
+      this.handle.release();
+    }
+    this.dragging = false;
+  }
+
+  /**
+   * The gesture was taken away — the pointer was cancelled by the browser, a
+   * touch turned into a scroll. Nothing was decided, so nothing is committed
+   * and the knob goes back to what the slider is worth.
+   */
+  pointerCancel() {
+    if (this.handle) {
+      this.setActive(this.handle, false);
+      this.handle.cancel();
       this.handle.release();
     }
     this.dragging = false;

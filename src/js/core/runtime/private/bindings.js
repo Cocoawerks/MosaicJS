@@ -3,7 +3,7 @@
 
 import { MESSAGES } from "../Messages.js";
 import { refresh } from "./refresh.js";
-import { observe } from "./observe.js";
+import { derivedKeys, observe } from "./observe.js";
 
 /**
  * Where a controller's live bindings are recorded (non-enumerable).
@@ -77,8 +77,19 @@ export function track(controller, entry) {
   const paths =
     entry.kind === "text" ? [entry.path] : entry.parts.map((p) => p.path);
   for (const path of paths) {
-    if (path)
-      observe(controller, path.split(".")[0], notifierFor(controller));
+    if (!path) continue;
+    const head = path.split(".")[0];
+
+    // A derived value is not assigned, so watching it watches nothing: what a
+    // `{formatted}` depends on is whatever its getter read. Asked before the
+    // property is observed, since observing plain state replaces it with an
+    // accessor of the runtime's own — one that derives nothing, and would be
+    // walked for its reads for no purpose.
+    for (const key of derivedKeys(controller, head)) {
+      observe(controller, key, notifierFor(controller));
+    }
+
+    observe(controller, head, notifierFor(controller));
   }
 
   // An attribute with a message in it is the messages' business as well as the

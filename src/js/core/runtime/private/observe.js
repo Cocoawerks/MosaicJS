@@ -235,6 +235,54 @@ export function recordReads(target, body) {
  * not state — a getter's own reads were recorded alongside it, so what it
  * derives from is watched instead.
  */
+/**
+ * The state a derived property reads, so something watching it can watch that
+ * instead.
+ *
+ * A `{path}` binding watches the property it names, and a getter is never
+ * assigned — so naming one put a watch on nothing at all. It came right only
+ * because a binding is re-read whenever anything else observed on the same
+ * controller is assigned, and on a page where the derived value is the only
+ * thing shown there is nothing else: `<Bind source="slider.value"
+ * target="amount"/>` feeding a `{formatted}` that reads `amount` left the
+ * reading behind the drag until some other part of the page happened to
+ * change.
+ *
+ * So the getter is run once against a recording proxy and what it read is
+ * reported back — the same thing `drawInto` does with a component's `draw()`,
+ * and for the same reason.
+ *
+ * Two things follow from running it rather than reading it. A getter is
+ * expected to compute and not to act: one with a side effect has it twice
+ * over. And what comes back is what it read *this time*, so a getter that
+ * chooses between two properties reports only the branch it took — the other
+ * is picked up the next time the binding is registered, which is every time
+ * the node it belongs to is drawn again.
+ *
+ * @param {object} target The controller.
+ * @param {string} key The property named by a binding.
+ * @returns {string[]} The target's own state that a getter read, or nothing at
+ *   all for a property that is not one.
+ */
+export function derivedKeys(target, key) {
+  if (!target || (typeof target !== "object" && typeof target !== "function"))
+    return [];
+
+  const descriptor = definedDescriptor(target, key);
+  if (!descriptor || "value" in descriptor || !descriptor.get) return [];
+
+  try {
+    const { reads } = recordReads(target, (self) => self[key]);
+    reads.delete(key);
+    return stateKeys(target, reads);
+  } catch {
+    // A getter that throws is the caller's business — reading it for the
+    // value is where that is answered for. Watching is not worth a second
+    // failure, so nothing is watched and the binding behaves as it did.
+    return [];
+  }
+}
+
 export function stateKeys(target, reads) {
   const keys = [];
   for (const key of reads) {

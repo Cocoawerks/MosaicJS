@@ -60,9 +60,22 @@
 
             <div styleName="row">
                 <Slider outlet="amountSlider" minValue="0" maxValue="5000" value="1250"
-                        name="Amount"/>
+                        name="Amount"   />
                 <span styleName="figure">{formatted}</span>
             </div>
+
+            <!-- The number itself, beside what the formatter made of it, which
+                 is the whole of what a formatter is for.
+
+                 `{formatted}` names a getter, and a getter is never assigned —
+                 what it is worth watching for is the `amount` it reads, which
+                 the slider fills through the Bind below. The runtime works
+                 that out by running the getter and noting what it read, so the
+                 figure keeps up with the drag without the page having to say
+                 what depends on what. -->
+            <p styleName="reading">
+                the number the formatter was given: <strong>{amount}</strong>
+            </p>
 
             <Bind source="amountSlider.value" target="amount"/>
         </section>
@@ -239,14 +252,12 @@
 
         .note {
             margin: 0 0 0.8rem;
-            font-size: 0.9rem;
             line-height: 1.5;
             max-width: 44rem;
         }
 
         .note code {
             font-family: ui-monospace, monospace;
-            font-size: 0.82em;
         }
 
         .row {

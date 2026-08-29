@@ -9,7 +9,7 @@
 // assigning to it draws the view again and the prop is worked out afresh.
 import { display, notifierFor, readPath } from "./bindings.js";
 import { MESSAGES } from "../Messages.js";
-import { observe } from "./observe.js";
+import { derivedKeys, observe } from "./observe.js";
 
 /**
  * The value of a bound prop, and the mark that says to draw again when it
@@ -32,7 +32,14 @@ export function bindProp(controller, parts) {
       MESSAGES._redrawOnLocaleChange(controller);
       continue;
     }
-    observe(controller, part.path.split(".")[0], notifierFor(controller));
+    const head = part.path.split(".")[0];
+    // What a derived value derives from, as `track` watches it for a binding
+    // in the markup: a getter is never assigned, so watching it alone watches
+    // nothing. Asked before the property is observed — see the same call there.
+    for (const key of derivedKeys(controller, head)) {
+      observe(controller, key, notifierFor(controller));
+    }
+    observe(controller, head, notifierFor(controller));
   }
 
   if (parts.length === 1 && typeof parts[0] !== "string") {

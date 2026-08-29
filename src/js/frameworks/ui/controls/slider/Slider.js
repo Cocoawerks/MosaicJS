@@ -5,7 +5,8 @@
 //
 // The action carries the new value. `continuous` decides how often: on by
 // default, so a drag reports every step of the way; off, and it reports once,
-// where the knob comes to rest.
+// where the knob comes to rest — and the slider is not worth anything new
+// until then either, so `<Bind source="volume.value" .../>` hears it once too.
 import AbstractSlider from "./AbstractSlider.js";
 import SliderHandle from "./private/SliderHandle.js";
 

@@ -82,12 +82,16 @@ export default class RangeSlider extends AbstractSlider {
 
   // --- what each knob may take ---------------------------------------------
 
+  // Where the neighbour *is*, not what it is worth: mid-drag on a slider that
+  // is not continuous those differ, and what a knob must not pass through is
+  // the other knob as drawn.
+
   minValueForHandle(handle) {
-    return handle === this.endHandle ? this.startHandle.value : this.minValue;
+    return handle === this.endHandle ? this.startHandle.shown : this.minValue;
   }
 
   maxValueForHandle(handle) {
-    return handle === this.startHandle ? this.endHandle.value : this.maxValue;
+    return handle === this.startHandle ? this.endHandle.shown : this.maxValue;
   }
 
   updateValue() {
