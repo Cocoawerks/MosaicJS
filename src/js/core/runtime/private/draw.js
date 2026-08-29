@@ -34,10 +34,10 @@ export function drawInto(view, props) {
  * asked for.
  *
  * `styleName` on a component means "and wear this too". A component decides
- * what it is — a Button draws its own classes and its own face — but the page
+ * what it is — a Button draws its own classes and its own face — but the interface
  * that placed it may still have something to say about that one of them, and
  * says it the way it would about an element of its own. The class carries the
- * placing page's scope with it, so the page's sheet reaches it.
+ * placing interface's scope with it, so the interface's sheet reaches it.
  *
  * Put on the drawing rather than on the node, so it survives the component
  * drawing itself again: a class written onto the element would be patched off

@@ -3,7 +3,7 @@
 //
 // A drawing records what it read, and every property it read that is the
 // object's own state becomes one that redraws it. The runtime writes to the
-// same objects — `view.nodes` as a drawing lands, `controller.view` as a page
+// same objects — `view.nodes` as a drawing lands, `owner.view` as an interface
 // is mounted — and those writes are not state: observing one would mean a draw
 // scheduling its own redraw.
 //
@@ -11,13 +11,13 @@
 // the runtime writes. Two things were wrong with that. A field added to the
 // runtime and left off the list is an infinite redraw, found at run time and
 // nowhere near the change that caused it. And the names are ordinary ones — a
-// controller with a `view`, a `root` or a `parent` of its own had that property
+// owner with a `view`, a `root` or a `parent` of its own had that property
 // silently left unobserved, so assigning it updated nothing.
 //
 // So a runtime field says what it is where it is written, by being defined
-// non-enumerable. `Object.keys` is then the line between the two: what a page
+// non-enumerable. `Object.keys` is then the line between the two: what an interface
 // wrote is enumerable and what the runtime wrote is not, whatever either is
-// called. Nothing has to be listed, and a controller's `view` is its own again.
+// called. Nothing has to be listed, and an owner's `view` is its own again.
 
 /**
  * Write a field of the runtime's own onto `target`.
@@ -27,7 +27,7 @@
  * so this is only needed where a field is *first* written: `view.nodes = ...`
  * on a later draw stays non-enumerable on its own.
  *
- * @param {object} target The component, controller or scope written to.
+ * @param {object} target The component, owner or scope written to.
  * @param {string} key The field.
  * @param {*} value What it starts as.
  */

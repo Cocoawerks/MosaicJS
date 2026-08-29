@@ -2,7 +2,7 @@
 // assignment made while it is telling about another.
 //
 // Two things used to be wrong here. The runtime's own fields were told apart
-// from a page's state by a list of names kept in observe.js — so a controller
+// from an interface's state by a list of names kept in observe.js — so a controller
 // with a `view`, a `root` or a `parent` of its own had that property silently
 // left unobserved, and assigning it updated nothing. And an assignment made
 // from inside a callback, to a property already being told about, was dropped:
@@ -20,15 +20,15 @@ import { observe } from "../src/js/core/runtime/private/observe.js";
 
 /** A compiled `.ib.xml` whose only reading is `{path}`, as codegen emits one. */
 function pageOf(path) {
-  const page = function () {
+  const mib = function () {
     return h("p", null, bindText(this, path));
   };
-  page.isMarkup = true;
-  return page;
+  mib.isMarkup = true;
+  return mib;
 }
 
 // Names that were on the denylist and that the runtime never writes to a
-// controller. Each is an ordinary word a page might well use for something of
+// controller. Each is an ordinary word an interface might well use for something of
 // its own, and each was silently unobservable.
 //
 // `view` is not among them: the runtime does write that one — it is how a
@@ -51,7 +51,7 @@ test("a drawn component's own `view` is state, and assigning it redraws", () => 
   class Panel extends Component {
     constructor(props) {
       super(props);
-      // The page's own word for what it is showing, which happens to collide
+      // The interface's own word for what it is showing, which happens to collide
       // with one of the runtime's.
       this.view = "list";
     }

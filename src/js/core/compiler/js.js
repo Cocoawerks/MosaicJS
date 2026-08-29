@@ -56,11 +56,11 @@ export function stemOf(file) {
 export const ROOT_TAG = "interface";
 
 /**
- * Points a page at the owner it draws against, on its root tag —
+ * Points an interface at the owner it draws against, on its root tag —
  * `<interface owner='./path/to/Owner'>`. The value is a module path resolved
  * relative to the markup, as a JS import is, so the owner may live anywhere the
  * source tree reaches. Overrides the `FooController.js` convention, so an
- * owner's name and location need not follow the page's.
+ * owner's name and location need not follow the interface's.
  */
 export const OWNER_ATTR = "owner";
 
@@ -86,7 +86,7 @@ export const ACTION_ATTR = "action";
  * in, and the file is what the compiler has in its hands. A tag left to find
  * its own scope has to search the document for one, which is a different
  * question with a different answer — the nearest scope *around* it, which is
- * whatever page happened to place this one.
+ * whatever interface happened to place this one.
  */
 export const BIND_TAG = "Bind";
 /** What the compiler passes it. */
@@ -148,7 +148,7 @@ export function isPath(s) {
  * rather than read off the controller. Reserved, so a controller may not have a
  * property that answers to it, and in capitals so that it cannot be mistaken
  * for one: `messages` is an ordinary thing for a controller to hold — a chat
- * log, a list of validation messages — and a page bound to the wrong one of
+ * log, a list of validation messages — and an interface bound to the wrong one of
  * those would draw nothing and say nothing about why.
  */
 export const MESSAGES_ROOT = "MESSAGES";

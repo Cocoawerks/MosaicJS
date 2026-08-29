@@ -1,5 +1,5 @@
 // Messages — `{MESSAGES.Key}` in `.ib.xml` markup, and what a change of locale
-// does to a page that is already drawn.
+// does to an interface that is already drawn.
 //
 // The compiler is exercised directly here rather than through a built example:
 // what is being checked is the shape of what it emits and what the runtime then
@@ -364,7 +364,7 @@ test("what the reader typed survives a change of language", async () => {
   setLocale("fr");
 
   // The labels change and nothing else does. This is the whole reason a locale
-  // change writes the messages where they stand rather than mounting the page
+  // change writes the messages where they stand rather than mounting the interface
   // again: remounting would take the field, what is in it, and the caret with
   // it — at the moment the reader is using them.
   assert.equal(input.value, "Ada");

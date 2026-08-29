@@ -16,33 +16,33 @@
 //
 // A `.ib.xml` and its controller are one scope, not two: the controller is what
 // the markup draws against, and its outlets are assigned onto it. So a path
-// reaches the page's own state and the controls it placed by the same names
+// reaches the interface's own state and the controls it placed by the same names
 // the controller uses.
 //
 // And it reaches nothing else. A composed `.ib.xml` keeps a scope of its own, so
-// a page cannot name the controls inside one — it names the view it placed,
+// an interface cannot name the controls inside one — it names the view it placed,
 // and goes through that:
 //
-//   <!-- MyDialog.ib.xml -->            <!-- the page that places it -->
+//   <!-- MyDialog.ib.xml -->            <!-- the interface that places it -->
 //   <ComboBox outlet="combo1"/>      <MyDialog outlet="mydialog"/>
 //                                    <Bind source="mydialog.combo1.value"
 //                                          target="chosenColor"/>
 //
 // which is the same rule the other way about: a Bind written *inside*
-// MyDialog.ib.xml says `combo1.value`, and cannot see the page above it. Each
+// MyDialog.ib.xml says `combo1.value`, and cannot see the interface above it. Each
 // file joins up what it placed, and nothing reaches across.
 //
-// Written this way the joins are in the page beside the things they join,
+// Written this way the joins are in the interface beside the things they join,
 // rather than in a controller method that has to be read to find out what the
-// page does. What it comes to is `bind()`, which is what a controller would
-// call; a page that wants a transform still calls it there.
+// interface does. What it comes to is `bind()`, which is what a controller would
+// call; an interface that wants a transform still calls it there.
 import { Component, bind, bindTwoWay, observeKey } from "mosaic";
 
 /** What the compiler hands over — see BIND_TAG in the compiler's js.js. */
 const SCOPE_PROP = "scope";
 
 /**
- * What the page's controller actually holds, for a path that named something
+ * What the interface's controller actually holds, for a path that named something
  * it does not — which is nearly always an outlet spelled one way in the markup
  * and another in the Bind.
  */
@@ -83,7 +83,7 @@ export default class Bind extends Component {
   };
 
   /**
-   * Nothing. A binding is not a thing on the page, and the comment this leaves
+   * Nothing. A binding is not a thing on the interface, and the comment this leaves
    * behind is only somewhere to stand: it is what tells the runtime the tag is
    * on screen, and what the controller is found from.
    */
@@ -92,11 +92,11 @@ export default class Bind extends Component {
   }
 
   /**
-   * Joined once the page is on screen — or once whatever it names turns up.
+   * Joined once the interface is on screen — or once whatever it names turns up.
    *
    * An outlet is assigned as the markup draws, so ordinarily everything a Bind
    * names exists by the time it is attached. Not always: a control inside
-   * something drawn later, a page that fills an outlet when it opens, an
+   * something drawn later, an interface that fills an outlet when it opens, an
    * outlet assigned by hand. A Bind that refused those would be refusing a
    * path that is about to be perfectly good.
    *
@@ -105,9 +105,9 @@ export default class Bind extends Component {
    * something is put there. Outlets are properties of the controller like any
    * other, which is what makes this possible at all.
    *
-   * Nothing is thrown for it. A page whose tag names something that never
+   * Nothing is thrown for it. An interface whose tag names something that never
    * arrives says so once, plainly, and goes on running — a binding that did
-   * not happen is not worth taking an application down for, and a page that
+   * not happen is not worth taking an application down for, and an interface that
    * threw here would take one down on load.
    */
   attached() {
@@ -127,13 +127,13 @@ export default class Bind extends Component {
    */
   join() {
     // Always an error, never a wait: `attachTree` tells children before
-    // parents and the page is in the document by then, so a controller that
+    // parents and the interface is in the document by then, so a controller that
     // is not above this tag now will not appear later.
     const controller = this.controllerAbove();
     if (!controller) {
       throw new Error(
-        `<Bind source="${this.source}"/> is not inside anything that has an ` +
-          `controller. A Bind reads its paths from the page's controller, so ` +
+        `<Bind source="${this.source}"/> is not inside anything that has a ` +
+          `controller. A Bind reads its paths from the interface's controller, so ` +
           `it belongs in a .ib.xml that has one — a Foo.ib.xml with a ` +
           `FooController.js beside it.`,
       );
@@ -197,7 +197,7 @@ export default class Bind extends Component {
     this.reported = null;
   }
 
-  /** A binding holds both of its ends, so it goes when the page does. */
+  /** A binding holds both of its ends, so it goes when the interface does. */
   detached() {
     this.undo?.();
     this.undo = null;
@@ -206,12 +206,12 @@ export default class Bind extends Component {
   }
 
   /**
-   * The controller of the page this tag was written in.
+   * The controller of the interface this tag was written in.
    *
    * Found by walking up from where it stands rather than being handed down: a
    * compiled `.ib.xml` tags the element it drew with the scope it drew against,
-   * so the nearest one above is the page that placed this tag. A Bind inside a
-   * page inside another page therefore reads the paths of the page it is
+   * so the nearest one above is the interface that placed this tag. A Bind inside a
+   * interface inside another interface therefore reads the paths of the interface it is
    * written in, which is the only reading that makes sense.
    */
   controllerAbove() {
@@ -223,13 +223,13 @@ export default class Bind extends Component {
 
     // A compiled `.ib.xml`'s scope, wherever it is: looked for all the way up
     // before anything else is considered. A component standing between this
-    // tag and its page has an `controller` of its own — itself, as it happens —
+    // tag and its interface has an `controller` of its own — itself, as it happens —
     // and taking that one because it came first would hand the Bind an object
-    // with none of the page's outlets on it.
+    // with none of the interface's outlets on it.
     for (let node = this.node; node; node = node.parentNode) {
-      if (node.__ibCtl) return node.__ibCtl;
+      if (node.__ibOwner) return node.__ibOwner;
     }
-    // Failing that, a page written as a class rather than as markup.
+    // Failing that, an interface written as a class rather than as markup.
     for (let node = this.node; node; node = node.parentNode) {
       const view = node.__ibView;
       if (

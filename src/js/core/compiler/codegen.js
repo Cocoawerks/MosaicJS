@@ -73,13 +73,13 @@ export function generate(comp, opts) {
 
   // `props` carries initial values only — it is forwarded to child components
   // and is otherwise the controller's business. There is no reactivity.
-  // A page's own controller, written beside it: by default `Foo.ib.xml` is
+  // An interface's own controller, written beside it: by default `Foo.ib.xml` is
   // paired with the `FooController.js` next to it, or `<interface owner='X'>`
   // points at an owner module of its own. (`owner` is the markup's word for it;
-  // the runtime calls what a page draws against its controller.) The runtime
-  // builds one per drawn instance and calls the page against it, so the
+  // the runtime calls what an interface draws against its controller.) The runtime
+  // builds one per drawn instance and calls the interface against it, so the
   // bindings, outlets and actions in this markup are that controller's rather
-  // than the page's above it.
+  // than the interface's above it.
   if (opts.owner) {
     out += `import ${opts.name}Controller from ${jsString(opts.owner)};\n\n`;
   }
@@ -101,7 +101,7 @@ export function generate(comp, opts) {
   // Only a file with a bound prop does. A binding on this markup's own text or
   // attributes is written straight back into the DOM, which is cheap and
   // disturbs nothing; a component's prop can only be worked out by running the
-  // markup again. Saying so per file means a page that never binds a prop
+  // markup again. Saying so per file means an interface that never binds a prop
   // behaves exactly as it did — including the components in it that place
   // themselves by hand, which a redraw they did not ask for can unsettle.
   if (usesAttrBinding(comp.markup, true)) {
@@ -266,7 +266,7 @@ class Ctx {
       // The scope is a class, so it joins the ones already there rather than
       // sitting in a prop of its own. A component's `styleName` carries it too:
       // the point of naming a class on a component is to reach it from the
-      // sheet of the page that placed it, and that sheet is scoped.
+      // sheet of the interface that placed it, and that sheet is scoped.
       // An element takes the scope the element rules worked out — none for
       // `<style>`, which renders nothing. A component takes the module's,
       // since the rules above deny it one of its own.

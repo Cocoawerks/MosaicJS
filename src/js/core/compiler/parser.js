@@ -11,7 +11,7 @@
 // controller, which is a module of its own.
 //
 // A `.ib.xml` file holds no JavaScript at all — a `<script>` block is an error,
-// not a place to put code. What a page needs is imported by the module beside
+// not a place to put code. What an interface needs is imported by the module beside
 // it, so there is one place a component is declared and one way to find it.
 //
 // The AST it produces:
@@ -161,7 +161,7 @@ function unwrapRoot(nodes, comp = {}) {
 
   const [first] = content;
   if (first.kind === "element" && first.name === ROOT_TAG) {
-    // `<interface owner='./path/to/Owner'>` points the page at the object it
+    // `<interface owner='./path/to/Owner'>` points the interface at the object it
     // draws against, freeing it from the `FooController.js` convention. A static
     // value only — an owner is a module path resolved at compile time, not
     // something a binding computes.

@@ -24,7 +24,7 @@ export function redraw(view) {
   const anchor = view.nodes[0];
   // Nothing to patch against yet: the component has drawn but its nodes have
   // not been put anywhere — which is where they are when an `outlet` hands a
-  // component over and the controller says something to it straight away. The
+  // component over and the owner says something to it straight away. The
   // redraw is remembered rather than dropped, and done when the nodes land
   // (see `attachTree`); dropping it loses whatever was just assigned.
   if (!anchor || !anchor.parentNode) {
@@ -98,9 +98,9 @@ export function redraw(view) {
   // a fresh comment and discards the old one, and discarding a node releases
   // the component attached to it — this one. So a component whose whole job is
   // to be there rather than to draw would undo itself the first time it was
-  // asked to draw again. `<Bind/>` is exactly that component: the page it is
+  // asked to draw again. `<Bind/>` is exactly that component: the interface it is
   // written in redraws, every Bind in it is handed its props again, and the
-  // bindings the page was made of come apart.
+  // bindings the interface was made of come apart.
   if (next == null && previous == null) {
     view.vtree = next;
     return;
@@ -116,7 +116,7 @@ export function redraw(view) {
 
 /**
  * Take what a view drew as the nodes now standing for it: remember them, wire
- * up its events again, and tell whatever is newly on the page.
+ * up its events again, and tell whatever is newly on the interface.
  */
 function settle(view, nodes, next) {
   view.nodes = nodes;
@@ -206,10 +206,10 @@ function patchableRoots(olds, news) {
  * @param {Node[]} nodes The roots as they stand.
  * @param {Array} olds The vnodes they were drawn from.
  * @param {Array} news The vnodes they should become.
- * @param {object} controller What the drawing reads and its actions call.
+ * @param {object} owner What the drawing reads and its actions call.
  * @returns {Node[]} The roots now.
  */
-function patchRoots(parent, nodes, olds, news, controller) {
+function patchRoots(parent, nodes, olds, news, owner) {
   const fresh = [];
   const count = Math.max(olds.length, news.length);
   // Where the roots begin. A gained root goes after the one before it, and the
@@ -234,14 +234,14 @@ function patchRoots(parent, nodes, olds, news, controller) {
     // different from the one before it to reconcile. Either way it is drawn
     // fresh, and whatever stood there goes.
     if (i >= olds.length || node === undefined || !sameKind(olds[i], newV)) {
-      const placed = place(parent, render(newV, controller, nsOf(parent)), before);
+      const placed = place(parent, render(newV, owner, nsOf(parent)), before);
       if (node) discard(node);
       fresh.push(...placed);
       after = placed[placed.length - 1] ?? after;
       continue;
     }
 
-    const patched = patch(parent, node, olds[i], newV, controller);
+    const patched = patch(parent, node, olds[i], newV, owner);
     fresh.push(patched);
     after = patched;
   }
@@ -304,9 +304,9 @@ function kindOf(vnode) {
 }
 
 /** The text a text-ish vnode should display. */
-function textOf(vnode, controller) {
+function textOf(vnode, owner) {
   // A message is looked up rather than read: `MESSAGES` is reserved, and what
-  // it says depends on the locale rather than on the controller.
+  // it says depends on the locale rather than on the owner.
   if (vnode.__ibBind === "message") {
     return { value: MESSAGES.get(vnode.key), bind: vnode };
   }
@@ -321,7 +321,7 @@ function textOf(vnode, controller) {
  * Patch `dom` from `oldV` to `newV`, returning the node now in its place.
  * Falls back to replacing the node whenever the two cannot be reconciled.
  */
-function patch(parent, dom, oldV, newV, controller) {
+function patch(parent, dom, oldV, newV, owner) {
   // The very same drawing as last time. A caller that hands back the vnode it
   // was given is saying nothing here changed, and there is nothing to compare
   // it against but itself — a progressive list keeps the vnode of every row
@@ -338,7 +338,7 @@ function patch(parent, dom, oldV, newV, controller) {
   }
 
   if (!sameKind(oldV, newV)) {
-    const fresh = render(newV, controller, nsOf(parent));
+    const fresh = render(newV, owner, nsOf(parent));
     parent.insertBefore(fresh, dom);
     discard(dom);
     return fresh;
@@ -346,7 +346,7 @@ function patch(parent, dom, oldV, newV, controller) {
 
   switch (kindOf(newV)) {
     case "text": {
-      const { value, bind } = textOf(newV, controller);
+      const { value, bind } = textOf(newV, owner);
       if (dom.textContent !== value) dom.textContent = value;
       // A patched node is the node the message now lives in, so it is
       // registered again — the registry is keyed by node, so re-registering
@@ -358,7 +358,7 @@ function patch(parent, dom, oldV, newV, controller) {
     }
 
     case "object": {
-      // The object a tag placed survives the page redrawing around it. It is
+      // The object a tag placed survives the interface redrawing around it. It is
       // not a drawing — there is nothing to reconcile — and building it again
       // would throw away whatever it had become: a feed's connection, a
       // document's edits, and every outlet and binding pointing at it.
@@ -367,12 +367,12 @@ function patch(parent, dom, oldV, newV, controller) {
         // Outlets are cleared before a redraw, so the one pointing at this
         // object has to be set again — it is the same object either way.
         applyRef(newV.props.ref, object);
-        // Only what the tag has actually changed, so what the page said to the
+        // Only what the tag has actually changed, so what the interface said to the
         // object afterwards is not put back to what the markup says.
         dom.__ibApplied = applyProps(object, newV.props, dom.__ibApplied);
         return dom;
       }
-      const fresh = render(newV, controller, nsOf(parent));
+      const fresh = render(newV, owner, nsOf(parent));
       parent.insertBefore(fresh, dom);
       discard(dom);
       return fresh;
@@ -403,14 +403,14 @@ function patch(parent, dom, oldV, newV, controller) {
         typeof newV.type === "function" &&
         dom.__ibFn === newV.type
       ) {
-        // The one this page was first drawn against: a page with a
-        // controller of its own keeps it across redraws, or its state
+        // The one this interface was first drawn against: an interface with a
+        // owner of its own keeps it across redraws, or its state
         // would be built again every time anything above it changed.
-        const own = dom.__ibCtl ?? controller;
+        const own = dom.__ibOwner ?? owner;
         // What the tag now says is put to the scope. Only what has changed
         // since the last draw is assigned, so a view that was told something
         // through its outlet keeps it.
-        if (dom.__ibCtl) {
+        if (dom.__ibOwner) {
           const record = own[VIEW];
           const applied = applyProps(own, newV.props, record?.applied);
           if (record) record.applied = applied;
@@ -423,25 +423,25 @@ function patch(parent, dom, oldV, newV, controller) {
         if (patched?.nodeType === Node.ELEMENT_NODE) {
           patched.__ibFn = newV.type;
           patched.__ibOut = produced;
-          if (dom.__ibCtl) patched.__ibCtl = own;
+          if (dom.__ibOwner) patched.__ibOwner = own;
         }
         return patched;
       }
 
-      const fresh = render(newV, controller, nsOf(parent));
+      const fresh = render(newV, owner, nsOf(parent));
       parent.insertBefore(fresh, dom);
       discard(dom);
       return fresh;
     }
 
     case "fragment": {
-      patchChildren(dom, oldV.children, newV.children, controller);
+      patchChildren(dom, oldV.children, newV.children, owner);
       return dom;
     }
 
     default: {
-      patchProps(dom, oldV.props, newV.props, controller);
-      patchChildren(dom, oldV.children, newV.children, controller);
+      patchProps(dom, oldV.props, newV.props, owner);
+      patchChildren(dom, oldV.children, newV.children, owner);
       return dom;
     }
   }
@@ -451,13 +451,13 @@ function patch(parent, dom, oldV, newV, controller) {
  * Children are matched by position, unless any of them carries a `key` — then
  * they are matched by that instead. See {@link patchKeyedChildren} for why.
  */
-function patchChildren(parent, oldChildren = [], newChildren = [], controller) {
+function patchChildren(parent, oldChildren = [], newChildren = [], owner) {
   const olds = flatten(oldChildren);
   const news = flatten(newChildren);
   const nodes = [...parent.childNodes];
 
   if (anyKeyed(olds) || anyKeyed(news)) {
-    patchKeyedChildren(parent, olds, news, nodes, controller);
+    patchKeyedChildren(parent, olds, news, nodes, owner);
     return;
   }
 
@@ -472,10 +472,10 @@ function patchChildren(parent, oldChildren = [], newChildren = [], controller) {
       continue;
     }
     if (node === undefined || oldV === undefined) {
-      parent.appendChild(render(newV, controller, nsOf(parent)));
+      parent.appendChild(render(newV, owner, nsOf(parent)));
       continue;
     }
-    patch(parent, node, oldV, newV, controller);
+    patch(parent, node, oldV, newV, owner);
   }
 }
 
@@ -517,7 +517,7 @@ function anyKeyed(children) {
  * that has come back past another does. A progressive list scrolling by ten
  * rows moves none of the two hundred it keeps.
  */
-function patchKeyedChildren(parent, olds, news, nodes, controller) {
+function patchKeyedChildren(parent, olds, news, nodes, owner) {
   const byKey = new Map();
   const unkeyed = [];
 
@@ -556,7 +556,7 @@ function patchKeyedChildren(parent, olds, news, nodes, controller) {
     let inOrder = false;
     if (match?.node && sameKind(match.vnode, newV)) {
       reused.add(match);
-      node = patch(parent, match.node, match.vnode, newV, controller);
+      node = patch(parent, match.node, match.vnode, newV, owner);
       // The patch may have replaced the node, which then has to be placed
       // wherever the old one was rather than left to be found there.
       inOrder = node === match.node && match.at > reachedTo;
@@ -564,7 +564,7 @@ function patchKeyedChildren(parent, olds, news, nodes, controller) {
     } else {
       // No counterpart, or one too different to patch into: draw it fresh. A
       // match that cannot be patched is left to be discarded with the rest.
-      node = render(newV, controller, nsOf(parent));
+      node = render(newV, owner, nsOf(parent));
     }
 
     after = inOrder ? lastOf(node, after) : placeAfter(parent, node, after);
@@ -612,7 +612,7 @@ function lastOf(node, after) {
 }
 
 /** Add, update and remove props, undoing anything the previous draw set. */
-function patchProps(el, oldProps = {}, newProps = {}, controller) {
+function patchProps(el, oldProps = {}, newProps = {}, owner) {
   for (const name in oldProps) {
     if (!(name in newProps)) removeProp(el, name, oldProps[name]);
   }
@@ -665,7 +665,7 @@ function sameProps(a = {}, b = {}) {
 /**
  * Draw a composed view again and patch what changed.
  *
- * This is what makes a `.ib.xml` behave like a component rather than a page whose
+ * This is what makes a `.ib.xml` behave like a component rather than an interface whose
  * text is kept up to date: saying something to a view re-runs the function the
  * compiler made of its markup and reconciles the two trees, so a value that
  * reaches a child — a Button's `text`, another view's prop — arrives there the
@@ -700,7 +700,7 @@ function redrawComposedView(scope) {
     if (patched?.nodeType === Node.ELEMENT_NODE) {
       patched.__ibFn = record.fn;
       patched.__ibOut = produced;
-      patched.__ibCtl = scope;
+      pointRoot(patched, scope);
     }
     attachTree(patched);
     return true;
@@ -722,9 +722,7 @@ function redrawComposedView(scope) {
     patchableRoots(olds, news)
   ) {
     const patched = patchRoots(parent, nodes, olds, news, scope);
-    for (const node of patched) {
-      if (node?.nodeType === Node.ELEMENT_NODE) node.__ibCtl = scope;
-    }
+    for (const node of patched) pointRoot(node, scope);
     record.out = produced;
     record.node = patched.length === 1 ? patched[0] : null;
     record.nodes = patched;
@@ -743,14 +741,28 @@ function redrawComposedView(scope) {
   parent.insertBefore(dom, before);
   for (const old of nodes) discard(old);
 
-  for (const node of fresh) {
-    if (node?.nodeType === Node.ELEMENT_NODE) node.__ibCtl = scope;
-  }
+  for (const node of fresh) pointRoot(node, scope);
   record.out = produced;
   record.node = fresh.length === 1 ? fresh[0] : null;
   record.nodes = fresh;
   for (const node of fresh) attachTree(node);
   return true;
+}
+
+/**
+ * Point a root back at the scope that drew it — but never over a root that is
+ * itself a nested composed view. A multi-root `.ib.xml` (`h(Fragment, …)`) can
+ * have a child view placed straight among its roots; the patch has already set
+ * that root's `__ibOwner` to the child's own owner, and stamping this view's
+ * scope over it would draw the child against the wrong owner — its
+ * `{bindings}`, outlets and actions would answer to the parent, not to it.
+ * A root the parent itself owns carries no scope of its own (or already this
+ * one), and is the one that needs pointing back.
+ */
+function pointRoot(node, scope) {
+  if (node?.nodeType !== Node.ELEMENT_NODE) return;
+  if (node.__ibOwner !== undefined && node.__ibOwner !== scope) return;
+  node.__ibOwner = scope;
 }
 
 setViewRedraw(redrawComposedView);

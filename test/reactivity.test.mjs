@@ -4,9 +4,9 @@
 // same for `examples/Counter_component` — these tests drive the two example
 // applications, which are the two shapes this is about:
 //
-//   Counter_main       a `.ib.xml` page whose `{bindings}` all read the
+//   Counter_main       a `.ib.xml` interface whose `{bindings}` all read the
 //                      controller, with Buttons inside it calling its methods.
-//   Counter_component  the same page hosting a drawn Counter, which owns its
+//   Counter_component  the same interface hosting a drawn Counter, which owns its
 //                      own state and redraws itself.
 //
 // The two are driven by different machinery and the difference matters. A
@@ -23,20 +23,20 @@ const { mount, h, Component, bindText } = await import(
   "../examples/Counter_main/build/node_modules/mosaic/runtime/mosaic.js"
 );
 const { default: BoundPage } = await import(
-  "../examples/Counter_main/build/src/main.ib.js"
+  "../examples/Counter_main/build/main.ib.js"
 );
 const { default: BoundController } = await import(
-  "../examples/Counter_main/build/src/AppController.js"
+  "../examples/Counter_main/build/AppController.js"
 );
 
 const { default: HostPage } = await import(
-  "../examples/Counter_component/build/src/main.ib.js"
+  "../examples/Counter_component/build/main.ib.js"
 );
 const { default: HostController } = await import(
-  "../examples/Counter_component/build/src/AppController.js"
+  "../examples/Counter_component/build/AppController.js"
 );
 
-/** The `.ib.xml` page whose every value is the controller's. */
+/** The `.ib.xml` interface whose every value is the controller's. */
 function bound(options = {}) {
   const root = document.createElement("div");
   document.body.appendChild(root);
@@ -60,7 +60,7 @@ function bound(options = {}) {
   };
 }
 
-/** The `.ib.xml` page that hosts a drawn component instead. */
+/** The `.ib.xml` interface that hosts a drawn component instead. */
 function hosting() {
   const root = document.createElement("div");
   document.body.appendChild(root);
@@ -70,7 +70,7 @@ function hosting() {
   return {
     root,
     controller,
-    /** The Counter's own view, which the page drew. */
+    /** The Counter's own view, which the interface drew. */
     counter: root.querySelector("output").parentNode.__ibView,
     value: () => root.querySelector("output").textContent,
     classes: () =>
@@ -86,22 +86,22 @@ function hosting() {
 // --- a .ib.xml's bindings follow the controller ---------------------------------
 
 test("assigning a bound property writes it into the node that holds it", () => {
-  const page = bound();
+  const mib = bound();
 
-  assert.equal(page.count(), "0");
-  page.controller.count = 7;
-  assert.equal(page.count(), "7");
+  assert.equal(mib.count(), "0");
+  mib.controller.count = 7;
+  assert.equal(mib.count(), "7");
 });
 
 test("and into a bound attribute, not only into text", () => {
   // `styleName="value {status}"` — part literal, part binding.
-  const page = bound({ limit: 3 });
+  const mib = bound({ limit: 3 });
 
-  assert.deepEqual(page.classes(), ["value"]);
-  page.controller.count = 3;
-  assert.deepEqual(page.classes(), ["value", "high"]);
-  page.controller.count = 1;
-  assert.deepEqual(page.classes(), ["value"]);
+  assert.deepEqual(mib.classes(), ["value"]);
+  mib.controller.count = 3;
+  assert.deepEqual(mib.classes(), ["value", "high"]);
+  mib.controller.count = 1;
+  assert.deepEqual(mib.classes(), ["value"]);
 });
 
 test("a derived value follows what it derives from", () => {
@@ -113,11 +113,11 @@ test("a derived value follows what it derives from", () => {
   // itself, did not find a getter that lives on its class, took it for plain
   // state and defined an own accessor over the top holding whatever the getter
   // had said the first time. The class never changed again.
-  const page = bound({ limit: 2 });
+  const mib = bound({ limit: 2 });
 
-  page.controller.count = 5;
-  assert.equal(page.controller.status, "high", "the getter still computes");
-  assert.deepEqual(page.classes(), ["value", "high"], "and the DOM has it");
+  mib.controller.count = 5;
+  assert.equal(mib.controller.status, "high", "the getter still computes");
+  assert.deepEqual(mib.classes(), ["value", "high"], "and the DOM has it");
 });
 
 test("every binding on a property follows it, not just the first", () => {
@@ -140,28 +140,28 @@ test("every binding on a property follows it, not just the first", () => {
 });
 
 test("a property nothing binds to is left an ordinary one", () => {
-  const page = bound();
+  const mib = bound();
 
-  page.controller.untouched = 1;
-  const plain = Object.getOwnPropertyDescriptor(page.controller, "untouched");
+  mib.controller.untouched = 1;
+  const plain = Object.getOwnPropertyDescriptor(mib.controller, "untouched");
   assert.ok("value" in plain, "no accessor was installed over it");
 
   // And assigning it draws nothing, since nothing reads it.
-  const before = page.root.innerHTML;
-  page.controller.untouched = 2;
-  assert.equal(page.root.innerHTML, before);
+  const before = mib.root.innerHTML;
+  mib.controller.untouched = 2;
+  assert.equal(mib.root.innerHTML, before);
 });
 
 test("assigning the same value again changes nothing", () => {
-  const page = bound();
-  page.controller.count = 4;
+  const mib = bound();
+  mib.controller.count = 4;
 
-  const node = page.root.querySelector("output");
+  const node = mib.root.querySelector("output");
   const text = node.childNodes[0];
-  page.controller.count = 4;
+  mib.controller.count = 4;
 
   assert.equal(node.childNodes[0], text, "the same text node, untouched");
-  assert.equal(page.count(), "4");
+  assert.equal(mib.count(), "4");
 });
 
 test("what observation cannot see is what needsDisplay is for", () => {
@@ -186,44 +186,44 @@ test("what observation cannot see is what needsDisplay is for", () => {
 });
 
 test("a binding whose node has gone is dropped rather than written to", () => {
-  const page = bound();
-  const output = page.root.querySelector("output");
+  const mib = bound();
+  const output = mib.root.querySelector("output");
 
-  page.controller.count = 1;
+  mib.controller.count = 1;
   output.remove();
 
-  // The node is off the page; assigning again must neither throw nor keep it.
-  page.controller.count = 2;
+  // The node is off the interface; assigning again must neither throw nor keep it.
+  mib.controller.count = 2;
   assert.equal(output.parentNode, null);
-  assert.equal(page.title(), "Counter App", "the bindings that remain still work");
+  assert.equal(mib.title(), "Counter App", "the bindings that remain still work");
 });
 
-test("a page driven hard does not accumulate work per assignment", () => {
+test("an interface driven hard does not accumulate work per assignment", () => {
   // Every draw registers its bindings again. Registering a fresh notifier each
   // time would leave one per assignment behind, and each of them would run on
   // the next — which is quadratic, and was once an out-of-memory.
-  const page = bound();
+  const mib = bound();
 
-  for (let i = 0; i < 300; i += 1) page.controller.count = i;
+  for (let i = 0; i < 300; i += 1) mib.controller.count = i;
 
-  assert.equal(page.count(), "299");
-  const bindings = page.controller[Symbol.for("mosaic.bindings")];
+  assert.equal(mib.count(), "299");
+  const bindings = mib.controller[Symbol.for("mosaic.bindings")];
   assert.equal(bindings.length, 3, "one per binding in the markup, still");
 });
 
-// --- a controller reaching the components inside its page --------------------
+// --- a controller reaching the components inside its interface --------------------
 
-test("a Button in the page calls the controller, and the page follows", () => {
-  const page = bound();
-  const [minus, plus] = page.buttons();
+test("a Button in the interface calls the controller, and the interface follows", () => {
+  const mib = bound();
+  const [minus, plus] = mib.buttons();
 
   plus.dispatchEvent({ type: "click" });
   plus.dispatchEvent({ type: "click" });
-  assert.equal(page.controller.count, 2);
-  assert.equal(page.count(), "2", "which the binding wrote out");
+  assert.equal(mib.controller.count, 2);
+  assert.equal(mib.count(), "2", "which the binding wrote out");
 
   minus.dispatchEvent({ type: "click" });
-  assert.equal(page.count(), "1");
+  assert.equal(mib.count(), "1");
 });
 
 test("a component's props are what the markup said, and stay that way", () => {
@@ -231,41 +231,41 @@ test("a component's props are what the markup said, and stay that way", () => {
   // limit="3"/>` is a value handed over once. Nothing on the controller is
   // read by it, so nothing on the controller can change it — an application
   // that has to change one says so through an outlet, or binds the prop.
-  const page = hosting();
+  const mib = hosting();
 
-  assert.equal(page.counter.limit, 3);
-  page.controller.limit = 99;
-  assert.equal(page.counter.limit, 3, "the component was not told anything");
+  assert.equal(mib.counter.limit, 3);
+  mib.controller.limit = 99;
+  assert.equal(mib.counter.limit, 3, "the component was not told anything");
 });
 
 // --- a drawn component observes what it drew ---------------------------------
 
 test("assigning what draw() read draws it again", () => {
-  const page = hosting();
+  const mib = hosting();
 
-  assert.equal(page.value(), "0");
-  page.counter.count = 5;
-  assert.equal(page.value(), "5");
+  assert.equal(mib.value(), "0");
+  mib.counter.count = 5;
+  assert.equal(mib.value(), "5");
 });
 
 test("including through a getter, which is watched by what it reads", () => {
   // `status` is a getter on the component reading `count` and `limit`. A drawn
   // view records the reads its drawing made, the getter's among them, so what
   // it derives from is what gets watched.
-  const page = hosting();
+  const mib = hosting();
 
-  assert.deepEqual(page.classes(), ["value"]);
-  page.counter.count = 3;
-  assert.deepEqual(page.classes(), ["value", "high"]);
+  assert.deepEqual(mib.classes(), ["value"]);
+  mib.counter.count = 3;
+  assert.deepEqual(mib.classes(), ["value", "high"]);
 });
 
 test("a redraw patches what it drew rather than building it again", () => {
-  const page = hosting();
-  const output = page.root.querySelector("output");
+  const mib = hosting();
+  const output = mib.root.querySelector("output");
 
-  page.counter.count = 2;
-  assert.equal(page.root.querySelector("output"), output, "the same node");
-  assert.equal(page.value(), "2");
+  mib.counter.count = 2;
+  assert.equal(mib.root.querySelector("output"), output, "the same node");
+  assert.equal(mib.value(), "2");
 });
 
 test("a component's state is its own, and its redraw is its own too", () => {
@@ -281,7 +281,7 @@ test("a component's state is its own, and its redraw is its own too", () => {
       return h("i", null, String(this.n));
     }
   }
-  const Page = function () {
+  const Mib = function () {
     return h(
       "div",
       null,
@@ -291,14 +291,14 @@ test("a component's state is its own, and its redraw is its own too", () => {
     );
   };
 
-  const controller = { title: "page" };
-  mount(Page, root, {}, controller);
+  const controller = { title: "mib" };
+  mount(Mib, root, {}, controller);
   const [first, second] = [...root.querySelectorAll("i")];
 
   controller.first.n = 9;
   assert.equal(first.textContent, "9");
   assert.equal(second.textContent, "0", "the other one was not drawn again");
-  assert.equal(root.querySelector("p").textContent, "page", "nor was the page");
+  assert.equal(root.querySelector("p").textContent, "mib", "nor was the interface");
 });
 
 test("a component is not watching the controller that drew it", () => {
@@ -327,12 +327,12 @@ test("a component is not watching the controller that drew it", () => {
 });
 
 test("a controller drives a component it holds by assigning to it", () => {
-  const page = hosting();
-  const button = page.root.querySelector("button").__ibView;
+  const mib = hosting();
+  const button = mib.root.querySelector("button").__ibView;
 
   // What an outlet hands over is the component, and a component's declared
   // settings are ordinary properties: assigning one draws that component.
   button.text = "minus";
-  assert.equal(page.root.querySelector("button").textContent.trim(), "minus");
-  assert.equal(page.value(), "0", "and nothing else was drawn again");
+  assert.equal(mib.root.querySelector("button").textContent.trim(), "minus");
+  assert.equal(mib.value(), "0", "and nothing else was drawn again");
 });

@@ -3,9 +3,9 @@
 // A binding watches the property it names, and a getter is never assigned — so
 // naming one used to put a watch on nothing at all. It came right only because
 // every binding is re-read whenever anything else observed on the same
-// controller is assigned, which on a page whose only reading is the derived
+// controller is assigned, which on an interface whose only reading is the derived
 // value is nothing: a slider bound to `amount` behind a `{formatted}` that
-// reads it left the reading behind the drag until some other part of the page
+// reads it left the reading behind the drag until some other part of the interface
 // happened to change.
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -19,11 +19,11 @@ import { mount } from "../src/js/core/runtime/private/mount.js";
 
 /** A compiled `.ib.xml` whose only reading is `{path}`, as codegen emits one. */
 function pageOf(path) {
-  const page = function () {
+  const mib = function () {
     return h("p", null, bindText(this, path));
   };
-  page.isMarkup = true;
-  return page;
+  mib.isMarkup = true;
+  return mib;
 }
 
 test("a getter's own state is watched, and assigning it redraws", () => {
@@ -38,7 +38,7 @@ test("a getter's own state is watched, and assigning it redraws", () => {
   mount(pageOf("formatted"), root, {}, controller);
   assert.equal(root.textContent, "£1250");
 
-  // Nothing else on this page is observed, so this is the only thing that can
+  // Nothing else on this interface is observed, so this is the only thing that can
   // bring the reading up to date.
   controller.amount = 3000;
   assert.equal(root.textContent, "£3000");
@@ -136,7 +136,7 @@ test("a getter that throws is left to the read that already answered for it", ()
 
   const root = document.createElement("div");
   // The value is read before the binding is registered, so this is the throw
-  // the page already had. What matters is that watching adds no second one.
+  // the interface already had. What matters is that watching adds no second one.
   assert.throws(() => mount(pageOf("broken"), root, {}, controller), /no/);
 });
 
@@ -157,14 +157,14 @@ test("a bound prop on a component follows a getter's state too", () => {
     },
   };
 
-  const page = function () {
+  const mib = function () {
     return h("div", null, h(Label, { text: bindProp(this, [{ path: "label" }]) }));
   };
-  page.isMarkup = true;
-  page.redraws = true;
+  mib.isMarkup = true;
+  mib.redraws = true;
 
   const root = document.createElement("div");
-  mount(page, root, {}, controller);
+  mount(mib, root, {}, controller);
   assert.equal(root.textContent, "exact");
 
   controller.rounding = true;

@@ -334,7 +334,7 @@ export default class Menu extends PopOver {
    * A menu's action is the item that was chosen, so opening and closing are
    * reported through `onOpen` and `onClose` alone.
    */
-  reportOpen(open) {
+  fireOpen(open) {
     (open ? this.props.onOpen : this.props.onClose)?.(this.self);
   }
 

@@ -17,26 +17,26 @@ const PLUMBING = new Set(["children", "ref", "key"]);
  * what its actions are called on.
  *
  * A file paired with a `FooController.js` beside it draws against a fresh
- * instance of that controller. One written on its own draws against a plain
+ * instance of that owner. One written on its own draws against a plain
  * object of its own, so a view composed twice is two views: neither can reach
  * into the state of whatever drew it, and what it was handed stays its own.
  */
-export function scopeFor(type, controller) {
+export function scopeFor(type, owner) {
   if (type?.controller) return new type.controller();
   // A view compiled from markup is a component and gets a scope of its own,
-  // even with no controller written for it: the tag's attributes have to land
+  // even with no owner written for it: the tag's attributes have to land
   // somewhere, and a view that reached into the state of whatever drew it
   // would not be composable twice.
   if (type?.isMarkup) return {};
   // Anything else is a function component written by hand — an icon, a small
-  // helper — which has drawn against its caller's controller since before any
+  // helper — which has drawn against its caller's owner since before any
   // of this, and still does.
-  return controller;
+  return owner;
 }
 
 /**
  * Hand the tag's attributes to the scope, so `<Labelled label="Name"/>` is a
- * view whose `{label}` reads "Name" and whose controller reads `this.label`.
+ * view whose `{label}` reads "Name" and whose owner reads `this.label`.
  *
  * Assigned onto the scope rather than kept beside it, because that is what
  * makes a prop ordinary state: a `{binding}` observes the property it reads,
@@ -45,7 +45,7 @@ export function scopeFor(type, controller) {
  * is a no-op, so replaying them on every redraw costs nothing.
  *
  * They land before the view draws, which is the only moment they can: a
- * `{binding}` has to have something to read the first time round. A controller
+ * `{binding}` has to have something to read the first time round. An owner
  * whose setter reaches for something the markup draws — an outlet — will not
  * find it yet, and should take what it needs in `attached()` instead.
  *
@@ -64,7 +64,7 @@ export function applyProps(scope, props, previous) {
     // Only what the tag has actually changed since the last draw. A view that
     // has been told something through its outlet — `card.value = 12` — keeps
     // it: the markup still says `value="0"`, and replaying that on every
-    // redraw of the page above would put the 0 back. What the markup says is
+    // redraw of the interface above would put the 0 back. What the markup says is
     // where the view starts; what changes it afterwards is whichever of the
     // two spoke last.
     if (previous && Object.is(previous[name], coerced[name])) continue;
@@ -112,7 +112,7 @@ export function setViewRedraw(fn) {
  * produces now.
  *
  * @returns {boolean} Whether it was redrawn. A scope with no view behind it —
- * a controller a page was mounted with by hand, an object that only holds
+ * an owner an interface was mounted with by hand, an object that only holds
  * bindings — is left to the binding pass instead.
  */
 export function redrawView(scope) {

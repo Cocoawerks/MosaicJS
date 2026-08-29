@@ -23,7 +23,7 @@ export function namespaceFor(type, parentNS) {
   return parentNS ?? null;
 }
 
-export function render(vnode, controller = {}, ns = null) {
+export function render(vnode, owner = {}, ns = null) {
   if (vnode === null || vnode === undefined || typeof vnode === "boolean") {
     return document.createComment("");
   }
@@ -33,8 +33,8 @@ export function render(vnode, controller = {}, ns = null) {
   if (vnode.__ibBind === "message") {
     // Not read from the controller: `MESSAGES` is reserved, and the key is
     // looked up in the application's messages. Remembered there rather than in
-    // the controller's bindings, because a message depends on the locale and
-    // on nothing the controller holds — changing locale writes it again, and
+    // the owner's bindings, because a message depends on the locale and
+    // on nothing the owner holds — changing locale writes it again, and
     // no redraw is involved.
     const node = document.createTextNode(MESSAGES.get(vnode.key));
     MESSAGES._bind({ node, key: vnode.key });
@@ -52,7 +52,7 @@ export function render(vnode, controller = {}, ns = null) {
   if (Array.isArray(vnode)) {
     const frag = document.createDocumentFragment();
     for (const child of flatten(vnode))
-      frag.appendChild(render(child, controller, ns));
+      frag.appendChild(render(child, owner, ns));
     return frag;
   }
   if (vnode instanceof Node) return vnode;
@@ -62,7 +62,7 @@ export function render(vnode, controller = {}, ns = null) {
   if (type === Fragment) {
     const frag = document.createDocumentFragment();
     for (const child of children)
-      frag.appendChild(render(child, controller, ns));
+      frag.appendChild(render(child, owner, ns));
     return frag;
   }
 
@@ -77,8 +77,8 @@ export function render(vnode, controller = {}, ns = null) {
       view.node.__ibView = view;
       view.node.__ibType = type;
     }
-    // `outlet="save"` on a component hands the controller the component, not
-    // its element: what a controller has to say to a Button is `enabled` or
+    // `outlet="save"` on a component hands the owner the component, not
+    // its element: what an owner has to say to a Button is `enabled` or
     // `text`, which are the component's and not the DOM's. On an element the
     // node *is* the thing, so that stays as it was.
     applyRef(props.ref, view);
@@ -95,14 +95,14 @@ export function render(vnode, controller = {}, ns = null) {
     node.__ibType = type;
     node.__ibApplied = applied;
     // `outlet="money"` hands over the object itself. There is nothing else it
-    // could hand over: the comment is plumbing, not the thing the page meant.
+    // could hand over: the comment is plumbing, not the thing the interface meant.
     applyRef(props.ref, object);
     return node;
   }
 
   if (typeof type === "function") {
     // Components receive their children as `props.children`, and are invoked
-    // with the controller as `this` so `outlet` and `action` bind to it.
+    // with the owner as `this` so `outlet` and `action` bind to it.
     //
     // What it drew is remembered on the node. A plain function has no instance
     // to hold its last tree, and without one a redraw has nothing to compare
@@ -112,13 +112,13 @@ export function render(vnode, controller = {}, ns = null) {
     // A compiled `.ib.xml` placed as a tag is a component: it draws against a
     // scope of its own, and the tag's attributes are that scope's starting
     // state. `Foo.ib.xml` paired with a `FooController.js` beside it draws
-    // against a fresh instance of that controller; one written on its own
+    // against a fresh instance of that owner; one written on its own
     // draws against a plain object. Either way its `{bindings}`, outlets and
     // actions are its own and not those of whatever drew it. Kept on the
     // node, because a redraw has to call the view against the same one.
-    const own = scopeFor(type, controller);
+    const own = scopeFor(type, owner);
     const drawnWith = { ...props, children };
-    const applied = own !== controller ? applyProps(own, props) : null;
+    const applied = own !== owner ? applyProps(own, props) : null;
     // `styleName` on the tag is a class the drawing wears, here as it is on a
     // component class — a compiled `.ib.xml` placed as a tag is one of these.
     const produced = withStyleName(type.call(own, drawnWith), props);
@@ -126,15 +126,20 @@ export function render(vnode, controller = {}, ns = null) {
     if (dom?.nodeType === Node.ELEMENT_NODE) {
       dom.__ibFn = type;
       dom.__ibOut = produced;
-      if (own !== controller) dom.__ibCtl = own;
+      if (own !== owner) dom.__ibOwner = own;
     } else if (
-      own !== controller &&
+      own !== owner &&
       dom?.nodeType === Node.DOCUMENT_FRAGMENT_NODE
     ) {
       // A view with more than one root has no single node to stand for it, so
       // each of them carries the scope. Without this a multi-root `.ib.xml` was
-      // the one shape whose scope nothing could be found from.
-      for (const node of dom.childNodes) node.__ibCtl = own;
+      // the one shape whose scope nothing could be found from. A root that is
+      // itself a nested composed view already carries its own owner, set
+      // when it drew — stamping this view's scope over it would draw the child
+      // against the wrong owner, so it is left as it is.
+      for (const node of dom.childNodes) {
+        if (node.__ibOwner === undefined) node.__ibOwner = own;
+      }
     }
     // What it takes to draw this view again: saying something to its scope is
     // what asks for that, so the scope is where it is kept.
@@ -149,7 +154,7 @@ export function render(vnode, controller = {}, ns = null) {
     // either way, so a bound *prop* it hands a child (which is worked out at
     // draw time, not written to the DOM) is redone when its scope changes. Its
     // roots are captured now, before the fragment is inserted and emptied.
-    if (own !== controller && type.redraws) {
+    if (own !== owner && type.redraws) {
       if (dom?.nodeType === Node.ELEMENT_NODE) {
         rememberView(own, {
           fn: type,
@@ -171,9 +176,9 @@ export function render(vnode, controller = {}, ns = null) {
       }
     }
     // `outlet="colours"` on a composed view hands over that view's scope, not
-    // the element it drew: what the page above has to say to it is `show(button)`
+    // the element it drew: what the interface above has to say to it is `show(button)`
     // or `value = 12` — the view's own words — and the element is the view's
-    // business. A view written without a controller hands over its scope just
+    // business. A view written without an owner hands over its scope just
     // the same, so `this.card.value = 12` reaches a `{value}` in a `.ib.xml` that
     // has no class of any kind written for it.
     //
@@ -181,9 +186,9 @@ export function render(vnode, controller = {}, ns = null) {
     // an `outlet` on the root element inside the `.ib.xml`.
     //
     // A function component written by hand has no scope of its own — `own` is
-    // the controller that drew it — and hands over its element, as it always
+    // the owner that drew it — and hands over its element, as it always
     // has.
-    applyRef(props.ref, own !== controller ? own : dom);
+    applyRef(props.ref, own !== owner ? own : dom);
     return dom;
   }
 
@@ -207,6 +212,6 @@ export function render(vnode, controller = {}, ns = null) {
     setAttribute(el, name, value);
   }
   for (const child of children)
-    el.appendChild(render(child, controller, elementNS));
+    el.appendChild(render(child, owner, elementNS));
   return el;
 }

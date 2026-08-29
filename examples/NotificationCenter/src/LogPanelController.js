@@ -34,7 +34,7 @@ export default class LogPanelController {
     // be undone afterwards, and it cannot fire twice however many readings the
     // sliders produce.
     notifications.once(READING_TAKEN, (note) => {
-      this.firstSeen = `${note.info.place} at ${note.info.celsius.toFixed(1)} °C`;
+      this.firstSeen = `${note.info.calcPosition} at ${note.info.celsius.toFixed(1)} °C`;
     });
   }
 
@@ -55,14 +55,14 @@ export default class LogPanelController {
 
     this.undo.push(
       notifications.observe(READING_TAKEN, (note) => {
-        this.write(`${note.name}  ${note.info.place}  ${note.info.celsius.toFixed(1)} °C`);
+        this.write(`${note.name}  ${note.info.calcPosition}  ${note.info.celsius.toFixed(1)} °C`);
       }),
     );
 
     this.undo.push(
       notifications.observe(THRESHOLD_CROSSED, (note) => {
         this.write(
-          `${note.name}  ${note.info.place} is now ${note.info.warm ? "warm" : "cool"}`,
+          `${note.name}  ${note.info.calcPosition} is now ${note.info.warm ? "warm" : "cool"}`,
         );
       }),
     );

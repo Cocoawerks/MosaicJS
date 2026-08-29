@@ -26,7 +26,7 @@ const OBSERVED = Symbol.for("mosaic.observed");
  * the keys that were assigned while they ran.
  *
  * This is about re-entry: a key assigned again from inside a callback for that
- * same key. A controller that settles a value as it redraws does it, and so
+ * same key. An owner that settles a value as it redraws does it, and so
  * does a control that clamps what it was given.
  *
  * It used to be dropped — the second assignment had something new to say and
@@ -177,13 +177,13 @@ function notifiers(target) {
  * The descriptor for `key`, from wherever it is defined — the object itself or
  * anything it inherits from.
  *
- * Asked of the whole chain rather than the object alone, because a controller
+ * Asked of the whole chain rather than the object alone, because an owner
  * is usually a class and a derived value is usually a getter on its prototype.
  * Looking only at own properties found nothing there, so observation took the
  * property for plain state: it read the getter once, kept what came back, and
  * defined an own accessor handing that same answer out for ever. A `{status}`
  * that read `count >= limit` was therefore frozen at whatever it said the first
- * time the page drew — the getter still existed, and was never called again.
+ * time the interface drew — the getter still existed, and was never called again.
  */
 function definedDescriptor(target, key) {
   for (
@@ -219,7 +219,7 @@ export function observe(target, key, run) {
     // Read-only, so there is no assignment to hear about: it is left exactly
     // as it is, and goes on deriving its answer from whatever it reads. A
     // binding on one still comes right, because every binding is re-read
-    // whenever anything else the same controller holds is assigned.
+    // whenever anything else the same owner holds is assigned.
     if (!descriptor.set) return;
     const inner = descriptor.set;
     Object.defineProperty(target, key, {
@@ -230,7 +230,7 @@ export function observe(target, key, run) {
         // — so telling again here is the same assignment announced twice, and
         // everything watching ran twice for it: two redraws for every
         // `button.text = "..."`. A setter that tells nobody — a plain one, or
-        // one on a controller — still needs this, which is why it is asked
+        // one on an owner — still needs this, which is why it is asked
         // rather than assumed either way.
         const before = tally(target, key);
         inner.call(this, value);
@@ -347,10 +347,10 @@ export function recordReads(target, body) {
  * A `{path}` binding watches the property it names, and a getter is never
  * assigned — so naming one put a watch on nothing at all. It came right only
  * because a binding is re-read whenever anything else observed on the same
- * controller is assigned, and on a page where the derived value is the only
+ * owner is assigned, and on an interface where the derived value is the only
  * thing shown there is nothing else: `<Bind source="slider.value"
  * target="amount"/>` feeding a `{formatted}` that reads `amount` left the
- * reading behind the drag until some other part of the page happened to
+ * reading behind the drag until some other part of the interface happened to
  * change.
  *
  * So the getter is run once against a recording proxy and what it read is
@@ -364,7 +364,7 @@ export function recordReads(target, body) {
  * is picked up the next time the binding is registered, which is every time
  * the node it belongs to is drawn again.
  *
- * @param {object} target The controller.
+ * @param {object} target The owner.
  * @param {string} key The property named by a binding.
  * @returns {string[]} The target's own state that a getter read, or nothing at
  *   all for a property that is not one.
@@ -399,7 +399,7 @@ export function derivedKeys(target, key) {
  * not state either, and says so by being non-enumerable: see internal.js for
  * why that rather than a list of names.
  *
- * @param {object} target The component or controller that was drawn.
+ * @param {object} target The component or owner that was drawn.
  * @param {Iterable<string>} reads What the drawing read.
  * @returns {string[]} Which of those to watch.
  */
@@ -409,7 +409,7 @@ export function stateKeys(target, reads) {
     const descriptor = Object.getOwnPropertyDescriptor(target, key);
     if (!descriptor) continue;
     if (!("value" in descriptor)) continue;
-    // The runtime's own — `view.nodes`, `controller.view`. Observing one would
+    // The runtime's own — `view.nodes`, `owner.view`. Observing one would
     // mean a draw scheduling its own redraw.
     if (!descriptor.enumerable) continue;
     if (typeof descriptor.value === "function") continue;

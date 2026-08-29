@@ -106,7 +106,7 @@ test("css imports are found through source map markers", () => {
 });
 
 test("a sheet is keyed by itself and by the scope it was given", () => {
-  // `addStyles` injects a key once per page, so the key has to say which sheet
+  // `addStyles` injects a key once per interface, so the key has to say which sheet
   // *and* whose scope it is. One sheet imported by two modules is two sheets by
   // then — the same rules scoped to each — and a module importing two sheets
   // needs both. Keying by either alone drops one of them: it dropped

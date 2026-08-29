@@ -11,7 +11,7 @@ const { mount, h, Component, bind, bindTwoWay, canPush, refresh } =
 const { Button, CheckBox, Color, ColorWell, ListView, Slider, SplitView, TextField } =
   await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
-/** Mount a control, as a page would. */
+/** Mount a control, as an interface would. */
 function control(Type, props = {}) {
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -277,7 +277,7 @@ test("canPush reads a path too", () => {
 
 // --- the <Bind> tag ----------------------------------------------------------
 //
-// A Bind reads its paths from the page's controller, which it finds by walking
+// A Bind reads its paths from the interface's controller, which it finds by walking
 // up from where it stands: a compiled `.ib.xml` tags the element it drew with the
 // scope it drew against. Mounted here the same way, with a host that carries
 // one.
@@ -285,15 +285,15 @@ test("canPush reads a path too", () => {
 const { Bind } =
   await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
-/** A page's element, tagged with its controller as a compiled `.ib.xml` is. */
-function page(controller) {
+/** An interface's element, tagged with its controller as a compiled `.ib.xml` is. */
+function mib(controller) {
   const el = document.createElement("div");
-  el.__ibCtl = controller;
+  el.__ibOwner = controller;
   document.body.appendChild(el);
   return el;
 }
 
-/** Place a `<Bind/>` in that page, as the markup would. */
+/** Place a `<Bind/>` in that interface, as the markup would. */
 function placeBind(el, props) {
   const host = document.createElement("div");
   el.appendChild(host);
@@ -302,7 +302,7 @@ function placeBind(el, props) {
 
 test("a Bind tag joins two paths and draws nothing", () => {
   const controller = { slider: { value: 40 }, label: { value: "" } };
-  const el = page(controller);
+  const el = mib(controller);
 
   const placed = placeBind(el, {
     source: "slider.value",
@@ -313,13 +313,13 @@ test("a Bind tag joins two paths and draws nothing", () => {
   controller.slider.value = 70;
   assert.equal(controller.label.value, 70);
 
-  // Nothing on the page: a binding is not a thing to look at.
+  // Nothing on the interface: a binding is not a thing to look at.
   assert.equal(placed.view.node.nodeType, 8, "a comment, standing for nothing");
 });
 
 test("and reaches the controller's own properties by name", () => {
   const controller = { slider: { value: 5 }, volume: 0 };
-  const el = page(controller);
+  const el = mib(controller);
 
   placeBind(el, { source: "slider.value", target: "volume" });
   controller.slider.value = 12;
@@ -328,7 +328,7 @@ test("and reaches the controller's own properties by name", () => {
 
 test("`twoway` makes it two-way", () => {
   const controller = { slider: { value: 40 }, spin: { value: 0 } };
-  const el = page(controller);
+  const el = mib(controller);
 
   placeBind(el, {
     source: "slider.value",
@@ -341,9 +341,9 @@ test("`twoway` makes it two-way", () => {
   assert.equal(controller.slider.value, 15, "and the target pushes back");
 });
 
-test("a Bind that leaves the page takes its binding with it", () => {
+test("a Bind that leaves the interface takes its binding with it", () => {
   const controller = { a: { value: 1 }, b: { value: 0 } };
-  const el = page(controller);
+  const el = mib(controller);
 
   const placed = placeBind(el, { source: "a.value", target: "b.value" });
   controller.a.value = 2;
@@ -365,7 +365,7 @@ test("a Bind outside anything with a controller says so", () => {
 });
 
 test("and one missing half of the join says that too", () => {
-  const el = page({ a: { value: 1 } });
+  const el = mib({ a: { value: 1 } });
   assert.throws(
     () => placeBind(el, { source: "a.value" }),
     /needs both a source and a target/,
@@ -373,25 +373,25 @@ test("and one missing half of the join says that too", () => {
 });
 
 test("a Bind written beside the markup it joins, not inside it", () => {
-  // A page's roots all belong to that page, so a `<Bind/>` written after the
+  // An interface's roots all belong to that interface, so a `<Bind/>` written after the
   // markup rather than within it must still find the controller by looking
   // upward. Only the first root used to carry the scope, so this — the way the
   // tags read best — was the one shape that could not find it.
   const controller = { a: { value: 1 }, b: { value: 0 } };
 
-  function Page() {
+  function Mib() {
     return [
       h("div", { class: "content" }),
       h(Bind, { source: "a.value", target: "b.value" }),
     ];
   }
-  Page.controller = function () {
+  Mib.controller = function () {
     return controller;
   };
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  mount(Page, host);
+  mount(Mib, host);
 
   assert.equal(controller.b.value, 1, "joined from a second root");
   controller.a.value = 4;
@@ -399,7 +399,7 @@ test("a Bind written beside the markup it joins, not inside it", () => {
 });
 
 test("and inside a component, whose controller serves as well", () => {
-  // A page written as a class rather than as markup has a controller too.
+  // An interface written as a class rather than as markup has a controller too.
   const controller = { a: { value: 3 }, b: { value: 0 } };
 
   class Panel extends Component {
@@ -423,19 +423,19 @@ test("a path that is not ready yet is waited for, not refused", () => {
   // of the path is watched instead, and the join made when it turns up.
   const controller = { b: { value: 0 } };
 
-  function Page() {
+  function Mib() {
     return [
       h(Bind, { source: "a.value", target: "b.value" }),
       h(Bind, { source: "a.other", target: "b.other" }),
     ];
   }
-  Page.controller = function () {
+  Mib.controller = function () {
     return controller;
   };
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  mount(Page, host);
+  mount(Mib, host);
 
   assert.equal(controller.b.value, 0, "nothing to join to yet, and no error");
 
@@ -450,23 +450,23 @@ test("a path that is not ready yet is waited for, not refused", () => {
 
 test("a path that never leads anywhere says so once, and keeps watching", () => {
   // Said rather than thrown: a binding that did not happen is not worth taking
-  // an application down for, and a page that threw here would take one down on
+  // an application down for, and an interface that threw here would take one down on
   // load.
   const controller = { combo2: { value: 1 }, label: { value: 0 } };
   const said = [];
   const wasError = console.error;
   console.error = (...args) => said.push(args.join(" "));
 
-  function Page() {
+  function Mib() {
     return h(Bind, { source: "combo1.value", target: "label.value" });
   }
-  Page.controller = function () {
+  Mib.controller = function () {
     return controller;
   };
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  mount(Page, host);
+  mount(Mib, host);
 
   return new Promise((resolve) => setTimeout(resolve, 5)).then(() => {
     console.error = wasError;
@@ -502,7 +502,7 @@ test("a control changing its own value tells what is bound to it", () => {
 //
 // A path is read against the scope of the `.ib.xml` the tag is written in, and
 // that scope alone. A `.ib.xml` and its controller are one namespace — outlets are
-// assigned onto the controller — so a path reaches the page's own state and the
+// assigned onto the controller — so a path reaches the interface's own state and the
 // controls it placed by the same names. It reaches nothing else: a composed
 // `.ib.xml` keeps a scope of its own, and is named through the outlet it was
 // placed under.
@@ -523,24 +523,24 @@ test("a path is read against the scope the tag is written in", () => {
     return inner;
   };
 
-  function Page() {
+  function Mib() {
     return h("div", {}, h(Panel, {}));
   }
-  Page.controller = function () {
+  Mib.controller = function () {
     return outer;
   };
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  mount(Page, host);
+  mount(Mib, host);
 
   assert.equal(inner.tally, "inner", "the scope it was written in");
   assert.equal(outer.tally, "outer", "and not the one above it");
 });
 
-test("a page names a composed view's control through the outlet it placed", () => {
+test("an interface names a composed view's control through the outlet it placed", () => {
   const inner = { combo: { value: "Red" } };
-  const page = { chosen: "" };
+  const mib = { chosen: "" };
 
   function Panel() {
     return h("div", { class: "panel" });
@@ -549,33 +549,33 @@ test("a page names a composed view's control through the outlet it placed", () =
     return inner;
   };
 
-  function Page() {
+  function Mib() {
     return [
-      h("div", {}, h(Panel, { ref: (view) => (page.mydialog = view) })),
+      h("div", {}, h(Panel, { ref: (view) => (mib.mydialog = view) })),
       h(Bind, { source: "mydialog.combo.value", target: "chosen" }),
     ];
   }
-  Page.controller = function () {
-    return page;
+  Mib.controller = function () {
+    return mib;
   };
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  mount(Page, host);
+  mount(Mib, host);
 
-  assert.equal(page.chosen, "Red", "reached through the outlet");
+  assert.equal(mib.chosen, "Red", "reached through the outlet");
   inner.combo.value = "Blue";
-  assert.equal(page.chosen, "Blue", "and stays joined");
+  assert.equal(mib.chosen, "Blue", "and stays joined");
 });
 
 test("a Bind survives being drawn again", () => {
   // A Bind draws nothing, and drawing nothing twice is not a change. The
   // patcher used to take it for one: it put a fresh comment where the Bind's
   // was and released the component along with the old node, which undid the
-  // binding. Nothing said so — the tag was still in the markup and the page
+  // binding. Nothing said so — the tag was still in the markup and the interface
   // had simply stopped following anything.
   const controller = { slider: { value: 40 }, label: { value: "" } };
-  const el = page(controller);
+  const el = mib(controller);
 
   const placed = placeBind(el, {
     source: "slider.value",
@@ -586,32 +586,32 @@ test("a Bind survives being drawn again", () => {
   placed.view.needsDisplay();
 
   assert.equal(placed.view.node, node, "the same comment stands for it");
-  assert.equal(placed.view.isAttached, true, "and it is still on the page");
+  assert.equal(placed.view.isAttached, true, "and it is still on the interface");
 
   controller.slider.value = 70;
   assert.equal(controller.label.value, 70, "still joined");
 });
 
-test("and survives the redraw of the page it is written in", () => {
-  // The way that happens for real: a page with a bound prop redraws, hands
+test("and survives the redraw of the interface it is written in", () => {
+  // The way that happens for real: an interface with a bound prop redraws, hands
   // every child its props again, and each Bind among them is asked to draw.
   const controller = { field: { value: "one" }, tally: "", ready: false };
 
-  function Page() {
+  function Mib() {
     return h(
       "div",
-      { class: "page" },
+      { class: "mib" },
       h("span", null, String(this.ready)),
       h(Bind, { source: "field.value", target: "tally" }),
     );
   }
-  Page.controller = function () {
+  Mib.controller = function () {
     return controller;
   };
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const view = mount(Page, host).view;
+  const view = mount(Mib, host).view;
 
   assert.equal(controller.tally, "one", "joined to begin with");
 
@@ -660,7 +660,7 @@ test("and so does one moved through its own setValue", () => {
 });
 
 // The same shape as the slider, in the other controls that keep what they are
-// worth somewhere other than the property a page binds. Each of these follows
+// worth somewhere other than the property an interface binds. Each of these follows
 // the value being changed the way the user changes it, not the way code does —
 // assigning the property has always worked, because that is the assignment
 // observation wraps.

@@ -237,8 +237,8 @@ test("a component's name stands for the class it wears", () => {
   //
   // And naming one moves the anchor to the front: the combo box drew its own
   // root and gave it its own hash, so a rule cannot ask that root to carry
-  // this page's. Anchored at `.mydialog` the rule still reaches nothing this
-  // page did not place.
+  // this interface's. Anchored at `.mydialog` the rule still reaches nothing this
+  // interface did not place.
   expect(
     scope(".mydialog ComboBox{width:160px}", ".h", null, { component: wears }),
   ).toBe(".mydialog.h .v-ComboBox{width:160px}");

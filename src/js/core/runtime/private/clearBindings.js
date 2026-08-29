@@ -1,6 +1,6 @@
-// Dropping a controller's bindings when the nodes holding them go away.
+// Dropping an owner's bindings when the nodes holding them go away.
 import { resetBindings } from "./bindings.js";
 
-export function clearBindings(controller) {
-  if (controller) resetBindings(controller);
+export function clearBindings(owner) {
+  if (owner) resetBindings(owner);
 }

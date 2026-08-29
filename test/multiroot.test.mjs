@@ -93,7 +93,7 @@ test("a component under a multi-root drawing keeps its instance and its state", 
     }
   }
 
-  class Page extends Component {
+  class Mib extends Component {
     constructor(props) {
       super(props);
       this.heading = "first";
@@ -104,20 +104,20 @@ test("a component under a multi-root drawing keeps its instance and its state", 
   }
 
   const root = document.createElement("div");
-  const page = mount(Page, root).view;
+  const mib = mount(Mib, root).view;
 
-  const tally = page.nodes[1].__ibView;
+  const tally = mib.nodes[1].__ibView;
   assert.equal(built, 1);
 
   tally.count = 7;
-  assert.equal(page.nodes[1].textContent, "7");
+  assert.equal(mib.nodes[1].textContent, "7");
 
-  // A redraw of the page above it, which has nothing to do with the child.
-  page.heading = "second";
+  // A redraw of the interface above it, which has nothing to do with the child.
+  mib.heading = "second";
 
   assert.equal(built, 1, "the child was constructed again");
-  assert.equal(page.nodes[1].__ibView, tally);
-  assert.equal(page.nodes[1].textContent, "7", "the child lost its state");
+  assert.equal(mib.nodes[1].__ibView, tally);
+  assert.equal(mib.nodes[1].textContent, "7", "the child lost its state");
 });
 
 test("roots gained and lost are added and removed in place", () => {

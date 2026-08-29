@@ -25,45 +25,45 @@ import { derivedKeys, observe } from "./observe.js";
  * the value itself, so a number stays a number and an object stays an object;
  * anything with text around it is that text with the values in it.
  */
-export function bindProp(controller, parts) {
+export function bindProp(owner, parts) {
   // A literal piece is a plain string and a bound one is `{path}`, which is
   // the shape `attrValue` reads too. A `{MESSAGES.Key}` piece carries a key
-  // instead, and there is nothing on the controller to watch for it: what a
-  // message says changes with the locale, and that is not this controller's
+  // instead, and there is nothing on the owner to watch for it: what a
+  // message says changes with the locale, and that is not this owner's
   // business — see `MESSAGES._retranslate`.
   for (const part of parts) {
     if (typeof part === "string") continue;
     if (part.key !== undefined) {
-      MESSAGES._redrawOnLocaleChange(controller);
+      MESSAGES._redrawOnLocaleChange(owner);
       continue;
     }
     const head = part.path.split(".")[0];
     // What a derived value derives from, as `track` watches it for a binding
     // in the markup: a getter is never assigned, so watching it alone watches
     // nothing. Asked before the property is observed — see the same call there.
-    for (const key of derivedKeys(controller, head)) {
+    for (const key of derivedKeys(owner, head)) {
       // A prop cannot be written back into a node the way text and attributes
       // can: what a Button does with `text` is the Button's own. So this
       // property is one the view has to be drawn again for, and it says so
-      // rather than every property on the controller being treated that way.
-      needsRedrawFor(controller, key);
-      observe(controller, key, notifierFor(controller, key));
+      // rather than every property on the owner being treated that way.
+      needsRedrawFor(owner, key);
+      observe(owner, key, notifierFor(owner, key));
     }
-    needsRedrawFor(controller, head);
-    observe(controller, head, notifierFor(controller, head));
+    needsRedrawFor(owner, head);
+    observe(owner, head, notifierFor(owner, head));
   }
 
   if (parts.length === 1 && typeof parts[0] !== "string") {
     const only = parts[0];
     return only.key !== undefined
       ? MESSAGES.get(only.key)
-      : readPath(controller, only.path);
+      : readPath(owner, only.path);
   }
   return parts
     .map((part) => {
       if (typeof part === "string") return part;
       if (part.key !== undefined) return MESSAGES.get(part.key);
-      return display(readPath(controller, part.path));
+      return display(readPath(owner, part.path));
     })
     .join("");
 }

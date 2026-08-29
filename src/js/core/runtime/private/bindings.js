@@ -1,5 +1,5 @@
 // The registry behind `{path}` bindings: where they are recorded, how a path is
-// read off a controller, and how assigning to one gets back to the DOM.
+// read off an owner, and how assigning to one gets back to the DOM.
 
 import { MESSAGES } from "../Messages.js";
 import { refresh } from "./refresh.js";
@@ -7,7 +7,7 @@ import { derivedKeys, observe } from "./observe.js";
 import { setAttribute } from "./props.js";
 
 /**
- * Where a controller's live bindings are recorded (non-enumerable).
+ * Where an owner's live bindings are recorded (non-enumerable).
  * Registered globally so every module names the same symbol.
  */
 export const BINDINGS = Symbol.for("mosaic.bindings");
@@ -17,11 +17,11 @@ export const BINDINGS = Symbol.for("mosaic.bindings");
  * Set<entry>>`.
  *
  * What it is for is telling one assignment from another. Every observed
- * property used to share a single callback — `() => refresh(controller)` — and
- * refresh re-reads *every* binding the controller has. So a page showing eight
+ * property used to share a single callback — `() => refresh(owner)` — and
+ * refresh re-reads *every* binding the owner has. So an interface showing eight
  * hundred values did eight hundred reads and eight hundred DOM comparisons each
  * time any one of them was assigned, and the cost of changing a name grew with
- * how much else happened to be on the page. Measured, it was linear: 1.8µs per
+ * how much else happened to be on the interface. Measured, it was linear: 1.8µs per
  * assignment at ten bindings and 91µs at eight hundred.
  *
  * With this, `count` reaches the nodes that read `count`.
@@ -45,62 +45,62 @@ const BY_KEY = Symbol.for("mosaic.bindingsByKey");
  */
 const VIEW_KEYS = Symbol.for("mosaic.bindingsViewKeys");
 
-/** The `Map<key, Set<entry>>` for `controller`, made if it has none. */
-function indexFor(controller) {
-  if (!Object.prototype.hasOwnProperty.call(controller, BY_KEY)) {
-    Object.defineProperty(controller, BY_KEY, {
+/** The `Map<key, Set<entry>>` for `owner`, made if it has none. */
+function indexFor(owner) {
+  if (!Object.prototype.hasOwnProperty.call(owner, BY_KEY)) {
+    Object.defineProperty(owner, BY_KEY, {
       value: new Map(),
       enumerable: false,
     });
   }
-  return controller[BY_KEY];
+  return owner[BY_KEY];
 }
 
 /**
  * Say that `key` can only be answered by drawing the view again.
  * @internal
  */
-export function needsRedrawFor(controller, key) {
-  if (!Object.prototype.hasOwnProperty.call(controller, VIEW_KEYS)) {
-    Object.defineProperty(controller, VIEW_KEYS, {
+export function needsRedrawFor(owner, key) {
+  if (!Object.prototype.hasOwnProperty.call(owner, VIEW_KEYS)) {
+    Object.defineProperty(owner, VIEW_KEYS, {
       value: new Set(),
       enumerable: false,
     });
   }
-  controller[VIEW_KEYS].add(key);
+  owner[VIEW_KEYS].add(key);
 }
 
 /**
- * Drop every binding a controller holds.
+ * Drop every binding an owner holds.
  *
  * Both registers together: a redraw registers its bindings again, and an index
  * left behind would point at entries whose nodes are gone. The one place that
  * empties them, so the two cannot drift apart.
  */
-export function resetBindings(controller) {
-  if (Object.prototype.hasOwnProperty.call(controller, BINDINGS))
-    controller[BINDINGS].length = 0;
-  if (Object.prototype.hasOwnProperty.call(controller, BY_KEY))
-    controller[BY_KEY].clear();
+export function resetBindings(owner) {
+  if (Object.prototype.hasOwnProperty.call(owner, BINDINGS))
+    owner[BINDINGS].length = 0;
+  if (Object.prototype.hasOwnProperty.call(owner, BY_KEY))
+    owner[BY_KEY].clear();
 }
 
 /**
  * Write one binding's value into the node holding it.
  *
  * The single place that says what bringing a binding up to date means, shared
- * by the whole-controller pass in refresh.js and the per-property one here.
+ * by the whole-owner pass in refresh.js and the per-property one here.
  *
  * @returns {boolean} Whether the node is still in the document. A binding whose
  *   node has gone is dead and its caller drops it.
  */
-export function writeEntry(controller, entry) {
+export function writeEntry(owner, entry) {
   if (!entry.node.isConnected && entry.node.parentNode === null) return false;
 
   if (entry.kind === "text") {
-    const next = display(readPath(controller, entry.path));
+    const next = display(readPath(owner, entry.path));
     if (entry.node.textContent !== next) entry.node.textContent = next;
   } else {
-    const next = attrValue(entry.parts, controller);
+    const next = attrValue(entry.parts, owner);
     if (entry.node.getAttribute(entry.name) !== next) {
       setAttribute(entry.node, entry.name, next);
     }
@@ -108,8 +108,8 @@ export function writeEntry(controller, entry) {
   return true;
 }
 
-export function readPath(controller, path) {
-  let value = controller;
+export function readPath(owner, path) {
+  let value = owner;
   for (const key of path.split(".")) {
     if (value === null || value === undefined) return undefined;
     value = value[key];
@@ -122,7 +122,7 @@ export function display(value) {
   return value === null || value === undefined ? "" : String(value);
 }
 
-export function attrValue(parts, controller) {
+export function attrValue(parts, owner) {
   return parts
     .map((p) => {
       if (typeof p === "string") return p;
@@ -130,13 +130,13 @@ export function attrValue(parts, controller) {
       // controller: `placeholder="{MESSAGES.Search}"`, and the mixed case
       // `title="{MESSAGES.SavedAt} {time}"`.
       if (p.key !== undefined) return MESSAGES.get(p.key);
-      return display(readPath(controller, p.path));
+      return display(readPath(owner, p.path));
     })
     .join("");
 }
 
 /**
- * One notifier per controller *and property*, so observing the same property
+ * One notifier per owner *and property*, so observing the same property
  * twice registers one callback rather than two.
  *
  * `observe` keeps its callbacks in a Set, which only de-duplicates something
@@ -146,7 +146,7 @@ export function attrValue(parts, controller) {
  * time — then run every one of them on the next change. Two thousand redraws
  * was two thousand notifiers and a heap out of memory.
  *
- * Per property rather than per controller, which is what lets one assignment
+ * Per property rather than per owner, which is what lets one assignment
  * reach only what reads it. The memoising is what keeps that safe: the answer
  * for a given property is the same function for ever, so re-tracking on every
  * draw still registers one.
@@ -155,15 +155,15 @@ export function attrValue(parts, controller) {
  */
 const notifiers = new WeakMap();
 
-export function notifierFor(controller, key) {
-  let byKey = notifiers.get(controller);
+export function notifierFor(owner, key) {
+  let byKey = notifiers.get(owner);
   if (!byKey) {
     byKey = new Map();
-    notifiers.set(controller, byKey);
+    notifiers.set(owner, byKey);
   }
   let notify = byKey.get(key);
   if (!notify) {
-    notify = () => refreshKey(controller, key);
+    notify = () => refreshKey(owner, key);
     byKey.set(key, notify);
   }
   return notify;
@@ -174,34 +174,34 @@ export function notifierFor(controller, key) {
  *
  * Two ways, and which one is taken depends on what reads it. A property a bound
  * prop is worked out from can only be answered by running the markup again, so
- * that falls back to the whole-controller pass — see `VIEW_KEYS`. Anything else
+ * that falls back to the whole-owner pass — see `VIEW_KEYS`. Anything else
  * is text and attributes, which are written straight back into the nodes
  * holding them.
  */
-function refreshKey(controller, key) {
-  if (controller[VIEW_KEYS]?.has(key)) {
-    refresh(controller);
+function refreshKey(owner, key) {
+  if (owner[VIEW_KEYS]?.has(key)) {
+    refresh(owner);
     return;
   }
 
-  const entries = controller[BY_KEY]?.get(key);
+  const entries = owner[BY_KEY]?.get(key);
   if (!entries || entries.size === 0) return;
 
   // Copied: writing a value may remove a node, and a dead entry is dropped as
-  // it is found rather than left for the whole-controller pass to compact.
+  // it is found rather than left for the whole-owner pass to compact.
   for (const entry of [...entries]) {
-    if (!writeEntry(controller, entry)) entries.delete(entry);
+    if (!writeEntry(owner, entry)) entries.delete(entry);
   }
 }
 
-export function track(controller, entry) {
-  if (!Object.prototype.hasOwnProperty.call(controller, BINDINGS)) {
-    Object.defineProperty(controller, BINDINGS, {
+export function track(owner, entry) {
+  if (!Object.prototype.hasOwnProperty.call(owner, BINDINGS)) {
+    Object.defineProperty(owner, BINDINGS, {
       value: [],
       enumerable: false,
     });
   }
-  controller[BINDINGS].push(entry);
+  owner[BINDINGS].push(entry);
 
   // Binding to `{count}` is what makes `count` worth watching, so this is where
   // it becomes observable — nothing has to declare it, and a property nobody
@@ -222,14 +222,14 @@ export function track(controller, entry) {
     // property is observed, since observing plain state replaces it with an
     // accessor of the runtime's own — one that derives nothing, and would be
     // walked for its reads for no purpose.
-    for (const key of derivedKeys(controller, head)) keys.add(key);
+    for (const key of derivedKeys(owner, head)) keys.add(key);
 
     keys.add(head);
   }
 
   // Recorded against each of them, so an assignment finds this binding without
   // walking the ones that have nothing to do with it.
-  const index = indexFor(controller);
+  const index = indexFor(owner);
   for (const key of keys) {
     let entries = index.get(key);
     if (!entries) {
@@ -237,11 +237,11 @@ export function track(controller, entry) {
       index.set(key, entries);
     }
     entries.add(entry);
-    observe(controller, key, notifierFor(controller, key));
+    observe(owner, key, notifierFor(owner, key));
   }
 
   // An attribute with a message in it is the messages' business as well as the
-  // controller's: nothing the controller holds changes when the locale does,
+  // owner's: nothing the owner holds changes when the locale does,
   // so it is registered where a locale change can find it. Registered here
   // rather than beside the render, because a patch re-tracks the same
   // attribute and this is the one place both go through.
@@ -249,7 +249,7 @@ export function track(controller, entry) {
     MESSAGES._bind({
       node: entry.node,
       attr: entry.name,
-      render: () => attrValue(entry.parts, controller),
+      render: () => attrValue(entry.parts, owner),
     });
   }
 }

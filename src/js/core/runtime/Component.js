@@ -136,7 +136,7 @@ export class Component {
     /**
      * Holds the properties of the component.
      * Not the `static properties` a component declares — that is the schema, and
-     * what a page sets.
+     * what an interface sets.
      */
     internal(this, "props", coerceProps(props) ?? {});
     internal(this, "controller", this.props.controller ?? this);
@@ -159,7 +159,7 @@ export class Component {
     internal(this, "overrides", {});
     /** Whether `attached()` has been called and `detached()` has not. @private */
     internal(this, "isAttached", false);
-    /** Whether a redraw was asked for before the nodes were on the page. @private */
+    /** Whether a redraw was asked for before the nodes were on the interface. @private */
     internal(this, "redrawWanted", false);
   }
 

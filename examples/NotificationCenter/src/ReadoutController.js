@@ -44,7 +44,7 @@ export default class ReadoutController {
    */
   awakeFromMib() {
     const sender = sensors[this.watch] ?? null;
-    this.title = sender ? `${sender.place} only` : "Every sensor";
+    this.title = sender ? `${sender.calcPosition} only` : "Every sensor";
 
     notifications.addObserver(this, "readingTaken", READING_TAKEN, sender);
     // A second subscription, to a different notification, from the same
@@ -67,7 +67,7 @@ export default class ReadoutController {
   readingTaken(note) {
     this.count++;
     this.value = `${note.info.celsius.toFixed(1)} °C`;
-    this.heard = `${note.info.place} · ${this.count} notification${this.count === 1 ? "" : "s"}`;
+    this.heard = `${note.info.calcPosition} · ${this.count} notification${this.count === 1 ? "" : "s"}`;
   }
 
   /**
@@ -76,6 +76,6 @@ export default class ReadoutController {
    * @param {object} note
    */
   crossed(note) {
-    this.heard = `${note.info.place} went ${note.info.warm ? "warm" : "cool"}`;
+    this.heard = `${note.info.calcPosition} went ${note.info.warm ? "warm" : "cool"}`;
   }
 }

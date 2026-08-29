@@ -736,7 +736,7 @@ function scaffold(name) {
         2,
       ) + "\n",
 
-    [`${SRC}/main.ib.xml`]: `<!-- ${name} — the page.
+    [`${SRC}/main.ib.xml`]: `<!-- ${name} — the interface.
 
      The markup itself has no logic and no JavaScript: everything dynamic is a
      binding to the controller, which is AppController.js beside this file.
@@ -751,13 +751,13 @@ function scaffold(name) {
        outlet="field"            hands the DOM node to controller.field
        <Card limit="3" />           another component; its import is emitted
 
-     A component this page draws is a module of its own — Card.jsx beside this
+     A component this interface draws is a module of its own — Card.jsx beside this
      file — and naming it in the markup is all it takes: the compiler emits the
      import. There is one place a component is written, and one way to find it.
 
      One <style> block, anywhere inside <interface> — it is hoisted out of the
      markup and scoped to this file, so its selectors only ever match this
-     page. Use :global(...) to opt one out. Convention is to put it last.
+     interface. Use :global(...) to opt one out. Convention is to put it last.
 
      Everything the file draws goes inside <interface>, which is the file
      itself rather than anything it draws. One root, so the file is XML an
@@ -767,7 +767,7 @@ function scaffold(name) {
 </interface>
 `,
 
-    [`${SRC}/AppController.js`]: `// The controller behind main.ib.xml: the page's state, the values its {bindings}
+    [`${SRC}/AppController.js`]: `// The controller behind main.ib.xml: the interface's state, the values its {bindings}
 // read, and the methods its actions fire.
 // A controller is a plain object — it extends nothing and the runtime asks
 // nothing of it. Properties are read by name and \`action=\` calls methods.
@@ -780,8 +780,8 @@ export default class AppController {
 
     [`${SRC}/${ENTRY}`]: `// ${name} — the application bootstrap, and the entry mosaic bundles.
 //
-// \`main.ib.xml\` is this module's page: it sits beside this file, so the compiler
-// compiles it and registers it as the application's page — there is nothing to
+// \`main.ib.xml\` is this module's interface: it sits beside this file, so the compiler
+// compiles it and registers it as the application's interface — there is nothing to
 // import and nothing to name. The runtime is vendored into the build as a
 // package, so it is imported by name.
 import { MosaicApplication } from "mosaic";
@@ -791,16 +791,16 @@ import AppController from "./AppController.js";
 new MosaicApplication({ id: "app", controller: new AppController() });
 `,
 
-    [`${SRC}/${BUN_DIR}/services/greeting.js`]: `// ${name} — a service: something the page can call that runs outside it.
+    [`${SRC}/${BUN_DIR}/services/greeting.js`]: `// ${name} — a service: something the interface can call that runs outside it.
 //
 // This directory is \`${BUN_DIR}/services/\` by convention. The compiler skips
 // \`${BUN_DIR}/\` entirely, because none of it is browser code and none of it
-// belongs in the page's bundle.
+// belongs in the interface's bundle.
 // A service is a plain module. It knows nothing about rpc, nothing about the
 // desktop, and nothing about how it is reached — which is what lets the same
 // file answer over the desktop bridge under \`mosaic desktop\` and over HTTP
 // under \`mosaic web\`. The file name is the group: this is \`greeting\`, so
-// the page calls \`greeting.hello(...)\`.
+// the interface calls \`greeting.hello(...)\`.
 // The default export is the group: every function on it is callable, arguments
 // and return values make the trip as JSON, and an async function is awaited
 // before its answer is sent.
@@ -2264,20 +2264,34 @@ async function writeBundle(outputs, app) {
   const dir = path.dirname(app.outfile);
   fs.mkdirSync(dir, { recursive: true });
 
+  const mapName = `${path.basename(app.outfile)}.map`;
   let wroteBundle = false;
   for (const output of outputs) {
     const name =
       output.kind === "entry-point"
         ? path.basename(app.outfile)
         : output.kind === "sourcemap"
-          ? `${path.basename(app.outfile)}.map`
+          ? mapName
           : path.basename(output.path);
+
+    // Bun names the map after the entry (`main.js.map`) and embeds that name in
+    // the bundle's `sourceMappingURL` comment. The entry-point file is renamed
+    // to `app.js` here, so the comment has to be repointed to the renamed map
+    // (`app.js.map`) or the browser fetches a map that doesn't match the bundle.
+    if (output.kind === "entry-point") {
+      const code = (await output.text()).replace(
+        /(\/\/# sourceMappingURL=)\S+/,
+        `$1${mapName}`,
+      );
+      fs.writeFileSync(path.join(dir, name), code);
+      wroteBundle = true;
+      continue;
+    }
 
     fs.writeFileSync(
       path.join(dir, name),
       Buffer.from(await output.arrayBuffer()),
     );
-    if (output.kind === "entry-point") wroteBundle = true;
   }
 
   if (!wroteBundle || !fs.existsSync(app.outfile)) {

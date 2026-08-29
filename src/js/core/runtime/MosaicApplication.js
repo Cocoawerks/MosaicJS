@@ -8,39 +8,38 @@ import { mount } from "./private/mount.js";
  *   new MosaicApplication({ id: "app" });          // ...into #app
  *   new MosaicApplication({ controller: new AppController() });
  *
- * The page is found for you. A `main.js` beside a `main.ib.xml` is the application
- * entry, so the compiler registers the compiled page as `MosaicApplication.page`
- * — nothing has to name it. Pass `component` to mount something else.
+ * The interface is found for you. A `main.js` beside a `main.ib.xml` is the
+ * application entry, so the compiler registers the compiled interface as
+ * `MosaicApplication.mainMib` — nothing has to name it. Pass `component` to
+ * mount something else.
  *
  * Everything it mounts is something the entry already imported, so the whole
- * application is in the bundle and nothing is fetched at run time: the page is
- * in hand before the first line of application code runs, and mounting is
- * synchronous. `ready` and `run()` remain, so code that awaits them still
- * reads the same — there is simply nothing left to wait for.
+ * application is in the bundle and nothing is fetched at run time: the interface
+ * is in hand before the first line of application code runs, and mounting is
+ * synchronous. `ready` remains, so code that awaits it still reads the same —
+ * there is simply nothing left to wait for.
  */
 export class MosaicApplication {
   /**
-   * The application's page, registered by the compiled entry. Set at import
-   * time, before any application code runs, so `new MosaicApplication()` has
-   * it without a path to resolve or a module to fetch.
+   * The application's main interface — the compiled `main.ib.xml` (Mib).
    */
-  static page = null;
+  static mainMib = null;
 
-  /** Called by compiled code: `main.ib.xml` is the page of the app it belongs to. */
-  static registerPage(component) {
-    MosaicApplication.page = component;
+  /** Called by compiled code: `main.ib.xml` is the interface of the app it belongs to. */
+  static registerMib(component) {
+    MosaicApplication.mainMib = component;
   }
 
   constructor(props = {}) {
     const { id, target, component, controller, ...rest } = props;
 
     // Left unset rather than defaulted to an empty object: `mount` reads
-    // "nothing was said" as "use the controller the page was compiled with",
-    // and an empty object is something said. A `main.ib.xml` paired with a
-    // `MainController.js` beside it was therefore mounted against a bare
-    // object at the application root, while the same page placed as a tag got
-    // its controller — the pairing worked everywhere but the one place a page
-    // is usually used.
+    // "nothing was said" as "use the controller the interface was compiled
+    // with", and an empty object is something said. A `main.ib.xml` paired with
+    // a `MainController.js` beside it was therefore mounted against a bare
+    // object at the application root, while the same interface placed as a tag
+    // got its controller — the pairing worked everywhere but the one place an
+    // interface is usually used.
     this.controller = controller ?? null;
     this.props = rest;
     this.target = resolveTarget(id, target);
@@ -50,16 +49,10 @@ export class MosaicApplication {
     this.ready = Promise.resolve(this.#start(component));
   }
 
-  /** Construct and await in one step: `const app = await MosaicApplication.run()`. */
-  static run(props) {
-    const app = new MosaicApplication(props);
-    return app.ready.then(() => app);
-  }
-
   #start(component) {
-    // An explicit component wins; otherwise it is the page the compiled entry
-    // registered when it was imported.
-    const Component = component ?? MosaicApplication.page;
+    // An explicit component wins; otherwise it is the interface the compiled
+    // entry registered when it was imported.
+    const Component = component ?? MosaicApplication.mainMib;
     if (typeof Component !== "function") {
       throw new Error(
         "MosaicApplication has no root component to mount. A `main.js` beside a " +
@@ -73,7 +66,7 @@ export class MosaicApplication {
       this.props,
       this.controller ?? undefined,
     );
-    // Whatever it ended up drawing against, which is the page's own when
+    // Whatever it ended up drawing against, which is the interface's own when
     // nothing was passed.
     this.controller = this.unmount.view?.controller ?? this.controller ?? {};
     this.view = this.controller.view;

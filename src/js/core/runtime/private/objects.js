@@ -2,11 +2,11 @@
 // markup.
 //
 // A `.ib.xml` has always been able to place a component — something with a
-// `draw()`, which becomes part of the page. Plenty of what a page is made of
+// `draw()`, which becomes part of the interface. Plenty of what an interface is made of
 // is not that. A formatter, a validator, a document, the thing that fetches
-// the rows a list shows: objects a controller would otherwise build by hand in
-// `awakeFromMib()`, which puts half of what the page is made of somewhere the
-// page does not show it.
+// the rows a list shows: objects an owner would otherwise build by hand in
+// `awakeFromMib()`, which puts half of what the interface is made of somewhere the
+// interface does not show it.
 //
 //   <NumberFormatter outlet="money" style="currency" currency="GBP"/>
 //   <SensorFeed outlet="feed" url="/api/live"/>
@@ -17,9 +17,9 @@
 // beside the markup, or anywhere the build can see — and what it exports
 // decides what happens to it:
 //
-//   a class with `draw()`   a component, drawn into the page, as before
+//   a class with `draw()`   a component, drawn into the interface, as before
 //   any other class         constructed here, and *not* drawn
-//   an object               taken as it is — a singleton the page reaches
+//   an object               taken as it is — a singleton the interface reaches
 //   a function              a component function, as before
 //
 // A function is the one thing that cannot be told apart: a plain function is
@@ -29,13 +29,13 @@
 // What the tag says is put on the object — twice over, in the sense that the
 // constructor is handed the props as well, so a class that wants them at
 // construction has them and one that would rather have properties assigned
-// gets that too. What the page assigns later — through the outlet, through a
+// gets that too. What the interface assigns later — through the outlet, through a
 // `<Bind/>` — is what wins after that, exactly as it is for a composed view.
 //
 // An object tag draws nothing. It leaves behind a comment naming what it is,
 // which is somewhere for the runtime to stand: the outlet points at the
 // object, but the *node* is what tells the runtime the tag is on screen and
-// what to take down when the page goes. Children of an object tag are not
+// what to take down when the interface goes. Children of an object tag are not
 // rendered — there is nothing to render them into.
 import { isComponentClass } from "./draw.js";
 import { applyProps } from "./scope.js";
@@ -56,7 +56,7 @@ function isClass(type) {
  * Is `type` a tag that names an object rather than a view?
  *
  * A component class is not one, however it is written: `draw()` is what says
- * "this belongs on the page", and it is asked first so a component whose
+ * "this belongs on the interface", and it is asked first so a component whose
  * class this would otherwise claim keeps its meaning.
  *
  * @param {*} type what the tag resolved to
@@ -76,7 +76,7 @@ export function isObjectTag(type) {
  *
  * A tag naming an object rather than a class places the same object every
  * time — a service, a store, something there is deliberately one of. Nothing
- * is copied, so two pages naming it share it, which is the point of writing it
+ * is copied, so two interfaces naming it share it, which is the point of writing it
  * that way.
  *
  * @param {Function|object} type what the tag resolved to
@@ -95,7 +95,7 @@ export function instantiate(type, props) {
  * placed.
  *
  * Named rather than empty because this is what shows up in the inspector where
- * the tag was written, and "what is this comment" is a fair question of a page
+ * the tag was written, and "what is this comment" is a fair question of an interface
  * that appears to have nothing there.
  *
  * A class knows its own name and an instance can be asked for its class's. A

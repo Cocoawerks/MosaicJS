@@ -14,7 +14,7 @@ import "./dom-shim.mjs";
 // were compiled against.
 //
 // Build first, with the modules kept — a plain compile leaves only the bundle,
-// which is all a page needs, while these tests read what it was built from:
+// which is all an interface needs, while these tests read what it was built from:
 //
 //   mosaic compile examples/Counter_component --keep-modules
 //   mosaic compile examples/Counter_main --keep-modules
@@ -28,7 +28,7 @@ const {
   bindText: bindTextRef,
 } = await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
 const { default: Main } =
-  await import("../examples/Counter_component/build/src/main.ib.js");
+  await import("../examples/Counter_component/build/main.ib.js");
 const { Button } =
   await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 const { addStyles } =
@@ -86,7 +86,7 @@ class CounterView extends Component {
 }
 
 // A plain class — the view is handed to it as `this.view` by mount().
-// The page controller for main.ib.xml: `{title}` reads this.
+// The interface controller for main.ib.xml: `{title}` reads this.
 class PageController {
   constructor(title = "Mosaic") {
     this.title = title;
@@ -229,7 +229,7 @@ test("an outlet on a component hands over the component, not its element", () =>
   // What a controller has to say to a control — `enabled`, `text` — belongs to
   // the component. On a DOM element the node is the thing, and still is.
   const controller = {};
-  const Page = function () {
+  const Mib = function () {
     return h(
       "div",
       { ref: (el) => (this.box = el) },
@@ -237,7 +237,7 @@ test("an outlet on a component hands over the component, not its element", () =>
     );
   };
 
-  mount(Page, document.createElement("div"), {}, controller);
+  mount(Mib, document.createElement("div"), {}, controller);
 
   assert.equal(
     controller.box.tagName,
@@ -304,14 +304,13 @@ class AppController {
   }
 }
 
-// The compiled entry registers its page at import time. Standing in for that
+// The compiled entry registers its interface at import time. Standing in for that
 // here is what lets these tests mount the way an application does — with
 // nothing named and nothing fetched.
-MosaicApplication.registerPage(Main);
+MosaicApplication.registerMib(Main);
 
-test("MosaicApplication mounts the page the compiled entry registered", async () => {
+test("MosaicApplication mounts the interface the compiled entry registered", async () => {
   const app = new MosaicApplication({ controller: { title: "Mosaic" } });
-  await app.ready;
 
   assert.match(
     document.body.innerHTML,
@@ -331,16 +330,16 @@ test("mounting is synchronous — the DOM is there before ready is awaited", () 
   document.body.textContent = "";
 });
 
-test("with no registered page and no component, it says so", () => {
-  const page = MosaicApplication.page;
-  MosaicApplication.page = null;
+test("with no registered interface and no component, it says so", () => {
+  const mib = MosaicApplication.mainMib;
+  MosaicApplication.mainMib = null;
   try {
     assert.throws(
       () => new MosaicApplication({ controller: {} }),
       /no root component to mount/,
     );
   } finally {
-    MosaicApplication.page = page;
+    MosaicApplication.mainMib = mib;
   }
   document.body.textContent = "";
 });
@@ -350,7 +349,7 @@ test("MosaicApplication mounts into the element named by the id prop", async () 
   host.setAttribute("id", "app");
   document.body.appendChild(host);
 
-  const app = await MosaicApplication.run({
+  const app = new MosaicApplication({
     id: "app",
     controller: { title: "x" },
   });
@@ -360,13 +359,13 @@ test("MosaicApplication mounts into the element named by the id prop", async () 
   document.body.textContent = "";
 });
 
-test("component mounts something other than the registered page", async () => {
+test("component mounts something other than the registered interface", async () => {
   const host = document.createElement("div");
   host.setAttribute("id", "app2");
   document.body.appendChild(host);
 
   const controller = { title: "Explicit" };
-  const app = await MosaicApplication.run({
+  const app = new MosaicApplication({
     id: "app2",
     component: Main,
     controller,
@@ -382,33 +381,33 @@ test("a scope belongs to a file", async () => {
   const host = document.createElement("div");
   host.setAttribute("id", "scopes");
   document.body.appendChild(host);
-  await MosaicApplication.run({
+  new MosaicApplication({
     id: "scopes",
     component: Main,
     controller: { title: "x" },
   });
 
-  const page = host.childNodes[0];
+  const mib = host.childNodes[0];
   const counter = host.querySelectorAll("output")[0];
   // The compiler appends the scope class last, which is how a test picks it
   // out now that it is a bare hash with nothing to recognise it by.
   const scopeOf = (el) =>
     (el.getAttribute("class") ?? "").trim().split(/\s+/).pop() || undefined;
 
-  // A scope belongs to a file, and every component is one: the page, the
+  // A scope belongs to a file, and every component is one: the interface, the
   // counter it hosts and the buttons the counter draws are three modules, so
   // no two of them share a scope. What styles an element is the file it was
   // written in — there is no other rule to know.
-  assert.ok(scopeOf(page), "page element is scoped");
+  assert.ok(scopeOf(mib), "mib element is scoped");
   assert.ok(scopeOf(counter), "the counter's markup is scoped");
   assert.notEqual(
     scopeOf(counter),
-    scopeOf(page),
+    scopeOf(mib),
     "another module, another scope",
   );
 
   const button = host.querySelectorAll("button")[0];
-  assert.notEqual(scopeOf(button), scopeOf(page), "and another");
+  assert.notEqual(scopeOf(button), scopeOf(mib), "and another");
   assert.notEqual(scopeOf(button), scopeOf(counter), "and another");
   document.body.textContent = "";
 });
@@ -421,7 +420,7 @@ test("MosaicApplication accepts a component directly, skipping the load", async 
   const Inline = function () {
     return h("p", null, "inline");
   };
-  const app = await MosaicApplication.run({ id: "app3", component: Inline });
+  const app = new MosaicApplication({ id: "app3", component: Inline });
   assert.match(app.target.innerHTML, /inline/);
   document.body.textContent = "";
 });
@@ -480,14 +479,14 @@ test("a drawn view reads props from the markup that rendered it", () => {
   assert.match(root.innerHTML, /class="value high[^"]*"/);
 });
 
-test("a .ib.xml page renders a drawn view as a child component", async () => {
+test("a .ib.xml interface renders a drawn view as a child component", async () => {
   const host = document.createElement("div");
   host.setAttribute("id", "composed");
   document.body.appendChild(host);
 
   // counter/main.ib.xml contains <Counter limit="3"/>; the compiler emitted its
   // import, resolved to wherever Counter compiled.
-  const app = await MosaicApplication.run({
+  const app = new MosaicApplication({
     id: "composed",
     component: Main,
     controller: { title: "Mosaic" },
@@ -497,7 +496,7 @@ test("a .ib.xml page renders a drawn view as a child component", async () => {
   assert.match(host.innerHTML, /<div class="counter[^"]*"/);
   assert.match(host.innerHTML, /<output class="value[^"]*"[^>]*>0<\/output>/);
 
-  // The drawn child redraws itself without touching the page around it.
+  // The drawn child redraws itself without touching the interface around it.
   host.querySelectorAll("button")[1].dispatchEvent({ type: "click" });
   assert.match(host.innerHTML, /<output class="value[^"]*"[^>]*>1<\/output>/);
   assert.match(host.innerHTML, /<h1 class="title[^"]*"[^>]*>Mosaic<\/h1>/);
@@ -527,17 +526,17 @@ test("the bundle is one self-contained module", async () => {
     "nothing loaded at run time",
   );
 
-  const app = await MosaicApplication.run({
+  const app = new MosaicApplication({
     id: "bundled",
     component: Main,
     controller: { title: "Bundled" },
   });
 
-  // Everything came from one file: the page and the drawn child it renders.
+  // Everything came from one file: the interface and the drawn child it renders.
   assert.match(host.innerHTML, /<h1 class="title[^"]*"[^>]*>Bundled<\/h1>/);
   assert.match(host.innerHTML, /<div class="counter[^"]*"/);
 
-  // The shim understands simple selectors only; the page's buttons are the
+  // The shim understands simple selectors only; the interface's buttons are the
   // drawn counter's.
   host.querySelectorAll("button")[1].dispatchEvent({ type: "click" });
   assert.match(host.innerHTML, /<output class="value[^"]*"[^>]*>1<\/output>/);
@@ -1021,16 +1020,16 @@ test("isAttached tracks the component's state", () => {
   assert.equal(unmount.view.isAttached, false);
 });
 
-// --- the same page, drawn by one component ---------------------------------
+// --- the same interface, drawn by one component ---------------------------------
 
-// Counter_main: the page and the controller that drives every part of it.
+// Counter_main: the interface and the controller that drives every part of it.
 // (`AppController` above is a local stand-in used by the mount tests.)
 const { default: ExampleController } =
-  await import("../examples/Counter_main/build/src/AppController.js");
+  await import("../examples/Counter_main/build/AppController.js");
 const { default: AppPage } =
-  await import("../examples/Counter_main/build/src/main.ib.js");
+  await import("../examples/Counter_main/build/main.ib.js");
 
-test("AppController drives the page without a Counter component", () => {
+test("AppController drives the interface without a Counter component", () => {
   const root = document.createElement("div");
   const controller = new ExampleController({ title: "Counter App" });
   mount(AppPage, root, {}, controller);
@@ -1038,7 +1037,7 @@ test("AppController drives the page without a Counter component", () => {
   assert.match(root.innerHTML, /^<div class="app[^"]*"/);
   assert.match(root.innerHTML, /<h1 class="title[^"]*"[^>]*>Counter App<\/h1>/);
   assert.match(root.innerHTML, /<output class="value[^"]*"[^>]*>0<\/output>/);
-  // Two Buttons, and no counter component between them and the page.
+  // Two Buttons, and no counter component between them and the interface.
   assert.equal(root.querySelectorAll("button").length, 2);
 
   const [minus, plus] = root.querySelectorAll("button");
@@ -1062,12 +1061,12 @@ test("its buttons are scoped to Button, its own markup to itself", () => {
   // out now that it is a bare hash with nothing to recognise it by.
   const scopeOf = (el) =>
     (el.getAttribute("class") ?? "").trim().split(/\s+/).pop() || undefined;
-  const page = scopeOf(root.childNodes[0]);
+  const mib = scopeOf(root.childNodes[0]);
   const button = scopeOf(root.querySelectorAll("button")[0]);
 
-  assert.ok(page && button);
-  assert.notEqual(page, button, "Button styles its own markup");
-  assert.equal(scopeOf(root.querySelectorAll("output")[0]), page);
+  assert.ok(mib && button);
+  assert.notEqual(mib, button, "Button styles its own markup");
+  assert.equal(scopeOf(root.querySelectorAll("output")[0]), mib);
 });
 
 test("the controller and a bare object render the same markup", () => {
@@ -1077,7 +1076,7 @@ test("the controller and a bare object render the same markup", () => {
   const b = document.createElement("div");
   mount(AppPage, b, {}, { title: "Mosaic", count: 0, status: "" });
 
-  // Both mount the same page, so the scope is identical either way — the
+  // Both mount the same interface, so the scope is identical either way — the
   // comparison is of what the two controllers made of it.
   const shape = (html) => html.replace(/<p class="hint[^"]*">.*?<\/p>/, "");
   assert.equal(shape(a.innerHTML), shape(b.innerHTML));
@@ -1190,7 +1189,7 @@ test("a control fires as itself, not as the proxy its drawing ran against", () =
   assert.equal(view.self, view, "and unwrapping outside a draw is a no-op");
 });
 
-test("what is assigned to a component before it is on the page is still drawn", () => {
+test("what is assigned to a component before it is on the interface is still drawn", () => {
   // An `outlet` hands a component over while the tree is still being built, so
   // a controller that says something to it straight away is talking to a view
   // whose nodes have nowhere to be yet. The redraw is remembered and done when
@@ -1210,7 +1209,7 @@ test("what is assigned to a component before it is on the page is still drawn", 
   document.body.appendChild(host);
 
   mount(
-    function Page() {
+    function Mib() {
       return h("div", {}, h(Counter, { ref: (view) => (view.count = 7) }));
     },
     host,
@@ -1329,7 +1328,7 @@ test("a keyed row added to the middle builds only itself", () => {
   assert.equal(list.instances()[2], before[1]);
 });
 
-test("emptying a keyed list takes every row off the page", () => {
+test("emptying a keyed list takes every row off the interface", () => {
   const list = keyedList(["a", "b", "c"]);
 
   list.view.rows = [];
@@ -1458,12 +1457,12 @@ test("a composed view draws against a scope of its own", () => {
     seen.push(this);
     return h("span", {}, "child");
   });
-  const controller = { name: "the page" };
-  const Page = view(function () {
+  const controller = { name: "the mib" };
+  const Mib = view(function () {
     return h("div", {}, h(Child, null));
   });
 
-  mount(Page, document.createElement("div"), {}, controller);
+  mount(Mib, document.createElement("div"), {}, controller);
   assert.notEqual(seen[0], controller, "not the controller that drew it");
   assert.equal(seen[0].name, undefined, "and it cannot see that one's state");
 });
@@ -1472,13 +1471,13 @@ test("the tag's attributes are the view's state", () => {
   const Labelled = view(function () {
     return h("p", {}, bindTextRef(this, "label"));
   });
-  const Page = view(function () {
+  const Mib = view(function () {
     return h("div", {}, h(Labelled, { label: "passed in" }));
   });
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  mount(Page, host, {}, {});
+  mount(Mib, host, {}, {});
 
   assert.equal(host.childNodes[0].childNodes[0].textContent, "passed in");
 });
@@ -1487,7 +1486,7 @@ test("a view composed twice is two views", () => {
   const Labelled = view(function () {
     return h("p", {}, bindTextRef(this, "label"));
   });
-  const Page = view(function () {
+  const Mib = view(function () {
     return h(
       "div",
       {},
@@ -1498,7 +1497,7 @@ test("a view composed twice is two views", () => {
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  mount(Page, host, {}, {});
+  mount(Mib, host, {}, {});
 
   assert.deepEqual(
     [...host.childNodes[0].childNodes].map((n) => n.textContent),
@@ -1522,13 +1521,13 @@ test("a view with a controller of its own draws against an instance of it", () =
     return h("p", {}, bindTextRef(this, "label"));
   }, LabelController);
 
-  const Page = view(function () {
+  const Mib = view(function () {
     return h("div", {}, h(Labelled, { label: "hello" }));
   });
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  mount(Page, host, {}, {});
+  mount(Mib, host, {}, {});
 
   assert.ok(built[0] instanceof LabelController);
   // The props reached the controller, so its own methods can use them.
@@ -1542,7 +1541,7 @@ test("a prop that changes reaches the view it was given to", () => {
     return h("p", {}, bindTextRef(this, "label"));
   });
 
-  class Page extends Component {
+  class Mib extends Component {
     constructor() {
       super();
       this.label = "before";
@@ -1554,12 +1553,12 @@ test("a prop that changes reaches the view it was given to", () => {
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const { view: page } = mount(Page, host, {});
+  const { view: mib } = mount(Mib, host, {});
 
   const text = () => host.childNodes[0].childNodes[0].textContent;
   assert.equal(text(), "before");
 
-  page.label = "after";
+  mib.label = "after";
   assert.equal(text(), "after");
 });
 
@@ -1569,11 +1568,11 @@ test("a boolean attribute arrives as a boolean, as it does on a component", () =
     seen.push(this.shown);
     return h("p", {}, "x");
   });
-  const Page = view(function () {
+  const Mib = view(function () {
     return h("div", {}, h(Flagged, { shown: "false" }));
   });
 
-  mount(Page, document.createElement("div"), {}, {});
+  mount(Mib, document.createElement("div"), {}, {});
   assert.equal(seen[0], false);
 });
 
@@ -1602,7 +1601,7 @@ test("an outlet on a composed view hands over its scope, controller or not", () 
   });
 
   const controller = {};
-  const Page = view(function () {
+  const Mib = view(function () {
     return h(
       "div",
       {},
@@ -1611,7 +1610,7 @@ test("an outlet on a composed view hands over its scope, controller or not", () 
     );
   });
 
-  mount(Page, document.createElement("div"), {}, controller);
+  mount(Mib, document.createElement("div"), {}, controller);
   assert.ok(controller.withOne instanceof Own);
   // A view with no class of any kind still hands over something to talk to,
   // carrying what its tag was given.
@@ -1620,19 +1619,19 @@ test("an outlet on a composed view hands over its scope, controller or not", () 
 });
 
 test("a prop set through an outlet reaches the view that holds it", () => {
-  // What makes a `.ib.xml` on its own enough: no class, and the page can still
+  // What makes a `.ib.xml` on its own enough: no class, and the interface can still
   // say `this.card.value = 12` and see it.
   const Card = view(function () {
     return h("p", {}, bindTextRef(this, "value"));
   });
   const controller = {};
-  const Page = view(function () {
+  const Mib = view(function () {
     return h("div", {}, h(Card, { value: "1", ref: (v) => (this.card = v) }));
   });
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  mount(Page, host, {}, controller);
+  mount(Mib, host, {}, controller);
 
   const text = () => host.childNodes[0].childNodes[0].textContent;
   assert.equal(text(), "1");
@@ -1671,13 +1670,13 @@ test("a value reaches a child component's prop, not just a text node", () => {
   });
 
   const controller = {};
-  const Page = view(function () {
+  const Mib = view(function () {
     return h("div", {}, h(Outer, { ref: (v) => (this.outer = v) }));
   });
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  mount(Page, host, {}, controller);
+  mount(Mib, host, {}, controller);
 
   const text = () => host.querySelector("p").textContent;
   const inner = () => host.querySelector("em").textContent;
@@ -1700,13 +1699,13 @@ test("redrawing patches: the nodes that stay are the same nodes", () => {
     );
   });
   const controller = {};
-  const Page = view(function () {
+  const Mib = view(function () {
     return h("div", {}, h(Outer, { ref: (v) => (this.outer = v) }));
   });
 
   const host = document.createElement("div");
   document.body.appendChild(host);
-  mount(Page, host, {}, controller);
+  mount(Mib, host, {}, controller);
 
   const before = {
     root: host.querySelector("div div"),
@@ -1731,11 +1730,11 @@ test("a lone bound prop is the value itself, not a string of it", () => {
     return h("div", {}, h(Child, { count: bindProp(this, [{ path: "n" }]) }));
   });
   const controller = {};
-  const Page = view(function () {
+  const Mib = view(function () {
     return h("div", {}, h(Outer, { ref: (v) => (this.outer = v) }));
   });
 
-  mount(Page, document.createElement("div"), {}, controller);
+  mount(Mib, document.createElement("div"), {}, controller);
   controller.outer.n = 12;
   assert.equal(seen[seen.length - 1], 12, "a number stays a number");
 });
@@ -1754,11 +1753,11 @@ test("text around a bound prop makes it a string", () => {
     );
   });
   const controller = {};
-  const Page = view(function () {
+  const Mib = view(function () {
     return h("div", {}, h(Outer, { ref: (v) => (this.outer = v) }));
   });
 
-  mount(Page, document.createElement("div"), {}, controller);
+  mount(Mib, document.createElement("div"), {}, controller);
   controller.outer.name = "Ada";
   assert.equal(seen[seen.length - 1], "hello Ada");
 });
@@ -1771,11 +1770,11 @@ test("a view redrawn many times registers one notifier, not one per draw", () =>
     return h("div", {}, h(Child, { label: bindProp(this, [{ path: "n" }]) }));
   });
   const controller = {};
-  const Page = view(function () {
+  const Mib = view(function () {
     return h("div", {}, h(Outer, { ref: (v) => (this.outer = v) }));
   });
 
-  mount(Page, document.createElement("div"), {}, controller);
+  mount(Mib, document.createElement("div"), {}, controller);
   for (let i = 0; i < 50; i++) controller.outer.n = i;
   // Nothing to assert but that it is still standing and still right: a
   // notifier per draw would have grown a set of 50 and run 50 redraws for the
@@ -1783,8 +1782,8 @@ test("a view redrawn many times registers one notifier, not one per draw", () =>
   assert.equal(controller.outer.n, 49);
 });
 
-test("a controller a page was mounted with keeps its binding pass", () => {
-  // It has no view function behind it — the page's markup is not its own — so
+test("a controller an interface was mounted with keeps its binding pass", () => {
+  // It has no view function behind it — the interface's markup is not its own — so
   // there is nothing to re-run, and its bindings are pushed to the DOM as they
   // always were.
   const controller = { user: { name: "ada" } };

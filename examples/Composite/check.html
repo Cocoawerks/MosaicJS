@@ -157,9 +157,9 @@
       check(
         "Reading.ib.xml drew twice, each worked out from its own attribute",
         pageReadings.length === 2 &&
-          pageReadings[0].place === "Reykjavík" &&
+          pageReadings[0].calcPosition === "Reykjavík" &&
           pageReadings[0].temp === "4.5 °C" &&
-          pageReadings[1].place === "Kraków" &&
+          pageReadings[1].calcPosition === "Kraków" &&
           pageReadings[1].temp === "18.2 °C",
       );
 
@@ -257,7 +257,7 @@
       );
       check(
         "leaving the page's where it was",
-        readingsIn(app).find((r) => r.place === "Reykjavík").temp === "4.5 °C",
+        readingsIn(app).find((r) => r.calcPosition === "Reykjavík").temp === "4.5 °C",
       );
       check("and the page hears the dialog say so", status().includes("dialog"));
 
@@ -325,7 +325,7 @@
         "the same two views drew inside the popover",
         cardsIn(popover())[0].label === "Waiting" &&
           cardsIn(popover())[0].value === "12" &&
-          readingsIn(popover())[0].place === "Kraków",
+          readingsIn(popover())[0].calcPosition === "Kraków",
       );
       check(
         "which is a third instance again, on its own",

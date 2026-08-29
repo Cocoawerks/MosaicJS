@@ -3,14 +3,14 @@
 // Every observed property on a controller used to share a single callback —
 // `() => refresh(controller)` — which re-reads every binding the controller
 // has. So `{name}` changing re-worked `{total}`, `{status}` and everything else
-// on the page, and the cost of an assignment grew with how much happened to be
+// on the interface, and the cost of an assignment grew with how much happened to be
 // shown beside it. A binding is now recorded against the property it reads, and
 // an assignment reaches those and no further.
 //
 // The exception is a bound prop. `<Button text="{label}"/>` cannot be written
 // back into a node — what a Button does with `text` is the Button's own — so a
 // property that feeds one still draws the view again. That is per property and
-// not per file: a page with one bound prop among fifty text bindings used to
+// not per file: an interface with one bound prop among fifty text bindings used to
 // redraw for all fifty.
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -32,12 +32,12 @@ class Label extends Component {
 }
 
 /**
- * A page as codegen emits one: a text binding on `a`, and a bound prop worked
+ * An interface as codegen emits one: a text binding on `a`, and a bound prop worked
  * out from `b`. `redraws` is what the compiler writes for a file with a bound
  * prop — see codegen.js.
  */
 function mixedPage(counter) {
-  const page = function () {
+  const mib = function () {
     counter.draws += 1;
     return h(
       "div",
@@ -46,9 +46,9 @@ function mixedPage(counter) {
       h(Label, { label: bindProp(this, [{ path: "b" }]) }),
     );
   };
-  page.isMarkup = true;
-  page.redraws = true;
-  return page;
+  mib.isMarkup = true;
+  mib.redraws = true;
+  return mib;
 }
 
 test("a property that only feeds text does not redraw the view", () => {
@@ -92,7 +92,7 @@ test("an assignment reads only the bindings that name the property", () => {
     },
   };
 
-  const page = function () {
+  const mib = function () {
     return h(
       "div",
       null,
@@ -100,10 +100,10 @@ test("an assignment reads only the bindings that name the property", () => {
       h("p", null, bindText(this, "other")),
     );
   };
-  page.isMarkup = true;
+  mib.isMarkup = true;
 
   const root = document.createElement("div");
-  mount(page, root, {}, controller);
+  mount(mib, root, {}, controller);
 
   otherReads = 0;
   controller.shown = "b";
@@ -115,7 +115,7 @@ test("an assignment reads only the bindings that name the property", () => {
 test("a binding on a getter follows the state the getter reads", () => {
   // A getter is never assigned, so watching it watches nothing: the binding is
   // recorded against what the getter read instead. Assigning that has to reach
-  // it, and it is the only thing on the page that can bring it up to date.
+  // it, and it is the only thing on the interface that can bring it up to date.
   const controller = {
     amount: 1250,
     get formatted() {
@@ -123,13 +123,13 @@ test("a binding on a getter follows the state the getter reads", () => {
     },
   };
 
-  const page = function () {
+  const mib = function () {
     return h("p", null, bindText(this, "formatted"));
   };
-  page.isMarkup = true;
+  mib.isMarkup = true;
 
   const root = document.createElement("div");
-  mount(page, root, {}, controller);
+  mount(mib, root, {}, controller);
   assert.equal(root.textContent, "£1250");
 
   controller.amount = 3000;
@@ -139,15 +139,15 @@ test("a binding on a getter follows the state the getter reads", () => {
 test("an attribute made of several properties updates from either", () => {
   const controller = { kind: "warn", size: "big" };
 
-  const page = function () {
+  const mib = function () {
     return h("div", {
       class: bindAttr(this, [{ path: "kind" }, " ", { path: "size" }]),
     });
   };
-  page.isMarkup = true;
+  mib.isMarkup = true;
 
   const root = document.createElement("div");
-  mount(page, root, {}, controller);
+  mount(mib, root, {}, controller);
   assert.equal(root.childNodes[0].getAttribute("class"), "warn big");
 
   controller.kind = "error";
@@ -160,7 +160,7 @@ test("an attribute made of several properties updates from either", () => {
 test("two bindings on one property both come up to date", () => {
   const controller = { name: "one" };
 
-  const page = function () {
+  const mib = function () {
     return h(
       "div",
       null,
@@ -169,10 +169,10 @@ test("two bindings on one property both come up to date", () => {
       h("i", { title: bindAttr(this, [{ path: "name" }]) }),
     );
   };
-  page.isMarkup = true;
+  mib.isMarkup = true;
 
   const root = document.createElement("div");
-  mount(page, root, {}, controller);
+  mount(mib, root, {}, controller);
 
   controller.name = "two";
 

@@ -421,10 +421,10 @@ test("a surface may be the root of a view", () => {
 });
 
 test("and may equally be written in the middle of one", () => {
-  // A `.ib.xml` is a freeze dried object rather than a picture of the page, so
+  // A `.ib.xml` is a freeze dried object rather than a picture of the interface, so
   // where a surface's tag sits says nothing about where the surface ends up:
   // the top layer for a dialog, against its anchor for a popover, pinned to
-  // the window for a drawer. Writing one in place is how a page keeps a dialog
+  // the window for a drawer. Writing one in place is how an interface keeps a dialog
   // beside the thing it is about.
   expect(compile("<div><p>a</p><PopOver/></div>")).toContain("h(PopOver,");
   expect(compile('<div><DialogBox title="x"/></div>')).toContain(
@@ -446,7 +446,7 @@ test("a kind of popover that belongs to a control is nested like anything else",
 
 test("a file with a bound prop says it has to redraw", () => {
   // Only such a file does: a binding on this markup's own text or attributes
-  // is written straight back into the DOM, and a page that never binds a prop
+  // is written straight back into the DOM, and an interface that never binds a prop
   // behaves exactly as it did.
   expect(compile('<div><Card enabled="{on}"/></div>')).toContain(
     "App.redraws = true;",
@@ -505,7 +505,7 @@ test("styleName on a component is kept as a prop, and carries the scope", () => 
   // whatever element the component draws itself as.
   //
   // The scope goes with it either way. Naming a class on a component is how a
-  // page reaches a control it did not draw, and the page's sheet is scoped: a
+  // interface reaches a control it did not draw, and the interface's sheet is scoped: a
   // bare `wide` would be `.wide.<hash>` in the sheet and match nothing.
   const js = compile(
     '<style>.wide{min-width:220px}</style><Button styleName="wide"/>',
@@ -530,7 +530,7 @@ test("an unscoped file gives a component's styleName no scope to carry", () => {
 
 test("a bar goes wherever it is written too", () => {
   // Nothing about where a tag sits is the compiler's to refuse. A bar is still
-  // put on the page by a SnackBarManager rather than by the markup around it,
+  // put on the interface by a SnackBarManager rather than by the markup around it,
   // but that is a thing to know rather than a thing to be stopped from
   // writing.
   expect(
@@ -570,7 +570,7 @@ test("and nothing else is handed one", () => {
 // --- entities ----------------------------------------------------------------
 //
 // A `.ib.xml` file is XML, so the one way to write a `<` in text is to escape
-// it — which a page showing a tag as an example has to do. `createTextNode`
+// it — which an interface showing a tag as an example has to do. `createTextNode`
 // decodes nothing, so a file that was not decoded here showed the escape.
 
 test("the XML predefines are decoded in text", () => {
@@ -590,7 +590,7 @@ test("numeric references too, in decimal and in hex", () => {
 
 test("a `&` that names nothing is left exactly as written", () => {
   // Prose has always been able to say it, and reading one as an error now
-  // would take working pages down for a character they were right to write.
+  // would take working interfaces down for a character they were right to write.
   expect(compile("<p>Fish & Chips</p>")).toContain('"Fish & Chips"');
   expect(compile("<p>&nbsp;stuff</p>")).toContain('"&nbsp;stuff"');
   expect(compile("<p>&#x110000;</p>")).toContain('"&#x110000;"');

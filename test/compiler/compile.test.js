@@ -60,7 +60,7 @@ test("outdir mirrors the input tree", () => {
       outdir: "build/ui",
     }),
   ).toBe("build/ui/button/Button.js");
-  // An .ib.xml gains an `.ib.js` suffix, so a page can sit beside a main.js of its own.
+  // An .ib.xml gains an `.ib.js` suffix, so an interface can sit beside a main.js of its own.
   expect(
     destination("examples/main.ib.xml", { root: "examples", outdir: "build" }),
   ).toBe("build/main.ib.js");
@@ -223,7 +223,7 @@ test("the entry registers its page, so nothing has to name it", () => {
   const code = fs.readFileSync(dest, "utf8");
 
   expect(code).toContain("MosaicApplication.registerPage(Main);");
-  // It has to run before the module's own code, or the constructor sees no page.
+  // It has to run before the module's own code, or the constructor sees no interface.
   expect(code.indexOf("registerPage")).toBeLessThan(
     code.indexOf("new MosaicApplication"),
   );
@@ -231,7 +231,7 @@ test("the entry registers its page, so nothing has to name it", () => {
 
 test("only the entry registers a page", () => {
   // A component and its markup are just that — registering would claim to be
-  // the application's page.
+  // the application's interface.
   const dir = tempDir();
   fs.writeFileSync(path.join(dir, "Card.ib.xml"), "<interface><p>hi</p></interface>\n");
   fs.writeFileSync(path.join(dir, "Card.js"), "export const x = 1;\n");
@@ -305,9 +305,9 @@ test("a parse error names the file and line", () => {
 // every component there is and would carry them all along with it.
 
 /**
- * An application of one page and one controller, compiled with a framework.
+ * An application of one interface and one controller, compiled with a framework.
  *
- * `markup` is what the page holds; the `<interface>` root every .ib.xml is
+ * `markup` is what the interface holds; the `<interface>` root every .ib.xml is
  * wrapped in is added here, so each test states only the markup it is about.
  */
 function application(markup, extra = {}) {
@@ -372,8 +372,8 @@ test("a component of the application's own is imported by path", () => {
   expect(compiled).toContain('import Counter from "./Counter.js"');
 });
 
-// --- a page's own controller -------------------------------------------------
-// `Foo.ib.xml` is paired with the `FooController.js` written beside it: the page is
+// --- an interface's own controller -------------------------------------------------
+// `Foo.ib.xml` is paired with the `FooController.js` written beside it: the interface is
 // drawn against a controller of its own rather than against whatever drew it.
 
 test("a page is paired with the controller written beside it", () => {
@@ -406,7 +406,7 @@ test("the pairing goes by the page's name, not by any controller nearby", () => 
 // an application that lists none cannot reach a component, which is what keeps
 // a build honest about where its components come from.
 
-/** Build an app whose page names `<Button/>`, with `frameworks` as given. */
+/** Build an app whose interface names `<Button/>`, with `frameworks` as given. */
 function withFrameworks(frameworks) {
   const dir = tempDir();
   fs.mkdirSync(path.join(dir, "src"));

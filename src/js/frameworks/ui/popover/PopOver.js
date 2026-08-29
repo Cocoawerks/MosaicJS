@@ -189,7 +189,7 @@ export default class PopOver extends Component {
     this.anchorElement = element;
     this.offset = { left: offsetLeft, top: offsetTop };
     this.setOpen(true);
-    this.place();
+    this.calcPosition();
   }
 
   /** The same, under the name the rest of the framework shows things by. */
@@ -206,7 +206,7 @@ export default class PopOver extends Component {
     // Nothing to fit against, so the side it was told to use is the side.
     this.placedPosition = null;
     this.setOpen(true);
-    this.placeAt(left, top);
+    this.positionAt(left, top);
   }
 
   /** Put it away. */
@@ -251,24 +251,14 @@ export default class PopOver extends Component {
       this.node?.blur?.();
     }
 
-    this.reportOpen(open);
+    this.fireOpen(open);
   }
 
-  /**
-   * Say that it opened, or that it closed — two events rather than one action
-   * carrying a boolean. In markup they are `action="open:method"` and
-   * `action="close:method"` (compiled to `openAction`/`closeAction`); in
-   * JavaScript they are `onOpen` and `onClose`. `action` is left free for what
-   * a popover is *for* — a menu's is the item that was chosen (see Menu, which
-   * overrides this) — rather than being spent on open/close.
-   */
-  reportOpen(open) {
+  fireOpen(open) {
     if (open) {
       this.props.openAction?.(this.self);
-      this.props.onOpen?.(this.self);
     } else {
       this.props.closeAction?.(this.self);
-      this.props.onClose?.(this.self);
     }
   }
 
@@ -367,7 +357,7 @@ export default class PopOver extends Component {
    * was told when neither side fits, since a choice between two bad ones is
    * better made by what asked for it.
    */
-  place() {
+  calcPosition() {
     const node = this.node;
     if (!node || !this.anchorElement) return;
 
@@ -380,11 +370,11 @@ export default class PopOver extends Component {
     const height = node.offsetHeight;
 
     let side = this.position;
-    let at = this.placeOn(side, frame, width, height);
+    let at = this.positionOn(side, frame, width, height);
 
     if (!fits(side, at, width, height)) {
       const other = OPPOSITE[side];
-      const there = this.placeOn(other, frame, width, height);
+      const there = this.positionOn(other, frame, width, height);
       if (other && fits(other, there, width, height)) {
         side = other;
         at = there;
@@ -398,7 +388,7 @@ export default class PopOver extends Component {
       this.needsDisplay();
     }
 
-    const placed = this.keepInWindow(at.left, at.top, width, height);
+    const placed = this.adjustPosition(at.left, at.top, width, height);
     this.writePosition(placed.left, placed.top);
     this.pointCallout(placed, frame);
   }
@@ -407,7 +397,7 @@ export default class PopOver extends Component {
    * Where it would sit on `side`: that side settles one axis, and the
    * orientation's edge lines up the other.
    */
-  placeOn(side, frame, width, height) {
+  positionOn(side, frame, width, height) {
     let left = 0;
     let top = 0;
 
@@ -456,7 +446,7 @@ export default class PopOver extends Component {
   }
 
   /** Put it at a point in the window, nudged clear of it by its orientation. */
-  placeAt(left, top) {
+  positionAt(left, top) {
     const node = this.node;
     if (!node) return;
 
@@ -479,10 +469,9 @@ export default class PopOver extends Component {
   }
 
   /**
-   * `adjustPosition` does in Java.
    * The same box, moved back inside the window if it hung over an edge.
    */
-  keepInWindow(left, top, width, height) {
+  adjustPosition(left, top, width, height) {
     const right = window.innerWidth - left - width;
     if (right < 0) left += right - 6;
     if (left < 0) left = EDGE_MARGIN;

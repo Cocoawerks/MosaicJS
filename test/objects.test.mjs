@@ -1,5 +1,5 @@
 // A tag in a `.ib.xml` that names an object rather than a view: constructed,
-// handed to its outlet, woken when the page is on screen and told when it
+// handed to its outlet, woken when the interface is on screen and told when it
 // goes — and never drawn.
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -9,7 +9,7 @@ import { Component } from "../src/js/core/runtime/Component.js";
 import { h } from "../src/js/core/runtime/private/h.js";
 import { mount } from "../src/js/core/runtime/private/mount.js";
 
-/** An object of the kind a page would place: no drawing anywhere on it. */
+/** An object of the kind an interface would place: no drawing anywhere on it. */
 class Formatter {
   constructor(props) {
     this.built = props;
@@ -25,7 +25,7 @@ function markup(fn) {
   return fn;
 }
 
-/** The first child of the one element the pages below draw. */
+/** The first child of the one element the interfaces below draw. */
 function inside(root) {
   return root.childNodes[0].childNodes[0];
 }
@@ -122,7 +122,7 @@ test("the comment an object tag leaves behind names the class", () => {
   assert.equal(inside(root).data.trim(), "Formatter");
 });
 
-test("an object is woken once the page is on screen, and told when it goes", () => {
+test("an object is woken once the interface is on screen, and told when it goes", () => {
   const seen = [];
   class Feed {
     awakeFromMib() {
@@ -147,7 +147,7 @@ test("an object is woken once the page is on screen, and told when it goes", () 
   assert.deepEqual(seen, ["awake", "gone"]);
 });
 
-test("the object survives the page around it redrawing", () => {
+test("the object survives the interface around it redrawing", () => {
   class Store {
     constructor() {
       this.edits = 0;
@@ -155,7 +155,7 @@ test("the object survives the page around it redrawing", () => {
   }
 
   const placed = [];
-  class Page extends Component {
+  class Mib extends Component {
     static properties = { label: { type: String, default: "one" } };
     draw() {
       return h(
@@ -175,21 +175,21 @@ test("the object survives the page around it redrawing", () => {
 
   const root = document.createElement("div");
   document.body.appendChild(root);
-  const unmount = mount(Page, root, {}, undefined);
-  const page = unmount.view;
+  const unmount = mount(Mib, root, {}, undefined);
+  const mib = unmount.view;
 
-  const first = page.store;
+  const first = mib.store;
   first.edits = 7;
 
-  page.label = "two";
-  page.needsDisplay();
+  mib.label = "two";
+  mib.needsDisplay();
 
   assert.equal(root.textContent, "two");
   // The same object, still holding what it was told, and its outlet pointing
   // at it again.
   assert.ok(placed.length >= 2);
-  assert.equal(page.store, first);
-  assert.equal(page.store.edits, 7);
+  assert.equal(mib.store, first);
+  assert.equal(mib.store.edits, 7);
   // And what the tag now says reached it.
   assert.equal(first.scale, "two");
 });
@@ -203,7 +203,7 @@ test("a different object tag in the same place replaces the one there", () => {
   }
   class Second {}
 
-  class Page extends Component {
+  class Mib extends Component {
     static properties = { second: { type: Boolean, default: false } };
     draw() {
       return h("div", null, this.second ? h(Second, null) : h(First, null));
@@ -212,11 +212,11 @@ test("a different object tag in the same place replaces the one there", () => {
 
   const root = document.createElement("div");
   document.body.appendChild(root);
-  const unmount = mount(Page, root, {}, undefined);
-  const page = unmount.view;
+  const unmount = mount(Mib, root, {}, undefined);
+  const mib = unmount.view;
 
-  page.second = true;
-  page.needsDisplay();
+  mib.second = true;
+  mib.needsDisplay();
 
   assert.deepEqual(gone, ["first"]);
   assert.ok(inside(root).__ibObj instanceof Second);

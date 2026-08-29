@@ -2,8 +2,8 @@
 
 /**
  * Declare a `{path}` text binding. The compiler emits this for `{count}`; the
- * value is read from the controller during render, and again on `refresh`.
+ * value is read from the owner during render, and again on `refresh`.
  */
-export function bindText(controller, path) {
-  return { __ibBind: "text", controller, path };
+export function bindText(owner, path) {
+  return { __ibBind: "text", controller: owner, path };
 }

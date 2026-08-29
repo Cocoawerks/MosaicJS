@@ -132,27 +132,27 @@ function compileIb(src, runtime, stem, dest, opts, file) {
 }
 
 /**
- * The owner written beside a page — the object it draws against. By default
- * `Foo.ib.xml` is paired with a `FooController.js` next to it, and a page with
+ * The owner written beside an interface — the object it draws against. By default
+ * `Foo.ib.xml` is paired with a `FooController.js` next to it, and an interface with
  * no such file has no owner of its own.
  *
  * `<interface owner='./path/to/Thing'>` names the owner instead: a module path,
  * resolved relative to the markup the way a JS import is — a sibling
  * `Controller`, a `../shared/AppOwner`, anywhere the source tree reaches. This
- * frees the owner's name and location from the page's. If the path resolves to
+ * frees the owner's name and location from the interface's. If the path resolves to
  * nothing, the default `FooController.js` convention is tried, so naming an
  * owner is an override, not a requirement.
  *
- * The specifier is written from where the *compiled* page lands, since that is
+ * The specifier is written from where the *compiled* interface lands, since that is
  * what will do the importing. Compilation mirrors the source tree, so a path
  * that resolves from the markup resolves the same way between their compiled
  * selves — the `.jsx` an owner may be written as becomes `.js` there.
  *
- * @param {string} name The page's component name — `Foo` for `Foo.ib.xml`.
+ * @param {string} name The interface's component name — `Foo` for `Foo.ib.xml`.
  * @param {string} file The markup's own path.
- * @param {string} dest Where the compiled page lands.
+ * @param {string} dest Where the compiled interface lands.
  * @param {string|null} [owner] The path from `<interface owner='…'>`, if any.
- * @returns {string|null} What the compiled page should import, or null.
+ * @returns {string|null} What the compiled interface should import, or null.
  */
 function ownerFor(name, file, dest, owner = null) {
   if (!file) return null;
@@ -168,7 +168,7 @@ function ownerFor(name, file, dest, owner = null) {
       const source = path.join(path.dirname(file), `${base}${ext}`);
       if (!fs.existsSync(source)) continue;
       // Where that source itself compiles to. The tree is mirrored, so the
-      // owner's compiled self sits at the same offset from the page's — the
+      // owner's compiled self sits at the same offset from the interface's — the
       // base path carries straight over, only its extension settling to `.js`.
       const compiled = path.join(path.dirname(dest), `${base}.js`);
       return relativeSpecifier(compiled, path.dirname(dest));
@@ -208,13 +208,13 @@ function compileJs(src, file, stem, runtime, opts = {}) {
 }
 
 /**
- * Bind the module's own page, if it has one.
+ * Bind the module's own interface, if it has one.
  *
- * A `main.js` beside a `main.ib.xml` is that page's module: the markup is
+ * A `main.js` beside a `main.ib.xml` is that interface's module: the markup is
  * compiled and the binding is put in scope here, so nothing has to import a
  * file it never wrote. `main.ib.xml` gives `Main`, the name it exports.
  *
- * A module that imports the page itself keeps its own import — saying so
+ * A module that imports the interface itself keeps its own import — saying so
  * explicitly is never wrong.
  */
 function ensurePage(code, file, stem, runtime) {
@@ -229,7 +229,7 @@ function ensurePage(code, file, stem, runtime) {
     header.push(`import ${name} from ${JSON.stringify(specifier)};`);
   }
 
-  // `main.js` beside `main.ib.xml` is the application entry, so its page is the
+  // `main.js` beside `main.ib.xml` is the application entry, so its interface is the
   // application's. Registering it here is what lets `new MosaicApplication()`
   // find it with nothing named and nothing fetched — and it has to run before
   // the module's own code does, which is why it goes at the top. Any other
@@ -248,7 +248,7 @@ function ensurePage(code, file, stem, runtime) {
  * `components/button/Button.js` keeps its folder.
  *
  * Markup trades `.ib.xml` for `.ib.js` — `main.ib.xml` compiles to
- * `main.ib.js` — so a page can sit beside a `main.js` of its own that imports
+ * `main.ib.js` — so an interface can sit beside a `main.js` of its own that imports
  * it. The `.xml` goes because what comes out is a module, not markup; the
  * `.ib` stays because that is what keeps the two names apart. A `.js`/`.jsx`
  * source keeps its own name; it is already a module.

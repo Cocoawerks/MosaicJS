@@ -19,7 +19,7 @@ export default class SensorPanelController {
 
   /** The sensor's own name, for the heading. */
   get place() {
-    return this.sensor.place;
+    return this.sensor.calcPosition;
   }
 
   /** The model object this panel is a handle on. */
