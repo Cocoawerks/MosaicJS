@@ -28,6 +28,9 @@ export { refresh } from "./private/refresh.js";
 // Binding a property of one thing to a property of another — a control to a
 // controller, a control to a control. One way each; two facing make it two.
 export { bind, bindTwoWay, canPush, observeKey } from "./bind.js";
+// A bindable array — a JavaScript array with `objects` and `count` other things
+// can bind to, as Cocoa's NSArrayController has.
+export {ArrayController} from "./ArrayController.js";
 export { bindText } from "./private/bindText.js";
 // What the application says, in whichever language it is read in. `MESSAGES` is
 // reserved in markup: `{MESSAGES.save}` is a lookup here rather than a read off

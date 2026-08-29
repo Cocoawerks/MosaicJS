@@ -6,7 +6,7 @@
 // an arbitrary expression rather than a property path. `styleName`,
 // `outlet` and `action` mean the same thing in both.
 
-import { createHash } from "node:crypto";
+import {createHash} from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -577,7 +577,9 @@ export function inlineSvgImports(code, dirs = [], scope = null) {
     const match = clean
       .trim()
       .match(
-        /^import\s+([\p{L}_$][\p{L}\p{N}_$]*)\s+from\s+["']svg:([^"']+)["'];?$/u,
+          // A trailing line comment (`;? // …`) is tolerated — a formatter may
+          // park one after the import, and it is not part of the specifier.
+          /^import\s+([\p{L}_$][\p{L}\p{N}_$]*)\s+from\s+["']svg:([^"']+)["'];?\s*(?:\/\/.*)?$/u,
       );
 
     if (!match) {
@@ -607,11 +609,13 @@ export function inlineSvgImports(code, dirs = [], scope = null) {
 }
 
 /**
- * The raster formats an import may name, and what a data URL calls each one.
+ * The image formats an import may name, and what a data URL calls each one.
  *
- * `.svg` is deliberately absent: an icon is markup and becomes the component
- * that draws it, which is a better thing than a data URL — it can be styled,
- * and `currentColor` still means what it means. See `inlineSvgImports`.
+ * `.svg` is here so `import x from "./icon.svg"` yields a data URL like any
+ * other image — for where a URL is what is wanted (an `<img src>`, a
+ * `background-image`, a Button's `iconImage`). When a styleable icon is wanted
+ * instead — one that inherits `currentColor` and can be recoloured — use the
+ * `svg:name` import, which becomes an inline component. See `inlineSvgImports`.
  */
 const IMAGE_TYPES = new Map([
   [".png", "image/png"],
@@ -622,6 +626,7 @@ const IMAGE_TYPES = new Map([
   [".avif", "image/avif"],
   [".bmp", "image/bmp"],
   [".ico", "image/x-icon"],
+    [".svg", "image/svg+xml"],
 ]);
 
 /**
@@ -631,11 +636,11 @@ const IMAGE_TYPES = new Map([
  * Below it, a data URL is the better trade: one fewer request, and the third
  * again that base64 costs is a few bytes on a small glyph. At or above it that
  * overhead is real and the picture is worth caching on its own, so it is
- * written out and pointed at. 12 KB is the line — a little above the 4–8 KB
+ * written out and pointed at. 15 KB is the line — a little above the 4–8 KB
  * other bundlers draw, since a mosaic build is one payload and an inlined image
  * that never changes is still cheap to carry.
  */
-const INLINE_LIMIT = 12 * 1024;
+const INLINE_LIMIT = 15 * 1024;
 
 /**
  * Replace an image import with the image.
@@ -678,7 +683,9 @@ export function inlineImageImports(code, dir, opts = {}) {
     const match = clean
       .trim()
       .match(
-        /^import\s+([\p{L}_$][\p{L}\p{N}_$]*)\s+from\s+["'](\.{1,2}\/[^"']+)["'];?$/u,
+          // A trailing line comment (`;? // …`) is tolerated — a formatter may
+          // park one after the import, and it is not part of the specifier.
+          /^import\s+([\p{L}_$][\p{L}\p{N}_$]*)\s+from\s+["'](\.{1,2}\/[^"']+)["'];?\s*(?:\/\/.*)?$/u,
       );
 
     const type = match && IMAGE_TYPES.get(path.extname(match[2]).toLowerCase());

@@ -26,9 +26,10 @@
 }
 
 .v-List.empty .scroller {
-  /* Size to the message (not full height) so the column's justify-content
-       can center it vertically; align-items centers it horizontally. */
-  height: auto;
+    /* Fill the list and center the message within — vertically and horizontally.
+         (Left to shrink with height:auto it fought the scroller's own flex:1 and
+         sat at the top.) */
+    height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;

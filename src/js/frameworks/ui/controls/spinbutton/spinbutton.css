@@ -63,13 +63,18 @@
   display: none;
 }
 
-.v-SpinButton .v-SpinButton-Text :global(.v-Text-input) {
+/* The `.v-Text input.v-Text-input` here (not just `.v-Text-input`) is deliberate:
+   text.css targets the field input as `.v-Text:not(.v-Search) input.v-Text-input`
+   — (0,3,1) — so a plainer selector loses the padding to it. This is (0,4,1). */
+.v-SpinButton .v-SpinButton-Text :global(.v-Text input.v-Text-input) {
   box-shadow: none;
   border: none;
   outline: none;
   font-size: 15px;
   text-align: left;
-  padding-left: 5px;
+    /* The wrapped .v-Text drops its own 1px container padding (see above), so
+       this stands alone as the field's whole left inset. */
+    padding-left: 4px;
 }
 
 .v-SpinButton .SpinButton-btns {

@@ -64,7 +64,7 @@
    out: its magnifier already holds the text away from the edge, and padding on
    top of that would push the text into the middle of the box. */
 .v-Text:not(.v-Search) input.v-Text-input {
-  padding-left: 8px;
+    padding-left: 2px;
 }
 
 .v-Text.is-disabled {

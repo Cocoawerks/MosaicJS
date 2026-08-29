@@ -88,6 +88,10 @@
   grid-area: select;
   margin-bottom: 2px;
   font-size: 16px;
+    /* Taller than the 100% inherited from .v-ComboBox: at 100% the label box is
+       exactly the font size, so `overflow: hidden` (here for the ellipsis) clips
+       descenders — the tail of a "g". This leaves room for them. */
+    line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

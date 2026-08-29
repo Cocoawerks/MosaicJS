@@ -1,0 +1,158 @@
+/* Wizard: the navigator down the side, the deck of pages beside it, and the
+   button bar in the dialog's footer. Ported from the GWT commons' wizard sheet;
+   the spinner is the LoadingIndicator's own component now and brings its own. */
+
+/* The dialog's main region is the navigator and the content, side by side. */
+.v-Wizard-dialog .v-Wizard-body {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* Left navigation panel */
+.v-Wizard-dialog .v-WizNav {
+    width: 200px;
+    min-width: 200px;
+    background: linear-gradient(180deg, var(--sidebar-background-gradient-start) 0%, var(--sidebar-background-gradient-end) 100%);
+    border-right: 1px solid var(--wizard-nav-border);
+    padding: 24px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.v-Wizard-dialog .v-WizNavItem {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    cursor: default;
+    position: relative;
+    color: var(--wizard-step-color);
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+/* The current step wears the primary (default-button) face, so "where you are"
+   matches the button that moves you on. */
+.v-Wizard-dialog .v-WizNavItem.is-current {
+    color: var(--primary-foreground-color);
+    font-weight: 600;
+    background: var(--primary-background-color);
+}
+
+.v-Wizard-dialog .v-WizNavItem.is-completed {
+    color: var(--text-color);
+}
+
+.v-Wizard-dialog .v-WizNavItem.is-disabled {
+    color: var(--wizard-step-disabled-color);
+}
+
+.v-Wizard-dialog .v-WizNavNum {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--wizard-step-bullet-background);
+    color: var(--wizard-step-bullet-foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.v-Wizard-dialog .v-WizNavItem.is-current .v-WizNavNum {
+    /* Well darker than the row it sits on, or it would disappear into it. */
+    background: var(--wizard-step-current-bullet, #5b7d8e);
+    border: none;
+    color: #ffffff;
+}
+
+.v-Wizard-dialog .v-WizNavItem.is-completed .v-WizNavNum {
+    background: var(--wizard-step-completed);
+}
+
+.v-Wizard-dialog .v-WizNavTitle {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Connector line between steps. It hangs below its own row into the next one,
+   so it needs a positive z-index: without one it paints in tree order and the
+   following step's background (the current step now has a solid one) covers the
+   part that crosses into it. */
+.v-Wizard-dialog .v-WizNavItem::after {
+    content: '';
+    position: absolute;
+    left: 31px;
+    top: 37px;
+    width: 2px;
+    height: 27px;
+    z-index: 1;
+    background: var(--wizard-step-connector);
+}
+
+.v-Wizard-dialog .v-WizNavItem:last-child::after {
+    display: none;
+}
+
+.v-Wizard-dialog .v-WizNavItem.is-completed::after {
+    background: var(--wizard-step-completed);
+}
+
+/* Right content area */
+.v-Wizard-dialog .v-WizContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Deck of pages — scrolls so oversized content never pushes the footer (button
+   bar) out of view. (The DeckView draws its own `v-Deck` root; it is reached
+   through the content area rather than carrying a wizard class of its own.) */
+.v-Wizard-dialog .v-WizContent .v-Deck {
+    flex: 1 1 auto;
+    overflow: auto;
+    min-height: 0;
+}
+
+/* Bottom button bar (in the dialog footer) */
+.v-WizBtnBar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.v-WizBtnBar .v-Button {
+    min-width: 90px;
+}
+
+/* Cancel sits apart, pushed to the far end from Back/Next. It is the first
+   button in the bar, so the gap goes after it. */
+.v-WizBtnBar > .v-Button:first-child {
+    margin-right: auto;
+}
+
+/* The loading page fills the content area and centres the spinner in it. */
+.v-WizLoadPage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px;
+    box-sizing: border-box;
+}

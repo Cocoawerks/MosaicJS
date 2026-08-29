@@ -92,4 +92,13 @@
   box-sizing: border-box;
   border-top: none;
   border-radius: 9px;
+    /* Take the height left under the tab bar, so a card can fill it. */
+    flex: 1;
+    min-height: 0;
+}
+
+/* The showing card fills the deck, so its content (e.g. a list) has a real
+   height to lay out and scroll within. */
+.v-TabPanel :global(.v-Deck-card.is-showing) {
+    height: 100%;
 }

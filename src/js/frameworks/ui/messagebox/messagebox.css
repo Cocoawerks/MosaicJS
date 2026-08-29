@@ -1,0 +1,20 @@
+/* MessageBox: styles on top of the dialog's own. The dialog draws the frame,
+   the header, and the footer; what is here is the body — the message and, for a
+   prompt, the field beneath it. */
+
+.v-Dialog.message-box .v-MessageBox-message {
+    line-height: 1.5;
+    white-space: pre-line;
+}
+
+/* Message and field stacked, with the field a comfortable step below the words
+   that introduce it. */
+.v-Dialog.message-box .v-MessageBox-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.v-Dialog.message-box.prompt .v-Text {
+    width: 100%;
+}
