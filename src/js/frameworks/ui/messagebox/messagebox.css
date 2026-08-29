@@ -1,20 +1,69 @@
-/* MessageBox: styles on top of the dialog's own. The dialog draws the frame,
-   the header, and the footer; what is here is the body — the message and, for a
-   prompt, the field beneath it. */
+/* MessageBox: the layout on top of the dialog's own chrome, brought over from
+   GWT.Commons' dialogbox style.css (.message-box rules). The dialog draws the
+   frame/header/main/footer; this sizes the box, pads the body, and centers the
+   footer buttons at an equal width.
 
-.v-Dialog.message-box .v-MessageBox-message {
+   Every selector is `:global` because what they target — the dialog element,
+   its <main> and <footer>, and the footer <button>s — is drawn by the dialog
+   (and button) modules, not this one, so a scoped selector's hash would not be
+   on them. The MessageBox footer holds its buttons directly (the GWT version
+   wrapped them in a `footer > div` panel), so the button selector targets the
+   <button> element straight. */
+
+/* Narrower than a general dialog, and sized to its content. */
+:global(.v-Dialog.message-box) {
+    width: 400px;
+    height: fit-content;
+    max-width: 800px;
+    max-height: 800px;
+}
+
+/* Same indefinite-height trap as .v-Dialog--auto: with height: fit-content the
+   wrapper's height/min-height: 100% resolve against an indefinite parent and
+   collapse. Let the content define the height. */
+:global(.v-Dialog.message-box > div) {
+    height: auto;
+    min-height: 0;
+}
+
+/* The body: padded and block flow (the message, and a prompt's field below it). */
+:global(.v-Dialog.message-box main) {
+    padding: 15px;
+    display: block;
+    overflow: auto;
+}
+
+:global(.v-Dialog.message-box .v-MessageBox-message) {
     line-height: 1.5;
     white-space: pre-line;
 }
 
-/* Message and field stacked, with the field a comfortable step below the words
-   that introduce it. */
-.v-Dialog.message-box .v-MessageBox-body {
+/* Message and field stacked, the field a comfortable step below the words. */
+:global(.v-Dialog.message-box .v-MessageBox-body) {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.v-Dialog.message-box.prompt .v-Text {
+:global(.v-Dialog.message-box .v-Text) {
+    margin-top: 6px;
+}
+
+:global(.v-Dialog.message-box.prompt .v-Text) {
     width: 100%;
+}
+
+/* Footer buttons centered and equal width (90px), overriding the dialogs' own
+   shared 110px minimum. */
+:global(.v-Dialog.message-box footer) {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 15px;
+}
+
+:global(.v-Dialog.message-box footer button) {
+    width: 90px;
+    min-width: 90px;
+    margin: 0 4px;
 }

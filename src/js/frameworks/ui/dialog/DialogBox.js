@@ -228,17 +228,19 @@ export default class DialogBox extends Component {
       this.showTimer = null;
     }
 
+    // Close the native dialog when there is one — this is what drops it out of
+    // the top layer.
     const node = this.node;
-    if (typeof node?.close === "function") {
-      // The UA fires "close" for a modal and a non-modal dialog alike, and
-      // that is what `closed()` hangs off — so everything that follows a
-      // close happens once, however the close was asked for.
-      node.close();
-    } else {
-      // No native `<dialog>` behind it (a server render, a test): there is no
-      // event to wait for, so the same tidying is done here.
-      this.closed();
-    }
+    if (typeof node?.close === "function") node.close();
+
+    // Then account for the close ourselves. `closed()` is idempotent (it guards
+    // on `open`), so a native "close" event that also arrives is a no-op — but
+    // we do not depend on that event: `node.close()` fires nothing when the
+    // dialog was never natively shown (closed before its deferred showModal ran)
+    // or has no native `<dialog>` behind it at all (a server render, a test).
+    // Leaving `closed()` to the event alone is what left the shared mask raised
+    // in those cases, since it is what drops the mask.
+    this.closed();
   }
 
   /** Whether a close may go ahead. */

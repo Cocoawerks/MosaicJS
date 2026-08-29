@@ -16,8 +16,8 @@
 .v-Wizard-dialog .v-WizNav {
     width: 200px;
     min-width: 200px;
-    background: linear-gradient(180deg, var(--sidebar-background-gradient-start) 0%, var(--sidebar-background-gradient-end) 100%);
-    border-right: 1px solid var(--wizard-nav-border);
+    background: linear-gradient(180deg, var(--sidebar-background-gradient-start, var(--light-view-background)) 0%, var(--sidebar-background-gradient-end, var(--view-background)) 100%);
+    border-right: 1px solid var(--wizard-nav-border, var(--default-border-color));
     padding: 24px 0;
     display: flex;
     flex-direction: column;
@@ -29,7 +29,7 @@
     padding: 12px 20px;
     cursor: default;
     position: relative;
-    color: var(--wizard-step-color);
+    color: var(--wizard-step-color, var(--secondary-foreground));
     font-size: 16px;
     transition: all 0.2s ease;
 }
@@ -47,15 +47,15 @@
 }
 
 .v-Wizard-dialog .v-WizNavItem.is-disabled {
-    color: var(--wizard-step-disabled-color);
+    color: var(--wizard-step-disabled-color, var(--secondary-foreground));
 }
 
 .v-Wizard-dialog .v-WizNavNum {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: var(--wizard-step-bullet-background);
-    color: var(--wizard-step-bullet-foreground);
+    background: var(--wizard-step-bullet-background, var(--default-border-color));
+    color: var(--wizard-step-bullet-foreground, var(--text-color));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -67,13 +67,13 @@
 
 .v-Wizard-dialog .v-WizNavItem.is-current .v-WizNavNum {
     /* Well darker than the row it sits on, or it would disappear into it. */
-    background: var(--wizard-step-current-bullet, #5b7d8e);
+    background: var(--wizard-step-current-bullet, var(--accent-color, #5b7d8e));
     border: none;
     color: #ffffff;
 }
 
 .v-Wizard-dialog .v-WizNavItem.is-completed .v-WizNavNum {
-    background: var(--wizard-step-completed);
+    background: var(--wizard-step-completed, var(--accent-color));
 }
 
 .v-Wizard-dialog .v-WizNavTitle {
@@ -95,7 +95,7 @@
     width: 2px;
     height: 27px;
     z-index: 1;
-    background: var(--wizard-step-connector);
+    background: var(--wizard-step-connector, var(--default-border-color));
 }
 
 .v-Wizard-dialog .v-WizNavItem:last-child::after {
@@ -103,7 +103,7 @@
 }
 
 .v-Wizard-dialog .v-WizNavItem.is-completed::after {
-    background: var(--wizard-step-completed);
+    background: var(--wizard-step-completed, var(--accent-color));
 }
 
 /* Right content area */
@@ -119,13 +119,15 @@
 /* Deck of pages — scrolls so oversized content never pushes the footer (button
    bar) out of view. (The DeckView draws its own `v-Deck` root; it is reached
    through the content area rather than carrying a wizard class of its own.) */
-.v-Wizard-dialog .v-WizContent .v-Deck {
+.v-Wizard-dialog .v-WizContent :global(.v-Deck) {
     flex: 1 1 auto;
     overflow: auto;
     min-height: 0;
 }
 
-/* Bottom button bar (in the dialog footer) */
+/* Bottom button bar (in the dialog footer). Padded and topped with a divider,
+   as the GWT commons wizard sheet has it — without the padding the buttons sit
+   hard against the dialog's edges. */
 .v-WizBtnBar {
     display: flex;
     flex-direction: row;
@@ -133,16 +135,18 @@
     justify-content: flex-end;
     gap: 8px;
     width: 100%;
+    padding: 16px 20px;
+    border-top: 1px solid var(--wizard-buttons-border, var(--default-border-color));
     box-sizing: border-box;
 }
 
-.v-WizBtnBar .v-Button {
+.v-WizBtnBar :global(.v-Button) {
     min-width: 90px;
 }
 
 /* Cancel sits apart, pushed to the far end from Back/Next. It is the first
    button in the bar, so the gap goes after it. */
-.v-WizBtnBar > .v-Button:first-child {
+.v-WizBtnBar > :global(.v-Button):first-child {
     margin-right: auto;
 }
 

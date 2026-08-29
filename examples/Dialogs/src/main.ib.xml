@@ -1,0 +1,138 @@
+<!-- Dialogs: the two modal patterns the ui framework ships, shown from a page
+     that does nothing but ask for them.
+
+     A MessageBox and a Wizard are not components a page draws — they are put up
+     from code, the way an alert is. So the markup here is only buttons and a
+     line that says what came back; the interesting part is in AppController.js,
+     where each button's method builds a box or a wizard and shows it. -->
+
+<interface>
+    <div styleName="page">
+        <header styleName="bar">
+            <h1 styleName="title">{title}</h1>
+            <span styleName="spacer" />
+
+            <label styleName="label" for="theme-combo">Theme</label>
+            <ComboBox controlId="theme-combo" value="{theme}" action="themeChanged">
+                <Option text="Aristo" value="aristo"/>
+                <Option text="Aristo Dark" value="aristo_dark"/>
+                <Option text="Pop" value="pop"/>
+            </ComboBox>
+        </header>
+
+        <section styleName="section">
+            <h2 styleName="heading">Message boxes</h2>
+            <p styleName="note">
+                Three shapes of the same modal: an <strong>alert</strong> says
+                something and has one button; a <strong>confirm</strong> asks a
+                yes/no question; a <strong>prompt</strong> takes a line of text.
+                Each is built by a factory and shown with <code>runModal</code>,
+                which hands the answer to a callback.
+            </p>
+
+            <div styleName="row">
+                <Button text="Alert…" action="showAlert"/>
+                <Button text="Confirm…" action="showConfirm"/>
+                <Button text="Prompt…" action="showPrompt"/>
+            </div>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">A wizard</h2>
+            <p styleName="note">
+                A modal that walks through steps, one at a time, with a numbered
+                navigator down the side. Next is greyed out until each step is
+                complete — the first step wants a name. Finishing runs a loading
+                page while the account is "created", then closes.
+            </p>
+
+            <div styleName="row">
+                <Button text="Set up an account…" intent="primary" action="runWizard"/>
+            </div>
+        </section>
+
+        <p styleName="status">{status}</p>
+    </div>
+
+    <style>
+        :global(body) {
+            margin: 0;
+            font-family: var(--font-family);
+            color: var(--text-color);
+            background: var(--view-background);
+        }
+
+        .page {
+            max-width: 46rem;
+            margin: 0 auto;
+            padding-bottom: 2rem;
+        }
+
+        .bar {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--default-border-color);
+            background: var(--light-view-background);
+        }
+
+        .title {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .label {
+            font-size: 0.85rem;
+            color: var(--secondary-foreground);
+        }
+
+        .section {
+            padding: 0 1rem;
+        }
+
+        .heading {
+            margin: 1.4rem 0 0.4rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--secondary-foreground);
+        }
+
+        .note {
+            margin: 0 0 0.9rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            max-width: 40rem;
+        }
+
+        .note code {
+            font-family: ui-monospace, monospace;
+            font-size: 0.82em;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            align-items: center;
+            margin-bottom: 0.4rem;
+        }
+
+        .status {
+            position: sticky;
+            bottom: 0;
+            margin: 1.5rem 0 0;
+            padding: 0.5rem 1rem;
+            border-top: 1px solid var(--default-border-color);
+            background: var(--light-view-background);
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+            color: var(--secondary-foreground);
+        }
+    </style>
+</interface>

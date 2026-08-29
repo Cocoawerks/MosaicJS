@@ -1,0 +1,183 @@
+<!doctype html>
+<!-- The app's own browser check: `mosaic check examples/Dialogs`.
+
+     It loads the shipped bundle exactly as index.html does, then drives the
+     page the way a person would — pressing the buttons that put up the message
+     boxes and the wizard, and checking that each one behaves. The dialogs mount
+     on the document body (not inside #app), so they are looked for there. -->
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..700;1,300..700&amp;display=swap"
+    />
+    <title>Dialogs browser check</title>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <pre id="results"></pre>
+
+    <script type="module" src="build/app.js"></script>
+
+    <script type="module">
+      const log = [];
+      let failed = 0;
+      const check = (name, cond) => {
+        log.push(`${cond ? "PASS" : "FAIL"}  ${name}`);
+        if (!cond) failed++;
+        document.querySelector("#results").textContent = log.join("\n");
+      };
+
+      window.addEventListener("unhandledrejection", (e) => {
+        document.querySelector("#results").textContent =
+          log.join("\n") + `\nERROR  ${e.reason?.message ?? e.reason}`;
+        document.title = "verdict FAIL (threw)";
+      });
+      window.addEventListener("error", (e) => {
+        document.querySelector("#results").textContent =
+          log.join("\n") + `\nERROR  ${e.message}`;
+        document.title = "verdict FAIL (threw)";
+      });
+
+      const app = document.querySelector("#app");
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const until = async (cond, ms = 3000) => {
+        for (let t = 0; t < ms; t += 25) {
+          if (cond()) return true;
+          await sleep(25);
+        }
+        return cond();
+      };
+      const click = (el) =>
+        el?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      const buttonNamed = (root, text) =>
+        [...root.querySelectorAll("button")].find(
+          (b) => b.textContent.trim() === text,
+        );
+      const status = () => app.querySelector("p.status")?.textContent ?? "";
+
+      // Wait for the application to be there — the bundle is a separate request.
+      await until(() => app.childElementCount > 0, 10000);
+      check("the application loaded", app.childElementCount > 0);
+      check("the page mounted", app.querySelector("h1") !== null);
+
+      // --- Alert ---------------------------------------------------------------
+      click(buttonNamed(app, "Alert…"));
+      await until(() => document.querySelector(".v-Dialog.message-box.alert.is-open"));
+      const alert = document.querySelector(".v-Dialog.message-box.alert");
+      check("an alert message box opened", alert !== null);
+      check(
+        "with its one confirm button",
+        alert?.querySelectorAll("footer .v-Button").length === 1,
+      );
+      // Close it with the header's X.
+      click(alert?.querySelector(".v-Button.close"));
+      await until(() => !document.querySelector(".v-Dialog.message-box.alert"));
+      check(
+        "closing it takes it off the page",
+        !document.querySelector(".v-Dialog.message-box.alert"),
+      );
+
+      // --- Confirm -------------------------------------------------------------
+      click(buttonNamed(app, "Confirm…"));
+      await until(() => document.querySelector(".v-Dialog.message-box.confirm.is-open"));
+      const confirm = document.querySelector(".v-Dialog.message-box.confirm");
+      check("a confirm message box opened", confirm !== null);
+      check(
+        "with two buttons (cancel and confirm)",
+        confirm?.querySelectorAll("footer .v-Button").length === 2,
+      );
+      click(confirm?.querySelector("footer .v-Button.primary"));
+      await until(() => status().includes("confirm: deleted"));
+      check("confirming reached the callback", status().includes("confirm: deleted"));
+      await until(() => !document.querySelector(".v-Dialog.message-box.confirm"));
+      check(
+        "and the confirm box closed",
+        !document.querySelector(".v-Dialog.message-box.confirm"),
+      );
+
+      // --- Prompt --------------------------------------------------------------
+      click(buttonNamed(app, "Prompt…"));
+      await until(() => document.querySelector(".v-Dialog.message-box.prompt.is-open"));
+      const prompt = document.querySelector(".v-Dialog.message-box.prompt");
+      const promptInput = prompt?.querySelector("input");
+      check("a prompt message box opened with a field", promptInput instanceof HTMLInputElement);
+      promptInput.value = "Notes";
+      promptInput.dispatchEvent(new Event("input", { bubbles: true }));
+      click(prompt?.querySelector("footer .v-Button.primary"));
+      await until(() => status().includes("renamed to"));
+      check(
+        "the typed text came back on confirm",
+        status().includes('renamed to "Notes"'),
+      );
+      await until(() => !document.querySelector(".v-Dialog.message-box.prompt"));
+
+      // --- Wizard --------------------------------------------------------------
+      click(buttonNamed(app, "Set up an account…"));
+      await until(() => document.querySelector(".v-Wizard-dialog.is-open"));
+      const wizard = document.querySelector(".v-Wizard-dialog");
+      check("the wizard opened", wizard !== null);
+      check(
+        "with a numbered navigator of two steps",
+        wizard?.querySelectorAll(".v-WizNavItem").length === 2,
+      );
+      const nextBtn = () =>
+        [...wizard.querySelectorAll("footer .v-Button")].at(-1);
+      check(
+        "Next starts disabled — the first step wants a name",
+        nextBtn().classList.contains("is-disabled"),
+      );
+
+      // Type a name into the showing page's field.
+      const nameInput = wizard.querySelector(".v-Deck-card.is-showing input");
+      check("the first page drew its field", nameInput instanceof HTMLInputElement);
+      nameInput.value = "Ada";
+      nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+      await until(() => !nextBtn().classList.contains("is-disabled"));
+      check(
+        "entering a name enables Next",
+        !nextBtn().classList.contains("is-disabled"),
+      );
+
+      // Next → the plan page. It is the last step, so Next becomes the action.
+      click(nextBtn());
+      await until(() => wizard.querySelector(".v-ComboBox"));
+      check(
+        "moving on drew the second (plan) page",
+        wizard.querySelector(".v-ComboBox") !== null,
+      );
+      check(
+        "the second nav step is current",
+        wizard.querySelectorAll(".v-WizNavItem")[1].classList.contains("is-current"),
+      );
+      check(
+        "and Next now reads the action label",
+        nextBtn().textContent.trim() === "Create account",
+      );
+
+      // Finish → the loading page runs, then completes after the app's timeout.
+      click(nextBtn());
+      await until(() => wizard.querySelector(".v-WizLoadPage"));
+      check("finishing showed the loading page", wizard.querySelector(".v-WizLoadPage") !== null);
+      check("onFinish ran", status().includes("creating account for Ada"));
+      await until(() => !wizard.querySelector(".v-WizLoadPage .v-LoadingIndicator-spinner:not(.is-complete)") &&
+                        !nextBtn().classList.contains("is-disabled"), 4000);
+      // Once complete, Finish closes the wizard.
+      click(nextBtn());
+      await until(() => !document.querySelector(".v-Wizard-dialog"), 2000);
+      check("the wizard closed after finishing", !document.querySelector(".v-Wizard-dialog"));
+      check("and the account was reported created", status().includes("account created: Ada"));
+
+      document.querySelector("#results").textContent = log.join("\n");
+      document.title =
+        failed === 0
+          ? `verdict PASS (${log.length} checks)`
+          : `verdict FAIL (${failed} of ${log.length})`;
+    </script>
+  </body>
+</html>

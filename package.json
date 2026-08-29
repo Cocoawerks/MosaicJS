@@ -1,10 +1,10 @@
 {
   "name": "mosaicjs",
   "version": "0.1.0",
-  "private": true,
-  "type": "module",
   "bin": {
     "ibc": "./bin/ibc.js",
     "mosaic": "./bin/mosaic.js"
-  }
+  },
+  "private": true,
+  "type": "module"
 }

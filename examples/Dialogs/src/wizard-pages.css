@@ -1,0 +1,21 @@
+/* Shared by the wizard's page components. Each page draws a `wiz-page` block;
+   the wizard scrolls it if it grows past the content area. */
+
+.wiz-page {
+    padding: 8px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.wiz-heading {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--text-color);
+}
+
+.wiz-hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--secondary-foreground);
+}
