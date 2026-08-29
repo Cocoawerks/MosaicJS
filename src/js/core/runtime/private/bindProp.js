@@ -7,7 +7,12 @@
 // handed over as the plain thing it is. What makes it stay right is that the
 // view redraws — reading the path here is also what marks it worth watching, so
 // assigning to it draws the view again and the prop is worked out afresh.
-import { display, notifierFor, readPath } from "./bindings.js";
+import {
+  display,
+  needsRedrawFor,
+  notifierFor,
+  readPath,
+} from "./bindings.js";
 import { MESSAGES } from "../Messages.js";
 import { derivedKeys, observe } from "./observe.js";
 
@@ -37,9 +42,15 @@ export function bindProp(controller, parts) {
     // in the markup: a getter is never assigned, so watching it alone watches
     // nothing. Asked before the property is observed — see the same call there.
     for (const key of derivedKeys(controller, head)) {
-      observe(controller, key, notifierFor(controller));
+      // A prop cannot be written back into a node the way text and attributes
+      // can: what a Button does with `text` is the Button's own. So this
+      // property is one the view has to be drawn again for, and it says so
+      // rather than every property on the controller being treated that way.
+      needsRedrawFor(controller, key);
+      observe(controller, key, notifierFor(controller, key));
     }
-    observe(controller, head, notifierFor(controller));
+    needsRedrawFor(controller, head);
+    observe(controller, head, notifierFor(controller, head));
   }
 
   if (parts.length === 1 && typeof parts[0] !== "string") {

@@ -1,4 +1,5 @@
 // Telling components they have entered or left the document.
+import { internal } from "./internal.js";
 
 /**
  * Tell every component in a freshly inserted subtree that it is in the DOM,
@@ -49,7 +50,10 @@ export function attachTree(node) {
   // together needs. A controller has no `attached()`; that is a component's.
   const scope = node.__ibCtl;
   if (scope && scope !== view && !scope.isAttached) {
-    scope.isAttached = true;
+    // The runtime's own field on the view's scope rather than state the scope
+    // holds — see internal.js. Declared on the first write; the one in
+    // `disposeTree` below is an assignment and keeps it.
+    internal(scope, "isAttached", true);
     scope.awakeFromMib?.();
   }
 }

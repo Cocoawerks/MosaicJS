@@ -83,3 +83,62 @@ export const BROWSER_EVENTS = Object.freeze({
   transitionend: "transitionEnd",
   transitioncancel: "transitionCancel",
 });
+
+/** The event a handler method is the handler for — `BROWSER_EVENTS` backwards. */
+const EVENT_FOR_METHOD = new Map(
+  Object.entries(BROWSER_EVENTS).map(([type, method]) => [method, type]),
+);
+
+/**
+ * Which of these events a class handles, worked out once per class.
+ *
+ * `bindEvents` runs after every draw, and asking each of the sixty-odd names
+ * above whether the component implements it — for every root node, every time —
+ * is a cost that answers the same each time: what a class implements is fixed
+ * when the class is defined. So the answer is kept against the prototype, and
+ * a redraw looks it up rather than working it out.
+ */
+const CLASS_EVENTS = new WeakMap();
+
+function classEvents(proto) {
+  let pairs = CLASS_EVENTS.get(proto);
+  if (pairs) return pairs;
+
+  pairs = [];
+  for (const type in BROWSER_EVENTS) {
+    const method = BROWSER_EVENTS[type];
+    if (typeof proto[method] === "function") pairs.push([type, method]);
+  }
+  CLASS_EVENTS.set(proto, pairs);
+  return pairs;
+}
+
+/**
+ * The events `instance` handles, as `[type, method]` pairs.
+ *
+ * Its class's, plus any it holds itself. The second is not an afterthought: a
+ * handler written as a class field — `click = (event) => {...}` — is a property
+ * of the instance and not of the prototype, so a per-class answer alone would
+ * miss it and the component would never be wired up. Its own properties are
+ * few, and with the runtime's own among them non-enumerable (see internal.js)
+ * they are only what the component actually holds, so asking is cheap.
+ *
+ * @param {object} instance The component.
+ * @returns {Array<[string, string]>} Event type and the method handling it.
+ */
+export function handledEvents(instance) {
+  const pairs = classEvents(Object.getPrototypeOf(instance));
+
+  let own = null;
+  for (const name of Object.keys(instance)) {
+    const type = EVENT_FOR_METHOD.get(name);
+    if (type === undefined) continue;
+    if (typeof instance[name] !== "function") continue;
+    // Already counted: a field shadowing a method of the same name is one
+    // handler, and binding it twice would run it twice per event.
+    if (pairs.some(([, method]) => method === name)) continue;
+    (own ??= []).push([type, name]);
+  }
+
+  return own ? [...pairs, ...own] : pairs;
+}

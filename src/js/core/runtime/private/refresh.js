@@ -5,8 +5,7 @@
 // what changed, so a value reaches a child component as readily as it reaches a
 // text node. Anything else has no function to re-run, and its `{path}`
 // bindings are pushed back into the DOM one at a time.
-import { attrValue, BINDINGS, display, readPath } from "./bindings.js";
-import { setAttribute } from "./props.js";
+import { BINDINGS, writeEntry } from "./bindings.js";
 import { redrawView } from "./scope.js";
 
 export function refresh(controller) {
@@ -18,16 +17,7 @@ export function refresh(controller) {
 
   let live = 0;
   for (const entry of entries) {
-    if (!entry.node.isConnected && entry.node.parentNode === null) continue;
-    if (entry.kind === "text") {
-      const next = display(readPath(controller, entry.path));
-      if (entry.node.textContent !== next) entry.node.textContent = next;
-    } else {
-      const next = attrValue(entry.parts, controller);
-      if (entry.node.getAttribute(entry.name) !== next) {
-        setAttribute(entry.node, entry.name, next);
-      }
-    }
+    if (!writeEntry(controller, entry)) continue;
     entries[live++] = entry;
   }
   entries.length = live;

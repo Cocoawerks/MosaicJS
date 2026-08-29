@@ -3,7 +3,7 @@ import { coerceProps } from "./coerce.js";
 import { Component } from "../Component.js";
 import { Fragment } from "./Fragment.js";
 import { render } from "./render.js";
-import { observe, recordReads, stateKeys } from "./observe.js";
+import { observe, recordReads, redrawer, stateKeys } from "./observe.js";
 
 export function drawInto(view, props) {
   view.props = props ? coerceProps(props) : view.props;
@@ -16,7 +16,7 @@ export function drawInto(view, props) {
     view.draw.call(self, view.props),
   );
   for (const key of stateKeys(view, reads)) {
-    observe(view, key, () => view.needsDisplay());
+    observe(view, key, redrawer(view));
   }
 
   const drawn = withStyleName(vnode, view.props);

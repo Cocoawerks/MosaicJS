@@ -1,6 +1,6 @@
 build
 node_modules
 .idea
+# Matches at every level, so the per-directory lines that used to follow it
+# were saying the same thing again.
 .DS_Store
-examples/.DS_Store
-examples/KitchenSink/.DS_Store

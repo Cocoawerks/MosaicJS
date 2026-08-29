@@ -22,34 +22,73 @@ export const SELF = Symbol.for("mosaic.self");
 const OBSERVED = Symbol.for("mosaic.observed");
 
 /**
- * Properties that belong to the framework rather than to the component's
- * state. They are assigned during drawing and mounting, so observing them
- * would mean a draw scheduling its own redraw.
- */
-const INTERNAL = new Set([
-  "props",
-  "nodes",
-  "node",
-  "vtree",
-  "listeners",
-  "controller",
-  "isAttached",
-  "children",
-  "parent",
-  "view",
-  "root",
-]);
-
-/**
- * Keys currently telling their callbacks, per object.
+ * What is being told, per object: the keys whose callbacks are running now, and
+ * the keys that were assigned while they ran.
  *
- * A component assigned through its public setter notifies twice over: the
- * accessor observation wraps the setter and tells afterwards, and the setter
- * itself reaches `Component.set`, which tells as well. Both are needed —
- * either path may be the only one taken — so the second is folded into the
- * first rather than removed.
+ * This is about re-entry: a key assigned again from inside a callback for that
+ * same key. A controller that settles a value as it redraws does it, and so
+ * does a control that clamps what it was given.
+ *
+ * It used to be dropped — the second assignment had something new to say and
+ * nothing was told, so whatever was watching kept showing the value from
+ * before. It is remembered here instead, and told once the pass it interrupted
+ * is over.
+ *
+ * The other way one assignment used to be told about twice — the accessor
+ * observation telling after a setter that had already told — is not this. Those
+ * two are sequential rather than nested, so no guard here would see them
+ * together; they are folded in the wrapped setter itself, which asks whether
+ * the setter it wrapped already spoke. See `observe`.
  */
 const NOTIFYING = new WeakMap();
+
+/**
+ * How many times a drain will go round before it gives up.
+ *
+ * Two properties that assign one another settle in a pass or two; a pair that
+ * never agrees would go round for ever, and a hung tab says nothing about
+ * where the loop is. The cap is far above anything that settles, and what it
+ * stops is reported rather than swallowed.
+ */
+const MAX_PASSES = 100;
+
+function state(target) {
+  let current = NOTIFYING.get(target);
+  if (!current) {
+    current = { active: new Set(), pending: new Set(), draining: false };
+    NOTIFYING.set(target, current);
+  }
+  return current;
+}
+
+/**
+ * How many times each key has been told about, per object.
+ *
+ * What it is for is the wrapped setter below: it has to know whether the setter
+ * it wrapped already told about the assignment, and the count answers that
+ * without either of them knowing about the other.
+ */
+const TOLD = new WeakMap();
+
+/** How many times `key` has been told about so far. */
+function tally(target, key) {
+  return TOLD.get(target)?.get(key) ?? 0;
+}
+
+/** Tell everything watching `key`. */
+function tell(target, key) {
+  let counts = TOLD.get(target);
+  if (!counts) {
+    counts = new Map();
+    TOLD.set(target, counts);
+  }
+  counts.set(key, (counts.get(key) ?? 0) + 1);
+
+  const callbacks = target[OBSERVED].get(key);
+  if (!callbacks || callbacks.size === 0) return;
+  // Copied: a callback may observe or unobserve while it runs.
+  for (const callback of [...callbacks]) callback();
+}
 
 /**
  * Run whatever is watching `key` on `target`.
@@ -59,6 +98,9 @@ const NOTIFYING = new WeakMap();
  * `Component.set`, which never goes near the accessor an observer wrapped. A
  * binding onto a control's `value` heard nothing at all until that path told
  * it too.
+ *
+ * Synchronous, and stays so: `needsDisplay()` promises the DOM is up to date
+ * when it returns, and every control here reads back what it just wrote.
  */
 export function notify(target, key) {
   if (!target || !Object.prototype.hasOwnProperty.call(target, OBSERVED))
@@ -66,18 +108,53 @@ export function notify(target, key) {
   const callbacks = target[OBSERVED].get(key);
   if (!callbacks || callbacks.size === 0) return;
 
-  let busy = NOTIFYING.get(target);
-  if (!busy) {
-    busy = new Set();
-    NOTIFYING.set(target, busy);
-  }
-  if (busy.has(key)) return;
+  const current = state(target);
 
-  busy.add(key);
+  // Already telling this one, so this is an assignment made from inside a
+  // callback for it. It is remembered rather than dropped and told below, once
+  // the pass it interrupted is over — telling it here would run the callbacks
+  // inside themselves.
+  if (current.active.has(key)) {
+    current.pending.add(key);
+    return;
+  }
+
+  current.active.add(key);
   try {
-    for (const callback of [...callbacks]) callback();
+    tell(target, key);
   } finally {
-    busy.delete(key);
+    current.active.delete(key);
+  }
+
+  // Whatever was assigned while that ran, told now that it can be. Only the
+  // outermost notify drains, so a nested one adds to the queue rather than
+  // starting a second pass through it.
+  if (current.active.size > 0 || current.draining) return;
+
+  current.draining = true;
+  try {
+    for (let pass = 0; current.pending.size > 0; pass++) {
+      if (pass >= MAX_PASSES) {
+        const stuck = [...current.pending].join(", ");
+        current.pending.clear();
+        console.warn(
+          `mosaic: ${stuck} kept assigning one another after ${MAX_PASSES} rounds; giving up. Something observing one of these assigns it again.`,
+        );
+        return;
+      }
+      const round = [...current.pending];
+      current.pending.clear();
+      for (const next of round) {
+        current.active.add(next);
+        try {
+          tell(target, next);
+        } finally {
+          current.active.delete(next);
+        }
+      }
+    }
+  } finally {
+    current.draining = false;
   }
 }
 
@@ -148,8 +225,16 @@ export function observe(target, key, run) {
     Object.defineProperty(target, key, {
       get: descriptor.get,
       set(value) {
+        // Only if the setter did not already say so. A component's declared
+        // settings are written through `Component.set`, which tells for itself
+        // — so telling again here is the same assignment announced twice, and
+        // everything watching ran twice for it: two redraws for every
+        // `button.text = "..."`. A setter that tells nobody — a plain one, or
+        // one on a controller — still needs this, which is why it is asked
+        // rather than assumed either way.
+        const before = tally(target, key);
         inner.call(this, value);
-        notify(target, key);
+        if (tally(target, key) === before) notify(target, key);
       },
       enumerable: descriptor.enumerable,
       configurable: true,
@@ -173,6 +258,32 @@ export function observe(target, key, run) {
     enumerable: descriptor ? descriptor.enumerable : true,
     configurable: true,
   });
+}
+
+/** The redrawing callback each view observes with — see `redrawer`. */
+const REDRAWERS = new WeakMap();
+
+/**
+ * The one callback that redraws `view`.
+ *
+ * Observation keeps its callbacks in a set, so observing the same property
+ * twice with the same function is the no-op it should be — but only if it is
+ * the *same* function. A fresh `() => view.needsDisplay()` each time is a new
+ * one, and every drawing would add another: after a hundred redraws a single
+ * assignment ran a hundred of them, each of those adding one more. A drawing
+ * records its reads every time it runs, which is what made this matter, so
+ * what it observes with is remembered here rather than made afresh.
+ *
+ * @param {object} view The component to redraw.
+ * @returns {() => void} The same function every time, for this view.
+ */
+export function redrawer(view) {
+  let run = REDRAWERS.get(view);
+  if (!run) {
+    run = () => view.needsDisplay();
+    REDRAWERS.set(view, run);
+  }
+  return run;
 }
 
 /**
@@ -230,12 +341,6 @@ export function recordReads(target, body) {
 }
 
 /**
- * Of the properties read, the ones that are this object's state: its own data
- * properties. A method, a prototype getter, and the framework's own fields are
- * not state — a getter's own reads were recorded alongside it, so what it
- * derives from is watched instead.
- */
-/**
  * The state a derived property reads, so something watching it can watch that
  * instead.
  *
@@ -283,13 +388,30 @@ export function derivedKeys(target, key) {
   }
 }
 
+/**
+ * Of the properties read, the ones that are this object's state: its own,
+ * enumerable data properties.
+ *
+ * Four things are turned away, and each for its own reason. A property the
+ * object does not own is either a method or a prototype getter — a getter's own
+ * reads were recorded alongside it, so what it derives from is watched instead
+ * of the getter itself. A method is not state. A field of the runtime's own is
+ * not state either, and says so by being non-enumerable: see internal.js for
+ * why that rather than a list of names.
+ *
+ * @param {object} target The component or controller that was drawn.
+ * @param {Iterable<string>} reads What the drawing read.
+ * @returns {string[]} Which of those to watch.
+ */
 export function stateKeys(target, reads) {
   const keys = [];
   for (const key of reads) {
-    if (INTERNAL.has(key)) continue;
     const descriptor = Object.getOwnPropertyDescriptor(target, key);
     if (!descriptor) continue;
     if (!("value" in descriptor)) continue;
+    // The runtime's own — `view.nodes`, `controller.view`. Observing one would
+    // mean a draw scheduling its own redraw.
+    if (!descriptor.enumerable) continue;
     if (typeof descriptor.value === "function") continue;
     keys.push(key);
   }

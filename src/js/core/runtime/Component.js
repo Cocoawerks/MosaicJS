@@ -4,7 +4,9 @@
 // lifecycle. The drawing and patching machinery itself lives in the runtime,
 // which this module and the components below it share.
 import { clearBindings } from "./private/clearBindings.js";
-import { BROWSER_EVENTS } from "./private/events.js";
+import { batch, flushFor, forget, hold } from "./private/batch.js";
+import { BROWSER_EVENTS, handledEvents } from "./private/events.js";
+import { internal } from "./private/internal.js";
 import { coerceProps, coerceValue } from "./private/coerce.js";
 import { MESSAGES } from "./Messages.js";
 import { redraw } from "./private/redraw.js";
@@ -14,6 +16,13 @@ import { prepareSettings } from "./private/settings.js";
 import { SELF } from "./private/observe.js";
 
 export { BROWSER_EVENTS };
+
+/**
+ * Where the drawn nodes actually sit. The names `node` and `nodes` are
+ * accessors on the class — see below — so the values live under these instead.
+ */
+const NODE = Symbol("mosaic.node");
+const NODES = Symbol("mosaic.nodes");
 
 /**
  * A mounted component: the markup it drew, plus the bindings beneath it.
@@ -27,6 +36,36 @@ export { BROWSER_EVENTS };
  *   }
  */
 export class Component {
+  /**
+   * The root DOM node, and every top-level node this view put in the document.
+   *
+   * Accessors rather than plain fields, because reading one is the moment a
+   * held drawing has to have happened. A batch defers drawing until the handler
+   * that asked for it is done — but a component that measures what it just drew
+   * reaches for its node in the middle of that handler, and has to find the
+   * drawing rather than what was there before. Asking here is what lets every
+   * such component go on being written the way it was. See private/batch.js.
+   *
+   * The cost when nothing is owed is a `Set`'s size.
+   */
+  get node() {
+    flushFor();
+    return this[NODE];
+  }
+
+  set node(value) {
+    this[NODE] = value;
+  }
+
+  get nodes() {
+    flushFor();
+    return this[NODES];
+  }
+
+  set nodes(value) {
+    this[NODES] = value;
+  }
+
   /**
    * This component, unwrapped.
    *
@@ -89,17 +128,22 @@ export class Component {
     // settings ask for, minus any the class writes itself.
     prepareSettings(new.target);
 
+    // Every field below belongs to the runtime rather than to the component's
+    // state, so each is declared with `internal()` — non-enumerable, which is
+    // how a drawing's reads are told apart from what the runtime writes. See
+    // private/internal.js. Assignment afterwards keeps that, so this is the
+    // only place they have to be declared.
     /**
      * Holds the properties of the component.
      * Not the `static properties` a component declares — that is the schema, and
      * what a page sets.
      */
-    this.props = coerceProps(props) ?? {};
-    this.controller = this.props.controller ?? this;
+    internal(this, "props", coerceProps(props) ?? {});
+    internal(this, "controller", this.props.controller ?? this);
     /** The root DOM node, set once the tree is rendered. @internal */
-    this.node = null;
+    internal(this, NODE, null);
     /** Every top-level node this view put in the document. @internal */
-    this.nodes = [];
+    internal(this, NODES, []);
     /**
      * The last tree this view drew, kept so a redraw has something to compare
      * against and can patch what changed rather than building it all again.
@@ -108,13 +152,15 @@ export class Component {
      * that what a component holds is said in one place — `destroy()` already
      * put it back to this.
      */
-    this.vtree = undefined;
+    internal(this, "vtree", undefined);
     /** Listeners this component attached, per node, so they can be moved. @private */
-    this.listeners = new Map();
+    internal(this, "listeners", new Map());
     /** Settings assigned through `set()`, taking precedence over props. @private */
-    this.overrides = {};
+    internal(this, "overrides", {});
     /** Whether `attached()` has been called and `detached()` has not. @private */
-    this.isAttached = false;
+    internal(this, "isAttached", false);
+    /** Whether a redraw was asked for before the nodes were on the page. @private */
+    internal(this, "redrawWanted", false);
   }
 
   /**
@@ -217,7 +263,12 @@ export class Component {
    * @param {object} [params] Values for any `{name}` the message leaves open.
    */
   message(key, params) {
-    MESSAGES._redrawOnLocaleChange(this);
+    // `this.self` and not `this`: a drawing runs against a recording proxy, and
+    // a fresh one each time it runs. Registered as the proxy, a component was a
+    // different dependent on every draw — the register grew a new entry per
+    // redraw, and a change of locale then drew the same component once for each
+    // of them, each of those adding one more.
+    MESSAGES._redrawOnLocaleChange(this.self);
     return params ? MESSAGES.format(key, params) : MESSAGES.get(key);
   }
 
@@ -248,24 +299,36 @@ export class Component {
    * replaced after mounting.
    */
   bindEvents() {
-    const targets = this.nodes.filter(
-      (n) => typeof n?.addEventListener === "function",
+    // A Set rather than the list itself: what follows asks after every node it
+    // has a listener on, and `includes` walks the roots again for each of them.
+    // A component with one root never noticed; a list view redrawing two
+    // hundred of them was doing forty thousand comparisons a draw.
+    const targets = new Set(
+      this.nodes.filter((n) => typeof n?.addEventListener === "function"),
     );
 
     for (const [node, attached] of this.listeners) {
-      if (targets.includes(node)) continue;
+      if (targets.has(node)) continue;
       for (const type in attached)
         node.removeEventListener(type, attached[type]);
       this.listeners.delete(node);
     }
 
+    // Which events this component handles at all — worked out once per class
+    // rather than by asking after each of the sixty-odd names on every node of
+    // every draw. See events.js.
+    let handled = null;
+
     for (const node of targets) {
       if (this.listeners.has(node)) continue;
+      handled ??= handledEvents(this);
       const attached = {};
-      for (const type in BROWSER_EVENTS) {
-        const method = BROWSER_EVENTS[type];
-        if (typeof this[method] !== "function") continue;
-        const listener = (event) => this[method](event);
+      for (const [type, method] of handled) {
+        // Resolved when the event fires, not now, so a method can be replaced
+        // after mounting. Run as a batch, so a handler settling several fields
+        // draws once instead of once per assignment — the drawing still happens
+        // before the handler returns.
+        const listener = (event) => batch(() => this[method](event));
         node.addEventListener(type, listener);
         attached[type] = listener;
       }
@@ -295,6 +358,8 @@ export class Component {
    * A subclass may implement `detached()` to do its own cleanup.
    */
   destroy() {
+    // A drawing owed to a component that is going is not owed any more.
+    forget(this);
     // Listeners go first, so an overridden detached() cannot leave any behind.
     for (const [node, attached] of this.listeners) {
       for (const type in attached)
@@ -328,6 +393,10 @@ export class Component {
    */
   needsDisplay() {
     if (typeof this.draw === "function") {
+      // Held until the handler that asked is done, so four assignments draw
+      // once rather than four times. Outside a batch this is false and the
+      // drawing happens here, exactly as it always did. See private/batch.js.
+      if (hold(this)) return;
       redraw(this);
       return;
     }

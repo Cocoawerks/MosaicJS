@@ -4,6 +4,7 @@ import { coerceProps } from "./coerce.js";
 import { drawInto, isComponentClass } from "./draw.js";
 import { attachTree, discard, disposeTree } from "./lifecycle.js";
 import { render } from "./render.js";
+import { internal } from "./internal.js";
 import { rememberView } from "./scope.js";
 
 /** What `mount` was given when it was given no controller at all. */
@@ -24,7 +25,10 @@ export function mount(component, target, props = {}, controller = EMPTY) {
     const view = new component({...props,...(said ? { controller } : {}) });
     if (said && controller !== view) {
       view.controller = controller;
-      controller.view = view;
+      // The runtime's own field on the page's controller, not state the page
+      // holds — see internal.js. A controller with a `view` of its own meaning
+      // something else keeps it: this is only reached when one was passed in.
+      internal(controller, "view", view);
     }
     const dom = drawInto(view, props);
     if (view.node) {
@@ -43,7 +47,7 @@ export function mount(component, target, props = {}, controller = EMPTY) {
       for (const node of drawn) node.remove();
       view.destroy();
     };
-    unmount.view = view;
+    internal(unmount, "view", view);
     return unmount;
   }
 
@@ -60,7 +64,7 @@ export function mount(component, target, props = {}, controller = EMPTY) {
 
   const view = new Component({...props, controller });
   view.controller = controller;
-  controller.view = view;
+  internal(controller, "view", view);
 
   const vnode =
     typeof component === "function"
@@ -130,7 +134,7 @@ export function mount(component, target, props = {}, controller = EMPTY) {
   // composed views has to do. It is a controller, so it wakes and no more —
   // `attached()` is a component's hook.
   if (controller && !controller.isAttached) {
-    controller.isAttached = true;
+    internal(controller, "isAttached", true);
     controller.awakeFromMib?.();
   }
 
@@ -138,6 +142,6 @@ export function mount(component, target, props = {}, controller = EMPTY) {
     for (const node of nodes) discard(node);
     view.destroy();
   };
-  unmount.view = view;
+  internal(unmount, "view", view);
   return unmount;
 }

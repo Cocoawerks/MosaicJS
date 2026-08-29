@@ -6,14 +6,15 @@ import { coerceProps } from "./coerce.js";
 import { render, SVG_NS } from "./render.js";
 import {
   attrValue,
-  BINDINGS,
   display,
   readPath,
+  resetBindings,
   track,
 } from "./bindings.js";
 import { MESSAGES } from "../Messages.js";
-import { drawInto, isComponentClass, withStyleName } from "./draw.js";
+import { isComponentClass, withStyleName } from "./draw.js";
 import { flatten } from "./flatten.js";
+import { observe, recordReads, redrawer, stateKeys } from "./observe.js";
 import { isObjectTag } from "./objects.js";
 import { applyProps, setViewRedraw, VIEW } from "./scope.js";
 import { attachTree, discard } from "./lifecycle.js";
@@ -35,20 +36,57 @@ export function redraw(view) {
   const previous = view.vtree;
   // As `drawInto` does: what the tag asked the component to wear goes on every
   // drawing, not just the first, or the second would patch it off.
-  const next = withStyleName(view.draw(view.props), view.props);
+  //
+  // And recorded as `drawInto` records it. A drawing names nothing it depends
+  // on — it simply reads what it needs — so a redraw that takes a branch the
+  // first draw did not reads a property nobody is watching, and assigning that
+  // property afterwards updates nothing. Recording every drawing rather than
+  // only the first is what closes that: the reads of the branch actually taken
+  // are watched from the moment it is taken.
+  const { result: drawn, reads } = recordReads(view, (self) =>
+    view.draw.call(self, view.props),
+  );
+  for (const key of stateKeys(view, reads)) {
+    observe(view, key, redrawer(view));
+  }
+  const next = withStyleName(drawn, view.props);
 
   // Bindings and outlets are re-registered against whichever nodes survive.
-  if (Object.prototype.hasOwnProperty.call(view, BINDINGS))
-    view[BINDINGS].length = 0;
+  resetBindings(view);
 
-  // A multi-root draw has no single node to patch against; rebuild those.
-  if (view.nodes.length !== 1 || previous === undefined) {
-    const before = view.nodes[view.nodes.length - 1].nextSibling;
-    const stale = view.nodes;
-    const dom = drawInto(view, view.props);
-    parent.insertBefore(dom, before);
-    for (const node of stale) discard(node);
-    for (const node of view.nodes) attachTree(node);
+  // Nothing drawn before to compare against, so there is nothing to patch:
+  // what is there was not made from a drawing this can line up against.
+  if (previous === undefined) {
+    rebuild(parent, view, next);
+    return;
+  }
+
+  // A drawing that is a list of roots rather than one thing. There is no single
+  // node to patch against, but there is a list of them, and they line up one for
+  // one with what was drawn — so they are reconciled the way a child list is,
+  // rather than thrown away and built again. Rebuilding lost everything the DOM
+  // was holding: focus, scroll, a press in progress, and the instance of every
+  // component beneath them.
+  //
+  // Asked of the drawing's shape and not only of how many nodes it made. A
+  // fragment holding a single child is one node and a list all the same, and
+  // taking it for the single-root case below patched its child against itself:
+  // `patch` was handed the child's own node as the parent to reconcile the
+  // child list within, and appending to a text node is where that ended up.
+  if (view.nodes.length !== 1 || isRootList(previous) || isRootList(next)) {
+    const olds = rootsOf(previous);
+    const news = rootsOf(next);
+
+    // Lined up against the nodes one for one, or not at all: a list that has
+    // drifted from what is actually there would patch each root against its
+    // neighbour's node. See `patchableRoots` for the shapes left out.
+    if (olds.length === view.nodes.length && patchableRoots(olds, news)) {
+      const fresh = patchRoots(parent, view.nodes, olds, news, view);
+      settle(view, fresh, next);
+      return;
+    }
+
+    rebuild(parent, view, next);
     return;
   }
 
@@ -74,6 +112,158 @@ export function redraw(view) {
   view.vtree = next;
   view.bindEvents();
   attachTree(node);
+}
+
+/**
+ * Take what a view drew as the nodes now standing for it: remember them, wire
+ * up its events again, and tell whatever is newly on the page.
+ */
+function settle(view, nodes, next) {
+  view.nodes = nodes;
+  view.node = nodes[0] ?? null;
+  view.vtree = next;
+  view.bindEvents();
+  for (const node of nodes) attachTree(node);
+}
+
+/**
+ * Put a drawing in place of a view's nodes wholesale, releasing what was there.
+ *
+ * The fallback, for the drawings that cannot be patched: a first one, and the
+ * multi-root shapes `patchableRoots` turns away. Everything the old nodes held
+ * goes with them — which is exactly why it is a fallback and not the way a
+ * redraw ordinarily works.
+ */
+function rebuild(parent, view, next) {
+  const before = view.nodes[view.nodes.length - 1].nextSibling;
+  const stale = view.nodes;
+  const dom = render(next, view);
+  const fresh =
+    dom?.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? [...dom.childNodes] : [dom];
+  parent.insertBefore(dom, before);
+  for (const node of stale) discard(node);
+  settle(view, fresh, next);
+}
+
+/**
+ * Whether a drawing is a list of roots rather than a single thing — which is
+ * what decides how it is patched, however many nodes it happened to produce.
+ */
+function isRootList(vnode) {
+  return Array.isArray(vnode) || vnode?.type === Fragment;
+}
+
+/**
+ * The roots a drawing produced, as a flat list of vnodes — one for each node it
+ * put in the document.
+ *
+ * A drawing is a single vnode, an array, or a fragment of several; the last two
+ * are the multi-root case. Levelled through `flatten` for the same reason
+ * `patchChildren` levels a child list: `h` built these lists that way, and
+ * `render` put one node in the document for each entry, so this lines up one
+ * for one with the nodes to patch against.
+ */
+function rootsOf(vnode) {
+  if (vnode === null || vnode === undefined) return [];
+  if (Array.isArray(vnode)) return flatten(vnode);
+  if (vnode.type === Fragment) return flatten(vnode.children ?? []);
+  return [vnode];
+}
+
+/**
+ * Whether these roots can be lined up against the nodes already there.
+ *
+ * Two shapes are turned away. A keyed root is matched by name rather than by
+ * position, and the roots of a view are not a list anything reorders — the
+ * machinery for it is here, but nothing that drives it would be exercised, so
+ * it is left to the rebuild rather than run untested. And a root that is itself
+ * a fragment stands for however many nodes it drew, which breaks the one-for-one
+ * this depends on — `flatten` levels a fragment written directly in the list,
+ * but not one a component returned.
+ */
+function patchableRoots(olds, news) {
+  if (anyKeyed(olds) || anyKeyed(news)) return false;
+  for (const list of [olds, news]) {
+    for (const vnode of list) {
+      if (vnode && typeof vnode === "object" && kindOf(vnode) === "fragment")
+        return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Patch a view's roots — the several nodes it put in the document — against
+ * what it has just drawn, and answer with the nodes now standing for it.
+ *
+ * The roots of a multi-root view are a slice of their parent's children rather
+ * than all of them, which is the one thing that keeps `patchChildren` from
+ * doing this: that one takes the parent's whole child list. Here the nodes are
+ * named, and a root gained goes after the one before it rather than at the
+ * front of whatever holds them.
+ *
+ * @param {Node} parent What holds the roots.
+ * @param {Node[]} nodes The roots as they stand.
+ * @param {Array} olds The vnodes they were drawn from.
+ * @param {Array} news The vnodes they should become.
+ * @param {object} controller What the drawing reads and its actions call.
+ * @returns {Node[]} The roots now.
+ */
+function patchRoots(parent, nodes, olds, news, controller) {
+  const fresh = [];
+  const count = Math.max(olds.length, news.length);
+  // Where the roots begin. A gained root goes after the one before it, and the
+  // first has nothing before it to follow — but it may not be the parent's
+  // first child either, so it follows this instead of being put at the front.
+  const start = nodes[0];
+  let after = null;
+
+  for (let i = 0; i < count; i++) {
+    // A root the drawing no longer has. Its node goes, and with it whatever it
+    // held — a discarded subtree releases the components in it.
+    if (i >= news.length) {
+      if (nodes[i]) discard(nodes[i]);
+      continue;
+    }
+
+    const newV = news[i];
+    const node = nodes[i];
+    const before = after ? after.nextSibling : start;
+
+    // Nothing to patch against — a root the drawing has gained — or a root too
+    // different from the one before it to reconcile. Either way it is drawn
+    // fresh, and whatever stood there goes.
+    if (i >= olds.length || node === undefined || !sameKind(olds[i], newV)) {
+      const placed = place(parent, render(newV, controller, nsOf(parent)), before);
+      if (node) discard(node);
+      fresh.push(...placed);
+      after = placed[placed.length - 1] ?? after;
+      continue;
+    }
+
+    const patched = patch(parent, node, olds[i], newV, controller);
+    fresh.push(patched);
+    after = patched;
+  }
+
+  return fresh;
+}
+
+/**
+ * Put `node` before `before`, and say which nodes it actually put there.
+ *
+ * A drawing that is several nodes arrives as a document fragment, and inserting
+ * one empties it — so what it held is taken down first. Asked here because a
+ * view's roots are what stands for it afterwards: a fragment kept in that list
+ * would be an empty node standing for the several real ones beside it.
+ */
+function place(parent, node, before) {
+  const placed =
+    node?.nodeType === Node.DOCUMENT_FRAGMENT_NODE
+      ? [...node.childNodes]
+      : [node];
+  parent.insertBefore(node, before ?? null);
+  return placed;
 }
 
 /** Vnodes of different shapes can never patch into one another. */
@@ -496,8 +686,7 @@ function redrawComposedView(scope) {
   if (!anchor?.parentNode) return false;
 
   // Re-registered against whichever nodes survive, as a drawn component's are.
-  if (Object.prototype.hasOwnProperty.call(scope, BINDINGS))
-    scope[BINDINGS].length = 0;
+  resetBindings(scope);
 
   const produced = record.fn.call(scope, record.props);
 
@@ -517,11 +706,34 @@ function redrawComposedView(scope) {
     return true;
   }
 
-  // More than one root: there is no single node to patch against, so the roots
-  // are rebuilt in place — the same fallback `redraw` makes for a multi-root
-  // drawn component. This is what lets a bound prop a multi-root `.ib.xml` view
-  // hands a child update at all: it is worked out afresh here.
   const parent = anchor.parentNode;
+
+  // More than one root: no single node to patch against, but a list of them
+  // that lines up one for one with what the markup drew, so they are
+  // reconciled the same way a drawn component's are. This is what a
+  // multi-root `.ib.xml` used to lose on every redraw — every node rebuilt,
+  // and with them the focus, the scroll and the instance of every component
+  // the file placed.
+  const olds = rootsOf(record.out);
+  const news = rootsOf(produced);
+  if (
+    record.out !== undefined &&
+    olds.length === nodes.length &&
+    patchableRoots(olds, news)
+  ) {
+    const patched = patchRoots(parent, nodes, olds, news, scope);
+    for (const node of patched) {
+      if (node?.nodeType === Node.ELEMENT_NODE) node.__ibCtl = scope;
+    }
+    record.out = produced;
+    record.node = patched.length === 1 ? patched[0] : null;
+    record.nodes = patched;
+    for (const node of patched) attachTree(node);
+    return true;
+  }
+
+  // A shape that cannot be lined up — see `patchableRoots` — so the roots are
+  // rebuilt in place, as every multi-root view's used to be.
   const before = nodes[nodes.length - 1].nextSibling;
   const dom = render(produced, scope);
   const fresh =

@@ -4,12 +4,109 @@
 import { MESSAGES } from "../Messages.js";
 import { refresh } from "./refresh.js";
 import { derivedKeys, observe } from "./observe.js";
+import { setAttribute } from "./props.js";
 
 /**
  * Where a controller's live bindings are recorded (non-enumerable).
  * Registered globally so every module names the same symbol.
  */
 export const BINDINGS = Symbol.for("mosaic.bindings");
+
+/**
+ * The same bindings, indexed by the property each one reads: `Map<key,
+ * Set<entry>>`.
+ *
+ * What it is for is telling one assignment from another. Every observed
+ * property used to share a single callback — `() => refresh(controller)` — and
+ * refresh re-reads *every* binding the controller has. So a page showing eight
+ * hundred values did eight hundred reads and eight hundred DOM comparisons each
+ * time any one of them was assigned, and the cost of changing a name grew with
+ * how much else happened to be on the page. Measured, it was linear: 1.8µs per
+ * assignment at ten bindings and 91µs at eight hundred.
+ *
+ * With this, `count` reaches the nodes that read `count`.
+ */
+const BY_KEY = Symbol.for("mosaic.bindingsByKey");
+
+/**
+ * The properties that can only be answered by drawing the view again, rather
+ * than by writing a value back into a node.
+ *
+ * A bound prop — `<Button text="{label}"/>` — is one. What a Button does with
+ * `text` is the Button's own and there is nothing in the DOM to rewrite, so the
+ * markup has to be run again to work it out. `bindProp` says so, here, per
+ * property: the compiler already decides this per *file* (`redraws`, see
+ * codegen), and this is the same question asked one property at a time. A file
+ * with one bound prop among fifty text bindings redrew for all fifty.
+ *
+ * Never cleared. Markup has no conditionals and no loops — see parser.js — so
+ * which properties feed a prop is fixed by the file and cannot change between
+ * one drawing and the next.
+ */
+const VIEW_KEYS = Symbol.for("mosaic.bindingsViewKeys");
+
+/** The `Map<key, Set<entry>>` for `controller`, made if it has none. */
+function indexFor(controller) {
+  if (!Object.prototype.hasOwnProperty.call(controller, BY_KEY)) {
+    Object.defineProperty(controller, BY_KEY, {
+      value: new Map(),
+      enumerable: false,
+    });
+  }
+  return controller[BY_KEY];
+}
+
+/**
+ * Say that `key` can only be answered by drawing the view again.
+ * @internal
+ */
+export function needsRedrawFor(controller, key) {
+  if (!Object.prototype.hasOwnProperty.call(controller, VIEW_KEYS)) {
+    Object.defineProperty(controller, VIEW_KEYS, {
+      value: new Set(),
+      enumerable: false,
+    });
+  }
+  controller[VIEW_KEYS].add(key);
+}
+
+/**
+ * Drop every binding a controller holds.
+ *
+ * Both registers together: a redraw registers its bindings again, and an index
+ * left behind would point at entries whose nodes are gone. The one place that
+ * empties them, so the two cannot drift apart.
+ */
+export function resetBindings(controller) {
+  if (Object.prototype.hasOwnProperty.call(controller, BINDINGS))
+    controller[BINDINGS].length = 0;
+  if (Object.prototype.hasOwnProperty.call(controller, BY_KEY))
+    controller[BY_KEY].clear();
+}
+
+/**
+ * Write one binding's value into the node holding it.
+ *
+ * The single place that says what bringing a binding up to date means, shared
+ * by the whole-controller pass in refresh.js and the per-property one here.
+ *
+ * @returns {boolean} Whether the node is still in the document. A binding whose
+ *   node has gone is dead and its caller drops it.
+ */
+export function writeEntry(controller, entry) {
+  if (!entry.node.isConnected && entry.node.parentNode === null) return false;
+
+  if (entry.kind === "text") {
+    const next = display(readPath(controller, entry.path));
+    if (entry.node.textContent !== next) entry.node.textContent = next;
+  } else {
+    const next = attrValue(entry.parts, controller);
+    if (entry.node.getAttribute(entry.name) !== next) {
+      setAttribute(entry.node, entry.name, next);
+    }
+  }
+  return true;
+}
 
 export function readPath(controller, path) {
   let value = controller;
@@ -39,8 +136,8 @@ export function attrValue(parts, controller) {
 }
 
 /**
- * One notifier per controller, so observing the same property twice registers
- * one callback rather than two.
+ * One notifier per controller *and property*, so observing the same property
+ * twice registers one callback rather than two.
  *
  * `observe` keeps its callbacks in a Set, which only de-duplicates something
  * that is the same function each time. A fresh closure per registration was
@@ -49,17 +146,52 @@ export function attrValue(parts, controller) {
  * time — then run every one of them on the next change. Two thousand redraws
  * was two thousand notifiers and a heap out of memory.
  *
- * @type {WeakMap<object, Function>}
+ * Per property rather than per controller, which is what lets one assignment
+ * reach only what reads it. The memoising is what keeps that safe: the answer
+ * for a given property is the same function for ever, so re-tracking on every
+ * draw still registers one.
+ *
+ * @type {WeakMap<object, Map<string, Function>>}
  */
 const notifiers = new WeakMap();
 
-export function notifierFor(controller) {
-  let notify = notifiers.get(controller);
+export function notifierFor(controller, key) {
+  let byKey = notifiers.get(controller);
+  if (!byKey) {
+    byKey = new Map();
+    notifiers.set(controller, byKey);
+  }
+  let notify = byKey.get(key);
   if (!notify) {
-    notify = () => refresh(controller);
-    notifiers.set(controller, notify);
+    notify = () => refreshKey(controller, key);
+    byKey.set(key, notify);
   }
   return notify;
+}
+
+/**
+ * Bring up to date whatever reads `key`, and nothing else.
+ *
+ * Two ways, and which one is taken depends on what reads it. A property a bound
+ * prop is worked out from can only be answered by running the markup again, so
+ * that falls back to the whole-controller pass — see `VIEW_KEYS`. Anything else
+ * is text and attributes, which are written straight back into the nodes
+ * holding them.
+ */
+function refreshKey(controller, key) {
+  if (controller[VIEW_KEYS]?.has(key)) {
+    refresh(controller);
+    return;
+  }
+
+  const entries = controller[BY_KEY]?.get(key);
+  if (!entries || entries.size === 0) return;
+
+  // Copied: writing a value may remove a node, and a dead entry is dropped as
+  // it is found rather than left for the whole-controller pass to compact.
+  for (const entry of [...entries]) {
+    if (!writeEntry(controller, entry)) entries.delete(entry);
+  }
 }
 
 export function track(controller, entry) {
@@ -76,6 +208,11 @@ export function track(controller, entry) {
   // binds to stays an ordinary one.
   const paths =
     entry.kind === "text" ? [entry.path] : entry.parts.map((p) => p.path);
+
+  // Every property this one binding reads, gathered before any is registered:
+  // an attribute made of several `{path}` pieces reads more than one, and a
+  // derived value reads whatever its getter read rather than itself.
+  const keys = new Set();
   for (const path of paths) {
     if (!path) continue;
     const head = path.split(".")[0];
@@ -85,11 +222,22 @@ export function track(controller, entry) {
     // property is observed, since observing plain state replaces it with an
     // accessor of the runtime's own — one that derives nothing, and would be
     // walked for its reads for no purpose.
-    for (const key of derivedKeys(controller, head)) {
-      observe(controller, key, notifierFor(controller));
-    }
+    for (const key of derivedKeys(controller, head)) keys.add(key);
 
-    observe(controller, head, notifierFor(controller));
+    keys.add(head);
+  }
+
+  // Recorded against each of them, so an assignment finds this binding without
+  // walking the ones that have nothing to do with it.
+  const index = indexFor(controller);
+  for (const key of keys) {
+    let entries = index.get(key);
+    if (!entries) {
+      entries = new Set();
+      index.set(key, entries);
+    }
+    entries.add(entry);
+    observe(controller, key, notifierFor(controller, key));
   }
 
   // An attribute with a message in it is the messages' business as well as the

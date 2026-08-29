@@ -14,6 +14,11 @@
 
 export { Component, BROWSER_EVENTS } from "./Component.js";
 
+// Several assignments' worth of drawing done once. An event handler is already
+// a batch, so this is for the work that does not start with an event — a
+// response arriving, a timer, a message from a worker.
+export { batch, flush } from "./private/batch.js";
+
 export { coerceProps, coerceValue } from "./private/coerce.js";
 // What a child's declared setting resolves to, for a parent reading it off
 // the vnode rather than through the accessor — a Menu asking an item
