@@ -61,12 +61,8 @@ export default class AppController {
     return this.name ? `hello, ${this.name}` : "nobody yet";
   }
 
-  /**
-   * The joins that carry a transform. `attached()` is where they belong: the
-   * outlets are assigned as the markup draws, so this is the first moment
-   * every control the page placed is there to be joined.
-   */
-  attached() {
+
+  awakeFromMib() {
     // One way, with the value changed on the way across. This is the whole of
     // what `<Bind/>` leaves to code — a tag carrying an expression would be a
     // second language growing inside the markup.

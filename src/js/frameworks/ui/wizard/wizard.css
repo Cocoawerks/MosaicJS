@@ -16,8 +16,8 @@
 .v-Wizard-dialog .v-WizNav {
     width: 200px;
     min-width: 200px;
-    background: linear-gradient(180deg, var(--sidebar-background-gradient-start, var(--light-view-background)) 0%, var(--sidebar-background-gradient-end, var(--view-background)) 100%);
-    border-right: 1px solid var(--wizard-nav-border, var(--default-border-color));
+    background: linear-gradient(180deg, var(--sidebar-background-gradient-start) 0%, var(--sidebar-background-gradient-end) 100%);
+    border-right: 1px solid var(--wizard-nav-border);
     padding: 24px 0;
     display: flex;
     flex-direction: column;
@@ -29,7 +29,7 @@
     padding: 12px 20px;
     cursor: default;
     position: relative;
-    color: var(--wizard-step-color, var(--secondary-foreground));
+    color: var(--wizard-step-color);
     font-size: 16px;
     transition: all 0.2s ease;
 }
@@ -47,15 +47,15 @@
 }
 
 .v-Wizard-dialog .v-WizNavItem.is-disabled {
-    color: var(--wizard-step-disabled-color, var(--secondary-foreground));
+    color: var(--wizard-step-disabled-color);
 }
 
 .v-Wizard-dialog .v-WizNavNum {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: var(--wizard-step-bullet-background, var(--default-border-color));
-    color: var(--wizard-step-bullet-foreground, var(--text-color));
+    background: var(--wizard-step-bullet-background);
+    color: var(--wizard-step-bullet-foreground);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -67,13 +67,13 @@
 
 .v-Wizard-dialog .v-WizNavItem.is-current .v-WizNavNum {
     /* Well darker than the row it sits on, or it would disappear into it. */
-    background: var(--wizard-step-current-bullet, var(--accent-color, #5b7d8e));
+    background: var(--wizard-step-current-bullet);
     border: none;
     color: #ffffff;
 }
 
 .v-Wizard-dialog .v-WizNavItem.is-completed .v-WizNavNum {
-    background: var(--wizard-step-completed, var(--accent-color));
+    background: var(--wizard-step-completed);
 }
 
 .v-Wizard-dialog .v-WizNavTitle {
@@ -86,16 +86,30 @@
 /* Connector line between steps. It hangs below its own row into the next one,
    so it needs a positive z-index: without one it paints in tree order and the
    following step's background (the current step now has a solid one) covers the
-   part that crosses into it. */
+   part that crosses into it.
+
+   It runs from the bottom of this row's bullet to the top of the next row's,
+   and both ends are stated as the distances they actually are rather than as a
+   height that has to be kept in step with them by hand:
+
+     top     the row's 12px padding plus the 24px bullet — where the bullet ends
+     bottom  -12px, which is the next row's top padding, so the line stops
+             exactly where that row's bullet begins, whatever this row's height
+
+   It used to be `top: 37px; height: 27px`, which began a pixel below the bullet
+   and ran 4px past the next one — and since this paints above the row it
+   crosses into, those 4px were drawn *over* the next bullet as a stub across
+   its top rather than hidden behind it. */
 .v-Wizard-dialog .v-WizNavItem::after {
     content: '';
     position: absolute;
+    /* Centred on the bullet: 20px padding + half of 24px, less half the width. */
     left: 31px;
-    top: 37px;
+    top: 36px;
+    bottom: -12px;
     width: 2px;
-    height: 27px;
     z-index: 1;
-    background: var(--wizard-step-connector, var(--default-border-color));
+    background: var(--wizard-step-connector);
 }
 
 .v-Wizard-dialog .v-WizNavItem:last-child::after {
@@ -103,7 +117,7 @@
 }
 
 .v-Wizard-dialog .v-WizNavItem.is-completed::after {
-    background: var(--wizard-step-completed, var(--accent-color));
+    background: var(--wizard-step-completed);
 }
 
 /* Right content area */
@@ -136,7 +150,7 @@
     gap: 8px;
     width: 100%;
     padding: 16px 20px;
-    border-top: 1px solid var(--wizard-buttons-border, var(--default-border-color));
+    border-top: 1px solid var(--wizard-buttons-border);
     box-sizing: border-box;
 }
 

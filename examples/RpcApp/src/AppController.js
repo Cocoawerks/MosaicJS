@@ -73,7 +73,7 @@ export default class AppController {
    * is the whole of it — assigning is what redraws, so there is no other step
    * between a server's answer and the page showing it.
    */
-  async attached() {
+  async awakeFromMib() {
     await this.reload();
     await this.askWhere();
   }

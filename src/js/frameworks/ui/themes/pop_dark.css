@@ -301,6 +301,7 @@
   --wizard-step-color: #cccccc;
   --wizard-step-disabled-color: #666666;
   --wizard-step-bullet-background: #666666;
+  --wizard-step-current-bullet: #5ec5cb;
   --wizard-step-bullet-foreground: #cccccc;
   --wizard-step-connector: #444444;
   --wizard-step-completed: #90cfb0;

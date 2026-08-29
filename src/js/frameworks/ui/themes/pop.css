@@ -293,6 +293,7 @@
   --wizard-step-color: #7a6f6b;
   --wizard-step-disabled-color: #8a8581;
   --wizard-step-bullet-background: #7a6f6b;
+  --wizard-step-current-bullet: #397e6f;
   --wizard-step-bullet-foreground: #ffffff;
   --wizard-step-connector: #9b8e8a;
   --wizard-step-completed: #3b6e43;

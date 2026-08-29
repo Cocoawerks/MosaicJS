@@ -31,7 +31,21 @@ export function mount(component, target, props = {}, controller = EMPTY) {
       internal(controller, "view", view);
     }
     const dom = drawInto(view, props);
-    if (view.node) {
+    // Only if nothing else has claimed it — the same guard the composed branch
+    // below makes, for the same reason and against the same mistake.
+    //
+    // A mounted component's root may itself be a component: a Wizard's view
+    // draws a dialog and nothing else, so the node standing for the one is the
+    // node standing for the other. Written over, the tag named the outer
+    // component while the vnode there named the inner one — and a patch that
+    // finds those two disagreeing cannot reuse what is there, so it built the
+    // inner component again from nothing on every redraw of the outer one.
+    //
+    // What that cost was everything the inner component was holding. A dialog
+    // told to open and then redrawn came back closed, because the instance that
+    // had been told was gone: the wizard's mask went up over a dialog that was
+    // never shown.
+    if (view.node && !view.node.__ibView) {
       view.node.__ibView = view;
       view.node.__ibType = component;
     }

@@ -1,7 +1,0 @@
-{
-  "app_name": "Graphics",
-  "version": "0.1.0",
-  "theme": "aristo",
-  "main_file": "src/main.js",
-  "frameworks": ["ui", "graphics2d"]
-}

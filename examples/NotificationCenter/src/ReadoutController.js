@@ -42,7 +42,7 @@ export default class ReadoutController {
    * object itself, so this imports the sensor from the model — the one thing
    * both ends of a notification are allowed to share.
    */
-  attached() {
+  awakeFromMib() {
     const sender = sensors[this.watch] ?? null;
     this.title = sender ? `${sender.place} only` : "Every sensor";
 

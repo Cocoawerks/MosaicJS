@@ -26,7 +26,7 @@ export default class AppController {
     this.status = "";
   }
 
-  attached() {
+  awakeFromMib() {
     this.retitle();
   }
 

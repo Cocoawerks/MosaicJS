@@ -27,7 +27,7 @@ export default class LogPanelController {
   }
 
   /** On the page: subscribe, and arm the one-shot. */
-  attached() {
+  awakeFromMib() {
     this.subscribe();
 
     // `once` hears the next notification and lets go of itself. Nothing has to
