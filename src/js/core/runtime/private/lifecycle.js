@@ -27,6 +27,21 @@ export function attachTree(node) {
     view.attached?.();
   }
 
+  // An object a tag placed is woken the same way a controller is, and for the
+  // same reason: the markup has drawn, so every outlet is assigned and
+  // everything the page placed can be reached. It has no `attached()` — that
+  // is a component's, and an object is not on the page.
+  //
+  // Whether it has been woken is remembered on the node rather than on the
+  // object: a tag may name an object rather than a class, and one object
+  // placed by two pages is one object. The node is per placement, which is
+  // what "woken" is about.
+  const object = node.__ibObj;
+  if (object && !node.__ibAwake) {
+    node.__ibAwake = true;
+    object.awakeFromMib?.();
+  }
+
   // A compiled `.ib.xml` draws against a scope of its own rather than a
   // component instance — its controller — and that gets `awakeFromMib()`
   // instead: the markup has drawn, so every outlet is assigned and every
@@ -51,6 +66,20 @@ export function disposeTree(node) {
     node.__ibView = null;
     node.__ibType = null;
     view.destroy();
+  }
+
+  // An object the page placed is told it is going, so what it set up — a
+  // subscription, a timer, a binding, which holds both of its ends — can be
+  // undone. A singleton named by two pages hears it once per placement, which
+  // is once per page that placed it.
+  const object = node.__ibObj;
+  if (object) {
+    node.__ibObj = null;
+    node.__ibType = null;
+    if (node.__ibAwake) {
+      node.__ibAwake = false;
+      object.detached?.();
+    }
   }
 
   // And a page's controller is told it is going, so what it set up on the way

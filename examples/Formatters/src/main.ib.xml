@@ -1,0 +1,292 @@
+<!-- Formatters: the tag that is not a view.
+
+     A `.ib.xml` has always been able to place a component — something with a
+     `draw()`, which becomes part of the page. Plenty of what a page is made of
+     is not that. A formatter, a clock, a table of rates: objects a controller
+     would otherwise build by hand in `awakeFromMib()`, which puts half of what
+     the page is made of somewhere the page does not show it.
+
+     So a tag may name one of those instead, and what the module exports is
+     what decides:
+
+         a class with draw()   a component, drawn into the page
+         any other class       constructed here, and not drawn
+         an object             taken as it stands — one of it, shared
+         a function            a component function, as before
+
+     An object tag draws nothing and leaves a comment where it was written. Its
+     `outlet` hands over the object itself, so the page reaches it by name, a
+     `<Bind/>` can follow one of its properties, and the controller's getters
+     can put it to work. -->
+
+<interface>
+    <div styleName="page">
+        <header styleName="bar">
+            <h1 styleName="title">{title}</h1>
+            <span styleName="spacer" />
+
+            <label styleName="label" for="theme-combo">Theme</label>
+            <ComboBox controlId="theme-combo" action="themeChanged">
+                <Option text="Aristo" value="aristo"/>
+                <Option text="Aristo Dark" value="aristo_dark"/>
+                <Option text="Pop" value="pop"/>
+            </ComboBox>
+        </header>
+
+        <!-- Everything this page is made of, named in one place. None of it
+             draws anything; the comments these five tags leave behind are the
+             only mark they make on the document.
+
+             They are written together here because that reads well, not
+             because they have to be: an object tag belongs wherever it makes
+             sense to write it, and the clock could as easily sit beside the
+             reading it feeds. -->
+        <CurrencyFormatter outlet="money" locale="en-GB" currency="GBP"/>
+        <DateFormatter outlet="onTheDay" locale="en-GB" dateStyle="full"/>
+        <DateFormatter outlet="atTheTime" locale="en-GB" timeStyle="medium"/>
+        <Clock outlet="clock" interval="1000"/>
+        <Rates outlet="rates"/>
+
+        <section styleName="section">
+            <h2 styleName="heading">An object, placed like a control</h2>
+            <p styleName="note">
+                <code>&lt;CurrencyFormatter outlet="money" currency="GBP"/&gt;</code>
+                is a tag naming a class with no <code>draw()</code> on it, so it is
+                constructed rather than drawn and <code>this.money</code> is that
+                object. The slider is joined to the page's own
+                <code>amount</code>; the reading below is a getter that asks the
+                formatter what to say.
+            </p>
+
+            <div styleName="row">
+                <Slider outlet="amountSlider" minValue="0" maxValue="5000" value="1250"
+                        name="Amount"/>
+                <span styleName="figure">{formatted}</span>
+            </div>
+
+            <Bind source="amountSlider.value" target="amount"/>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">Settings the page changes as it runs</h2>
+            <p styleName="note">
+                What the tag says arrives on the object — the constructor is handed
+                the props, and each is assigned as a property too. After that, what
+                the page says wins: the combo box sets <code>currency</code> on the
+                controller, and the join below carries it onto the formatter. The
+                markup still says <code>currency="GBP"</code>, and does not put it
+                back — a tag is where a thing starts, not what it is held to.
+            </p>
+
+            <div styleName="row">
+                <label styleName="label" for="currency-combo">Currency</label>
+                <ComboBox controlId="currency-combo" outlet="currencyCombo"
+                          action="currencyChanged">
+                    <Option text="Pounds (GBP)" value="GBP"/>
+                    <Option text="Dollars (USD)" value="USD"/>
+                    <Option text="Euros (EUR)" value="EUR"/>
+                    <Option text="Yen (JPY)" value="JPY"/>
+                </ComboBox>
+
+                <label styleName="label" for="locale-combo">Locale</label>
+                <ComboBox controlId="locale-combo" action="localeChanged">
+                    <Option text="en-GB" value="en-GB"/>
+                    <Option text="en-US" value="en-US"/>
+                    <Option text="de-DE" value="de-DE"/>
+                    <Option text="ja-JP" value="ja-JP"/>
+                </ComboBox>
+            </div>
+
+            <p styleName="reading">
+                the same amount, converted and then formatted:
+                <strong>{converted}</strong>
+            </p>
+
+            <!-- Onto the object, from the page's own state. A Bind's paths are
+                 read from this file's scope, and an outlet is a property of
+                 that scope like any other — so `money.currency` reaches into
+                 the formatter exactly as `slider.value` reaches into a control. -->
+            <Bind source="currency" target="money.currency"/>
+            <Bind source="locale" target="money.locale"/>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">One class, placed twice</h2>
+            <p styleName="note">
+                Two <code>DateFormatter</code> tags, one told
+                <code>dateStyle="full"</code> and the other
+                <code>timeStyle="medium"</code>. They are two objects with two
+                outlets, which is what makes this worth writing as a tag at all:
+                the settings sit beside the readings they produce rather than in a
+                constructor somewhere else.
+            </p>
+
+            <p styleName="reading">{today}</p>
+            <p styleName="reading">{clockReading}</p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">An object with something to stop</h2>
+            <p styleName="note">
+                <code>Clock</code> has <code>awakeFromMib()</code> and
+                <code>detached()</code> — the hooks a controller gets, and for the
+                same reason: the first runs once the page is on screen and
+                everything it placed exists, the second when the page goes, which is
+                where a timer is given back. It has no <code>attached()</code>; that
+                is a component's hook, and an object is not on the page.
+            </p>
+            <p styleName="note">
+                Nothing tells the page the time changed. The clock assigns its own
+                <code>now</code>, and the join below follows it onto the page's
+                <code>now</code> — which the reading here shows, which is what
+                makes it a property worth watching, and what brings the two
+                formatted readings above up to date with it.
+            </p>
+
+            <p styleName="reading">
+                unformatted, as the clock hands it over: <strong>{now}</strong>
+            </p>
+
+            <Bind source="clock.now" target="now"/>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">A module that exports an object</h2>
+            <p styleName="note">
+                <code>Rates.js</code> exports an object rather than a class, so the
+                tag places <em>that object</em> — nothing is constructed and nothing
+                is copied. A class is one per tag; an object is one, shared by
+                whoever names it. The conversion above goes through it.
+            </p>
+
+            <p styleName="reading">
+                base {ratesBase} · <strong>{rateLine}</strong>
+            </p>
+        </section>
+
+        <section styleName="section">
+            <h2 styleName="heading">And it survives the page redrawing</h2>
+            <p styleName="note">
+                This page has a bound prop on it — the button's text — so it draws
+                itself again whenever anything here changes, which is several times
+                a second while the clock is running. The objects are not built
+                again: they are found where they were, told only what the tag has
+                actually changed, and handed back to their outlets. The two counts
+                below would climb without pause if they were.
+            </p>
+
+            <div styleName="row">
+                <Button text="{roundLabel}" action="toggleRounding"/>
+                <span styleName="reading">
+                    formatters built: <strong>{builds}</strong> ·
+                    clock ticks: <strong>{ticks}</strong>
+                </span>
+            </div>
+        </section>
+
+        <p styleName="status">{note}</p>
+    </div>
+
+    <style>
+        :global(body) {
+            margin: 0;
+            font-family: var(--font-family);
+            color: var(--text-color);
+            background: var(--view-background);
+            font-size:17px;
+        }
+
+        .page {
+            max-width: 52rem;
+            margin: 0 auto;
+            padding-bottom: 2rem;
+        }
+
+        .bar {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--default-border-color);
+            background: var(--light-view-background);
+        }
+
+        .title {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .label {
+            font-size: 0.85rem;
+            color: var(--secondary-foreground);
+        }
+
+        .section {
+            padding: 0 1rem;
+        }
+
+        .heading {
+            margin: 1.2rem 0 0.4rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--secondary-foreground);
+        }
+
+        .note {
+            margin: 0 0 0.8rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            max-width: 44rem;
+        }
+
+        .note code {
+            font-family: ui-monospace, monospace;
+            font-size: 0.82em;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        /* As in the Bindings example: a Slider has a minimum width and no width
+           of its own, so one in a flex row comes out at that minimum. Named by
+           the framework's own class, which is why it is not scoped to this
+           file. */
+        .row > :global(.v-Slider) {
+            flex: 1 1 16rem;
+            max-width: 24rem;
+        }
+
+        .reading {
+            font-size: 0.9rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .figure {
+            font-size: 1.4rem;
+            font-variant-numeric: tabular-nums;
+            min-width: 8rem;
+        }
+
+        .status {
+            position: sticky;
+            bottom: 0;
+            margin: 1rem 0 0;
+            padding: 0.5rem 1rem;
+            border-top: 1px solid var(--default-border-color);
+            background: var(--light-view-background);
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+            color: var(--secondary-foreground);
+        }
+    </style>
+</interface>

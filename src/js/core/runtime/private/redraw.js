@@ -14,6 +14,7 @@ import {
 import { MESSAGES } from "../Messages.js";
 import { drawInto, isComponentClass, withStyleName } from "./draw.js";
 import { flatten } from "./flatten.js";
+import { isObjectTag } from "./objects.js";
 import { applyProps, setViewRedraw, VIEW } from "./scope.js";
 import { attachTree, discard } from "./lifecycle.js";
 import { applyRef, setAttribute } from "./props.js";
@@ -82,6 +83,10 @@ function sameKind(a, b) {
   const bt = kindOf(b);
   if (at !== bt) return false;
   if (at === "element") return a.type === b.type && a.props.key === b.props.key;
+  // Two object tags are the same tag only when they name the same thing: a
+  // Formatter patched into a Clock would keep the Formatter and quietly put a
+  // Clock's settings on it.
+  if (at === "object") return a.type === b.type;
   return true;
 }
 
@@ -100,6 +105,9 @@ function kindOf(vnode) {
   if (typeof vnode === "string" || typeof vnode === "number") return "text";
   if (vnode.__ibBind === "text" || vnode.__ibBind === "message") return "text";
   if (vnode.type === Fragment) return "fragment";
+  // Asked before the component check, because a class is a function and an
+  // object tag names a class. See objects.js.
+  if (isObjectTag(vnode.type)) return "object";
   if (isComponentClass(vnode.type) || typeof vnode.type === "function")
     return "component";
   return "element";
@@ -157,6 +165,27 @@ function patch(parent, dom, oldV, newV, controller) {
       else if (bind)
         track(bind.controller, { kind: "text", node: dom, path: bind.path });
       return dom;
+    }
+
+    case "object": {
+      // The object a tag placed survives the page redrawing around it. It is
+      // not a drawing — there is nothing to reconcile — and building it again
+      // would throw away whatever it had become: a feed's connection, a
+      // document's edits, and every outlet and binding pointing at it.
+      const object = dom.__ibObj;
+      if (object && dom.__ibType === newV.type) {
+        // Outlets are cleared before a redraw, so the one pointing at this
+        // object has to be set again — it is the same object either way.
+        applyRef(newV.props.ref, object);
+        // Only what the tag has actually changed, so what the page said to the
+        // object afterwards is not put back to what the markup says.
+        dom.__ibApplied = applyProps(object, newV.props, dom.__ibApplied);
+        return dom;
+      }
+      const fresh = render(newV, controller, nsOf(parent));
+      parent.insertBefore(fresh, dom);
+      discard(dom);
+      return fresh;
     }
 
     case "component": {

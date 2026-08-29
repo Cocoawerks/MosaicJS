@@ -64,7 +64,82 @@ export function parse(src) {
   const comp = { style: "", markup: [] };
   comp.markup = unwrapRoot(trimEdges(p.parseNodes(null, comp)), comp);
   checkNames(comp.markup);
+  decodeEntities(comp.markup);
   return comp;
+}
+
+/** The five XML predefines. Everything else is a numeric reference or nothing. */
+const ENTITIES = {
+  lt: "<",
+  gt: ">",
+  amp: "&",
+  quot: '"',
+  apos: "'",
+};
+
+/**
+ * `&lt;` as the `<` it stands for.
+ *
+ * A `.ib.xml` file is XML — that is what lets an editor check it — so the one
+ * way to write a `<` in text is to escape it, and a page that wants to show a
+ * tag as an example has no other. Left undecoded it reached the DOM through
+ * `createTextNode`, which does not decode anything, and the page displayed the
+ * escape itself.
+ *
+ * The five XML predefines and numeric references, and nothing else. HTML's
+ * named entities — `&nbsp;`, `&mdash;` — are not XML's, and an editor
+ * checking this file would already have refused them.
+ *
+ * What is not recognised is left exactly as written rather than refused: a
+ * bare `&` in prose is ordinary — "Fish & Chips" — and has always passed
+ * through, so reading one as an error now would take working pages down for a
+ * character they were right to write.
+ */
+function decodeText(text) {
+  if (!text.includes("&")) return text;
+  return text.replace(
+    /&(#[xX][0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g,
+    (whole, body) => {
+      if (body[0] !== "#") return ENTITIES[body] ?? whole;
+      const code =
+        body[1] === "x" || body[1] === "X"
+          ? Number.parseInt(body.slice(2), 16)
+          : Number.parseInt(body.slice(1), 10);
+      if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) return whole;
+      return String.fromCodePoint(code);
+    },
+  );
+}
+
+/**
+ * Decode every text the markup will show: text nodes, and the text around the
+ * bindings in an attribute value.
+ *
+ * Done here, over the tree, rather than as the text is read — after
+ * {@link trimEdges}, so a `&#10;` that decodes to a newline is not mistaken
+ * for the whitespace a line break in the source left behind and dropped.
+ *
+ * Not the `<style>` block, which is read verbatim: CSS has no entities, and an
+ * `&` in a selector means what it says.
+ */
+function decodeEntities(nodes) {
+  for (const node of nodes) {
+    if (node.kind === "text") {
+      node.text = decodeText(node.text);
+      continue;
+    }
+    if (node.kind !== "element") continue;
+    for (const attr of node.attrs) {
+      if (attr.value.kind === "static") {
+        attr.value.text = decodeText(attr.value.text);
+      } else if (attr.value.kind === "template") {
+        for (const part of attr.value.parts) {
+          if (part.kind === "text") part.text = decodeText(part.text);
+        }
+      }
+    }
+    decodeEntities(node.children);
+  }
 }
 
 /**

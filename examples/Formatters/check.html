@@ -1,0 +1,209 @@
+<!doctype html>
+<!-- The app's own browser check: `mosaic check examples/Formatters`.
+
+     It loads the bundle exactly as index.html does — nothing here imports a
+     module — and then drives the page the way a person would.
+
+     What it is about: tags naming objects rather than views. That they are
+     constructed and not drawn, that the tag's attributes reach them, that a
+     `<Bind/>` carries the page's state onto one and follows a property of
+     another, that an object with a lifecycle is started and stopped, that a
+     module exporting an object is placed as it stands, and that none of them
+     is built again when the page redraws. -->
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..700;1,300..700&amp;display=swap"
+    />
+    <title>Formatters browser check</title>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <pre id="results"></pre>
+
+    <script type="module" src="build/app.js"></script>
+
+    <script type="module">
+      const log = [];
+      let failed = 0;
+      const check = (name, cond) => {
+        log.push(`${cond ? "PASS" : "FAIL"}  ${name}`);
+        if (!cond) failed++;
+        document.querySelector("#results").textContent = log.join("\n");
+      };
+
+      window.addEventListener("unhandledrejection", (e) => {
+        document.querySelector("#results").textContent =
+          log.join("\n") + `\nERROR  ${e.reason?.message ?? e.reason}`;
+        document.title = "verdict FAIL (threw)";
+      });
+      window.addEventListener("error", (e) => {
+        document.querySelector("#results").textContent =
+          log.join("\n") + `\nERROR  ${e.message}`;
+        document.title = "verdict FAIL (threw)";
+      });
+
+      const app = document.querySelector("#app");
+      for (let i = 0; i < 60 && !app.querySelector("h1"); i++) {
+        await new Promise((r) => setTimeout(r, 16));
+      }
+
+      const until = async (cond, ms = 3000) => {
+        const end = performance.now() + ms;
+        while (!cond() && performance.now() < end)
+          await new Promise((r) => requestAnimationFrame(r));
+        return cond();
+      };
+      const settle = () => new Promise((r) => requestAnimationFrame(r));
+
+      const figure = () => app.querySelector(".figure").textContent.trim();
+      const readings = () =>
+        [...app.querySelectorAll(".reading")].map((p) =>
+          p.textContent.replace(/\s+/g, " ").trim(),
+        );
+      const status = () => app.querySelector(".status").textContent.trim();
+      const labelled = (text) =>
+        [...app.querySelectorAll(".v-Button")].find(
+          (b) => b.textContent.trim() === text,
+        );
+      const combo = (id) => app.querySelector(`#${id}`);
+      const chooseIn = (id, value) => {
+        const el = combo(id);
+        el.value = value;
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      };
+
+      // --- the objects are placed, and nothing of them is drawn -----------------
+
+      // Five object tags, each leaving a comment where it was written. They are
+      // the direct children of the page that are comments and nothing else.
+      const page = app.querySelector(".page");
+      const comments = [...page.childNodes].filter((n) => n.nodeType === 8);
+      check(
+        "the five object tags left comments and no elements",
+        comments.length >= 5,
+      );
+      check(
+        "each comment names what the tag placed",
+        ["CurrencyFormatter", "DateFormatter", "Clock"].every((name) =>
+          comments.some((c) => c.data.includes(name)),
+        ) &&
+          // A module exporting an object literal carries no name into the
+          // value, so that one is named for what it is.
+          comments.some((c) => c.data.trim() === "object"),
+      );
+
+      // --- the tag's attributes reached the object ------------------------------
+
+      check(
+        "the formatter formatted, in the currency and locale the tag said",
+        figure().startsWith("£") && figure().includes("1,250"),
+      );
+      check(
+        "and the controller was told what the page placed",
+        status().includes("money") && status().includes("clock"),
+      );
+
+      // --- the object with a lifecycle -----------------------------------------
+
+      // The formatter told `timeStyle="medium"` produces the time and nothing
+      // else; the raw Date beside it has one in the middle of it.
+      const timeReading = () => readings().find((r) => /^\d\d:\d\d:\d\d$/.test(r));
+      check("the clock's date reached a formatter", readings().some((r) => /\d{4}/.test(r)));
+      const firstTime = timeReading();
+      check("awakeFromMib started it", firstTime !== undefined);
+      check(
+        "and it ticks — the Bind follows `now` onto the page",
+        await until(() => timeReading() !== firstTime),
+      );
+
+      // --- the shared object ----------------------------------------------------
+
+      check(
+        "the module that exports an object was placed as it stands",
+        readings().some((r) => r.includes("base GBP") && r.includes("1 GBP = 1 GBP")),
+      );
+
+      // --- a Bind onto the object ----------------------------------------------
+
+      const builds = () => {
+        const line = readings().find((r) => r.startsWith("formatters built"));
+        return Number(line.match(/formatters built: (\d+)/)[1]);
+      };
+      const ticks = () => {
+        const line = readings().find((r) => r.startsWith("formatters built"));
+        return Number(line.match(/clock ticks: (\d+)/)[1]);
+      };
+
+      const buildsBefore = builds();
+      chooseIn("currency-combo", "JPY");
+      await settle();
+
+      check(
+        "the combo set the page's currency and the Bind put it on the formatter",
+        figure().includes("¥"),
+      );
+      check(
+        "the shared rates converted it on the way",
+        readings().some((r) => r.includes("1 GBP = 193.4 JPY")),
+      );
+      check(
+        "and the formatter was rebuilt exactly once for it",
+        builds() === buildsBefore + 1,
+      );
+
+      chooseIn("locale-combo", "de-DE");
+      await settle();
+      check(
+        "the locale reached it too — the same object, told twice",
+        /\d\.\d{3}/.test(figure()),
+      );
+
+      // --- and the objects survive the page redrawing ---------------------------
+
+      // The page has a bound prop on it, so it draws itself again whenever
+      // anything here changes — several times a second while the clock runs.
+      const ticksBefore = ticks();
+      const buildsAfterLocale = builds();
+      check(
+        "the page is redrawing",
+        await until(() => ticks() > ticksBefore + 1),
+      );
+      check(
+        "and no formatter was built by any of it",
+        builds() === buildsAfterLocale,
+      );
+
+      labelled("Round it off").click();
+      await settle();
+      check(
+        "the button that changes a bound prop redrew the page",
+        labelled("Show the pennies") !== undefined,
+      );
+      check(
+        "the clock kept counting across the redraw — the same object",
+        ticks() >= ticksBefore,
+      );
+      check(
+        "and the formatter was not built again either",
+        builds() === buildsAfterLocale,
+      );
+      check(
+        "what the markup says is not put back over what the page assigned",
+        figure().includes("¥"),
+      );
+
+      document.querySelector("#results").textContent = log.join("\n");
+      document.title =
+        failed === 0
+          ? `verdict PASS (${log.length} checks)`
+          : `verdict FAIL (${failed} of ${log.length})`;
+    </script>
+  </body>
+</html>

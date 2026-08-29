@@ -566,3 +566,37 @@ test("and nothing else is handed one", () => {
   expect(js.match(/scope: this/g)).toHaveLength(1);
   expect(js).toContain('h(Button, { text: "x" })');
 });
+
+// --- entities ----------------------------------------------------------------
+//
+// A `.ib.xml` file is XML, so the one way to write a `<` in text is to escape
+// it — which a page showing a tag as an example has to do. `createTextNode`
+// decodes nothing, so a file that was not decoded here showed the escape.
+
+test("the XML predefines are decoded in text", () => {
+  const js = compile("<p>&lt;Button/&gt; &amp; friends</p>");
+  expect(js).toContain('"<Button/> & friends"');
+});
+
+test("and in an attribute value, beside a binding", () => {
+  expect(compile('<p title="a &amp; b">x</p>')).toContain('title: "a & b"');
+  expect(compile('<p title="&lt;{name}&gt;">x</p>')).toContain('"<"');
+});
+
+test("numeric references too, in decimal and in hex", () => {
+  expect(compile("<p>&#65;&#x42;</p>")).toContain('"AB"');
+  expect(compile("<p>&#x2014;</p>")).toContain('"—"');
+});
+
+test("a `&` that names nothing is left exactly as written", () => {
+  // Prose has always been able to say it, and reading one as an error now
+  // would take working pages down for a character they were right to write.
+  expect(compile("<p>Fish & Chips</p>")).toContain('"Fish & Chips"');
+  expect(compile("<p>&nbsp;stuff</p>")).toContain('"&nbsp;stuff"');
+  expect(compile("<p>&#x110000;</p>")).toContain('"&#x110000;"');
+});
+
+test("the style block is left verbatim — CSS has no entities", () => {
+  const js = compile('<div>x</div><style>.a::after { content: "&amp;"; }</style>');
+  expect(js).toContain("&amp;");
+});

@@ -8,6 +8,7 @@ import { attrValue, display, readPath, track } from "./bindings.js";
 import { MESSAGES } from "../Messages.js";
 import { drawInto, isComponentClass, withStyleName } from "./draw.js";
 import { flatten } from "./flatten.js";
+import { instantiate, isObjectTag, placeholder } from "./objects.js";
 import { applyProps, rememberView, scopeFor } from "./scope.js";
 import { applyRef, setAttribute } from "./props.js";
 
@@ -82,6 +83,21 @@ export function render(vnode, controller = {}, ns = null) {
     // node *is* the thing, so that stays as it was.
     applyRef(props.ref, view);
     return dom;
+  }
+
+  // A tag that names an object rather than a view: constructed and handed to
+  // its outlet, and nothing is drawn. The comment it leaves behind is where
+  // the runtime stands to wake it and to take it down again — see objects.js.
+  if (isObjectTag(type)) {
+    const node = placeholder(type);
+    const { object, applied } = instantiate(type, props);
+    node.__ibObj = object;
+    node.__ibType = type;
+    node.__ibApplied = applied;
+    // `outlet="money"` hands over the object itself. There is nothing else it
+    // could hand over: the comment is plumbing, not the thing the page meant.
+    applyRef(props.ref, object);
+    return node;
   }
 
   if (typeof type === "function") {
