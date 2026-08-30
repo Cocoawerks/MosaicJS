@@ -5,5 +5,5 @@
  * `class="item {status}"`.
  */
 export function bindAttr(owner, parts) {
-  return { __ibBind: "attr", controller: owner, parts };
+  return { __ibBind: "attr", owner: owner, parts };
 }

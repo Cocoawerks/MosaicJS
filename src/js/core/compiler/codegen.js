@@ -108,7 +108,7 @@ export function generate(comp, opts) {
     out += `${opts.name}.redraws = true;\n`;
   }
   if (opts.owner) {
-    out += `${opts.name}.controller = ${opts.name}Controller;\n`;
+    out += `${opts.name}.owner = ${opts.name}Controller;\n`;
   }
   return out;
 }

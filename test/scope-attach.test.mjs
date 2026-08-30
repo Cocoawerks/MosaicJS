@@ -27,7 +27,7 @@ function composed(controller) {
     return h("div", { class: "composed" });
   };
   view.isMarkup = true;
-  view.controller = controller;
+  view.owner = controller;
   return view;
 }
 

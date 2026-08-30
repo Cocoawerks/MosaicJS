@@ -45,7 +45,7 @@ function bound(options = {}) {
 
   return {
     root,
-    controller,
+    owner: controller,
     count: () => root.querySelector("output").textContent,
     classes: () =>
       root
@@ -69,7 +69,7 @@ function hosting() {
 
   return {
     root,
-    controller,
+    owner: controller,
     /** The Counter's own view, which the interface drew. */
     counter: root.querySelector("output").parentNode.__ibView,
     value: () => root.querySelector("output").textContent,
@@ -89,7 +89,7 @@ test("assigning a bound property writes it into the node that holds it", () => {
   const mib = bound();
 
   assert.equal(mib.count(), "0");
-  mib.controller.count = 7;
+  mib.owner.count = 7;
   assert.equal(mib.count(), "7");
 });
 
@@ -98,9 +98,9 @@ test("and into a bound attribute, not only into text", () => {
   const mib = bound({ limit: 3 });
 
   assert.deepEqual(mib.classes(), ["value"]);
-  mib.controller.count = 3;
+  mib.owner.count = 3;
   assert.deepEqual(mib.classes(), ["value", "high"]);
-  mib.controller.count = 1;
+  mib.owner.count = 1;
   assert.deepEqual(mib.classes(), ["value"]);
 });
 
@@ -115,8 +115,8 @@ test("a derived value follows what it derives from", () => {
   // had said the first time. The class never changed again.
   const mib = bound({ limit: 2 });
 
-  mib.controller.count = 5;
-  assert.equal(mib.controller.status, "high", "the getter still computes");
+  mib.owner.count = 5;
+  assert.equal(mib.owner.status, "high", "the getter still computes");
   assert.deepEqual(mib.classes(), ["value", "high"], "and the DOM has it");
 });
 
@@ -142,23 +142,23 @@ test("every binding on a property follows it, not just the first", () => {
 test("a property nothing binds to is left an ordinary one", () => {
   const mib = bound();
 
-  mib.controller.untouched = 1;
-  const plain = Object.getOwnPropertyDescriptor(mib.controller, "untouched");
+  mib.owner.untouched = 1;
+  const plain = Object.getOwnPropertyDescriptor(mib.owner, "untouched");
   assert.ok("value" in plain, "no accessor was installed over it");
 
   // And assigning it draws nothing, since nothing reads it.
   const before = mib.root.innerHTML;
-  mib.controller.untouched = 2;
+  mib.owner.untouched = 2;
   assert.equal(mib.root.innerHTML, before);
 });
 
 test("assigning the same value again changes nothing", () => {
   const mib = bound();
-  mib.controller.count = 4;
+  mib.owner.count = 4;
 
   const node = mib.root.querySelector("output");
   const text = node.childNodes[0];
-  mib.controller.count = 4;
+  mib.owner.count = 4;
 
   assert.equal(node.childNodes[0], text, "the same text node, untouched");
   assert.equal(mib.count(), "4");
@@ -189,11 +189,11 @@ test("a binding whose node has gone is dropped rather than written to", () => {
   const mib = bound();
   const output = mib.root.querySelector("output");
 
-  mib.controller.count = 1;
+  mib.owner.count = 1;
   output.remove();
 
   // The node is off the interface; assigning again must neither throw nor keep it.
-  mib.controller.count = 2;
+  mib.owner.count = 2;
   assert.equal(output.parentNode, null);
   assert.equal(mib.title(), "Counter App", "the bindings that remain still work");
 });
@@ -204,10 +204,10 @@ test("an interface driven hard does not accumulate work per assignment", () => {
   // the next — which is quadratic, and was once an out-of-memory.
   const mib = bound();
 
-  for (let i = 0; i < 300; i += 1) mib.controller.count = i;
+  for (let i = 0; i < 300; i += 1) mib.owner.count = i;
 
   assert.equal(mib.count(), "299");
-  const bindings = mib.controller[Symbol.for("mosaic.bindings")];
+  const bindings = mib.owner[Symbol.for("mosaic.bindings")];
   assert.equal(bindings.length, 3, "one per binding in the markup, still");
 });
 
@@ -219,7 +219,7 @@ test("a Button in the interface calls the controller, and the interface follows"
 
   plus.dispatchEvent({ type: "click" });
   plus.dispatchEvent({ type: "click" });
-  assert.equal(mib.controller.count, 2);
+  assert.equal(mib.owner.count, 2);
   assert.equal(mib.count(), "2", "which the binding wrote out");
 
   minus.dispatchEvent({ type: "click" });
@@ -234,7 +234,7 @@ test("a component's props are what the markup said, and stay that way", () => {
   const mib = hosting();
 
   assert.equal(mib.counter.limit, 3);
-  mib.controller.limit = 99;
+  mib.owner.limit = 99;
   assert.equal(mib.counter.limit, 3, "the component was not told anything");
 });
 
@@ -311,7 +311,7 @@ test("a component is not watching the controller that drew it", () => {
 
   class Reader extends Component {
     draw() {
-      return h("i", null, String(this.controller?.label ?? ""));
+      return h("i", null, String(this.owner?.label ?? ""));
     }
   }
   const controller = { label: "first" };

@@ -22,9 +22,9 @@ export function mount(component, target, props = {}, owner = EMPTY) {
   if (isComponentClass(component)) {
     // Built from what it is being mounted with, the owner among the
     // props: a component takes one object, and mounting is placing it.
-    const view = new component({...props,...(said ? { controller: owner } : {}) });
+    const view = new component({...props,...(said ? { owner: owner } : {}) });
     if (said && owner !== view) {
-      view.controller = owner;
+      view.owner = owner;
       // The runtime's own field on the interface's owner, not state the interface
       // holds — see internal.js. An owner with a `view` of its own meaning
       // something else keeps it: this is only reached when one was passed in.
@@ -73,11 +73,11 @@ export function mount(component, target, props = {}, owner = EMPTY) {
   // an interface by hand and naming its owner is saying which to use; an interface
   // mounted with nothing said uses the one written for it.
   if (owner === EMPTY) {
-    owner = component?.controller ? new component.controller() : {};
+    owner = component?.owner ? new component.owner() : {};
   }
 
-  const view = new Component({...props, controller: owner });
-  view.controller = owner;
+  const view = new Component({...props, owner: owner });
+  view.owner = owner;
   internal(owner, "view", view);
 
   const vnode =

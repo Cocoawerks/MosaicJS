@@ -139,7 +139,7 @@ export class Component {
      * what an interface sets.
      */
     internal(this, "props", coerceProps(props) ?? {});
-    internal(this, "controller", this.props.controller ?? this);
+    internal(this, "controller", this.props.owner ?? this);
     /** The root DOM node, set once the tree is rendered. @internal */
     internal(this, NODE, null);
     /** Every top-level node this view put in the document. @internal */
@@ -367,7 +367,7 @@ export class Component {
     }
     this.listeners.clear();
 
-    clearBindings(this.controller ?? this);
+    clearBindings(this.owner ?? this);
 
     this.nodes = [];
     this.node = null;
@@ -400,7 +400,7 @@ export class Component {
       redraw(this);
       return;
     }
-    refresh(this.controller);
+    refresh(this.owner);
   }
 }
 

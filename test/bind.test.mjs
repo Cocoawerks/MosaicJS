@@ -385,7 +385,7 @@ test("a Bind written beside the markup it joins, not inside it", () => {
       h(Bind, { source: "a.value", target: "b.value" }),
     ];
   }
-  Mib.controller = function () {
+  Mib.owner = function () {
     return controller;
   };
 
@@ -429,7 +429,7 @@ test("a path that is not ready yet is waited for, not refused", () => {
       h(Bind, { source: "a.other", target: "b.other" }),
     ];
   }
-  Mib.controller = function () {
+  Mib.owner = function () {
     return controller;
   };
 
@@ -460,7 +460,7 @@ test("a path that never leads anywhere says so once, and keeps watching", () => 
   function Mib() {
     return h(Bind, { source: "combo1.value", target: "label.value" });
   }
-  Mib.controller = function () {
+  Mib.owner = function () {
     return controller;
   };
 
@@ -519,14 +519,14 @@ test("a path is read against the scope the tag is written in", () => {
       h(Bind, { source: "field.value", target: "tally" }),
     ];
   }
-  Panel.controller = function () {
+  Panel.owner = function () {
     return inner;
   };
 
   function Mib() {
     return h("div", {}, h(Panel, {}));
   }
-  Mib.controller = function () {
+  Mib.owner = function () {
     return outer;
   };
 
@@ -545,7 +545,7 @@ test("an interface names a composed view's control through the outlet it placed"
   function Panel() {
     return h("div", { class: "panel" });
   }
-  Panel.controller = function () {
+  Panel.owner = function () {
     return inner;
   };
 
@@ -555,7 +555,7 @@ test("an interface names a composed view's control through the outlet it placed"
       h(Bind, { source: "mydialog.combo.value", target: "chosen" }),
     ];
   }
-  Mib.controller = function () {
+  Mib.owner = function () {
     return mib;
   };
 
@@ -605,7 +605,7 @@ test("and survives the redraw of the interface it is written in", () => {
       h(Bind, { source: "field.value", target: "tally" }),
     );
   }
-  Mib.controller = function () {
+  Mib.owner = function () {
     return controller;
   };
 

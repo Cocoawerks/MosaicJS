@@ -44,9 +44,9 @@ export function render(vnode, owner = {}, ns = null) {
     // The binding carries its own controller: it was captured at compile time
     // from the component that declared it.
     const node = document.createTextNode(
-      display(readPath(vnode.controller, vnode.path)),
+      display(readPath(vnode.owner, vnode.path)),
     );
-    track(vnode.controller, { kind: "text", node, path: vnode.path });
+    track(vnode.owner, { kind: "text", node, path: vnode.path });
     return node;
   }
   if (Array.isArray(vnode)) {
@@ -200,8 +200,8 @@ export function render(vnode, owner = {}, ns = null) {
   for (const name in props) {
     const value = props[name];
     if (value && value.__ibBind === "attr") {
-      setAttribute(el, name, attrValue(value.parts, value.controller));
-      track(value.controller, {
+      setAttribute(el, name, attrValue(value.parts, value.owner));
+      track(value.owner, {
         kind: "attr",
         node: el,
         name,

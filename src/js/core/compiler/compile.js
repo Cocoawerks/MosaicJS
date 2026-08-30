@@ -235,7 +235,7 @@ function ensurePage(code, file, stem, runtime) {
   // the module's own code does, which is why it goes at the top. Any other
   // pair is just a component and its markup.
   const isEntry = stem === ENTRY_STEM;
-  if (isEntry) header.push(`MosaicApplication.registerPage(${name});`);
+  if (isEntry) header.push(`MosaicApplication.registerMib(${name});`);
 
   const out = header.length > 0 ? `${header.join("\n")}\n${code}` : code;
   return isEntry

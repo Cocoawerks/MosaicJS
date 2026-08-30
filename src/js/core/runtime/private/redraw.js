@@ -311,7 +311,7 @@ function textOf(vnode, owner) {
     return { value: MESSAGES.get(vnode.key), bind: vnode };
   }
   if (vnode.__ibBind === "text") {
-    const value = display(readPath(vnode.controller, vnode.path));
+    const value = display(readPath(vnode.owner, vnode.path));
     return { value, bind: vnode };
   }
   return { value: String(vnode), bind: null };
@@ -353,7 +353,7 @@ function patch(parent, dom, oldV, newV, owner) {
       // replaces rather than accumulates.
       if (bind?.__ibBind === "message") MESSAGES._bind({ node: dom, key: bind.key });
       else if (bind)
-        track(bind.controller, { kind: "text", node: dom, path: bind.path });
+        track(bind.owner, { kind: "text", node: dom, path: bind.path });
       return dom;
     }
 
@@ -623,8 +623,8 @@ function patchProps(el, oldProps = {}, newProps = {}, owner) {
     // Bound attributes and refs are re-applied every draw: the value may have
     // changed even when the vnode looks identical.
     if (next && next.__ibBind === "attr") {
-      setAttribute(el, name, attrValue(next.parts, next.controller));
-      track(next.controller, {
+      setAttribute(el, name, attrValue(next.parts, next.owner));
+      track(next.owner, {
         kind: "attr",
         node: el,
         name,

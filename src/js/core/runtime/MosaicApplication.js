@@ -33,14 +33,7 @@ export class MosaicApplication {
   constructor(props = {}) {
     const { id, target, component, controller, ...rest } = props;
 
-    // Left unset rather than defaulted to an empty object: `mount` reads
-    // "nothing was said" as "use the controller the interface was compiled
-    // with", and an empty object is something said. A `main.ib.xml` paired with
-    // a `MainController.js` beside it was therefore mounted against a bare
-    // object at the application root, while the same interface placed as a tag
-    // got its controller — the pairing worked everywhere but the one place an
-    // interface is usually used.
-    this.controller = controller ?? null;
+    this.owner = controller ?? null;
     this.props = rest;
     this.target = resolveTarget(id, target);
     this.view = null;
@@ -64,12 +57,12 @@ export class MosaicApplication {
       Component,
       this.target,
       this.props,
-      this.controller ?? undefined,
+      this.owner ?? undefined,
     );
     // Whatever it ended up drawing against, which is the interface's own when
     // nothing was passed.
-    this.controller = this.unmount.view?.controller ?? this.controller ?? {};
-    this.view = this.controller.view;
+    this.owner = this.unmount.view?.owner ?? this.owner ?? {};
+    this.view = this.owner.view;
     return this;
   }
 }

@@ -303,7 +303,7 @@ class Parser {
         if (this.startsWithTag("script")) {
           throw this.err(
             "an .ib.xml file holds markup, not JavaScript — move the <script> into a " +
-              "module beside it (a controller is its default export, a component " +
+              "module beside it (a owner is its default export, a component " +
               "is its own file) and the markup will find it",
           );
         }

@@ -736,7 +736,7 @@ function scaffold(name) {
         2,
       ) + "\n",
 
-    [`${SRC}/main.ib.xml`]: `<!-- ${name} — the interface.
+    [`${SRC}/main.ib.xml`]: `<!-- ${name} — the Mib interface.
 
      The markup itself has no logic and no JavaScript: everything dynamic is a
      binding to the controller, which is AppController.js beside this file.
@@ -751,23 +751,23 @@ function scaffold(name) {
        outlet="field"            hands the DOM node to controller.field
        <Card limit="3" />           another component; its import is emitted
 
-     A component this interface draws is a module of its own — Card.jsx beside this
+     A component this Mib interface draws is a module of its own — Card.jsx beside this
      file — and naming it in the markup is all it takes: the compiler emits the
      import. There is one place a component is written, and one way to find it.
 
      One <style> block, anywhere inside <interface> — it is hoisted out of the
      markup and scoped to this file, so its selectors only ever match this
-     interface. Use :global(...) to opt one out. Convention is to put it last.
+     Mib interface. Use :global(...) to opt one out. Convention is to put it last.
 
      Everything the file draws goes inside <interface>, which is the file
      itself rather than anything it draws. One root, so the file is XML an
      editor can check. Nothing renders until there is markup in it. -->
 
 <interface>
-</interface>
+</Mib interface>
 `,
 
-    [`${SRC}/AppController.js`]: `// The controller behind main.ib.xml: the interface's state, the values its {bindings}
+    [`${SRC}/AppController.js`]: `// The controller behind main.ib.xml: the Mib interface's state, the values its {bindings}
 // read, and the methods its actions fire.
 // A controller is a plain object — it extends nothing and the runtime asks
 // nothing of it. Properties are read by name and \`action=\` calls methods.
@@ -780,8 +780,8 @@ export default class AppController {
 
     [`${SRC}/${ENTRY}`]: `// ${name} — the application bootstrap, and the entry mosaic bundles.
 //
-// \`main.ib.xml\` is this module's interface: it sits beside this file, so the compiler
-// compiles it and registers it as the application's interface — there is nothing to
+// \`main.ib.xml\` is this module's Mib interface: it sits beside this file, so the compiler
+// compiles it and registers it as the application's Mib interface — there is nothing to
 // import and nothing to name. The runtime is vendored into the build as a
 // package, so it is imported by name.
 import { MosaicApplication } from "mosaic";
@@ -791,16 +791,16 @@ import AppController from "./AppController.js";
 new MosaicApplication({ id: "app", controller: new AppController() });
 `,
 
-    [`${SRC}/${BUN_DIR}/services/greeting.js`]: `// ${name} — a service: something the interface can call that runs outside it.
+    [`${SRC}/${BUN_DIR}/services/greeting.js`]: `// ${name} — a service: something the Mib interface can call that runs outside it.
 //
 // This directory is \`${BUN_DIR}/services/\` by convention. The compiler skips
 // \`${BUN_DIR}/\` entirely, because none of it is browser code and none of it
-// belongs in the interface's bundle.
+// belongs in the Mib interface's bundle.
 // A service is a plain module. It knows nothing about rpc, nothing about the
 // desktop, and nothing about how it is reached — which is what lets the same
 // file answer over the desktop bridge under \`mosaic desktop\` and over HTTP
 // under \`mosaic web\`. The file name is the group: this is \`greeting\`, so
-// the interface calls \`greeting.hello(...)\`.
+// the Mib interface calls \`greeting.hello(...)\`.
 // The default export is the group: every function on it is callable, arguments
 // and return values make the trip as JSON, and an async function is awaited
 // before its answer is sent.

@@ -175,7 +175,7 @@ test("mount gives the controller a Component and <View> renders a div", () => {
   const unmount = mount(Main, root, {}, controller);
 
   assert.ok(controller.view instanceof Component);
-  assert.equal(controller.view.controller, controller);
+  assert.equal(controller.view.owner, controller);
   assert.equal(controller.view.node.tagName, "div"); // <View> -> <div>
   assert.equal(unmount.view, controller.view);
 });
@@ -310,7 +310,7 @@ class AppController {
 MosaicApplication.registerMib(Main);
 
 test("MosaicApplication mounts the interface the compiled entry registered", async () => {
-  const app = new MosaicApplication({ controller: { title: "Mosaic" } });
+  const app = new MosaicApplication({ owner: { title: "Mosaic" } });
 
   assert.match(
     document.body.innerHTML,
@@ -322,7 +322,7 @@ test("MosaicApplication mounts the interface the compiled entry registered", asy
 test("mounting is synchronous — the DOM is there before ready is awaited", () => {
   // Nothing is loaded, so there is nothing to wait for: the view exists as
   // soon as the constructor returns.
-  const app = new MosaicApplication({ controller: { title: "Now" } });
+  const app = new MosaicApplication({ owner: { title: "Now" } });
 
   assert.match(document.body.innerHTML, /<h1[^>]*>Now<\/h1>/);
   assert.ok(app.view instanceof Component);
@@ -335,7 +335,7 @@ test("with no registered interface and no component, it says so", () => {
   MosaicApplication.mainMib = null;
   try {
     assert.throws(
-      () => new MosaicApplication({ controller: {} }),
+      () => new MosaicApplication({ owner: {} }),
       /no root component to mount/,
     );
   } finally {
@@ -351,7 +351,7 @@ test("MosaicApplication mounts into the element named by the id prop", async () 
 
   const app = new MosaicApplication({
     id: "app",
-    controller: { title: "x" },
+    owner: { title: "x" },
   });
   assert.equal(app.target, host);
   assert.match(host.innerHTML, /^<div class="app[^"]*"/);
@@ -368,7 +368,7 @@ test("component mounts something other than the registered interface", async () 
   const app = new MosaicApplication({
     id: "app2",
     component: Main,
-    controller,
+    owner: controller,
   });
 
   assert.ok(app.view instanceof Component);
@@ -384,7 +384,7 @@ test("a scope belongs to a file", async () => {
   new MosaicApplication({
     id: "scopes",
     component: Main,
-    controller: { title: "x" },
+    owner: { title: "x" },
   });
 
   const mib = host.childNodes[0];
@@ -489,7 +489,7 @@ test("a .ib.xml interface renders a drawn view as a child component", async () =
   const app = new MosaicApplication({
     id: "composed",
     component: Main,
-    controller: { title: "Mosaic" },
+    owner: { title: "Mosaic" },
   });
 
   assert.match(host.innerHTML, /<h1 class="title[^"]*"[^>]*>Mosaic<\/h1>/);
@@ -529,7 +529,7 @@ test("the bundle is one self-contained module", async () => {
   const app = new MosaicApplication({
     id: "bundled",
     component: Main,
-    controller: { title: "Bundled" },
+    owner: { title: "Bundled" },
   });
 
   // Everything came from one file: the interface and the drawn child it renders.
@@ -1436,7 +1436,7 @@ test("a fragment's children are levelled into the list around it", () => {
 /** A compiled view, as the compiler emits one: a function, marked. */
 function view(fn, controller) {
   fn.isMarkup = true;
-  if (controller) fn.controller = controller;
+  if (controller) fn.owner = controller;
   return fn;
 }
 

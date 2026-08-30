@@ -22,7 +22,7 @@ const PLUMBING = new Set(["children", "ref", "key"]);
  * into the state of whatever drew it, and what it was handed stays its own.
  */
 export function scopeFor(type, owner) {
-  if (type?.controller) return new type.controller();
+  if (type?.owner) return new type.owner();
   // A view compiled from markup is a component and gets a scope of its own,
   // even with no owner written for it: the tag's attributes have to land
   // somewhere, and a view that reached into the state of whatever drew it

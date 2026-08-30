@@ -235,10 +235,10 @@ export default class Bind extends Component {
       if (
         view &&
         view !== this &&
-        view.controller &&
-        view.controller !== view
+        view.owner &&
+        view.owner !== view
       ) {
-        return view.controller;
+        return view.owner;
       }
     }
     return null;

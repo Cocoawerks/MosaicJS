@@ -418,7 +418,7 @@ test("a page with a controller of its own is drawn against it", () => {
     return h("div", {}, this.heading);
   }
 
-  ColourPopOver.controller = OwnController;
+  ColourPopOver.owner = OwnController;
 
   // Drawn inside a page of its own: what it reads is its controller's, not the
   // heading the page above it happens to have.
@@ -446,7 +446,7 @@ test("mounted on its own, with nothing said, it still uses that controller", () 
     return h("div", {}, this.heading);
   }
 
-  ColourPopOver.controller = OwnController;
+  ColourPopOver.owner = OwnController;
 
   const host = document.createElement("div");
   mount(ColourPopOver, host);
@@ -464,7 +464,7 @@ test("a controller the caller names wins over the one written beside it", () => 
     return h("div", {}, this.heading);
   }
 
-  ColourPopOver.controller = OwnController;
+  ColourPopOver.owner = OwnController;
 
   const host = document.createElement("div");
   mount(ColourPopOver, host, {}, { heading: "the one the caller named" });
@@ -482,7 +482,7 @@ test("and an outlet on it hands over that controller, not its element", () => {
     return h("div", {});
   }
 
-  ColourPopOver.controller = OwnController;
+  ColourPopOver.owner = OwnController;
 
   const page = {};
   const host = document.createElement("div");

@@ -5,5 +5,5 @@
  * value is read from the owner during render, and again on `refresh`.
  */
 export function bindText(owner, path) {
-  return { __ibBind: "text", controller: owner, path };
+  return { __ibBind: "text", owner: owner, path };
 }
