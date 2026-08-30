@@ -7,6 +7,8 @@
 //   mosaic compile watch [dir]          the same without the server: build, then
 //                                       rebuild on every change
 //   mosaic desktop [dev] [dir]          the same, run as a native desktop app
+//   mosaic test --script <url> [dir]    the same, then drive it in puppeteer
+//                                       with the test script at <url>
 //   mosaic check [dir]                  the same, then run the browser test
 //   mosaic clean [dir]                  delete the app's build directory
 // An application is a directory with an `info.json` in it. That is the only
@@ -28,6 +30,8 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+import puppeteer from "puppeteer";
 
 import { compileAll } from "../src/js/core/compiler/build.js";
 import { componentName } from "../src/js/core/compiler/compile.js";
@@ -63,6 +67,14 @@ const MODE_COMMANDS = ["web", "desktop"];
  * to `web` — and what it produces is a compile and nothing else.
  */
 const WATCH = "watch";
+
+/**
+ * How long `test` pauses before each action puppeteer takes, by default: a
+ * pace a person can follow, since a run is watched more often than not. Fast
+ * enough not to be tiresome, slow enough that a click is a thing you see happen.
+ * `--headless` drops it to zero; `--speed <ms>` sets it outright.
+ */
+const DEFAULT_SPEED = 100;
 
 /**
  * Where mosaic itself lives: the tree holding the runtime and the frameworks.
@@ -301,97 +313,20 @@ const DEFAULTS = {
 const USAGE = `usage: mosaic <command> [dir] [options]
 
 commands:
-  init <name>        create a new application in ./<name>
-  init desktop       write the main process this app's window is opened by
-  install            bun install: beside the app, or into the desktop project
-                     when there is one
-  install framework <name>
-                     copy a framework into ./${FRAMEWORKS} and name it in ${CONFIG}
-  install theme <name>
-                     copy a theme's stylesheet into ./${THEMES}
-  compile [watch]    compile the application and bundle it; \`watch\` keeps at it,
-                     rebuilding on every edit — no server, no browser
-  web [dev|prod]     compile, then serve it in a browser, rebuilding on every edit
-  desktop [dev|prod] run it as a native desktop app, or build one
-  check              compile, then run the headless browser test
-  doc                document the application's sources from their JSDoc
-  clean              delete the application's build directory
+  init       create a new application, or add its desktop main process
+  install    bun install, or copy a framework or theme in
+  compile    compile the application and bundle it
+  web        serve it in a browser, rebuilding on every edit
+  desktop    run it as a native desktop app, or build one
+  test       serve it, then drive it in puppeteer with a test script
+  check      run the headless browser test
+  doc        document the application's sources from their JSDoc
+  clean      delete the application's build directory
 
 The argument is the application's directory — one with an ${CONFIG} in it —
-and defaults to the current one. \`main_file\` in that config names the
-bootstrap. For \`init\` the argument is the application's name instead, and
-the directory to create.
+and defaults to the current one. For \`init\` it is the application's name.
 
-A module in \`${BUN_DIR}/services/\` is an rpc service, and its file name is the
-group a page calls it by: \`notes.js\` answers \`api.notes.*\`. \`web\` serves them
-at \`/rpc\`; \`desktop\` answers the same calls over the window's own bridge.
-The page reaches them with the rpc framework — \`install framework rpc\`.
-
-\`web\` and \`desktop\` take a mode. \`dev\`, the default, keeps up with
-the edits: everything from \`main_file\`'s directory down is watched — the
-\`${BUN_DIR}/\` included — and every change rebuilds and runs it again.
-
-\`desktop prod\` builds instead of running: an application bundle for this
-machine's platform, left in the build directory, with the page's bundle
-minified and the app packed into an archive. What else it is made into is
-"desktop" in ${CONFIG} — \`codesign\`, \`notarize\`, \`dmg\`, and \`cef\`
-to bundle Chromium rather than use the system webview. Signing reads its
-identity from the environment, never from ${CONFIG}. \`web prod\` is not
-implemented yet.
-
-\`compile watch\` is \`web\` with the server taken out: it compiles, then watches
-the same trees and rebuilds on every change, so a build stays current for
-something else to serve, load or ship. The word is how the command is meant,
-as \`dev\` is for \`web\`, so a directory of that name is \`./watch\`.
-
-\`--outdir\` says where that build lands, overriding "outdir" in ${CONFIG} —
-which is what lets the output go somewhere another tool is watching, rather
-than the app's own \`build/\`.
-
-\`doc\` documents the same tree \`compile\` walks — everything from
-\`main_file\`'s directory down — from the JSDoc comments already in it, reading
-the sources rather than a build so it needs none. It is also the one command
-that does not need a bootstrap: a framework is a tree of components with no
-\`main.js\` to point at, and \`mosaic doc\` on one documents the framework. It lands in
-\`<build>/${DOC_DIR}/\`, which a rebuild carries across rather than sweeping
-away, or wherever \`--outdir\` names.
-
-Nothing is installed to do it: mosaic reads the sources itself. Visibility is
-opt-in — a \`@public\` declaration is documented, a \`@protected\` one is too and
-is marked as a subclass's, and anything unmarked is left out, as is a directory
-named \`private\`. Each file is documented for what it is: a class, a module of
-functions, or a Mosaic component, whose props its \`static properties\` declares.
-Types come from the JSDoc: \`@param {string} name\` documents a string, and the
-same line without the braces documents an \`any\`.
-
-options:
-  --outdir <path>    where the build lands, overriding "outdir" in ${CONFIG};
-                     for \`doc\`, where the documentation lands and nothing else
-  --port <n>         port for \`web\` (default 3000)
-  --page <path>      page for \`check\`, relative to the current directory
-  --title <text>     index heading for \`doc\` (default: the folder's name + " Documentation")
-  --no-open          don't launch a browser
-  --no-watch         don't rebuild when sources change
-  --no-sourcemap     skip source maps
-  --quiet            only report failures
-  --keep-modules     leave the compiled modules the bundle was built from
-  --minify           minify the bundle
-  -h, --help         this text
-
-\`desktop\` builds the desktop project itself, inside the build directory, on
-every run, and installs into it: the app's own "dependencies" from ${CONFIG},
-and the toolkit it runs on, which no app has to name. The main process is
-generated too — the title and "window" in ${CONFIG} are all it takes. A
-\`${BUN_DIR}/\` beside \`main_file\` holds the app's services and nothing else;
-the compiler skips the directory.
-
-"locales" in ${CONFIG} names the languages a build carries — \`["en", "fr"]\` —
-and "locale" which of them it opens in, defaulting to the first. Each is a flat
-\`${LOCALES}/<name>.json\` of key to translation. A key is a short name, not a
-sentence: markup says \`{${MESSAGES_ROOT}.save}\`, and the message it stands for
-goes in \`${LOCALES}/${DEFAULT_LOCALE}.json\` — the default (usually English) text.
-A key resolves in the active language first, then \`${DEFAULT_LOCALE}.json\`, then
-the key itself. \`setLocale\` swaps between the languages with nothing fetched.
+Run \`mosaic <command> --help\` for a command's own synopsis and options.
 
 Configuration is ${CONFIG}, merged from the project root down to the app.`;
 
@@ -414,6 +349,9 @@ const OPTION_HELP = {
   "--outdir": `--outdir <path>    where output lands, overriding "outdir" in ${CONFIG}`,
   "--port": "--port <n>         port for the server (default 3000)",
   "--page": "--page <path>      page to load, relative to the current directory",
+  "--script": "--script <url>     test script for `test` — a URL, or a path taken as a file",
+  "--headless": "--headless         no window and no pausing — a fast run for CI",
+  "--speed": `--speed <ms>       pause <ms> before each action (default ${DEFAULT_SPEED})`,
   "--title": '--title <text>     index heading (default: the folder\'s name + " Documentation")',
   "--no-open": "--no-open          don't launch a browser",
   "--no-watch": "--no-watch         don't rebuild when sources change",
@@ -453,6 +391,12 @@ const COMMAND_HELP = {
     usage: "mosaic desktop [dev|prod] [dir]",
     blurb: "Run it as a native desktop app, or build one.",
     options: ["--outdir", "--no-watch", "--no-sourcemap", "--quiet"],
+  },
+  test: {
+    usage: "mosaic test --script <url> [dir]",
+    blurb:
+      "Compile and serve the application the way `web` does, then drive it in Chromium through puppeteer with the test script at `--script`. The script is an ES module whose default export is an async `(page, context) => {…}`; it throws to fail and returns to pass, and its verdict is the exit code. By default it opens a window and works at a pace you can watch, so a test doubles as a demo; `--headless` runs it fast with no window, for CI, and `--speed <ms>` sets the pace.",
+    options: ["--script", "--headless", "--speed", "--outdir", "--port", "--no-sourcemap", "--quiet"],
   },
   check: {
     usage: "mosaic check [dir]",
@@ -980,6 +924,18 @@ function parseArgs(argv) {
     outdir: null,
     port: 3000,
     page: null,
+    // The test script `test` drives the application with: a URL, or a path
+    // taken as a file. Null until `--script` names one, which `test` requires.
+    script: null,
+    // How `test` runs. A window at a pace one can watch by default: a test is
+    // usually being written or watched, and seeing the UI work is the point.
+    // `--headless` is the other way — no window, no pausing — for a run nobody
+    // is watching, which is what CI wants. `--speed <ms>` sets the pace when the
+    // default is not right. Whether `speed` was asked for outright is kept so
+    // `--headless --speed 200` can be caught as the contradiction it is.
+    headless: false,
+    speed: DEFAULT_SPEED,
+    speedSet: false,
     open: true,
     watch: true,
     // Whether `compile` was told to keep going: `mosaic compile watch`.
@@ -1009,6 +965,15 @@ function parseArgs(argv) {
     } else if (a === "--page") {
       args.page = argv[++i];
       if (!args.page) throw new Error("`--page` needs a path");
+    } else if (a === "--script") {
+      args.script = argv[++i];
+      if (!args.script) throw new Error("`--script` needs a url");
+    } else if (a === "--headless") args.headless = true;
+    else if (a === "--speed") {
+      args.speed = Number(argv[++i]);
+      if (!Number.isInteger(args.speed) || args.speed < 0)
+        throw new Error("`--speed` needs a number of milliseconds");
+      args.speedSet = true;
     } else if (a === "--title") {
       args.title = argv[++i];
       if (!args.title) throw new Error("`--title` needs a value");
@@ -1060,6 +1025,7 @@ function parseArgs(argv) {
       "compile",
       "web",
       "desktop",
+      "test",
       "check",
       "clean",
       "doc",
@@ -1069,6 +1035,19 @@ function parseArgs(argv) {
   }
   if (args.command === "init" && !args.entry)
     throw new Error("`init` needs a name, or `desktop`");
+  if (args.command === "test" && !args.script)
+    throw new Error("`test` needs a test script — name one with `--script <url>`");
+  if (args.command !== "test") {
+    if (args.script) throw new Error("`--script` is for `test`");
+    if (args.headless || args.speedSet)
+      throw new Error("`--headless` and `--speed` are for `test`");
+  }
+  // `--headless` is no window and no pausing; a pace to watch and no window to
+  // watch it in is a contradiction, said rather than silently ignoring one.
+  if (args.headless && args.speedSet)
+    throw new Error("`--speed` shows a window — drop `--headless`");
+  // No window, no pausing: the pace is only for a run being watched.
+  if (args.headless) args.speed = 0;
   if (args.subject && !args.name)
     throw new Error(`\`install ${args.subject}\` needs a name`);
 
@@ -2671,6 +2650,111 @@ async function check(page, root, port, reported) {
 }
 
 /**
+ * The test script `--script` names, as a URL to import it from.
+ *
+ * A URL with a scheme is taken as it is — an `http(s)://` address a server
+ * hands the script back from, or a `file://` one. Anything else is a path, and
+ * a path means a file: resolved against the directory the command was run from
+ * (before the run moves to the project root) and turned into a `file://` URL,
+ * so a bare `tests/smoke.js` is what one usually writes.
+ */
+function scriptURL(script, from) {
+  try {
+    // Already a URL: keep it. A bare Windows drive path parses as a URL whose
+    // scheme is the drive letter, but this is a URL of one character's scheme
+    // at most nowhere it runs, and the file branch below is where those go.
+    const url = new URL(script);
+    if (/^[a-z][a-z0-9+.-]+:/i.test(script)) return url.href;
+  } catch {
+    // Not a URL — a path, handled below.
+  }
+  return pathToFileURL(path.resolve(from, script)).href;
+}
+
+/**
+ * Drive the served application in puppeteer with the test script.
+ *
+ * The application is already being served — this is handed its URL — so all
+ * that is left is to open it in Chromium and give the script the page. The
+ * script is an ES module whose default export is an async `(page, context) =>
+ * {…}`: it is handed puppeteer's `page`, already navigated to the application,
+ * and a `{browser, url}` context. Throwing is a failure and returning is a
+ * pass, which is the whole of the protocol — an assertion library the script
+ * brings itself throws, and that is all `test` needs to see.
+ *
+ * Headed and paced by default, so the same test script is a demo there is time
+ * to watch — a test and a demo are the one thing run two ways, not two things.
+ * `--headless` is the other way: no window and no pausing, as fast as it runs,
+ * which is what a CI check wants.
+ *
+ * @param {string} url Where the application is being served.
+ * @param {string} script The `--script` value, a URL or a path.
+ * @param {string} from The directory the command was run from.
+ * @param {{headed?: boolean, speed?: number}} how Whether to show the window,
+ *   and how long to pause before each action.
+ * @returns {Promise<number>} 0 if the script returned, 1 if it threw.
+ */
+async function runTest(url, script, from, how = {}) {
+  const href = scriptURL(script, from);
+
+  let mod;
+  try {
+    mod = await import(href);
+  } catch (e) {
+    console.error(`mosaic: could not load the test script ${href}`);
+    report(e);
+    return 1;
+  }
+  const run = mod.default;
+  if (typeof run !== "function") {
+    console.error(
+      `mosaic: the test script ${href} has no default export to run —\n` +
+        `    it should \`export default async (page, context) => {…}\``,
+    );
+    return 1;
+  }
+
+  console.log(`==> test ${href}${how.headed ? " (headed)" : ""}`);
+  const browser = await puppeteer.launch({
+    headless: !how.headed,
+    slowMo: how.speed || 0,
+    // A window has no use for these — and `--disable-gpu` on a headed run is
+    // what turns a demo into a black rectangle on some machines.
+    args: how.headed ? [] : ["--no-sandbox", "--disable-gpu"],
+  });
+  try {
+    const page = await browser.newPage();
+    // The page's own console and unhandled errors, forwarded so a test that
+    // fails because the application threw says so rather than only that some
+    // assertion did not hold.
+    //
+    // The favicon is the exception. A browser asks for `/favicon.ico` on every
+    // page whether or not one exists, the server rightly answers 404, and the
+    // browser logs that — noise about a resource no application declared and no
+    // test is about. It is dropped by the resource it names, not by the words
+    // of the message, so a real 404 for something the page asked for still
+    // shows.
+    page.on("console", (m) => {
+      if (m.location().url?.endsWith("/favicon.ico")) return;
+      console.log(`    [page] ${m.text()}`);
+    });
+    page.on("pageerror", (e) => console.error(`    [page error] ${e.message}`));
+
+    await page.goto(url, { waitUntil: "load" });
+    await run(page, { browser, url });
+
+    console.log("==> test PASSED");
+    return 0;
+  } catch (e) {
+    console.error("==> test FAILED");
+    report(e);
+    return 1;
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
  * Rebuild whenever a source changes.
  *
  * Everything the build reads is watched — the application, the frameworks and
@@ -4049,6 +4133,10 @@ async function main(argv) {
   // The application's own directory — the one holding the `info.json` this run
   // is about, which is what `install framework` writes to.
   let source;
+  // Where the command was run from, kept before the run moves to the project
+  // root: a `--script` path is the person's, so it means what it would from
+  // where they are standing.
+  const invokedFrom = process.cwd();
   try {
     args = parseArgs(argv);
     // `init` creates the application the other commands need, so it runs
@@ -4237,6 +4325,27 @@ async function main(argv) {
     let code;
     try {
       code = await check(checkPage, checkRoot, server.port, reported);
+    } catch (e) {
+      report(e);
+      code = 1;
+    }
+    server.stop(true);
+    return code;
+  }
+
+  // `test` serves the application exactly as `web` does — its services and
+  // all — then drives it in puppeteer and ends when the script does. Nothing
+  // is watched: a test is run once and its verdict is the exit code.
+  if (args.command === "test") {
+    const url = `http://localhost:${server.port}/`;
+    console.log(`==> serving ${url}`);
+    if (rpc) console.log(`    rpc ${RPC_PATH}: ${rpc.methods.join(", ")}`);
+    let code;
+    try {
+      code = await runTest(url, args.script, invokedFrom, {
+        headed: !args.headless,
+        speed: args.speed,
+      });
     } catch (e) {
       report(e);
       code = 1;

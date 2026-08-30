@@ -6,5 +6,8 @@
     "mosaic": "./bin/mosaic.js"
   },
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "puppeteer": "^25.9.0"
+  }
 }
