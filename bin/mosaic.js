@@ -74,7 +74,7 @@ const WATCH = "watch";
  * enough not to be tiresome, slow enough that a click is a thing you see happen.
  * `--headless` drops it to zero; `--speed <ms>` sets it outright.
  */
-const DEFAULT_SPEED = 100;
+const DEFAULT_SPEED = 50;
 
 /**
  * Where mosaic itself lives: the tree holding the runtime and the frameworks.
@@ -2723,7 +2723,10 @@ async function runTest(url, script, from, how = {}) {
     args: how.headed ? [] : ["--no-sandbox", "--disable-gpu"],
   });
   try {
-    const page = await browser.newPage();
+    // The tab Chromium already opened with, rather than a second one beside
+    // it: `browser.newPage()` would leave the launch's own blank tab sitting
+    // there, so a headed run showed two.
+    const [page] = await browser.pages();
     // The page's own console and unhandled errors, forwarded so a test that
     // fails because the application threw says so rather than only that some
     // assertion did not hold.

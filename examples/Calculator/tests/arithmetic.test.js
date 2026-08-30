@@ -1,73 +1,93 @@
-// A test script for `mosaic test`, run against the Calculator example:
+// A demo of the Calculator, written as a `mosaic test` script: it works the
+// calculator by pressing keys and reading the answers back. By default it opens
+// a window and works at a pace you can watch — a demo — and the same script run
+// with `--headless` is a fast, windowless test.
 //
-//     mosaic test examples/Calculator --script examples/Calculator/tests/arithmetic.test.js
+//   mosaic test examples/Calculator --script examples/Calculator/tests/arithmetic.test.js
+//   mosaic test examples/Calculator --script examples/Calculator/tests/arithmetic.test.js --headless
 //
-// `mosaic test` compiles and serves the app the way `web` does, opens it in
-// headless Chromium through puppeteer, and hands this module's default export
-// the page — already at the application. Throwing is a failure and returning is
-// a pass; the exit code is the verdict, so this is what a CI job runs.
-//
-// The calculator is a grid of `Button`s and a readout, with no component of its
-// own: a key is pressed by clicking the button that reads it, and the answer is
-// the text of `.display`. That is all this drives — press some keys, read the
-// line back, and assert.
+// A test script is an ES module whose default export is an async
+// `(page, context) => {…}`. It is handed puppeteer's `page`, already at the
+// application; it throws to fail and returns to pass. The pace is puppeteer's
+// own (`--speed`), so this file adds no sleeps of its own.
+
+/** Press a key by the label it reads — "7", "+", "=". */
+async function press(page, label) {
+  const handle = await page.evaluateHandle((want) => {
+    for (const button of document.querySelectorAll(".v-Button")) {
+      if (button.textContent.trim() === want) return button;
+    }
+    return null;
+  }, label);
+  const el = handle.asElement();
+  if (!el) throw new Error(`no key reads "${label}"`);
+  // A real click rather than `el.click()` in the page, so `--slow` can pace it
+  // and a headed run shows the button being pressed.
+  await el.click();
+}
+
+/** Wait `ms` milliseconds. */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** The readout's current text, trimmed. */
 async function display(page) {
   return (await page.$eval(".display", (el) => el.textContent)).trim();
 }
 
-/**
- * Press a key by the label it reads — `"7"`, `"+"`, `"="`. The keys are `ui`
- * Buttons drawn as `.v-Button`, so this finds the one whose text is exactly the
- * label and clicks it, the way a person would.
- */
-async function press(page, label) {
-  const clicked = await page.evaluate((want) => {
-    for (const button of document.querySelectorAll(".v-Button")) {
-      if (button.textContent.trim() === want) {
-        button.click();
-        return true;
-      }
+/** The calculator page's current background colour, as the browser resolves it. */
+async function background(page) {
+  return page.$eval(".calculator", (el) => getComputedStyle(el).backgroundColor);
+}
+
+/** Flip the "Dark" switch — the `.v-Switch` whose label reads Dark. */
+async function toggleDark(page) {
+  const handle = await page.evaluateHandle(() => {
+    for (const control of document.querySelectorAll(".v-Switch")) {
+      if (control.textContent.trim() === "Dark") return control;
     }
-    return false;
-  }, label);
-  if (!clicked) throw new Error(`no key reads "${label}"`);
-}
-
-/** Press each character of `keys` in turn: `"12+3="`. */
-async function type(page, keys) {
-  for (const key of keys) await press(page, key);
-}
-
-/** Fail unless the readout reads `want`. */
-async function expectDisplay(page, want) {
-  const got = await display(page);
-  if (got !== want) {
-    throw new Error(`display reads "${got}", expected "${want}"`);
-  }
-  console.log(`ok: display reads "${want}"`);
+    return null;
+  });
+  const el = handle.asElement();
+  if (!el) throw new Error("no Dark switch to flip");
+  await el.click();
 }
 
 export default async (page) => {
-  // The page has to be there at all before any key means anything.
   await page.waitForSelector(".v-Button");
 
-  // A fresh line to start from, whatever a previous assertion left.
-  await press(page, "C");
-  await expectDisplay(page, "0");
+  // Each line is the keys to press and the answer to expect. The minus key is
+  // the Unicode minus sign "−" (U+2212), not an ASCII "-".
+  const sums = [
+    ["12+3=", "15"],
+    ["7×8=", "56"],
+    ["9−4=", "5"],
+    ["6÷2=", "3"],
+  ];
 
-  // 12 + 3 = 15
-  await type(page, "12+3=");
-  await expectDisplay(page, "15");
+  for (const [keys, want] of sums) {
+    await press(page, "C");
+    for (const key of keys) await press(page, key);
+    const got = await display(page);
+    if (got !== want) throw new Error(`${keys} → "${got}", expected "${want}"`);
+    console.log(`${keys} = ${got}`);
+  }
 
-  // 7 × 6 = 42, from a clear
-  await press(page, "C");
-  await type(page, "7×6=");
-  await expectDisplay(page, "42");
-
-  // Typing a number replaces the leading zero rather than appending to it.
-  await press(page, "C");
-  await type(page, "9");
-  await expectDisplay(page, "9");
+  // Finally, go dark. Flipping the switch swaps the theme's stylesheet, which
+  // restyles the page — so the calculator's background is a different colour
+  // after than before, and that is what says the toggle took.
+  const light = await background(page);
+  // A beat either side of the flip so a headed run lands on the light page,
+  // switches, and rests on the dark one, rather than the change flashing past.
+  await sleep(500);
+  await toggleDark(page);
+  await page.waitForFunction(
+    (was) =>
+      getComputedStyle(document.querySelector(".calculator")).backgroundColor !==
+      was,
+    { timeout: 2000 },
+    light,
+  );
+  const dark = await background(page);
+  console.log(`dark mode on: background ${light} → ${dark}`);
+  await sleep(500);
 };
