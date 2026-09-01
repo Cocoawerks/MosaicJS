@@ -33,6 +33,7 @@ mosaic web dev      # build, serve, and rebuild on every change
 | `mosaic compile watch [dir]` | Compile, then rebuild on every change |
 | `mosaic web [dev] [dir]` | Compile, serve, and restart on every change |
 | `mosaic desktop [dev] [dir]` | The same, run as a native desktop app |
+| `mosaic test --script <url> [dir]` | Compile and serve, then drive it in puppeteer |
 | `mosaic check [dir]` | Compile, then run the browser test |
 | `mosaic clean [dir]` | Delete the app's build directory |
 
@@ -80,13 +81,42 @@ mosaic web dev examples/Counter_main
 ## Roadmap
 
 **Interface Builder for the web** — a visual editor for laying out Mosaic
-interfaces by direct manipulation, in the spirit of Apple's Interface Builder and
-GNUstep's [Gorm](https://gnustep.github.io/). Layouts are already compiled from
-`.ib.xml` documents, so the format the editor would write is the one `ibc` reads
-today.
+interfaces by direct object manipulation in the vein of Apple's Interface Builder, GNUstep's [Gorm](https://gnustep.github.io/), and 280 North's Atlas for
+[Cappuccino](https://www.cappuccino.dev/).
+
+Layouts are already compiled from `.ib.xml` documents, so the format the editor
+would write is the one `ibc` reads today.
 
 ## Tests
 
 ```sh
 bun test
 ```
+
+Some suites import the framework as an application receives it — the compiled
+modules under an example's `build/` — so those examples are built first,
+automatically. See `test/setup.mjs`.
+
+### In the browser
+
+`mosaic test` compiles and serves an application the way `web` does, then drives
+it in Chromium through puppeteer:
+
+```sh
+mosaic test --script ./tour.js examples/Counter_component
+```
+
+The script is an ES module whose default export is an async
+`(page, context) => {…}`. It throws to fail and returns to pass, and its verdict
+is the exit code.
+
+By default it opens a window and works at a pace you can watch, so a test
+doubles as a demo.
+
+| Option | Description |
+| --- | --- |
+| `--script <url>` | The test script: a URL, or a path taken as a file |
+| `--headless` | No window and no pausing — a fast run for CI |
+| `--speed <ms>` | Pause before each action (default 50) |
+
+`mosaic check` is the smaller one: compile, then run the headless browser test.
