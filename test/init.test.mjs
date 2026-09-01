@@ -15,14 +15,20 @@ import { BUN_DIR } from "../src/js/core/desktop/project.js";
 const CLI = fileURLToPath(new URL("../bin/mosaic.js", import.meta.url));
 const NAME = "MyApp";
 
-/** Every file `init` is expected to write, relative to the app directory. */
+/**
+ * Every file `init` is expected to write, relative to the app directory.
+ *
+ * A new application is a web application: there is no main process here. The
+ * native side is opt-in, written by `init desktop` into an application that
+ * already exists — see the desktop tests at the bottom of this file.
+ */
 const EXPECTED = [
   "info.json",
   "index.html",
   "src/main.ib.xml",
   "src/AppController.js",
   "src/main.js",
-  `src/${BUN_DIR}/index.js`,
+  `src/${BUN_DIR}/services/greeting.js`,
 ];
 
 /** A scratch directory, removed when the test that made it is done. */
@@ -134,12 +140,15 @@ test("the controller is the default export main.js imports", (t) => {
 test("the native side opens a window titled after the app", (t) => {
   const cwd = scratch(t);
   mosaic(cwd, "init", NAME);
+  // The main process is opt-in: `init` alone does not write one.
+  mosaic(path.join(cwd, NAME), "init", "desktop");
 
   const index = fs.readFileSync(
     path.join(cwd, NAME, `src/${BUN_DIR}/index.js`),
     "utf8",
   );
-  assert.match(index, /from "electrobun\/bun"/);
+  // The window comes from the framework, which re-exports electrobun.
+  assert.match(index, /from "mosaic\/desktop"/);
   assert.match(index, /title: "MyApp"/);
   assert.match(index, /url: "views:\/\/mainview\/index\.html"/);
 });
@@ -331,4 +340,45 @@ test("a theme the application keeps is what the build wears", (t) => {
   assert.equal(code, 0, err);
   const bundle = fs.readFileSync(path.join(dir, "build/app.js"), "utf8");
   assert.match(bundle, /123456/);
+});
+
+// --- init desktop ----------------------------------------------------------
+//
+// The main process is not part of a new application. `init desktop` writes it
+// into one that already exists, once, and never again — by the second run it is
+// the author's file, not this template.
+
+test("init desktop writes the main process a new application does not have", (t) => {
+  const cwd = scratch(t);
+  mosaic(cwd, "init", NAME);
+  const app = path.join(cwd, NAME);
+  const entry = path.join(app, "src", BUN_DIR, "index.js");
+
+  assert.ok(!fs.existsSync(entry), "init alone leaves the native side out");
+
+  const { code, out, err } = mosaic(app, "init", "desktop");
+
+  assert.equal(code, 0, err);
+  assert.ok(fs.existsSync(entry), "init desktop writes it");
+  assert.match(out, /created/);
+
+  const body = fs.readFileSync(entry, "utf8");
+  assert.ok(body.length > 0, "index.js is empty");
+  assert.ok(body.includes(NAME), "the window is titled after the app");
+});
+
+test("init desktop leaves a main process that is already there alone", (t) => {
+  const cwd = scratch(t);
+  mosaic(cwd, "init", NAME);
+  const app = path.join(cwd, NAME);
+  const entry = path.join(app, "src", BUN_DIR, "index.js");
+
+  mosaic(app, "init", "desktop");
+  fs.writeFileSync(entry, "// mine now\n");
+
+  const { code, out } = mosaic(app, "init", "desktop");
+
+  assert.equal(code, 0);
+  assert.equal(fs.readFileSync(entry, "utf8"), "// mine now\n");
+  assert.match(out, /already there/);
 });

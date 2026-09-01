@@ -61,6 +61,20 @@ export default class MenuButton extends Button {
 
   // --- behaviour -----------------------------------------------------------
 
+  /**
+   * Declared alongside the setter and doing nothing but defer to the base.
+   *
+   * An accessor declared in a subclass replaces the inherited one whole: a
+   * lone `set` leaves `get` undefined, so `this.buttonState` would read as
+   * undefined however the base stored it — and the setter below, which
+   * compares against it to decide whether the latch moved, would decide it
+   * never did and never open the menu.
+   * @public
+   */
+  get buttonState() {
+    return super.buttonState;
+  }
+
   set buttonState(value) {
     const was = this.buttonState;
     super.buttonState = value;

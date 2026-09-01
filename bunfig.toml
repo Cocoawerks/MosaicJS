@@ -1,0 +1,4 @@
+[test]
+# Builds the example applications the suite imports compiled output from,
+# so `bun test` works on a fresh clone. See test/setup.mjs.
+preload = ["./test/setup.mjs"]

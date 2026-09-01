@@ -222,7 +222,7 @@ test("the entry registers its page, so nothing has to name it", () => {
   });
   const code = fs.readFileSync(dest, "utf8");
 
-  expect(code).toContain("MosaicApplication.registerPage(Main);");
+  expect(code).toContain("MosaicApplication.registerMib(Main);");
   // It has to run before the module's own code, or the constructor sees no interface.
   expect(code.indexOf("registerPage")).toBeLessThan(
     code.indexOf("new MosaicApplication"),
@@ -384,7 +384,7 @@ test("a page is paired with the controller written beside it", () => {
   expect(compiled).toContain(
     'import MainController from "./MainController.js"',
   );
-  expect(compiled).toContain("Main.controller = MainController;");
+  expect(compiled).toContain("Main.owner = MainController;");
 });
 
 test("and is paired with nothing when there is no such file", () => {
@@ -557,10 +557,9 @@ test("the theme is worn after the sheets it restyles, not before them", () => {
     "--keep-modules",
   ]);
 
-  const entry = fs.readFileSync(
-    path.join(dir, "build", "src", "main.js"),
-    "utf8",
-  );
+  // `--keep-modules` writes the compiled modules flat into `build/`: the
+  // source's `src/` level is not carried through.
+  const entry = fs.readFileSync(path.join(dir, "build", "main.js"), "utf8");
   expect(entry.indexOf("theme.js")).toBeGreaterThan(
     entry.indexOf("frameworks/ui"),
   );

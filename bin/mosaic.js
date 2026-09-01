@@ -708,7 +708,7 @@ function scaffold(name) {
      editor can check. Nothing renders until there is markup in it. -->
 
 <interface>
-</Mib interface>
+</interface>
 `,
 
     [`${SRC}/AppController.js`]: `// The controller behind main.ib.xml: the Mib interface's state, the values its {bindings}

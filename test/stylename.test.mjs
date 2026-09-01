@@ -1,7 +1,7 @@
 // Every component's declared primary style name against the class it actually
 // draws.
 //
-// `static styleName` is what a stylesheet is naming when it says `ComboBox`,
+// `static primaryStyleName` is what a stylesheet is naming when it says `ComboBox`,
 // and the compiler puts it in the sheet without ever running the component. So
 // nothing but this checks the two agree: a component that renamed its root
 // class would leave every sheet that reached it by name pointing at a class no
@@ -37,7 +37,7 @@ const NOT_MOUNTABLE = new Set([
 
 /** Every exported component that declares a primary style name. */
 const declared = Object.entries(ui).filter(
-  ([, value]) => typeof value === "function" && value.styleName,
+  ([, value]) => typeof value === "function" && value.primaryStyleName,
 );
 
 test("the framework's components declare a primary style name", () => {
@@ -66,8 +66,8 @@ test("and each one draws the class it declared", () => {
     if (!root?.getAttribute) continue;
 
     const classes = (root.getAttribute("class") ?? "").split(/\s+/);
-    if (!classes.includes(Type.styleName)) {
-      missing.push(`${name} declares ${Type.styleName}, draws [${classes}]`);
+    if (!classes.includes(Type.primaryStyleName)) {
+      missing.push(`${name} declares ${Type.primaryStyleName}, draws [${classes}]`);
     }
   }
 
@@ -76,7 +76,7 @@ test("and each one draws the class it declared", () => {
 
 test("a component drawn as a kind of another inherits that one's", () => {
   // A LoadingButton is a Button and draws `v-Button`; it declares nothing of
-  // its own, and `styleName` comes down the prototype chain.
-  assert.equal(ui.LoadingButton.styleName, ui.Button.styleName);
-  assert.equal(ui.TextField.styleName, ui.TextBase?.styleName ?? "v-Text");
+  // its own, and `primaryStyleName` comes down the prototype chain.
+  assert.equal(ui.LoadingButton.primaryStyleName, ui.Button.primaryStyleName);
+  assert.equal(ui.TextField.primaryStyleName, ui.TextBase?.primaryStyleName ?? "v-Text");
 });
