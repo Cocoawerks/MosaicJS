@@ -81,8 +81,9 @@ mosaic web dev examples/Counter_main
 ## Roadmap
 
 **Interface Builder for the web** — a visual editor for laying out Mosaic
-interfaces by direct object manipulation in the vein of Apple's Interface Builder, GNUstep's [Gorm](https://gnustep.github.io/), and 280 North's Atlas for
-[Cappuccino](https://www.cappuccino.dev/).
+interfaces by direct object manipulation in the vein of Apple's Interface
+Builder, GNUstep's [Gorm](https://gnustep.github.io/), and 280 North's Atlas
+for [Cappuccino](https://www.cappuccino.dev/).
 
 Layouts are already compiled from `.ib.xml` documents, so the format the editor
 would write is the one `ibc` reads today.
