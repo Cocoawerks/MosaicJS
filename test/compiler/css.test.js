@@ -227,7 +227,7 @@ test("minifying squeezes an attribute selector but not grid line names", () => {
 
 /** What each component draws its root with, as the build reads off the source. */
 const wears = (name) =>
-  ({ ComboBox: "v-ComboBox", DialogBox: "v-Dialog", Button: "v-Button" })[
+  ({ ComboBox: "v-ComboBox", NoticeBox: "v-Notice", Button: "v-Button" })[
     name
   ] ?? null;
 
@@ -253,10 +253,10 @@ test("a component's name stands for the class it wears", () => {
 });
 
 test("and the class it wears is not always its name", () => {
-  // A DialogBox draws `v-Dialog`, so a convention would have been wrong. The
+  // A NoticeBox draws `v-Notice`, so a convention would have been wrong. The
   // component declares it and the build reads what it declared.
-  expect(scope("DialogBox{color:red}", ".h", null, { component: wears })).toBe(
-    ".v-Dialog.h{color:red}",
+  expect(scope("NoticeBox{color:red}", ".h", null, { component: wears })).toBe(
+    ".v-Notice.h{color:red}",
   );
 });
 
@@ -294,8 +294,8 @@ test("a component named inside :global() is still its class", () => {
   // The name is how a sheet refers to the component either way; whether the
   // rule is scoped is a separate question.
   expect(
-    scope(":global(DialogBox) .note{x:y}", ".h", null, { component: wears }),
-  ).toBe(".v-Dialog .note.h{x:y}");
+    scope(":global(NoticeBox) .note{x:y}", ".h", null, { component: wears }),
+  ).toBe(".v-Notice .note.h{x:y}");
 });
 
 test("with no resolver, a name is left as written", () => {

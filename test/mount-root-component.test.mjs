@@ -20,7 +20,7 @@ import { batch } from "../src/js/core/runtime/private/batch.js";
 import { h } from "../src/js/core/runtime/private/h.js";
 import { mount } from "../src/js/core/runtime/private/mount.js";
 
-/** Stands in for a DialogBox: state of its own that a rebuild would lose. */
+/** Stands in for a Dialog: state of its own that a rebuild would lose. */
 class Inner extends Component {
   constructor(props) {
     super(props);

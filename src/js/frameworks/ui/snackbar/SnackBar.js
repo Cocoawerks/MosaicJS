@@ -169,7 +169,7 @@ export default class SnackBar extends Component {
 
   /**
    * Say the bar has appeared, and that it has gone — an `open` and a `close`
-   * event, the way PopOver and DialogBox read: `action="open:method"` /
+   * event, the way PopOver and Dialog read: `action="open:method"` /
    * `action="close:method"` in markup (compiled to `openAction`/`closeAction`),
    * `onOpen`/`onClose` in JavaScript. `action` is left for what a bar is for.
    */

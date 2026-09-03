@@ -74,7 +74,7 @@
         <section styleName="section">
             <h2 styleName="heading">In a dialog, and in a popover</h2>
             <p styleName="note">
-                A DialogBox and a PopOver can only be the root of a .ib.xml file of
+                A Dialog and a PopOver can only be the root of a .ib.xml file of
                 their own — they are placed by the runtime rather than by the markup
                 around them, so nesting one here would read as something this page
                 does not do. Each is its own file, named below.

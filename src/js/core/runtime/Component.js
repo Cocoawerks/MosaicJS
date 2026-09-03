@@ -112,7 +112,7 @@ export class Component {
    * component free to rename its class does not take every sheet that reached
    * it down with it.
    *
-   * Usually `v-` and the class's own name, but not always: a DialogBox draws
+   * Usually `v-` and the class's own name, but not always: a Dialog draws
    * `v-Dialog` and a TabView `v-TabPanel`, so it is declared rather than
    * guessed at. A component drawn as a kind of another — a LoadingButton is a
    * Button — declares nothing and inherits that one's.

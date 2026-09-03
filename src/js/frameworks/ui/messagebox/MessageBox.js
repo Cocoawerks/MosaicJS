@@ -1,6 +1,6 @@
 // MessageBox: a small modal that says something and waits for an answer — an
 // alert with one button, a confirm with two, or a prompt with a field to type
-// into. Built on {@link DialogBox}, and shown the way the snackbar is: a plain
+// into. Built on {@link Dialog}, and shown the way the snackbar is: a plain
 // controller that mounts its own view on the body and takes it down again once
 // the question is answered.
 //
@@ -18,10 +18,10 @@
 //
 // The factories set the title, the message, and the buttons; `runModal` puts it
 // up and hands the answer to the callback. `MessageBox` in Java, where it wrapped
-// a `DialogBox` the same way.
+// a `Dialog` the same way.
 import {Component, MESSAGES, mount} from "mosaic";
 
-import DialogBox from "../dialog/DialogBox.js";
+import Dialog from "../dialog/Dialog.js";
 import Button, {Intent} from "../controls/button/Button.js";
 import TextField from "../controls/text/TextField.js";
 import "./messagebox.css";
@@ -34,7 +34,7 @@ export const MessageBoxResponse = Object.freeze({
 });
 
 /**
- * A {@link DialogBox} that wears the message-box classes, so a sheet can style
+ * A {@link Dialog} that wears the message-box classes, so a sheet can style
  * the three kinds apart. A class of its own rather than a prop, for the reason
  * the dialog's own close button has one: the sheets are written against
  * `.message-box`, and the class has to be on the dialog element itself.
@@ -50,9 +50,9 @@ class PressButton extends Button {
     }
 }
 
-class MessageDialog extends DialogBox {
+class MessageDialog extends Dialog {
     static properties = {
-        ...DialogBox.properties,
+        ...Dialog.properties,
         /** Which kind it is — `alert`, `confirm`, or `prompt` — as a second class. */
         variant: {type: String, default: "alert"},
     };

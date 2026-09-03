@@ -1,7 +1,7 @@
 /*
  * Ported from GWT Mosaic: client/components/resources/dialogbox/style.css.
  * The dialog's own chrome — the box, its header, main and footer — is drawn by
- * DialogBox and carries this sheet's scope in the ordinary way. Two things do
+ * Dialog and carries this sheet's scope in the ordinary way. Two things do
  * not, and are reached through `:global(...)`:
  *
  *   - the close button, whose element Button draws and which therefore carries
@@ -98,7 +98,7 @@
 
 /* The measuring pass. A `<dialog>` has no boxes until it is open, so it cannot
    be sized while hidden the ordinary way — it is opened, laid out invisibly
-   here, and revealed a frame later (see DialogBox.show). Painting nothing while
+   here, and revealed a frame later (see Dialog.show). Painting nothing while
    still taking part in layout is what visibility gives; transition:none keeps
    the fade from starting until the geometry has settled, so the dialog does not
    appear at one size and jump to another. */

@@ -416,8 +416,8 @@ test("a surface may be the root of a view", () => {
     compile('<PopOver orientation="bottom_center"><p>hi</p></PopOver>'),
   ).toContain("h(PopOver,");
   expect(
-    compile('<DialogBox title="Settings"><p>hi</p></DialogBox>'),
-  ).toContain("h(DialogBox,");
+    compile('<Dialog title="Settings"><p>hi</p></Dialog>'),
+  ).toContain("h(Dialog,");
 });
 
 test("and may equally be written in the middle of one", () => {
@@ -427,8 +427,8 @@ test("and may equally be written in the middle of one", () => {
   // the window for a drawer. Writing one in place is how an interface keeps a dialog
   // beside the thing it is about.
   expect(compile("<div><p>a</p><PopOver/></div>")).toContain("h(PopOver,");
-  expect(compile('<div><DialogBox title="x"/></div>')).toContain(
-    "h(DialogBox,",
+  expect(compile('<div><Dialog title="x"/></div>')).toContain(
+    "h(Dialog,",
   );
   expect(compile("<div>first</div><PopOver/>")).toContain("h(PopOver,");
 });
@@ -471,7 +471,7 @@ test("and a surface holds whatever it likes", () => {
   expect(js).toContain("h(ColorWell,");
   expect(js).toContain("h(MyView,");
 
-  expect(compile('<DialogBox title="x"><MyView/></DialogBox>')).toContain(
+  expect(compile('<Dialog title="x"><MyView/></Dialog>')).toContain(
     "h(MyView,",
   );
   expect(compile("<PopOver><MyView/></PopOver>")).toContain("h(MyView,");
@@ -481,7 +481,7 @@ test("including another surface", () => {
   expect(compile('<Drawer title="x"><PopOver/></Drawer>')).toContain(
     "h(PopOver,",
   );
-  expect(compile('<DialogBox title="x"><Drawer/></DialogBox>')).toContain(
+  expect(compile('<Dialog title="x"><Drawer/></Dialog>')).toContain(
     "h(Drawer,",
   );
 });
@@ -554,7 +554,7 @@ test("a Bind is handed the scope its paths belong to", () => {
 
 test("however deeply it is nested, and whatever it is nested in", () => {
   const js = compile(
-    '<DialogBox title="x"><main><Bind source="combo1.value" target="chosen"/></main></DialogBox>',
+    '<Dialog title="x"><main><Bind source="combo1.value" target="chosen"/></main></Dialog>',
   );
   expect(js).toContain("scope: this");
 });

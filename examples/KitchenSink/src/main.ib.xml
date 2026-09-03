@@ -219,7 +219,7 @@
         </section>
 
         <section styleName="section">
-            <h2 styleName="heading">DialogBox</h2>
+            <h2 styleName="heading">Dialog</h2>
             <p styleName="note">
                 A native dialog, modal: the page behind it is shut out until it is
                 answered. This one is an application's own — SettingsDialog.ib.xml holds its

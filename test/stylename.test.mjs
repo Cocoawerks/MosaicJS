@@ -25,7 +25,7 @@ const { mount } = await import(
  * Their declaration is checked against the source instead, further down.
  */
 const NOT_MOUNTABLE = new Set([
-  "DialogBox",
+  "Dialog",
   "Drawer",
   "PopOver",
   "Menu",

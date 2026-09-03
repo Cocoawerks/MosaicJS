@@ -16,7 +16,7 @@ import { Component } from "mosaic";
 
 import Button from "../controls/button/Button.js";
 import Close from "svg:close";
-import { addOpenListener, removeOpenListener } from "../dialog/DialogBox.js";
+import { addOpenListener, removeOpenListener } from "../dialog/Dialog.js";
 import { closeTransientPopOvers } from "../popover/PopOver.js";
 import "./drawer.css";
 
@@ -184,7 +184,7 @@ export default class Drawer extends Component {
 
   /**
    * Say that it opened, and that it closed — two events rather than one action
-   * carrying a boolean, the way PopOver and DialogBox read. In markup they are
+   * carrying a boolean, the way PopOver and Dialog read. In markup they are
    * `action="open:method"` and `action="close:method"` (compiled to
    * `openAction`/`closeAction`); in JavaScript they are `onOpen` and `onClose`.
    * `action` is left free for what a drawer means by it.

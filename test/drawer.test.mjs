@@ -13,7 +13,7 @@ import "./dom-shim.mjs";
 const { mount, h } = await import(
   "../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js"
 );
-const { Drawer, DialogBox } = await import(
+const { Drawer, Dialog } = await import(
   "../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js"
 );
 
@@ -263,7 +263,7 @@ test("a dialog opening over the page takes the drawer with it", async () => {
   // A drawer is not modal, so a dialog would sit over a live panel: it goes.
   const dialogHost = document.createElement("div");
   document.body.appendChild(dialogHost);
-  const dialog = mount(DialogBox, dialogHost, {
+  const dialog = mount(Dialog, dialogHost, {
     title: "Over it",
     children: [h("p", {}, "content")],
   }).view;
@@ -283,7 +283,7 @@ test("and a drawer that has gone is no longer listening for one", async () => {
 
   const dialogHost = document.createElement("div");
   document.body.appendChild(dialogHost);
-  const dialog = mount(DialogBox, dialogHost, {
+  const dialog = mount(Dialog, dialogHost, {
     title: "Over it",
     children: [h("p", {}, "content")],
   }).view;

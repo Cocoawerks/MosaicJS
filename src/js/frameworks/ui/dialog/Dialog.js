@@ -1,14 +1,14 @@
-// DialogBox: a native `<dialog>` with a header carrying its title and a close
+// Dialog: a native `<dialog>` with a header carrying its title and a close
 // button, and the caller's content below it. A child says which region it
 // belongs to and the dialog reads it — the arrangement TitleBar and MenuItem
 // are read by. A child that names none is content, which is what a dialog mostly
 // holds:
 //   <!-- SettingsDialog.ib.xml -->
-//   <DialogBox title="Settings" outlet="dialog">
+//   <Dialog title="Settings" outlet="dialog">
 //       <p>Whatever the dialog is about.</p>
 //       <Button slot="footer" text="Cancel" action="cancel"/>
 //       <Button slot="footer" text="Save" intent="primary" action="save"/>
-//   </DialogBox>
+//   </Dialog>
 // with the behaviour beside it in SettingsDialogController.js, which the
 // compiler pairs with it by name. The page names the dialog as a tag and keeps
 // an outlet on it:
@@ -27,7 +27,7 @@ import { scheduleHideMask, showMask } from "./DialogMask.js";
 import "./dialog.css";
 
 /**
- * Worn while the dialog is open but not yet shown — see {@link DialogBox#show}.
+ * Worn while the dialog is open but not yet shown — see {@link Dialog#show}.
  * `MEASURING` in Java.
  */
 const MEASURING = "is-measuring";
@@ -68,15 +68,15 @@ export function removeOpenListener(listener) {
 }
 
 /**
- * @fires DialogBox#open — it was shown; the handler is given the dialog.
+ * @fires Dialog#open — it was shown; the handler is given the dialog.
  *   `action="open:method"` (`onOpen` in JS).
- * @fires DialogBox#close — it was closed, however it went; the handler is given
+ * @fires Dialog#close — it was closed, however it went; the handler is given
  *   the dialog. `action="close:method"` (`onClose` in JS).
  */
-export default class DialogBox extends Component {
+export default class Dialog extends Component {
   /**
    * The class this component draws its root with — what a stylesheet is
-   * naming when it says `DialogBox`. See Component.primaryStyleName.
+   * naming when it says `Dialog`. See Component.primaryStyleName.
    */
   static primaryStyleName = "v-Dialog";
 

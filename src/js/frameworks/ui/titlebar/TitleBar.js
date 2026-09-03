@@ -128,7 +128,7 @@ export default class TitleBar extends Component {
 
   /**
    * Say the title was renamed. `edit` is its own event so it does not spend the
-   * bar's `action` — the same arrangement PopOver and DialogBox read by.
+   * bar's `action` — the same arrangement PopOver and Dialog read by.
    *
    * @param {string} text The committed title.
    * @fires TitleBar#edit

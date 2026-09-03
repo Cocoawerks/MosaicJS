@@ -1,4 +1,4 @@
-<!-- A dialog whose content is composed views. A DialogBox may only be the root
+<!-- A dialog whose content is composed views. A Dialog may only be the root
      of a .ib.xml file — nested in other markup it would draw in that markup's
      flow, which is not where a dialog goes — so this is the file it is the root
      of, and the page places it by name: <SummaryDialog outlet="…"/>.
@@ -7,7 +7,7 @@
      page composes. A view does not know what it has been composed into. -->
 
 <interface>
-    <DialogBox title="This week" outlet="dialog" pack="true">
+    <Dialog title="This week" outlet="dialog" pack="true">
         <div styleName="body">
             <p styleName="note">
                 These are the same two views the page behind this dialog uses, given
@@ -29,7 +29,7 @@
             <Button text="Close" action="close"/>
             <Button text="A degree warmer" intent="primary" action="warmer"/>
         </div>
-    </DialogBox>
+    </Dialog>
 
     <style>
         .body {

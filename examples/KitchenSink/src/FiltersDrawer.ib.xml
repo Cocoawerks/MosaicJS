@@ -2,7 +2,7 @@
      in FiltersDrawerController.js, which the compiler pairs with it by name.
 
      A Drawer is a surface — pinned to the window and placed by the runtime — so
-     like a DialogBox or a PopOver it may only be the root of a .ib.xml file. The
+     like a Dialog or a PopOver it may only be the root of a .ib.xml file. The
      page names this file and keeps an outlet on it. -->
 
 <interface>

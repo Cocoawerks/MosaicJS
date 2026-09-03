@@ -5,7 +5,7 @@
 // destroyed the moment its dialog closes, so a modal opening straight after
 // another would flash the dim off and on. This one lingers.
 //
-// Nothing outside the framework calls it: a modal DialogBox raises it as it
+// Nothing outside the framework calls it: a modal Dialog raises it as it
 // opens and drops it as it closes.
 import "./dialog.css";
 

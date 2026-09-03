@@ -1,6 +1,6 @@
 // Wizard: a modal that walks through a sequence of steps, one at a time, with a
 // numbered navigator down the side and a Back/Next/Finish bar along the bottom.
-// Built on {@link DialogBox} and shown the way the snackbar and the message box
+// Built on {@link Dialog} and shown the way the snackbar and the message box
 // are — a plain controller that mounts its own view on the body.
 //
 //   const wizard = new Wizard("Set up your account");
@@ -24,22 +24,22 @@
 //     work, and the caller says how it went with `setLoadingComplete` /
 //     `setLoadingFailed` (`setShowLoadingPage(true)`).
 //
-// `Wizard` in Java, where it wrapped a `DialogBox` and a `DeckPanel` the same way.
+// `Wizard` in Java, where it wrapped a `Dialog` and a `DeckPanel` the same way.
 import {Component, MESSAGES, mount} from "mosaic";
 
-import DialogBox from "../dialog/DialogBox.js";
+import Dialog from "../dialog/Dialog.js";
 import DeckView from "../deck/DeckView.js";
 import Button, {Intent} from "../controls/button/Button.js";
 import LoadingIndicator, {Size} from "../controls/loading/LoadingIndicator.js";
 import "./wizard.css";
 
 /**
- * A {@link DialogBox} that wears the wizard class, so the wizard sheet can lay
+ * A {@link Dialog} that wears the wizard class, so the wizard sheet can lay
  * out its navigator and content beside each other. A class of its own for the
  * reason the message box's dialog has one — the sheet is written against the
  * dialog element itself.
  */
-class WizardDialog extends DialogBox {
+class WizardDialog extends Dialog {
     dialogClasses() {
         return [...super.dialogClasses(), "v-Wizard-dialog"];
     }

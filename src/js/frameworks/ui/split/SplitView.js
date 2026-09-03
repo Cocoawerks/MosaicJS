@@ -4,7 +4,7 @@
 // One pane is elastic and takes whatever room is left; the other is the static
 // one, and its length is what the divider changes. `flex` says which is which. A
 // child says which pane it belongs to and the view reads it — the arrangement
-// TitleBar, DialogBox and MenuItem are read by. A child that names neither goes
+// TitleBar, Dialog and MenuItem are read by. A child that names neither goes
 // in the top-left pane, which is the one a single child means.
 import { Component } from "mosaic";
 

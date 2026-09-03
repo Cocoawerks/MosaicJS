@@ -1,4 +1,4 @@
-// DialogBox, ported from GWT Mosaic.
+// Dialog, ported from GWT Mosaic.
 // Build first: `mosaic compile examples/Counter_component --keep-modules` — these
 // tests import the compiled modules themselves, which a plain compile prunes
 // once they are in the bundle.
@@ -13,7 +13,7 @@ import "./dom-shim.mjs";
 
 const { mount, h } =
   await import("../examples/Counter_component/build/node_modules/mosaic/runtime/mosaic.js");
-const { DialogBox, addOpenListener, removeOpenListener } =
+const { Dialog, addOpenListener, removeOpenListener } =
   await import("../examples/Counter_component/build/node_modules/mosaic/frameworks/ui/index.js");
 
 /**
@@ -35,7 +35,7 @@ function make(props = {}, children = null) {
   const host = document.createElement("div");
   document.body.appendChild(host);
 
-  const view = mount(DialogBox, host, {
+  const view = mount(Dialog, host, {
     title: "Settings",
     ...props,
     children: children ?? [

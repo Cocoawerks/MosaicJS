@@ -7,7 +7,7 @@
      it say slot="footer". The primary one is what Enter presses. -->
 
 <interface>
-    <DialogBox title="Settings" outlet="dialog" pack="true">
+    <Dialog title="Settings" outlet="dialog" pack="true">
         <div styleName="body">
             <p styleName="note">
                 A native dialog: modal, so the page behind it is shut out until it is
@@ -50,7 +50,7 @@
             <Button text="Cancel" action="cancel"/>
             <Button text="Save" intent="primary" action="save"/>
         </div>
-    </DialogBox>
+    </Dialog>
 
     <style>
         .body {
