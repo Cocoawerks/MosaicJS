@@ -1,10 +1,9 @@
 # MosaicJS
 
-A Cocoa-inspired UI framework for JavaScript, with its own compiler and build tool.
+A Cocoa-inspired UI framework for JavaScript.
 
 Components are written as markup and compiled to imperative JavaScript that builds
-the DOM directly — no virtual DOM, no runtime template parsing. Applications run in
-the browser or as a native desktop app.
+the DOM directly.
 
 Requires [Bun](https://bun.sh).
 
@@ -63,11 +62,7 @@ An application is a directory containing an `info.json`:
 sits in — everything beside and below it, nothing above — so `info.json` can live
 further up, at the root of a project whose other directories the compiler ignores.
 
-Builds land in `build/` inside the application directory, which makes that
-directory the whole of the deployable thing.
-
-Bundling is Bun's: it walks the import graph from the bootstrap, so the payload
-holds only what the entry actually reaches.
+Builds land in `build/` inside the application directory.
 
 ## Examples
 
@@ -88,15 +83,12 @@ for [Cappuccino](https://www.cappuccino.dev/).
 Layouts are already compiled from `.ib.xml` documents, so the format the editor
 would write is the one `ibc` reads today.
 
-## Tests
+## Testing
 
+### Unit Tests
 ```sh
 bun test
 ```
-
-Some suites import the framework as an application receives it — the compiled
-modules under an example's `build/` — so those examples are built first,
-automatically. See `test/setup.mjs`.
 
 ### In the browser
 
@@ -107,12 +99,11 @@ it in Chromium through puppeteer:
 mosaic test --script ./tour.js examples/Counter_component
 ```
 
-The script is an ES module whose default export is an async
-`(page, context) => {…}`. It throws to fail and returns to pass, and its verdict
-is the exit code.
+The script is an ES module whose default export is an async function
+`(page, context) => {…}`. It throws to fail the test and returns to pass.
 
 By default it opens a window and works at a pace you can watch, so a test
-doubles as a demo.
+doubles as a demo. It can also run headless. 
 
 | Option | Description |
 | --- | --- |
